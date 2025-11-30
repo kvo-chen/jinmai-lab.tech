@@ -1,0 +1,46 @@
+:root {
+  --bg-color: #050505;
+  --neon-cyan: #00f3ff;
+  --neon-red: #ff2a2a;
+  --glass: rgba(255, 255, 255, 0.05);
+}
+body.neo-mode {
+  background-color: var(--bg-color);
+  color: white;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 0;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-image: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000 100%);
+}
+.cyber-container {
+  width: 380px;
+  background: var(--glass);
+  border: 2px solid var(--neon-cyan);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+.corner { position: absolute; width: 20px; height: 20px; border: 2px solid var(--neon-red); transition: all 0.3s; }
+.tl { top: -5px; left: -5px; border-right: 0; border-bottom: 0; }
+.tr { top: -5px; right: -5px; border-left: 0; border-bottom: 0; }
+.bl { bottom: -5px; left: -5px; border-right: 0; border-top: 0; }
+.br { bottom: -5px; right: -5px; border-left: 0; border-top: 0; }
+h1.neo-title { text-align: center; text-shadow: 0 0 10px var(--neon-red); margin-bottom: 30px; letter-spacing: 2px; animation: flicker 2s infinite; }
+.brand-selector { width: 100%; background: black; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); padding: 10px; margin-bottom: 20px; font-size: 16px; outline: none; }
+.story-box { font-size: 12px; color: #aaa; margin-bottom: 20px; border-left: 3px solid var(--neon-red); padding-left: 10px; line-height: 1.5; }
+.input-area { width: 93%; height: 80px; background: rgba(0,0,0,0.5); border: 1px dashed #555; color: white; padding: 10px; margin-bottom: 15px; resize: none; }
+.cyber-btn { width: 100%; padding: 15px; background: transparent; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-weight: bold; font-size: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 3px; transition: 0.3s; position: relative; overflow: hidden; }
+.cyber-btn:hover { background: var(--neon-cyan); color: black; box-shadow: 0 0 30px var(--neon-cyan); }
+.output-panel { margin-top: 20px; display: none; border-top: 1px solid #333; padding-top: 20px; }
+.loading-bar { width: 0%; height: 5px; background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); transition: width 0.1s; }
+.result-card { background: #111; margin-top: 15px; padding: 10px; border: 1px solid #333; text-align: center; }
+.score-display { font-size: 24px; color: var(--neon-red); font-weight: bold; margin-top: 10px; }
+.tag { display: inline-block; font-size: 10px; padding: 2px 6px; border: 1px solid #555; margin-right: 5px; margin-bottom: 5px; cursor: pointer; }
+.tag.active { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 5px var(--neon-cyan); }
+@keyframes flicker { 0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.5; } }

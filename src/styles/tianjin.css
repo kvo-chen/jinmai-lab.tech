@@ -1,0 +1,10 @@
+/* Tianjin regional theme utilities */
+.font-tianjin {
+  font-family: "Noto Serif SC", "STSong", serif;
+}
+.bg-haihe-gradient {
+  background-image: linear-gradient(to bottom, #eff6ff, #ffffff, #fff1f2);
+}
+.border-tianjin {
+  border-color: #93c5fd;
+}
