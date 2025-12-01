@@ -36,6 +36,7 @@ const CrossDeviceSync = lazy(() => import("@/components/CrossDeviceSync"));
 const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
 const Drafts = lazy(() => import("@/pages/Drafts"));
 const Lab = lazy(() => import("@/pages/Lab"));
+const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
 
 export default function App() {
   return (
@@ -128,6 +129,11 @@ export default function App() {
           <Route 
             path="/achievement-museum" 
             element={<PrivateRoute component={AchievementMuseum} />} 
+          />
+          
+          <Route 
+            path="/blind-box" 
+            element={<PrivateRoute component={BlindBoxShop} />} 
           />
           
           {/* 管理员路由 */}

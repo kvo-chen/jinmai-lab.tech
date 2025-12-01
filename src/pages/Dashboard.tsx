@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '@/contexts/authContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CreatorProfile from '../components/CreatorProfile';
+import achievementService from '../services/achievementService';
 
 import SidebarLayout from '@/components/SidebarLayout'
 import OnboardingGuide from '@/components/OnboardingGuide'
@@ -52,41 +53,7 @@ const recentWorks = [
   },
 ];
 
-// 创作者等级和成就数据
-const creatorData: {
-  level: string;
-  levelProgress: number;
-  points: number;
-  achievements: { id: number; name: string; description: string; icon: string; }[];
-  availableRewards: { id: number; name: string; description: string; requirement: string; }[];
-  tasks: { id: number; title: string; status: 'completed' | 'pending'; reward: string; }[];
-  commercialApplications: { id: number; title: string; brand: string; status: string; date: string; revenue?: string; }[];
-} = {
-  level: '新锐创作者',
-  levelProgress: 65,
-  points: 1250,
-  achievements: [
-    { id: 1, name: '首篇创作', description: '完成第一篇作品', icon: 'star' },
-    { id: 2, name: '活跃创作者', description: '连续7天登录平台', icon: 'fire' },
-    { id: 3, name: '人气王', description: '获得100个点赞', icon: 'thumbs-up' },
-    { id: 4, name: '文化传播者', description: '使用5种不同文化元素', icon: 'book' },
-  ],
-  availableRewards: [
-    { id: 1, name: '高级素材包', description: '解锁20个高级文化素材', requirement: '完成5篇作品' },
-    { id: 2, name: '优先审核权', description: '作品审核时间缩短50%', requirement: '完成10篇作品' },
-    { id: 3, name: '专属AI模型', description: '获得专属AI训练模型', requirement: '完成20篇作品' },
-  ],
-  tasks: [
-    { id: 1, title: '完成新手引导', status: 'completed', reward: '50积分' },
-    { id: 2, title: '发布第一篇作品', status: 'completed', reward: '100积分 + 素材包' },
-    { id: 3, title: '邀请一位好友', status: 'pending', reward: '150积分' },
-    { id: 4, title: '参与一次主题活动', status: 'pending', reward: '200积分' },
-  ],
-  commercialApplications: [
-    { id: 1, title: '国潮插画设计', brand: '老字号品牌A', status: '洽谈中', date: '2025-11-11' },
-    { id: 2, title: '传统纹样创新', brand: '老字号品牌B', status: '已采纳', date: '2025-11-05', revenue: '¥1,200' },
-  ]
-};
+
 
 export default function Dashboard() {
   const { isDark } = useTheme();
@@ -95,6 +62,8 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreatorProfile, setShowCreatorProfile] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [creatorLevelInfo, setCreatorLevelInfo] = useState(() => achievementService.getCreatorLevelInfo());
+  const [achievements, setAchievements] = useState(() => achievementService.getUnlockedAchievements());
   
   // 检查是否已登录
   useEffect(() => {
@@ -188,7 +157,7 @@ export default function Dashboard() {
                 loading="lazy" decoding="async"
               />
               <div className="absolute -bottom-2 -right-2 bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold">
-                {creatorData.levelProgress}%
+                {creatorLevelInfo.levelProgress}%
               </div>
             </div>
             
@@ -198,10 +167,10 @@ export default function Dashboard() {
                   <h2 className="text-xl font-bold mb-1">{user?.username}</h2>
                   <div className="flex items-center">
                     <span className="bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full mr-2">
-                      {creatorData.level}
+                      {creatorLevelInfo.currentLevel.name} {creatorLevelInfo.currentLevel.icon}
                     </span>
                     <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {creatorData.points} 积分
+                      {creatorLevelInfo.currentPoints} 积分
                     </span>
                   </div>
                 </div>
@@ -224,20 +193,20 @@ export default function Dashboard() {
               {/* 等级进度条 */}
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span>新锐创作者</span>
-                  <span>资深创作者 (1500积分)</span>
+                  <span>{creatorLevelInfo.currentLevel.name}</span>
+                  <span>{creatorLevelInfo.nextLevel ? `${creatorLevelInfo.nextLevel.name} (${creatorLevelInfo.nextLevel.requiredPoints}积分)` : '已达最高等级'}</span>
                 </div>
                 <div className={`h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
                   <div 
                     className="h-full rounded-full bg-gradient-to-r from-blue-500 to-red-600"
-                    style={{ width: `${creatorData.levelProgress}%` }}
+                    style={{ width: `${creatorLevelInfo.levelProgress}%` }}
                   ></div>
                 </div>
               </div>
               
               {/* 成就徽章 */}
               <div className="flex flex-wrap gap-3">
-                {creatorData.achievements.slice(0, 4).map((achievement) => (
+                {achievements.slice(0, 4).map((achievement) => (
                   <div 
                     key={achievement.id}
                     className={`flex items-center px-3 py-1.5 rounded-full text-sm ${
@@ -255,7 +224,31 @@ export default function Dashboard() {
           {/* 创作者详情展开区域 */}
           {showCreatorProfile && (
             <CreatorProfile 
-              creatorData={creatorData}
+              creatorData={{
+                level: creatorLevelInfo.currentLevel.name,
+                levelProgress: creatorLevelInfo.levelProgress,
+                points: creatorLevelInfo.currentPoints,
+                achievements: achievements.map(achievement => ({
+                  id: achievement.id,
+                  name: achievement.name,
+                  description: achievement.description,
+                  icon: achievement.icon
+                })),
+                availableRewards: [
+                  { id: 1, name: '高级素材包', description: '解锁20个高级文化素材', requirement: '完成5篇作品' },
+                  { id: 2, name: '优先审核权', description: '作品审核时间缩短50%', requirement: '完成10篇作品' },
+                ],
+                tasks: [
+                  { id: 1, title: '完成新手引导', status: 'completed' as const, reward: '50积分' },
+                  { id: 2, title: '发布第一篇作品', status: 'completed' as const, reward: '100积分 + 素材包' },
+                  { id: 3, title: '邀请一位好友', status: 'pending' as const, reward: '150积分' },
+                  { id: 4, title: '参与一次主题活动', status: 'pending' as const, reward: '200积分' },
+                ],
+                commercialApplications: [
+                  { id: 1, title: '国潮插画设计', brand: '老字号品牌A', status: '洽谈中', date: '2025-11-11' },
+                  { id: 2, title: '传统纹样创新', brand: '老字号品牌B', status: '已采纳', date: '2025-11-05', revenue: '¥1,200' },
+                ]
+              }}
               isDark={isDark}
             />
           )}

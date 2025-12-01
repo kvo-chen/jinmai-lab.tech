@@ -100,6 +100,20 @@ export default React.memo(function TemplateLibrary({ onSelectTemplate, showCreat
     // 这里可以添加跳转到创作页面的逻辑
   };
 
+  // 处理模板下载
+  const handleDownloadTemplate = (template: Template) => {
+    templateService.incrementDownloadCount(template.id);
+    toast.success(`已下载模板：${template.name}`);
+    // 这里可以添加模板下载逻辑
+  };
+
+  // 处理模板评分
+  const handleRateTemplate = (templateId: string, rating: number) => {
+    templateService.rateTemplate(templateId, rating);
+    setTemplates(templateService.getAllTemplates());
+    toast.success('评分已提交');
+  };
+
   // 处理模板删除
   const handleDeleteTemplate = (templateId: string) => {
     const success = templateService.deleteTemplate(templateId);
@@ -474,27 +488,55 @@ export default React.memo(function TemplateLibrary({ onSelectTemplate, showCreat
             </div>
 
             {/* 模态框底部 */}
-            <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
-              {!selectedTemplate.isOfficial && (
+            <div className="p-4 border-t border-gray-700">
+              {/* 评分功能 */}
+              <div className="mb-4">
+                <h4 className="font-semibold mb-2">评分</h4>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => handleRateTemplate(selectedTemplate.id, star)}
+                      className={`text-2xl transition-colors ${selectedTemplate.rating && star <= selectedTemplate.rating ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'}`}
+                    >
+                      <i className="fas fa-star"></i>
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm">
+                    {selectedTemplate.rating ? `${selectedTemplate.rating.toFixed(1)} ⭐` : '暂无评分'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* 操作按钮 */}
+              <div className="flex justify-end gap-3">
+                {!selectedTemplate.isOfficial && (
+                  <button
+                    onClick={() => handleDeleteTemplate(selectedTemplate.id)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    删除模板
+                  </button>
+                )}
                 <button
-                  onClick={() => handleDeleteTemplate(selectedTemplate.id)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => setShowModal(false)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
                 >
-                  删除模板
+                  关闭
                 </button>
-              )}
-              <button
-                onClick={() => setShowModal(false)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
-              >
-                关闭
-              </button>
-              <button
-                onClick={() => handleUseTemplate(selectedTemplate)}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                使用模板
-              </button>
+                <button
+                  onClick={() => handleDownloadTemplate(selectedTemplate)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white`}
+                >
+                  <i className="fas fa-download mr-2"></i>下载模板
+                </button>
+                <button
+                  onClick={() => handleUseTemplate(selectedTemplate)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  使用模板
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>

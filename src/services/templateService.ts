@@ -459,6 +459,45 @@ class TemplateService {
   }
 
   /**
+   * 增加模板下载次数
+   */
+  incrementDownloadCount(id: string): void {
+    const template = this.templates.find(t => t.id === id);
+    if (template) {
+      template.downloadCount = (template.downloadCount || 0) + 1;
+      this.saveTemplates();
+    }
+  }
+
+  /**
+   * 为模板评分
+   */
+  rateTemplate(id: string, rating: number): void {
+    const template = this.templates.find(t => t.id === id);
+    if (template) {
+      // 简单的平均评分计算，实际应用中可能需要更复杂的算法
+      template.rating = rating;
+      this.saveTemplates();
+    }
+  }
+
+  /**
+   * 获取模板下载次数
+   */
+  getDownloadCount(id: string): number {
+    const template = this.templates.find(t => t.id === id);
+    return template?.downloadCount || 0;
+  }
+
+  /**
+   * 获取模板评分
+   */
+  getRating(id: string): number {
+    const template = this.templates.find(t => t.id === id);
+    return template?.rating || 0;
+  }
+
+  /**
    * 获取热门模板
    */
   getPopularTemplates(limit: number = 8): Template[] {

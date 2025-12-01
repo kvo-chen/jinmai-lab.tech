@@ -2,6 +2,16 @@
  * 成就服务模块 - 提供创作成就相关功能
  */
 
+// 创作者等级类型定义
+export interface CreatorLevel {
+  level: number;
+  name: string;
+  icon: string;
+  requiredPoints: number;
+ 权益: string[];
+  description: string;
+}
+
 // 成就类型定义
 export interface Achievement {
   id: number;
@@ -13,10 +23,29 @@ export interface Achievement {
   progress: number;
   isUnlocked: boolean;
   unlockedAt?: string;
+  points: number; // 成就对应的积分
+}
+
+// 创作者等级信息
+export interface CreatorLevelInfo {
+  currentLevel: CreatorLevel;
+  nextLevel: CreatorLevel | null;
+  currentPoints: number;
+  pointsToNextLevel: number;
+  levelProgress: number; // 0-100%
 }
 
 // 成就服务类
 class AchievementService {
+  // 创作者等级数据
+  private creatorLevels: CreatorLevel[] = [
+    { level: 1, name: '创作新手', icon: '🌱', requiredPoints: 0, 权益: ['基础创作工具', '作品发布权限', '社区评论权限'], description: '刚刚开始创作之旅的新手' },
+    { level: 2, name: '创作爱好者', icon: '✏️', requiredPoints: 100, 权益: ['高级创作工具', '模板库访问', '作品打赏权限'], description: '热爱创作的积极用户' },
+    { level: 3, name: '创作达人', icon: '🌟', requiredPoints: 300, 权益: ['AI创意助手', '专属客服支持', '作品推广机会'], description: '创作能力突出的达人' },
+    { level: 4, name: '创作大师', icon: '🎨', requiredPoints: 800, 权益: ['限量模板使用权', '线下活动邀请', '品牌合作机会'], description: '创作领域的大师级人物' },
+    { level: 5, name: '创作传奇', icon: '👑', requiredPoints: 2000, 权益: ['平台荣誉认证', '定制化创作工具', 'IP孵化支持'], description: '创作界的传奇人物' }
+  ];
+
   // 模拟成就数据
   private achievements: Achievement[] = [
     {
@@ -28,7 +57,8 @@ class AchievementService {
       criteria: '完成1篇作品',
       progress: 100,
       isUnlocked: true,
-      unlockedAt: '2025-11-01'
+      unlockedAt: '2025-11-01',
+      points: 10
     },
     {
       id: 2,
@@ -39,7 +69,8 @@ class AchievementService {
       criteria: '连续登录7天',
       progress: 100,
       isUnlocked: true,
-      unlockedAt: '2025-11-07'
+      unlockedAt: '2025-11-07',
+      points: 20
     },
     {
       id: 3,
@@ -49,7 +80,8 @@ class AchievementService {
       rarity: 'rare',
       criteria: '获得100个点赞',
       progress: 32,
-      isUnlocked: false
+      isUnlocked: false,
+      points: 50
     },
     {
       id: 4,
@@ -59,7 +91,8 @@ class AchievementService {
       rarity: 'rare',
       criteria: '使用5种不同文化元素',
       progress: 60,
-      isUnlocked: false
+      isUnlocked: false,
+      points: 40
     },
     {
       id: 5,
@@ -69,7 +102,8 @@ class AchievementService {
       rarity: 'rare',
       criteria: '发布10篇作品',
       progress: 30,
-      isUnlocked: false
+      isUnlocked: false,
+      points: 80
     },
     {
       id: 6,
@@ -79,7 +113,8 @@ class AchievementService {
       rarity: 'epic',
       criteria: '作品被品牌采纳1次',
       progress: 0,
-      isUnlocked: false
+      isUnlocked: false,
+      points: 200
     },
     {
       id: 7,
@@ -89,9 +124,13 @@ class AchievementService {
       rarity: 'legendary',
       criteria: '完成10个文化知识问答',
       progress: 0,
-      isUnlocked: false
+      isUnlocked: false,
+      points: 300
     }
   ];
+
+  // 模拟用户积分数据
+  private userPoints: number = 0;
 
   // 获取所有成就
   getAllAchievements(): Achievement[] {
@@ -183,6 +222,80 @@ class AchievementService {
     });
     
     return distribution;
+  }
+
+  // 计算用户总积分
+  calculateUserPoints(): number {
+    // 计算已解锁成就的总积分
+    const unlockedAchievements = this.getUnlockedAchievements();
+    this.userPoints = unlockedAchievements.reduce((total, achievement) => total + achievement.points, 0);
+    return this.userPoints;
+  }
+
+  // 获取创作者等级信息
+  getCreatorLevelInfo(): CreatorLevelInfo {
+    const currentPoints = this.calculateUserPoints();
+    
+    // 找到当前等级和下一个等级
+    let currentLevel: CreatorLevel = this.creatorLevels[0];
+    let nextLevel: CreatorLevel | null = null;
+    
+    for (let i = 0; i < this.creatorLevels.length; i++) {
+      if (currentPoints >= this.creatorLevels[i].requiredPoints) {
+        currentLevel = this.creatorLevels[i];
+        if (i < this.creatorLevels.length - 1) {
+          nextLevel = this.creatorLevels[i + 1];
+        } else {
+          nextLevel = null;
+        }
+      } else {
+        break;
+      }
+    }
+    
+    // 计算升级进度
+    let pointsToNextLevel = 0;
+    let levelProgress = 0;
+    
+    if (nextLevel) {
+      pointsToNextLevel = nextLevel.requiredPoints - currentPoints;
+      const levelRange = nextLevel.requiredPoints - currentLevel.requiredPoints;
+      levelProgress = Math.min(100, Math.round(((currentPoints - currentLevel.requiredPoints) / levelRange) * 100));
+    } else {
+      pointsToNextLevel = 0;
+      levelProgress = 100;
+    }
+    
+    return {
+      currentLevel,
+      nextLevel,
+      currentPoints,
+      pointsToNextLevel,
+      levelProgress
+    };
+  }
+
+  // 获取所有创作者等级
+  getAllCreatorLevels(): CreatorLevel[] {
+    return [...this.creatorLevels];
+  }
+
+  // 获取单个创作者等级
+  getCreatorLevelByLevel(level: number): CreatorLevel | undefined {
+    return this.creatorLevels.find(levelInfo => levelInfo.level === level);
+  }
+
+  // 根据积分获取创作者等级
+  getCreatorLevelByPoints(points: number): CreatorLevel {
+    let level = this.creatorLevels[0];
+    
+    for (const levelInfo of this.creatorLevels) {
+      if (points >= levelInfo.requiredPoints) {
+        level = levelInfo;
+      }
+    }
+    
+    return level;
   }
 }
 

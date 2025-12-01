@@ -56,6 +56,24 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const shortcutsRef = useRef<HTMLDivElement | null>(null)
   // 中文注释：问题反馈弹层显示状态
   const [showFeedback, setShowFeedback] = useState(false)
+  // 中文注释：检测是否为移动端
+  const [isMobile, setIsMobile] = useState(false)
+  
+  // 监听窗口大小变化，检测是否为移动端
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    // 初始化检查
+    checkIsMobile()
+    
+    // 添加 resize 事件监听
+    window.addEventListener('resize', checkIsMobile)
+    
+    // 清理事件监听
+    return () => window.removeEventListener('resize', checkIsMobile)
+  }, [])
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!shortcutsRef.current) return
@@ -304,12 +322,13 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-[#0b0e13] via-[#0e1218] to-[#0b0e13] text-gray-100' : theme === 'pink' ? 'bg-gradient-to-br from-[#fff0f5] via-[#ffe4ec] to-[#fff0f5] text-gray-900' : 'bg-white text-gray-900'} flex`}> 
-      {/* 中文注释：暗色侧栏采用半透明+毛玻璃质感，提升整体高级感 */}
-      <aside 
-        className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
-        style={{ width: collapsed ? 72 : width }}
-      >
+    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-[#0b0e13] via-[#0e1218] to-[#0b0e13] text-gray-100' : theme === 'pink' ? 'bg-gradient-to-br from-[#fff0f5] via-[#ffe4ec] to-[#fff0f5] text-gray-900' : 'bg-white text-gray-900'}`}> 
+      {/* 仅在桌面端显示侧边栏 */}
+      {!isMobile && (
+        <aside 
+          className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
+          style={{ width: collapsed ? 72 : width }}
+        >
         <div className={`px-4 py-3 flex items-center justify-between rounded-lg transition-colors group ${isDark ? 'hover:bg-gray-800/60' : theme === 'pink' ? 'hover:bg-pink-50' : 'hover:bg-gray-50'}`}>
           <div className="flex items-center space-x-2">
             <span className={`font-extrabold bg-gradient-to-r ${isDark ? 'from-red-400 to-rose-500' : 'from-red-600 to-rose-500'} bg-clip-text text-transparent tracking-tight`}>津脉</span>
@@ -409,7 +428,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         )}
       </aside>
       {/* 移动端遮罩层 */}
-      {!collapsed && (
+      {!collapsed && !isMobile && (
         <div
           onClick={() => setCollapsed(true)}
           className="fixed inset-0 bg-black/30 md:hidden"
@@ -420,7 +439,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       <div 
         className="flex-1 min-w-0 md:pb-0"
         // 中文注释：当用户点击右侧内容区域时，自动收起左侧导航栏，减少视觉占用、聚焦内容
-        onClick={() => { if (!collapsed) setCollapsed(true) }}
+        onClick={() => { if (!collapsed && !isMobile) setCollapsed(true) }}
         style={{ paddingBottom: showMobileNav ? 'calc(90px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)' }}
       >
         {/* 中文注释：暗色头部采用半透明背景与毛玻璃，弱化硬边 */}
