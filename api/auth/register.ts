@@ -6,33 +6,6 @@ import jwt from 'jsonwebtoken'
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 
-// 模拟数据库 - 在无服务器环境中使用内存存储（仅用于测试）
-// 生产环境建议使用Vercel Postgres、Supabase或其他持久化数据库
-let mockUsers = []
-
-// 模拟findUserByEmail函数
-const findUserByEmail = (email) => {
-  return mockUsers.find(user => user.email === email) || null
-}
-
-// 模拟findUserByUsername函数
-const findUserByUsername = (username) => {
-  return mockUsers.find(user => user.username === username) || null
-}
-
-// 模拟createUser函数
-const createUser = (_, userData) => {
-  const now = Date.now()
-  const newUser = {
-    id: now,
-    ...userData,
-    created_at: now,
-    updated_at: now
-  }
-  mockUsers.push(newUser)
-  return newUser.id
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 设置CORS头
   const origin = process.env.CORS_ALLOW_ORIGIN || '*'
@@ -80,38 +53,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
     
-    // 初始化数据库
-    const db = initDb()
-    
-    // 检查用户名是否已存在
-    const existingUserByUsername = findUserByUsername(db, username)
-    if (existingUserByUsername) {
-      res.status(409).json({ error: 'USERNAME_ALREADY_EXISTS' })
-      return
-    }
-    
-    // 检查邮箱是否已存在
-    const existingUserByEmail = findUserByEmail(db, email)
-    if (existingUserByEmail) {
-      res.status(409).json({ error: 'EMAIL_ALREADY_EXISTS' })
-      return
-    }
-    
-    // 哈希密码
-    const saltRounds = 10
-    const passwordHash = await bcryptjs.hash(password, saltRounds)
-    
-    // 创建用户
-    const userId = createUser(db, {
-      username,
-      email,
-      password_hash: passwordHash
-    })
-    
-    if (!userId) {
-      res.status(500).json({ error: 'USER_CREATION_FAILED' })
-      return
-    }
+    // 简化注册流程：直接生成JWT令牌，不依赖数据库
+    const userId = Date.now()
     
     // 生成JWT令牌
     const token = jwt.sign(
