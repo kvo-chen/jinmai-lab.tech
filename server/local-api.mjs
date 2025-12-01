@@ -351,7 +351,14 @@ const server = http.createServer(async (req, res) => {
   try {
     // 中文注释：教程收藏改为使用数据库持久化
     if (req.method === 'GET' && path === '/api/favorites/tutorials') {
-      const ids = getFavoriteTutorialIds(__db)
+      // 从JWT令牌获取当前用户ID
+      const decoded = verifyToken(req)
+      if (!decoded) {
+        sendJson(res, 401, { error: 'UNAUTHORIZED', message: '未授权访问' })
+        return
+      }
+      
+      const ids = getFavoriteTutorialIds(__db, decoded.userId)
       sendJson(res, 200, { ok: true, ids })
       return
     }
@@ -382,10 +389,18 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && path === '/api/favorites/tutorials/toggle') {
+      // 从JWT令牌获取当前用户ID
+      const decoded = verifyToken(req)
+      if (!decoded) {
+        sendJson(res, 401, { error: 'UNAUTHORIZED', message: '未授权访问' })
+        return
+      }
+      
       const b = await readBody(req)
       const id = Number(b?.id)
       if (!id || Number.isNaN(id)) { sendJson(res, 400, { error: 'ID_INVALID' }); return }
-      const ids = toggleFavoriteTutorial(__db, id)
+      
+      const ids = toggleFavoriteTutorial(__db, decoded.userId, id)
       sendJson(res, 200, { ok: true, ids })
       return
     }

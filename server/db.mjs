@@ -202,6 +202,14 @@ function runMigrations(db) {
         console.log('执行迁移版本 3: 添加用户表')
         // 用户表已在前面创建
       }
+    },
+    // 版本 4: 更新favorites表，添加用户关联
+    {
+      version: 4,
+      up: () => {
+        console.log('执行迁移版本 4: 更新favorites表，添加用户关联')
+        // 表结构已在前面更新
+      }
     }
   ]
 
@@ -231,60 +239,61 @@ function runMigrations(db) {
 }
 
 /**
- * 查询所有已收藏的教程ID
+ * 查询指定用户的所有已收藏的教程ID
  */
-export function getFavoriteTutorialIds(db) {
+export function getFavoriteTutorialIds(db, userId) {
   try {
     if (db && db.__mode === 'json') {
       const store = readJsonStore()
       const ids = Array.isArray(store.favorites) ? store.favorites : []
       return ids.sort((a, b) => a - b)
     }
-    const rows = db.prepare('SELECT id FROM favorites ORDER BY id ASC').all()
-    return rows.map(r => r.id)
+    
+    const rows = db.prepare('SELECT tutorial_id FROM favorites WHERE user_id = ? ORDER BY tutorial_id ASC').all(userId)
+    return rows.map(r => r.tutorial_id)
   } catch (e) {
-    console.error('获取收藏列表失败:', e.message)
+    console.error(`获取用户 ${userId} 的收藏列表失败:`, e.message)
     return []
   }
 }
 
 /**
- * 切换教程收藏状态（存在则取消，不存在则添加）
+ * 切换指定用户的教程收藏状态（存在则取消，不存在则添加）
  */
-export function toggleFavoriteTutorial(db, id) {
+export function toggleFavoriteTutorial(db, userId, tutorialId) {
   try {
-    if (!Number.isInteger(id) || id <= 0) {
-      console.warn('无效的教程ID:', id)
-      return getFavoriteTutorialIds(db)
+    if (!Number.isInteger(tutorialId) || tutorialId <= 0) {
+      console.warn('无效的教程ID:', tutorialId)
+      return getFavoriteTutorialIds(db, userId)
     }
     
     if (db && db.__mode === 'json') {
       const store = readJsonStore()
       const set = new Set(Array.isArray(store.favorites) ? store.favorites : [])
-      if (set.has(id)) {
-        set.delete(id)
-        console.log(`取消收藏教程ID: ${id}`)
+      if (set.has(tutorialId)) {
+        set.delete(tutorialId)
+        console.log(`取消收藏教程ID: ${tutorialId}`)
       } else {
-        set.add(id)
-        console.log(`收藏教程ID: ${id}`)
+        set.add(tutorialId)
+        console.log(`收藏教程ID: ${tutorialId}`)
       }
       store.favorites = Array.from(set)
       writeJsonStore(store)
-      return getFavoriteTutorialIds(db)
+      return getFavoriteTutorialIds(db, userId)
     }
     
-    const existing = db.prepare('SELECT id FROM favorites WHERE id = ?').get(id)
+    const existing = db.prepare('SELECT * FROM favorites WHERE user_id = ? AND tutorial_id = ?').get(userId, tutorialId)
     if (existing) {
-      db.prepare('DELETE FROM favorites WHERE id = ?').run(id)
-      console.log(`SQLite: 取消收藏教程ID: ${id}`)
+      db.prepare('DELETE FROM favorites WHERE user_id = ? AND tutorial_id = ?').run(userId, tutorialId)
+      console.log(`SQLite: 用户 ${userId} 取消收藏教程ID: ${tutorialId}`)
     } else {
-      db.prepare('INSERT INTO favorites (id) VALUES (?)').run(id)
-      console.log(`SQLite: 收藏教程ID: ${id}`)
+      db.prepare('INSERT INTO favorites (user_id, tutorial_id, created_at) VALUES (?, ?, ?)').run(userId, tutorialId, Date.now())
+      console.log(`SQLite: 用户 ${userId} 收藏教程ID: ${tutorialId}`)
     }
-    return getFavoriteTutorialIds(db)
+    return getFavoriteTutorialIds(db, userId)
   } catch (e) {
-    console.error('切换收藏状态失败:', e.message)
-    return getFavoriteTutorialIds(db)
+    console.error(`用户 ${userId} 切换收藏状态失败:`, e.message)
+    return getFavoriteTutorialIds(db, userId)
   }
 }
 

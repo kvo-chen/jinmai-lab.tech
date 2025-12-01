@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AuthContext } from '@/contexts/authContext';
  
 import SidebarLayout from '@/components/SidebarLayout'
 import GradientHero from '@/components/GradientHero'
@@ -1848,15 +1849,29 @@ export default function CulturalKnowledge() {
     } catch {}
   }, [location.search, type, selectedVideo])
   
+  const { isAuthenticated } = useContext(AuthContext);
+
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/favorites/tutorials')
+        const token = localStorage.getItem('token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const r = await fetch('/api/favorites/tutorials', {
+          headers
+        })
         if (r.ok) {
           const j = await r.json()
           if (Array.isArray(j?.ids)) { setFavoriteTutorials(j.ids as number[]); return }
         }
-      } catch {}
+      } catch (error) {
+        console.error('获取收藏列表失败:', error);
+      }
       try {
         const saved = localStorage.getItem('FAVORITE_TUTORIALS');
         if (saved) {
@@ -1865,13 +1880,15 @@ export default function CulturalKnowledge() {
         }
       } catch {}
     })()
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('FAVORITE_TUTORIALS', JSON.stringify(favoriteTutorials));
-    } catch {}
-  }, [favoriteTutorials]);
+    if (!isAuthenticated) {
+      try {
+        localStorage.setItem('FAVORITE_TUTORIALS', JSON.stringify(favoriteTutorials));
+      } catch {}
+    }
+  }, [favoriteTutorials, isAuthenticated]);
 
   useEffect(() => {
     try {
@@ -1948,13 +1965,30 @@ export default function CulturalKnowledge() {
     const idNum = selectedVideo.id as number;
     (async () => {
       try {
-        const r = await fetch('/api/favorites/tutorials/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idNum }) })
+        const token = localStorage.getItem('token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const r = await fetch('/api/favorites/tutorials/toggle', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ id: idNum })
+        })
         if (r.ok) {
           const j = await r.json()
           if (Array.isArray(j?.ids)) { setFavoriteTutorials(j.ids as number[]); return }
         }
-      } catch {}
-      setFavoriteTutorials((prev) => (prev.includes(idNum) ? prev.filter((x) => x !== idNum) : [...prev, idNum]));
+      } catch (error) {
+        console.error('切换收藏状态失败:', error);
+      }
+      // 本地备份逻辑，仅在非登录状态或API调用失败时使用
+      if (!isAuthenticated) {
+        setFavoriteTutorials((prev) => (prev.includes(idNum) ? prev.filter((x) => x !== idNum) : [...prev, idNum]));
+      }
     })()
   };
 
