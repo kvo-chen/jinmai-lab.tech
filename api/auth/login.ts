@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from 'vercel'
+import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { getMongoDB } from '../../server/mongodb.mjs'
 
 // 获取JWT密钥
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
@@ -33,14 +35,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
     
-    // 简化登录流程：直接生成JWT令牌，不依赖数据库验证
-    // 从邮箱提取用户名（示例逻辑，实际项目中应该从数据库获取）
-    const username = email.split('@')[0]
-    const userId = Date.now()
+    // 获取MongoDB实例
+    const db = await getMongoDB()
+    const usersCollection = db.collection('users')
+    
+    // 根据邮箱查找用户
+    const user = await usersCollection.findOne({ email })
+    if (!user) {
+      res.status(401).json({ error: 'INVALID_CREDENTIALS' })
+      return
+    }
+    
+    // 验证密码
+    const passwordMatch = await bcryptjs.compare(password, user.password_hash)
+    if (!passwordMatch) {
+      res.status(401).json({ error: 'INVALID_CREDENTIALS' })
+      return
+    }
     
     // 生成JWT令牌
     const token = jwt.sign(
-      { userId: userId.toString(), email, username },
+      { userId: user._id.toString(), email: user.email, username: user.username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     )
@@ -50,9 +65,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       token,
       user: {
-        id: userId.toString(),
-        username,
-        email
+        id: user._id.toString(),
+        username: user.username,
+        email: user.email
       }
     })
   } catch (e: any) {

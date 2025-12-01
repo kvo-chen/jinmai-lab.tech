@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from 'vercel'
 import jwt from 'jsonwebtoken'
+import { ObjectId } from 'mongodb'
+import { getMongoDB } from '../../server/mongodb.mjs'
 
 // 获取JWT密钥
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
@@ -43,20 +45,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
     
-    // 从令牌中获取用户信息
-    const { userId, email, username } = decoded
-    if (!userId || !email || !username) {
+    // 从令牌中获取用户ID
+    const userId = decoded.userId
+    if (!userId) {
       res.status(401).json({ error: 'INVALID_TOKEN' })
       return
     }
     
-    // 简化获取用户信息流程：直接从令牌中提取用户信息，不依赖数据库
+    // 获取MongoDB实例
+    const db = await getMongoDB()
+    const usersCollection = db.collection('users')
+    
+    // 根据ID查找用户
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) })
+    if (!user) {
+      res.status(404).json({ error: 'USER_NOT_FOUND' })
+      return
+    }
+    
+    // 返回用户信息（不包含密码哈希）
     res.status(200).json({
       ok: true,
       user: {
-        id: userId,
-        username,
-        email
+        id: user._id.toString(),
+        username: user.username,
+        email: user.email
       }
     })
   } catch (e: any) {

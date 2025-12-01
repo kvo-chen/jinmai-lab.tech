@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from 'vercel'
 import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { getMongoDB } from '../../server/mongodb.mjs'
 
 // 获取JWT密钥
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
@@ -53,12 +54,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
     
-    // 简化注册流程：直接生成JWT令牌，不依赖数据库
-    const userId = Date.now()
+    // 获取MongoDB实例
+    const db = await getMongoDB()
+    const usersCollection = db.collection('users')
+    
+    // 检查用户名是否已存在
+    const existingUserByUsername = await usersCollection.findOne({ username })
+    if (existingUserByUsername) {
+      res.status(409).json({ error: 'USERNAME_ALREADY_EXISTS' })
+      return
+    }
+    
+    // 检查邮箱是否已存在
+    const existingUserByEmail = await usersCollection.findOne({ email })
+    if (existingUserByEmail) {
+      res.status(409).json({ error: 'EMAIL_ALREADY_EXISTS' })
+      return
+    }
+    
+    // 哈希密码
+    const saltRounds = 10
+    const passwordHash = await bcryptjs.hash(password, saltRounds)
+    
+    // 创建用户
+    const now = Date.now()
+    const newUser = {
+      username,
+      email,
+      password_hash: passwordHash,
+      created_at: now,
+      updated_at: now
+    }
+    
+    const result = await usersCollection.insertOne(newUser)
+    const userId = result.insertedId.toString()
     
     // 生成JWT令牌
     const token = jwt.sign(
-      { userId: userId.toString(), email, username },
+      { userId, email, username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     )
@@ -68,7 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       token,
       user: {
-        id: userId.toString(),
+        id: userId,
         username,
         email
       }
