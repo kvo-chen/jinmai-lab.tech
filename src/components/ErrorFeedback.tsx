@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
@@ -6,16 +6,25 @@ import errorService, { ErrorInfo } from '../services/errorService';
 
 interface ErrorFeedbackProps {
   errorInfo?: ErrorInfo;
+  error?: Error;
   onClose: () => void;
   autoShow?: boolean;
 }
 
-const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, onClose, autoShow = false }) => {
+const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose, autoShow = false }) => {
   const { isDark } = useTheme();
   const [description, setDescription] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorDetails, setErrorDetails] = useState<ErrorInfo | null>(errorInfo || null);
+  
+  // 处理直接传递的 Error 对象
+  useEffect(() => {
+    if (error && !errorDetails) {
+      const loggedError = errorService.logError(error);
+      setErrorDetails(loggedError);
+    }
+  }, [error, errorDetails]);
   
   // 自动显示时，尝试从错误服务获取最新错误
   if (autoShow && !errorDetails) {

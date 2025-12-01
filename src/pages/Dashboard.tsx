@@ -343,9 +343,9 @@ export default function Dashboard() {
                       color: isDark ? '#ffffff' : '#000000'
                     }} 
                   />
-                  <Bar dataKey="views" name="浏览量" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="likes" name="点赞数" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="comments" name="评论数" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="views" name="浏览量" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="likes" name="点赞数" fill="#f87171" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="comments" name="评论数" fill="#34d399" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

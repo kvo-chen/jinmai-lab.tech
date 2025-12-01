@@ -38,7 +38,7 @@ export default function AdminAnalytics() {
                 <XAxis dataKey="name" tick={{ fill: isDark ? '#9ca3af' : '#4b5563' }} axisLine={{ stroke: isDark ? '#374151' : '#e5e7eb' }} />
                 <YAxis tick={{ fill: isDark ? '#9ca3af' : '#4b5563' }} axisLine={{ stroke: isDark ? '#374151' : '#e5e7eb' }} />
                 <Tooltip contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#ffffff', borderColor: isDark ? '#374151' : '#e5e7eb', borderRadius: '0.5rem', color: isDark ? '#ffffff' : '#000000' }} />
-                <Bar dataKey="value" name="数值" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" name="数值" fill="#f87171" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

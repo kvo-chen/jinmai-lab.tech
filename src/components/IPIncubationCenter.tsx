@@ -468,7 +468,7 @@ export default function IPIncubationCenter() {
                           { name: '品牌设计', value: 2 },
                           { name: '其他', value: 0 }
                         ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={['#ef4444', '#3b82f6', '#10b981', '#8b5cf6'][index % 4]} />
+                          <Cell key={`cell-${index}`} fill={['#f87171', '#60a5fa', '#34d399', '#a78bfa'][index % 4]} />
                         ))}
                       </Pie>
                     </PieChart>

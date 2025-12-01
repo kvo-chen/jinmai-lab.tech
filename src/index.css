@@ -13,9 +13,9 @@
   -moz-osx-font-smoothing: grayscale;
   
   /* 天津特色配色系统 */
-  --color-tianjin-blue: #60a5fa;         /* 津门蓝 (调整为更柔和的蓝色) */
-  --color-mudman-red: #ef4444;           /* 泥人张红 (Pantone 18-1663) */
-  --color-yangliuqing-green: #10b981;    /* 杨柳青绿 (Pantone 15-6315) */
+  --color-tianjin-blue: #a78bfa;         /* 津门蓝 (替换为紫色) */
+  --color-mudman-red: #f87171;           /* 泥人张红 (调整为更柔和的红色) */
+  --color-yangliuqing-green: #34d399;    /* 杨柳青绿 (调整为更柔和的绿色) */
   --color-water-transport-brown: #92400e; /* 漕运褐 (Pantone 18-1320) */
   
   /* 高级灰度梯度 */
@@ -56,15 +56,15 @@
   --border-tertiary: #64748b;    /* 雾蓝灰 - 辅助边框 */
   
   /* 暗色主题强调色 */
-  --accent-blue: #60a5fa;        /* 津门蓝 - 主强调色 (调整为更柔和的蓝色) */
-  --accent-red: #ef4444;         /* 泥人张红 - 警告强调色 */
-  --accent-green: #10b981;       /* 杨柳青绿 - 成功强调色 */
-  --accent-purple: #8b5cf6;      /* 紫铜色 - 特殊强调色 */
+  --accent-blue: #a78bfa;        /* 紫铜色 - 主强调色 (替换蓝色为紫色) */
+  --accent-red: #f87171;         /* 泥人张红 - 警告强调色 (调整为更柔和的红色) */
+  --accent-green: #34d399;       /* 杨柳青绿 - 成功强调色 (调整为更柔和的绿色) */
+  --accent-purple: #a78bfa;      /* 紫铜色 - 特殊强调色 (调整为更柔和的紫色) */
   
   /* 渐变色彩 */
   --gradient-primary: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   --gradient-secondary: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  --gradient-accent: linear-gradient(135deg, #60a5fa 0%, #8b5cf6 100%);
+  --gradient-accent: linear-gradient(135deg, #a78bfa 0%, #f87171 100%);
   
   /* 阴影色彩 */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -146,7 +146,7 @@ body {
 
 .dark ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-blue);
-  box-shadow: 0 2px 6px rgba(96, 165, 250, 0.3);
+  box-shadow: 0 2px 6px rgba(167, 139, 250, 0.3);
 }
 
 /* 中文注释：暗色主题下的文本选中颜色，统一品牌红并提高可读性 */
@@ -199,7 +199,7 @@ body {
 }
 
 .dark input:focus, .dark textarea:focus, .dark select:focus {
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
   border-color: var(--accent-blue);
 }
 
@@ -410,7 +410,7 @@ body {
 
 /* 链接样式 */
 .dark a {
-  color: var(--accent-blue);
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.3s ease;
 }

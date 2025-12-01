@@ -136,7 +136,7 @@ const AID点评: React.FC<AID点评Props> = ({ workId, onClose }) => {
     toast.success('已将商业化建议添加到您的创作任务列表');
   };
   
-  const COLORS = ['#ef4444', '#3b82f6', '#10b981'];
+  const COLORS = ['#f87171', '#60a5fa', '#34d399'];
   
   // 根据分数获取评级
   const getRating = (score: number) => {
@@ -244,7 +244,7 @@ const AID点评: React.FC<AID点评Props> = ({ workId, onClose }) => {
                           paddingAngle={0}
                           dataKey="value"
                         >
-                          <Cell fill="#ef4444" />
+                          <Cell fill="#f87171" />
                           <Cell fill={isDark ? '#374151' : '#e5e7eb'} />
                         </Pie>
                       </PieChart>

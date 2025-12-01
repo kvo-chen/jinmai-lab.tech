@@ -2,8 +2,8 @@ import http from 'http'
 import { URL } from 'url'
 import fs from 'fs'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-import { initDb, getFavoriteTutorialIds, toggleFavoriteTutorial, upsertVideoTask, getVideoTask, getDbStats, createUser, findUserByEmail, findUserByUsername, findUserById } from './db.mjs'
+import { generateToken, verifyToken } from './jwt.mjs'
+import { userDB, favoriteDB, videoTaskDB, getDBStatus } from './database.mjs'
 
 // 中文注释：端口支持环境变量覆盖，避免与前端端口冲突
 const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3001
@@ -13,9 +13,7 @@ const MODEL_ID = process.env.DOUBAO_MODEL_ID || 'doubao-seedance-1-0-pro-250528'
 const ORIGIN = process.env.CORS_ALLOW_ORIGIN || '*'
 const MOCK = process.env.DOUBAO_MOCK === '1'
 
-// JWT配置
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+
 
 // Kimi (Moonshot) config
 const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1'
@@ -305,7 +303,7 @@ function sendJson(res, status, obj) {
 }
 
 // JWT验证中间件
-function verifyToken(req) {
+function verifyRequestToken(req) {
   const authHeader = req.headers.authorization
   if (!authHeader) return null
   
@@ -313,7 +311,7 @@ function verifyToken(req) {
   if (!token) return null
   
   try {
-    const decoded = jwt.verify(token, JWT_SECRET)
+    const decoded = verifyToken(token)
     return decoded
   } catch (error) {
     console.error('JWT验证失败:', error.message)
@@ -321,8 +319,7 @@ function verifyToken(req) {
   }
 }
 
-// 中文注释：初始化数据库连接（仅在服务启动时执行一次）
-const __db = initDb()
+// 中文注释：数据库连接由 database.mjs 自动管理
 
 // 中文注释：安全读取社区配置文件（每次请求时读取，便于热更新）
 function loadCommunityConfig() {
@@ -352,13 +349,13 @@ const server = http.createServer(async (req, res) => {
     // 中文注释：教程收藏改为使用数据库持久化
     if (req.method === 'GET' && path === '/api/favorites/tutorials') {
       // 从JWT令牌获取当前用户ID
-      const decoded = verifyToken(req)
+      const decoded = verifyRequestToken(req)
       if (!decoded) {
         sendJson(res, 401, { error: 'UNAUTHORIZED', message: '未授权访问' })
         return
       }
       
-      const ids = getFavoriteTutorialIds(__db, decoded.userId)
+      const ids = await favoriteDB.getUserFavorites(decoded.userId)
       sendJson(res, 200, { ok: true, ids })
       return
     }
@@ -390,7 +387,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && path === '/api/favorites/tutorials/toggle') {
       // 从JWT令牌获取当前用户ID
-      const decoded = verifyToken(req)
+      const decoded = verifyRequestToken(req)
       if (!decoded) {
         sendJson(res, 401, { error: 'UNAUTHORIZED', message: '未授权访问' })
         return
@@ -400,7 +397,7 @@ const server = http.createServer(async (req, res) => {
       const id = Number(b?.id)
       if (!id || Number.isNaN(id)) { sendJson(res, 400, { error: 'ID_INVALID' }); return }
       
-      const ids = toggleFavoriteTutorial(__db, decoded.userId, id)
+      const ids = await favoriteDB.toggleFavorite(decoded.userId, id)
       sendJson(res, 200, { ok: true, ids })
       return
     }
@@ -532,7 +529,7 @@ const server = http.createServer(async (req, res) => {
         const b = await readBody(req)
         const mid = `mock-${Date.now()}`
         const model = 'doubao-seedance-1-0-pro-fast-251015'
-        try { upsertVideoTask(__db, { id: mid, status: 'succeeded', model, payload: b }) } catch {}
+        try { await videoTaskDB.upsertTask({ id: mid, status: 'succeeded', model, payload: b }) } catch {}
         sendJson(res, 200, { ok: true, data: { id: mid, status: 'succeeded', content: { video_url: 'https://example.com/mock.mp4', last_frame_url: 'https://example.com/mock.jpg' } } })
         return
       }
@@ -596,7 +593,7 @@ const server = http.createServer(async (req, res) => {
               sendJson(res, r2.status, { error: (r2.data?.error?.code) || 'SERVER_ERROR', message: (r2.data?.error?.message) || 'Video generation failed', data: r2.data })
               return
             }
-            try { upsertVideoTask(__db, { id: r2.data?.id, status: r2.data?.status, model: r2.data?.model || fallbackModel, payload: { model: fallbackModel, content: textOnly } }) } catch {}
+            try { await videoTaskDB.upsertTask({ id: r2.data?.id, status: r2.data?.status, model: r2.data?.model || fallbackModel, payload: { model: fallbackModel, content: textOnly } }) } catch {}
             sendJson(res, 200, { ok: true, data: r2.data });
             return
           }
@@ -608,7 +605,7 @@ const server = http.createServer(async (req, res) => {
           return 
         }
         
-        try { upsertVideoTask(__db, { id: r.data?.id, status: r.data?.status, model: r.data?.model || fastModel, payload }) } catch {}
+        try { await videoTaskDB.upsertTask({ id: r.data?.id, status: r.data?.status, model: r.data?.model || fastModel, payload }) } catch {}
         sendJson(res, 200, { ok: true, data: r.data });
         return;
       } else {
@@ -633,7 +630,7 @@ const server = http.createServer(async (req, res) => {
           return 
         }
 
-        try { upsertVideoTask(__db, { id: r.data?.id, status: r.data?.status, model, payload }) } catch {}
+        try { await videoTaskDB.upsertTask({ id: r.data?.id, status: r.data?.status, model, payload }) } catch {}
         sendJson(res, 200, { ok: true, data: r.data });
         return;
       }
@@ -666,7 +663,7 @@ const server = http.createServer(async (req, res) => {
           return 
         }
         
-        try { upsertVideoTask(__db, { id, status: r.data?.status }) } catch {}
+        try { await videoTaskDB.upsertTask({ id, status: r.data?.status }) } catch {}
         sendJson(res, 200, { ok: true, data: r.data })
         return
       } catch (error) {
@@ -750,7 +747,7 @@ const server = http.createServer(async (req, res) => {
       if (MOCK || !key) {
         const mid = `mock-${Date.now()}`
         const model = b.model || 'doubao-seedance-1-0-pro-fast-251015'
-        try { upsertVideoTask(__db, { id: mid, status: 'succeeded', model, payload: b }) } catch {}
+        try { await videoTaskDB.upsertTask({ id: mid, status: 'succeeded', model, payload: b }) } catch {}
         sendJson(res, 200, { ok: true, data: { id: mid, status: 'succeeded', content: { video_url: 'https://example.com/mock.mp4', last_frame_url: 'https://example.com/mock.jpg' } } })
         return
       }
@@ -813,21 +810,21 @@ const server = http.createServer(async (req, res) => {
         return 
       }
       
-      try { upsertVideoTask(__db, { id: r.data?.id, status: r.data?.status, model: r.data?.model || fastModel, payload }) } catch {}
+      try { await videoTaskDB.upsertTask({ id: r.data?.id, status: r.data?.status, model: r.data?.model || fastModel, payload }) } catch {}
       sendJson(res, 200, { ok: true, data: r.data });
       return;
     }
 
     // 中文注释：数据库状态与视频任务查询（本地存储）
     if (req.method === 'GET' && path === '/api/db/status') {
-      const stats = getDbStats(__db)
+      const stats = getDBStatus()
       sendJson(res, 200, { ok: true, stats })
       return
     }
 
     if (req.method === 'GET' && path.startsWith('/api/video_tasks/')) {
       const id = path.split('/').pop() || ''
-      const row = getVideoTask(__db, id)
+      const row = await videoTaskDB.getTask(id)
       if (!row) { sendJson(res, 404, { error: 'NOT_FOUND' }); return }
       sendJson(res, 200, { ok: true, data: row })
       return
@@ -852,20 +849,21 @@ const server = http.createServer(async (req, res) => {
       }
       
       // 验证密码格式
-      if (b.password.length < 6) {
-        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '密码长度不能少于6个字符' })
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+      if (!passwordRegex.test(b.password)) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '密码至少8个字符，包含至少一个大写字母、一个小写字母、一个数字和一个特殊字符(@$!%*?&)' })
         return
       }
       
       // 检查用户名是否已存在
-      const existingUserByUsername = findUserByUsername(__db, b.username)
+      const existingUserByUsername = await userDB.findByUsername(b.username)
       if (existingUserByUsername) {
         sendJson(res, 400, { error: 'USERNAME_EXISTS', message: '用户名已被注册' })
         return
       }
       
       // 检查邮箱是否已存在
-      const existingUserByEmail = findUserByEmail(__db, b.email)
+      const existingUserByEmail = await userDB.findByEmail(b.email)
       if (existingUserByEmail) {
         sendJson(res, 400, { error: 'EMAIL_EXISTS', message: '邮箱已被注册' })
         return
@@ -876,7 +874,7 @@ const server = http.createServer(async (req, res) => {
       const password_hash = await bcrypt.hash(b.password, salt)
       
       // 创建用户
-      const userId = createUser(__db, {
+      const result = await userDB.createUser({
         username: b.username,
         email: b.email,
         password_hash,
@@ -884,6 +882,7 @@ const server = http.createServer(async (req, res) => {
         avatar_url: b.avatar_url || null,
         interests: b.interests ? JSON.stringify(b.interests) : null
       })
+      const userId = result.id
       
       if (!userId) {
         sendJson(res, 500, { error: 'SERVER_ERROR', message: '创建用户失败' })
@@ -891,7 +890,7 @@ const server = http.createServer(async (req, res) => {
       }
       
       // 生成JWT令牌
-      const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+      const token = generateToken({ userId })
       
       sendJson(res, 201, { 
         ok: true, 
@@ -920,7 +919,7 @@ const server = http.createServer(async (req, res) => {
       }
       
       // 查找用户
-      const user = findUserByEmail(__db, b.email)
+      const user = await userDB.findByEmail(b.email)
       if (!user) {
         sendJson(res, 401, { error: 'INVALID_CREDENTIALS', message: '邮箱或密码错误' })
         return
@@ -934,7 +933,7 @@ const server = http.createServer(async (req, res) => {
       }
       
       // 生成JWT令牌
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+      const token = generateToken({ userId: user.id })
       
       sendJson(res, 200, { 
         ok: true, 
@@ -954,13 +953,13 @@ const server = http.createServer(async (req, res) => {
     
     // 获取当前用户信息
     if (req.method === 'GET' && path === '/api/auth/me') {
-      const decoded = verifyToken(req)
+      const decoded = verifyRequestToken(req)
       if (!decoded) {
         sendJson(res, 401, { error: 'UNAUTHORIZED', message: '未授权访问' })
         return
       }
       
-      const user = findUserById(__db, decoded.userId)
+      const user = await userDB.findById(decoded.userId)
       if (!user) {
         sendJson(res, 404, { error: 'USER_NOT_FOUND', message: '用户不存在' })
         return

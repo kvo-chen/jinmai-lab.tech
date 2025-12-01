@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import SidebarLayout from '@/components/SidebarLayout'
 import { useNavigate, useParams } from 'react-router-dom'
 import { mockWorks } from '@/pages/Explore'
+import ARPreview, { ARPreviewConfig } from '@/components/ARPreview'
 
 export default function WorkDetail() {
   const { isDark } = useTheme()
@@ -14,6 +15,7 @@ export default function WorkDetail() {
   const [liked, setLiked] = useState(false)
   const [likes, setLikes] = useState(work ? work.likes : 0)
   const [bookmarked, setBookmarked] = useState(false)
+  const [isARPreviewOpen, setIsARPreviewOpen] = useState(false)
 
   const related = useMemo(() => {
     if (!work) return []
@@ -85,6 +87,13 @@ export default function WorkDetail() {
                   {liked ? '取消点赞' : '点赞'}
                 </button>
                 <button onClick={handleBookmark} className={`px-4 py-2 rounded-lg ${bookmarked ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white'}`}>{bookmarked ? '已收藏' : '收藏'}</button>
+                <button 
+                  onClick={() => setIsARPreviewOpen(true)}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white flex items-center gap-2"
+                >
+                  <i className="fas fa-camera"></i>
+                  AR预览
+                </button>
               </div>
             </div>
             <div className="order-1 lg:order-2">
@@ -124,6 +133,20 @@ export default function WorkDetail() {
             <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow`}>暂无同类作品</div>
           )}
         </motion.div>
+        
+        {/* AR预览组件 */}
+        {isARPreviewOpen && (
+          <ARPreview
+            config={{
+              imageUrl: work?.thumbnail || '',
+              type: '2d',
+              scale: 1.0,
+              rotation: { x: 0, y: 0, z: 0 },
+              position: { x: 0, y: 0, z: 0 }
+            }}
+            onClose={() => setIsARPreviewOpen(false)}
+          />
+        )}
       </main>
     </SidebarLayout>
   )

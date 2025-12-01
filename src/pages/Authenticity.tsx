@@ -95,8 +95,8 @@ export default function Authenticity() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="input" fill="#ef4444" name="输入" />
-                  <Bar dataKey="knowledge" fill="#3b82f6" name="知识库" />
+                  <Bar dataKey="input" fill="#f87171" name="输入" />
+                  <Bar dataKey="knowledge" fill="#60a5fa" name="知识库" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -111,9 +111,9 @@ export default function Authenticity() {
                     { name: '仅输入', value: tokens.uniqueA },
                     { name: '仅知识库', value: tokens.uniqueB }
                   ]} outerRadius={100} label>
-                    <Cell fill="#22c55e" />
-                    <Cell fill="#ef4444" />
-                    <Cell fill="#3b82f6" />
+                    <Cell fill="#34d399" />
+                    <Cell fill="#f87171" />
+                    <Cell fill="#60a5fa" />
                   </Pie>
                   <Tooltip />
                 </PieChart>

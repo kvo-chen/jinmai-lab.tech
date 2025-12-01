@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import errorService, { ERROR_MESSAGES } from '../services/errorService';
 
 // 图表颜色
-const CHART_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+const CHART_COLORS = ['#f87171', '#60a5fa', '#34d399', '#f59e0b', '#a78bfa'];
 
 interface ErrorMonitoringDashboardProps {
   refreshInterval?: number;

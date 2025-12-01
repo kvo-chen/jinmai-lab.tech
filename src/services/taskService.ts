@@ -296,6 +296,7 @@ class TaskService {
     // 计算实际进度，不超过任务要求
     const actualProgress = Math.min(progress, task.requirements.count);
     const isCompleted = actualProgress >= task.requirements.count;
+    const wasCompleted = progressItem?.completedAt !== undefined;
 
     if (progressItem) {
       // 更新现有进度
@@ -305,6 +306,8 @@ class TaskService {
         progressItem.completedAt = Date.now();
         // 更新任务状态
         this.updateTask(taskId, { status: 'completed' });
+        // 触发任务完成事件（可以在这里添加积分奖励和成就更新逻辑）
+        this.onTaskCompleted(task, userId);
       }
     } else {
       // 创建新进度
@@ -319,12 +322,31 @@ class TaskService {
         progressItem.completedAt = Date.now();
         // 更新任务状态
         this.updateTask(taskId, { status: 'completed' });
+        // 触发任务完成事件（可以在这里添加积分奖励和成就更新逻辑）
+        this.onTaskCompleted(task, userId);
       }
       this.taskProgress.push(progressItem);
     }
 
     this.saveProgress();
     return progressItem;
+  }
+
+  /**
+   * 任务完成时的处理逻辑
+   */
+  private onTaskCompleted(task: Task, userId: string): void {
+    // 这里可以添加任务完成后的逻辑，例如：
+    // 1. 给用户添加积分
+    // 2. 更新用户成就进度
+    // 3. 发送通知
+    // 4. 其他自定义逻辑
+    
+    console.log(`Task completed: ${task.title} by user ${userId}`);
+    console.log(`Reward: ${task.reward.points} points`);
+    
+    // 这里可以通过事件或直接调用其他服务来实现积分和成就的更新
+    // 例如：achievementService.addPoints(userId, task.reward.points);
   }
 
   /**

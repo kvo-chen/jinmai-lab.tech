@@ -23,7 +23,7 @@ const contentAuditData = [
   { name: '已拒绝', value: 16 },
 ];
 
-const COLORS = ['#f59e0b', '#10b981', '#ef4444'];
+const COLORS = ['#f59e0b', '#34d399', '#f87171'];
 
 const recentSubmissions = [
   {
@@ -374,9 +374,9 @@ export default function Admin() {
                         }} 
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="新增用户" stroke="#3b82f6" activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="活跃用户" stroke="#10b981" />
-                      <Line type="monotone" dataKey="创作数量" stroke="#ef4444" />
+                      <Line type="monotone" dataKey="新增用户" stroke="#60a5fa" activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="活跃用户" stroke="#34d399" />
+                      <Line type="monotone" dataKey="创作数量" stroke="#f87171" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
