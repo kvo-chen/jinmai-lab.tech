@@ -387,9 +387,42 @@ export function getVideoTask(db, id) {
 export function createUser(db, { username, email, password_hash, phone = null, avatar_url = null, interests = null }) {
   try {
     if (db && db.__mode === 'json') {
-      // JSON模式下不支持用户存储
-      console.warn('JSON模式下不支持用户存储')
-      return null
+      // JSON模式下支持用户存储
+      const store = readJsonStore()
+      // 初始化users数组
+      if (!Array.isArray(store.users)) {
+        store.users = []
+      }
+      
+      // 检查用户名是否已存在
+      if (store.users.some(user => user.username === username)) {
+        console.warn('用户名已存在:', username)
+        return null
+      }
+      
+      // 检查邮箱是否已存在
+      if (store.users.some(user => user.email === email)) {
+        console.warn('邮箱已存在:', email)
+        return null
+      }
+      
+      const now = Date.now()
+      const newUser = {
+        id: Date.now(),
+        username,
+        email,
+        password_hash,
+        phone,
+        avatar_url,
+        interests,
+        created_at: now,
+        updated_at: now
+      }
+      
+      store.users.push(newUser)
+      writeJsonStore(store)
+      console.log(`JSON: 创建用户成功: ${username} (${email})`)
+      return newUser.id
     }
     
     const now = Date.now()
@@ -412,7 +445,11 @@ export function createUser(db, { username, email, password_hash, phone = null, a
 export function findUserByEmail(db, email) {
   try {
     if (db && db.__mode === 'json') {
-      // JSON模式下不支持用户存储
+      // JSON模式下支持用户存储
+      const store = readJsonStore()
+      if (Array.isArray(store.users)) {
+        return store.users.find(user => user.email === email) || null
+      }
       return null
     }
     
@@ -430,7 +467,11 @@ export function findUserByEmail(db, email) {
 export function findUserByUsername(db, username) {
   try {
     if (db && db.__mode === 'json') {
-      // JSON模式下不支持用户存储
+      // JSON模式下支持用户存储
+      const store = readJsonStore()
+      if (Array.isArray(store.users)) {
+        return store.users.find(user => user.username === username) || null
+      }
       return null
     }
     
@@ -448,7 +489,11 @@ export function findUserByUsername(db, username) {
 export function findUserById(db, id) {
   try {
     if (db && db.__mode === 'json') {
-      // JSON模式下不支持用户存储
+      // JSON模式下支持用户存储
+      const store = readJsonStore()
+      if (Array.isArray(store.users)) {
+        return store.users.find(user => user.id === id) || null
+      }
       return null
     }
     
