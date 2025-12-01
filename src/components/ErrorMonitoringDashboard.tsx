@@ -9,11 +9,12 @@ const CHART_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
 interface ErrorMonitoringDashboardProps {
   refreshInterval?: number;
+  recentCount?: number;
 }
 
-const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ refreshInterval = 30000 }) => {
+const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ refreshInterval = 30000, recentCount = 10 }) => {
   const { isDark } = useTheme();
-  const [errorStats, setErrorStats] = useState(errorService.getErrorStats());
+  const [errorStats, setErrorStats] = useState(errorService.getErrorStats(recentCount));
   const [refreshing, setRefreshing] = useState(false);
   const [selectedErrorType, setSelectedErrorType] = useState<string | null>(null);
   
@@ -30,7 +31,7 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ ref
     setRefreshing(true);
     // 模拟网络延迟
     setTimeout(() => {
-      setErrorStats(errorService.getErrorStats());
+      setErrorStats(errorService.getErrorStats(recentCount));
       setRefreshing(false);
     }, 500);
   };
@@ -226,7 +227,7 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ ref
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <h4 className="font-medium mb-4">最近错误记录</h4>
+        <h4 className="font-medium mb-4">最近错误记录（共 {errorStats.recent.length} 条）</h4>
         <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
           <table className="min-w-full">
             <thead>

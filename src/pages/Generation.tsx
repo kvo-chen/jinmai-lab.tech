@@ -189,7 +189,12 @@ export default function Generation() {
       llmService.setCurrentModel(modelId)
       const dirs = llmService.generateCreativeDirections(base)
       setAiDirections(dirs)
-      const final = await llmService.generateResponse(base, { onDelta: (chunk: string) => setAiText((prev) => prev + chunk) })
+      const zhPolicy = '请用中文分点回答，去除所有 Markdown 标题或装饰符（如###、####、** 等），每点保持简短清晰。'
+      const enLetters = (base.match(/[A-Za-z]/g) || []).length
+      const zhChars = (base.match(/[\u4e00-\u9fa5]/g) || []).length
+      const isEnglish = enLetters > zhChars && enLetters > 0
+      const promptWithPolicy = isEnglish ? base : `${zhPolicy}\n\n${base}`
+      const final = await llmService.generateResponse(promptWithPolicy, { onDelta: (chunk: string) => setAiText((prev) => prev + chunk) })
       setAiText((prev) => final || prev)
       const text = final || aiText || base
       const r = await voiceService.synthesize(text, { format: 'mp3' })
@@ -233,7 +238,10 @@ export default function Generation() {
     const sections: Array<{ title: string; items: string[] }> = []
     let current: { title: string; items: string[] } | null = null
     for (const raw of lines) {
-      const line = raw.trim()
+      let line = raw.trim()
+      line = line.replace(/^#{1,6}\s*/, '')
+      line = line.replace(/^```+\s*/, '')
+      line = line.replace(/^>+\s*/, '')
       if (!line) continue
       const m = line.match(/^(\d+)\)\s*(.+?)：/) || line.match(/^([一二三四五六七八九十]+)\)\s*(.+?)：/)
       if (m) {
@@ -280,7 +288,7 @@ export default function Generation() {
               </div>
             </div>
             <div className="h-px w-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-500 mb-3 opacity-60" />
-            <ul className="grid md:grid-cols-2 gap-x-4 gap-y-1">
+            <ul className="grid md:grid-cols-2 gap-x-6 gap-y-2">
               {sec.items.map((raw, i) => {
                 const it = String(raw || '')
                 const isSubHead = /^#{1,6}\s*\d+\)\s*/.test(it) || /^#{1,6}\s*[一二三四五六七八九十]+\)\s*/.test(it)
@@ -289,8 +297,10 @@ export default function Generation() {
                 const hasBold = !!boldMatch
                 const boldLabel = hasBold ? (boldMatch?.[1] || '') : ''
                 const boldText = hasBold ? (boldMatch?.[2] || '') : ''
+                const colonMatch = !hasBold && !isSubHead ? it.match(/^([^：:]+)[:：]\s*(.+)$/) : null
+                const enumMatch = !hasBold && !isSubHead ? it.match(/^(\d+|[一二三四五六七八九十]+)[\.、]\s*(.+)$/) : null
                 return (
-                  <li key={i} className={isSubHead ? 'md:col-span-2 flex items-center' : 'flex items-start'}>
+                  <li key={i} className={isSubHead ? 'md:col-span-2 flex items-center py-1' : 'flex items-start py-1'}>
                     {isSubHead ? (
                       <>
                         <i className="fas fa-angle-right mr-2 text-blue-600" />
@@ -300,12 +310,24 @@ export default function Generation() {
                       <>
                         <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200 mr-2 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-800">{boldLabel}</span>
-                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm leading-relaxed`}>{boldText}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{boldText}</span>
+                      </>
+                    ) : colonMatch ? (
+                      <>
+                        <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200 mr-2 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-800">{colonMatch[1]}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{colonMatch[2]}</span>
+                      </>
+                    ) : enumMatch ? (
+                      <>
+                        <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 ring-1 ring-gray-300 mr-2 dark:bg-gray-700 dark:text-gray-200 dark:ring-gray-600">{enumMatch[1]}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{enumMatch[2]}</span>
                       </>
                     ) : (
                       <>
                         <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
-                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm leading-relaxed`}>{it}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{it}</span>
                       </>
                     )}
                   </li>

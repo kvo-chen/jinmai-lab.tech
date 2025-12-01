@@ -222,6 +222,7 @@ export default function Create() {
     { id: 'mockup', name: 'Mockup预览', icon: 'box-open' },
     { id: 'tile', name: '图案平铺', icon: 'border-all' }
   ];
+
   const handleToolSelect = (id: ToolType) => {
     setActiveTool(id);
     const params = new URLSearchParams(location.search);
@@ -279,6 +280,69 @@ export default function Create() {
       return r.slice(0, -1);
     });
   };
+  
+  // 中文注释：自动保存设置（开关 + 间隔）与历史快照列表
+  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem('CREATE_AUTOSAVE_ENABLED') || 'true') } catch { return true }
+  })
+  const [autosaveIntervalSec, setAutosaveIntervalSec] = useState<number>(() => {
+    try { return JSON.parse(localStorage.getItem('CREATE_AUTOSAVE_INTERVAL_SEC') || '30') } catch { return 30 }
+  })
+  interface CreateSnapshot {
+    prompt: string;
+    selectedResult: number | null;
+    currentStep: number;
+    aiExplanation: string;
+    scale: number; brightness: number; contrast: number; saturate: number; hueRotate: number; blur: number;
+    overlayText: string; overlaySize: number; overlayColor: string;
+    updatedAt: number;
+  }
+  const [snapshots, setSnapshots] = useState<CreateSnapshot[]>(() => {
+    try { return JSON.parse(localStorage.getItem('CREATE_HISTORY') || '[]') } catch { return [] }
+  })
+  useEffect(() => { try { localStorage.setItem('CREATE_HISTORY', JSON.stringify(snapshots.slice(0, 20))) } catch {} }, [snapshots])
+  useEffect(() => { try { localStorage.setItem('CREATE_AUTOSAVE_ENABLED', JSON.stringify(autosaveEnabled)) } catch {} }, [autosaveEnabled])
+  useEffect(() => { try { localStorage.setItem('CREATE_AUTOSAVE_INTERVAL_SEC', JSON.stringify(autosaveIntervalSec)) } catch {} }, [autosaveIntervalSec])
+
+  // 中文注释：生成当前快照对象
+  const buildSnapshot = (): CreateSnapshot => ({
+    prompt,
+    selectedResult,
+    currentStep,
+    aiExplanation,
+    scale, brightness, contrast, saturate, hueRotate, blur,
+    overlayText, overlaySize, overlayColor,
+    updatedAt: Date.now(),
+  })
+
+  // 中文注释：执行保存（更新草稿 + 记录历史）
+  const performSave = (reason: 'manual' | 'autosave' | 'beforeunload' = 'manual') => {
+    try {
+      const snap = buildSnapshot()
+      localStorage.setItem('CREATE_DRAFT', JSON.stringify(snap))
+      setLastUpdatedAt(snap.updatedAt)
+      setSnapshots(prev => [snap, ...prev].slice(0, 20))
+      if (reason === 'manual') toast.success('已保存到草稿与历史')
+    } catch {
+      if (reason === 'manual') toast.error('保存失败')
+    }
+  }
+
+  // 中文注释：自动保存定时器
+  useEffect(() => {
+    if (!autosaveEnabled) return
+    const ms = Math.max(autosaveIntervalSec, 5) * 1000
+    const timer = setInterval(() => performSave('autosave'), ms)
+    return () => clearInterval(timer)
+  }, [autosaveEnabled, autosaveIntervalSec, prompt, selectedResult, currentStep, aiExplanation, scale, brightness, contrast, saturate, hueRotate, blur, overlayText, overlaySize, overlayColor])
+
+  // 中文注释：页面关闭/刷新前的最后一次保存
+  useEffect(() => {
+    const handler = () => { try { performSave('beforeunload') } catch {} }
+    window.addEventListener('beforeunload', handler)
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') handler() })
+    return () => { window.removeEventListener('beforeunload', handler) }
+  }, [])
   const filterCss = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) hue-rotate(${hueRotate}deg) blur(${blur}px)`;
   useEffect(() => {
     if (selectedResult) setShowQuickActions(true);
@@ -437,7 +501,7 @@ export default function Create() {
         <div className="mb-6 p-3 rounded-xl bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600">
           <div className="font-medium mb-2">一键设计</div>
           <div className="text-xs mb-3 text-gray-600 dark:text-gray-300">输入提示后点击生成即可获得方案</div>
-          <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()} className="w-full text-sm px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50">立即生成</button>
+          <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()} className="w-full text-sm px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 min-h-[44px]">立即生成</button>
         </div>
       );
     }
@@ -811,7 +875,10 @@ export default function Create() {
     const sections: Array<{ title: string; items: string[] }> = []
     let current: { title: string; items: string[] } | null = null
     for (const raw of lines) {
-      const line = raw.trim()
+      let line = raw.trim()
+      line = line.replace(/^#{1,6}\s*/, '')
+      line = line.replace(/^```+\s*/, '')
+      line = line.replace(/^>+\s*/, '')
       if (!line) continue
       const m = line.match(/^(\d+)\)\s*(.+?)：/) || line.match(/^([一二三四五六七八九十]+)\)\s*(.+?)：/)
       if (m) {
@@ -858,7 +925,7 @@ export default function Create() {
               </div>
             </div>
             <div className="h-px w-full bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-500 mb-3 opacity-60" />
-            <ul className="grid md:grid-cols-2 gap-x-4 gap-y-1">
+            <ul className="grid md:grid-cols-2 gap-x-6 gap-y-2">
               {sec.items.map((raw, i) => {
                 const it = String(raw || '')
                 const isSubHead = /^#{1,6}\s*\d+\)\s*/.test(it) || /^#{1,6}\s*[一二三四五六七八九十]+\)\s*/.test(it)
@@ -867,8 +934,10 @@ export default function Create() {
                 const hasBold = !!boldMatch
                 const boldLabel = hasBold ? (boldMatch?.[1] || '') : ''
                 const boldText = hasBold ? (boldMatch?.[2] || '') : ''
+                const colonMatch = !hasBold && !isSubHead ? it.match(/^([^：:]+)[:：]\s*(.+)$/) : null
+                const enumMatch = !hasBold && !isSubHead ? it.match(/^(\d+|[一二三四五六七八九十]+)[\.、]\s*(.+)$/) : null
                 return (
-                  <li key={i} className={isSubHead ? 'md:col-span-2 flex items-center' : 'flex items-start'}>
+                  <li key={i} className={isSubHead ? 'md:col-span-2 flex items-center py-1' : 'flex items-start py-1'}>
                     {isSubHead ? (
                       <>
                         <i className="fas fa-angle-right mr-2 text-blue-600" />
@@ -878,12 +947,24 @@ export default function Create() {
                       <>
                         <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200 mr-2 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-800">{boldLabel}</span>
-                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm leading-relaxed`}>{boldText}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{boldText}</span>
+                      </>
+                    ) : colonMatch ? (
+                      <>
+                        <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200 mr-2 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-800">{colonMatch[1]}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{colonMatch[2]}</span>
+                      </>
+                    ) : enumMatch ? (
+                      <>
+                        <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 ring-1 ring-gray-300 mr-2 dark:bg-gray-700 dark:text-gray-200 dark:ring-gray-600">{enumMatch[1]}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{enumMatch[2]}</span>
                       </>
                     ) : (
                       <>
                         <span className="mt-1 mr-2 h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
-                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm leading-relaxed`}>{it}</span>
+                        <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm md:text-base leading-relaxed md:leading-7 break-words max-w-[68ch]`}>{it}</span>
                       </>
                     )}
                   </li>
@@ -897,20 +978,7 @@ export default function Create() {
   }
   
   const handleSaveDraft = () => {
-    try {
-      const data = {
-        prompt,
-        selectedResult,
-        currentStep,
-        aiExplanation,
-        updatedAt: Date.now()
-      };
-      localStorage.setItem('CREATE_DRAFT', JSON.stringify(data));
-      setLastUpdatedAt(data.updatedAt);
-      toast.success('已保存到草稿箱');
-    } catch {
-      toast.error('保存草稿失败');
-    }
+    performSave('manual')
   };
 
   // 中文注释：生成版式建议，帮助在编辑页获得结构化指导
@@ -1004,7 +1072,7 @@ export default function Create() {
       <SidebarLayout>
         {/* 导航栏 */}
         <nav className={`sticky top-0 z-50 ${isDark ? 'bg-gray-800' : 'bg-white'} border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} px-4 py-3`}>
-          <div className="container mx-auto flex justify-between items-center">
+        <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center space-x-1">
               <span className="text-xl font-bold text-red-600">AI</span>
               <span className="text-xl font-bold">共创</span>
@@ -1095,22 +1163,29 @@ export default function Create() {
               AI点评
             </button>
 
+            {/* 中文注释：自动保存设置（开关与间隔） */}
+            <div className="hidden md:flex items-center gap-2">
+              <label className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>自动保存</label>
+              <button onClick={() => setAutosaveEnabled(v => !v)} className={`px-3 py-1.5 rounded-full text-sm ${autosaveEnabled ? 'bg-green-600 text-white' : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}>{autosaveEnabled ? '开启' : '关闭'}</button>
+              <select value={autosaveIntervalSec} onChange={(e) => setAutosaveIntervalSec(parseInt(e.target.value) || 30)} className={`px-2 py-1.5 rounded-full text-sm ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+                <option value={15}>15秒</option>
+                <option value={30}>30秒</option>
+                <option value={60}>60秒</option>
+              </select>
+            </div>
+
             <button 
               onClick={handleSaveDraft}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                isDark 
-                  ? 'bg-gray-700 hover:bg-gray-600' 
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} text-sm`}
             >
-              保存草稿
+              保存
             </button>
             <button 
               onClick={handlePublish}
-              className={`px-4 py-2 rounded-full transition-colors ${fusionMode ? 'bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-cyan-600 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full transition-colors ${fusionMode ? 'bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-cyan-600 text-white' : 'bg-red-600 hover:bg-red-700 text-white'} text-sm`}
               disabled={currentStep < 3}
             >
-              发布作品
+              发布
             </button>
           </div>
         </div>
@@ -1512,6 +1587,9 @@ export default function Create() {
                 : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border'
             }`}
             aria-label="创作提示"
+            autoCapitalize="none"
+            autoCorrect="off"
+            enterKeyHint="send"
           ></textarea>
           <div className="mt-3 flex flex-wrap gap-2">
             {promptTemplates.map((t) => (
@@ -1717,7 +1795,7 @@ export default function Create() {
                   )}
                 </div>
                 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     {generatedResults.map((result, idx) => (
                       <motion.div
                         key={result.id}
@@ -1834,46 +1912,41 @@ export default function Create() {
                   </div>
                 )}
                 
-                <div className="mt-8 flex justify-between">
+                <div className="mt-6 flex flex-wrap justify-between gap-3">
                   <button 
                     onClick={handleBack}
-                    className={`px-5 py-2.5 rounded-full transition-colors ${
-                      isDark 
-                        ? 'bg-gray-700 hover:bg-gray-600' 
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
+                    className={`px-4 py-2 rounded-full transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} text-sm flex-1 md:flex-none`}
                   >
                     返回
-                    </button>
-                    <button 
-                      onClick={analyzeCulturalElements}
-                      className={`px-5 py-2.5 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
-                    >
-                      AI文化识别
-                    </button>
-                  
+                  </button>
+                  <button 
+                    onClick={analyzeCulturalElements}
+                    className={`px-4 py-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors text-sm flex-1 md:flex-none`}
+                  >
+                    AI文化识别
+                  </button>
                   <button 
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                    className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm flex-1 md:flex-none"
                   >
                     {isGenerating ? (
                       <>
-                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        <i className="fas fa-spinner fa-spin mr-1"></i>
                         重新生成
                       </>
                     ) : (
                       <>
-                        <i className="fas fa-sync-alt mr-2"></i>
+                        <i className="fas fa-sync-alt mr-1"></i>
                         重新生成
                       </>
                     )}
                   </button>
                   <button
                     onClick={generateVariantForSelected}
-                    className={`px-5 py-2.5 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
+                    className={`px-4 py-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors text-sm flex-1 md:flex-none`}
                   >
-                    <i className="fas fa-clone mr-2"></i>
+                    <i className="fas fa-clone mr-1"></i>
                     生成变体
                   </button>
                 </div>
@@ -1981,17 +2054,17 @@ export default function Create() {
                       <div className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-3 text-sm mt-3 break-all`}>{(generatedResults.find(r => r.id === selectedResult) as any).video}</div>
                     )
                   )}
-                  <div className="mt-3 flex items-center gap-3">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     {/* 中文注释：主按钮样式，默认采用红色主色并在生成中禁用 */}
                     <button
                       type="button"
                       onClick={generateThreeVariantsWithDoubao}
                       disabled={isEngineGenerating}
-                      className={`px-3 py-1.5 rounded-md text-sm bg-red-600 hover:bg-red-700 text-white transition-colors ${isEngineGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className={`flex-1 px-3 py-1.5 rounded-md text-sm bg-red-600 hover:bg-red-700 text-white transition-colors ${isEngineGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       {isEngineGenerating ? (
                         <>
-                          <i className="fas fa-spinner fa-spin mr-2"></i>
+                          <i className="fas fa-spinner fa-spin mr-1"></i>
                           正在生成（三张）
                         </>
                       ) : (
@@ -2001,14 +2074,14 @@ export default function Create() {
                     <button
                       type="button"
                       onClick={downloadSelected}
-                      className={`px-3 py-1.5 rounded-md text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
+                      className={`flex-1 px-3 py-1.5 rounded-md text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
                     >
                       下载图片
                     </button>
                     <button
                       type="button"
                       onClick={copySelectedLink}
-                      className={`px-3 py-1.5 rounded-md text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
+                      className={`flex-1 px-3 py-1.5 rounded-md text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors`}
                     >
                       复制链接
                     </button>
@@ -2016,9 +2089,9 @@ export default function Create() {
                       type="button"
                       onClick={generateVideoForSelected}
                       disabled={videoGenerating}
-                      className={`px-3 py-1.5 rounded-md text-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${videoGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className={`flex-1 px-3 py-1.5 rounded-md text-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors ${videoGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
-                      {videoGenerating ? (<><i className="fas fa-spinner fa-spin mr-2"></i>生成视频中...</>) : (<>生成视频</>)}
+                      {videoGenerating ? (<><i className="fas fa-spinner fa-spin mr-1"></i>生成视频中...</>) : (<>生成视频</>)}
                     </button>
                   </div>
                 </div>

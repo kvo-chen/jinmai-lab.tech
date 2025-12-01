@@ -212,9 +212,13 @@ export default function BrandGuide() {
             id="chat-input"
             aria-describedby="chat-hint"
             className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full h-32 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
+            autoCapitalize="none"
+            autoCorrect="off"
+            enterKeyHint="send"
+            inputMode="text"
           />
             <div id="chat-hint" className="mt-3 text-sm opacity-70">示例：把麻花做成赛博朋克风</div>
-            <motion.button whileHover={{ scale: 1.03 }} onClick={suggest} className="mt-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg shadow">生成灵感</motion.button>
+            <motion.button whileHover={{ scale: 1.03 }} onClick={suggest} className="mt-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg shadow min-h-[44px]">生成灵感</motion.button>
             {/* 中文注释：灵感推荐结果 */}
             {tips.length > 0 && (
               <ul className="mt-4 space-y-2 text-sm" aria-live="polite">
@@ -236,17 +240,17 @@ export default function BrandGuide() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1 }} className={`${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700' : 'bg-white/90 ring-1 ring-gray-200'} rounded-2xl shadow-xl p-6 backdrop-blur`} id="apply-section" aria-labelledby="apply-section-title">
             <div className="font-medium mb-3">提交品牌合作申请</div>
             <label htmlFor="contact-input" className="sr-only">联系人姓名</label>
-            <input id="contact-input" value={contact} onChange={e => setContact(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-1`} placeholder="联系人姓名" />
+            <input id="contact-input" value={contact} onChange={e => setContact(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-1 min-h-[44px]`} placeholder="联系人姓名" autoCapitalize="none" autoCorrect="off" />
             {!formValidation.nameOk && (<div className="mb-2 text-xs text-red-600">{formValidation.nameMsg}</div>)}
             <label htmlFor="phone-input" className="sr-only">联系方式（手机/微信）</label>
-            <input id="phone-input" value={phone} onChange={e => setPhone(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-1`} placeholder="联系方式（手机/微信）" />
+            <input id="phone-input" value={phone} onChange={e => setPhone(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-1 min-h-[44px]`} placeholder="联系方式（手机/微信）" autoCapitalize="none" autoCorrect="off" inputMode="text" enterKeyHint="next" />
             {!formValidation.phoneOk && (<div className="mb-2 text-xs text-red-600">{formValidation.phoneMsg}</div>)}
             <label htmlFor="idea-input" className="sr-only">合作想法</label>
-            <textarea id="idea-input" value={idea} onChange={e => setIdea(e.target.value)} onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canSubmit) { e.preventDefault(); apply() } }} className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full h-24 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-2`} placeholder={`合作想法（基于 ${brand.name} ）`} />
+            <textarea id="idea-input" value={idea} onChange={e => setIdea(e.target.value)} onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canSubmit) { e.preventDefault(); apply() } }} className={`${isDark ? 'bg-gray-700 text-white focus:ring-offset-gray-800' : 'bg-gray-50 text-gray-900'} w-full h-24 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 mb-2`} placeholder={`合作想法（基于 ${brand.name} ）`} autoCapitalize="none" autoCorrect="off" enterKeyHint="send" />
             {!formValidation.ideaOk && (<div className="mb-3 text-xs text-red-600">{formValidation.ideaMsg}</div>)}
             <div className="flex gap-2">
-              <button onClick={apply} disabled={!canSubmit} aria-disabled={!canSubmit} className={`bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-2 rounded-lg shadow ${!canSubmit ? 'opacity-50 cursor-not-allowed' : 'hover:from-red-700 hover:to-pink-700'}`}>提交申请</button>
-              <button onClick={() => { setContact(''); setPhone(''); setIdea('') }} className={`${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-4 py-2 rounded-lg`}>清空表单</button>
+              <button onClick={apply} disabled={!canSubmit} aria-disabled={!canSubmit} className={`bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-2 rounded-lg shadow min-h-[44px] ${!canSubmit ? 'opacity-50 cursor-not-allowed' : 'hover:from-red-700 hover:to-pink-700'}`}>提交申请</button>
+              <button onClick={() => { setContact(''); setPhone(''); setIdea('') }} className={`${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-4 py-2 rounded-lg min-h-[44px]`}>清空表单</button>
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.15 }} className={`lg:col-span-2 ${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700' : 'bg-white/90 ring-1 ring-gray-200'} rounded-2xl shadow-xl p-6 backdrop-blur`} id="list-section" aria-labelledby="list-section-title">

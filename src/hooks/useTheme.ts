@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'pink';
 
 interface ThemeContextType {
   theme: Theme;
@@ -25,13 +25,17 @@ export function useTheme() {
   });
 
   useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.remove('light', 'dark', 'pink');
     document.documentElement.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    setTheme(prevTheme => {
+      if (prevTheme === 'light') return 'dark';
+      if (prevTheme === 'dark') return 'pink';
+      return 'light';
+    });
   };
 
   return {

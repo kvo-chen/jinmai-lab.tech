@@ -1266,6 +1266,409 @@ const encyclopediaEntriesExtra = [
     image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Yixing%20zisha%20teapot%20making%20bench'
   }
 ];
+// 中文注释：继续扩充“工艺百科”条目，新增 50 项以丰富主列表
+const encyclopediaEntriesMore = [
+  {
+    id: 13,
+    title: '木版年画',
+    category: '版画',
+    description: '以手工刻版与套色印制呈现民间审美与节庆文化。',
+    content: '强调分版分色与套印对位，墨色与纸张肌理共同构成独特质感，适用于文化产品与装饰。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20woodblock%20New%20Year%20prints%20carving%20and%20printing'
+  },
+  {
+    id: 14,
+    title: '景泰蓝掐丝珐琅',
+    category: '金工',
+    description: '以金属掐丝与珐琅填色烧制形成华美器饰。',
+    content: '工艺包括制胎、掐丝、点蓝与烧制，呈现金属线与釉色的层次光泽，适合器物与珠宝装饰。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Cloisonne%20enamel%20workshop%20wire%20and%20enamel'
+  },
+  {
+    id: 15,
+    title: '失蜡铸造',
+    category: '金工',
+    description: '以蜡模熔失形成空腔，再浇注金属获得复杂形态。',
+    content: '工艺流程含制蜡模、包壳、烧蜡与浇注，适合复杂立体构件与雕塑的制作。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Lost%20wax%20casting%20process%20metal%20foundry'
+  },
+  {
+    id: 16,
+    title: '蓝染扎染',
+    category: '染织',
+    description: '以植物靛蓝为染料，结合扎缚与浸染形成独特纹样。',
+    content: '强调扎缚结构与染液氧化过程控制，适用于服饰、家居与视觉设计的纹样来源。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Indigo%20dyeing%20shibori%20technique%20fabric%20workshop'
+  },
+  {
+    id: 17,
+    title: '蜀锦织造',
+    category: '织造',
+    description: '以多纬提花形成华丽纹样，呈现丝绸的光泽与层次。',
+    content: '强调组织结构与图案设计的配合，适合高端织物与文化衍生品。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Sichuan%20shu%20brocade%20loom%20weaving'
+  },
+  {
+    id: 18,
+    title: '云锦织造',
+    category: '织造',
+    description: '以通经断纬技术显花，形成立体纹样与金线光泽。',
+    content: '工艺强调纹样设定与经纬转换，适用于礼服、装饰与文创设计。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Nanjing%20yun%20brocade%20traditional%20loom'
+  },
+  {
+    id: 19,
+    title: '唐卡绘制',
+    category: '绘画',
+    description: '以矿物颜料与严谨章法绘制宗教题材的细腻画作。',
+    content: '强调底料、勾线与设色层次控制，适用于精细视觉与文化传达。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Thangka%20painting%20workshop%20mineral%20pigments'
+  },
+  {
+    id: 20,
+    title: '斗拱结构',
+    category: '建筑',
+    description: '以木构层层出跳承重与传力，体现东方结构美学。',
+    content: '强调榫卯配合与荷载传递路径，适用于文化空间与结构设计灵感。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20dougong%20bracket%20wooden%20architecture'
+  },
+  {
+    id: 21,
+    title: '石雕阴刻',
+    category: '雕刻',
+    description: '以阴线刻入石材呈现线性与体量的结合。',
+    content: '强调刀路与材质肌理的关系，适合碑刻与装饰构件。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Stone%20carving%20engraving%20chisel%20work'
+  },
+  {
+    id: 22,
+    title: '木雕浮雕',
+    category: '雕刻',
+    description: '以浮雕层次表现立体感与光影。',
+    content: '强调起伏层次与纹理走向，适合器物装饰与建筑细部。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Wood%20relief%20carving%20workbench'
+  },
+  {
+    id: 23,
+    title: '青花分水',
+    category: '陶瓷',
+    description: '以水分控制实现青花色阶过渡与层次。',
+    content: '强调颜料浓稀与笔触控制，适合器皿图案绘制与再设计。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Blue%20and%20white%20porcelain%20painting%20technique'
+  },
+  {
+    id: 24,
+    title: '磁州窑黑白釉',
+    category: '陶瓷',
+    description: '以黑白对比呈现强烈图像语言，具朴拙美感。',
+    content: '强调胎釉匹配与烧成气氛控制，适合图案化器物设计与视觉传达。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Cizhou%20ware%20black%20and%20white%20glaze%20ceramics'
+  },
+  {
+    id: 25,
+    title: '汝瓷调釉',
+    category: '陶瓷',
+    description: '以温润釉色与开片美形成东方审美的代表。',
+    content: '强调原料与窑温的精准控制，适合高端器物与陈设的制作与研究。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Ru%20ware%20celadon%20glaze%20studio'
+  },
+  {
+    id: 26,
+    title: '竹编技法',
+    category: '编织',
+    description: '以经纬交错与结构编织形成器形与纹理。',
+    content: '强调材料韧性与结构稳定性，适用于器物与装置艺术的构造。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Bamboo%20weaving%20craft%20techniques%20workshop'
+  },
+  {
+    id: 27,
+    title: '草编技法',
+    category: '编织',
+    description: '以植物纤维编织形成轻质器物与纹样。',
+    content: '强调编织结构与造型比例，适合生活器物与可持续材料研究。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Straw%20weaving%20craft%20traditional%20workshop'
+  },
+  {
+    id: 28,
+    title: '螺钿嵌饰',
+    category: '漆艺',
+    description: '以贝壳切片嵌入漆面形成光泽纹样。',
+    content: '强调切片厚度与嵌饰位置的精度控制，适合器物装饰与家具表面设计。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Mother%20of%20pearl%20inlay%20lacquer%20art'
+  },
+  {
+    id: 29,
+    title: '金属錾刻',
+    category: '金工',
+    description: '以錾刻锤击在金属表面形成纹样与起伏。',
+    content: '强调工具控制与节奏，适合器物表面装饰与徽章制作。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Metal%20chasing%20and%20repousse%20workshop'
+  },
+  {
+    id: 30,
+    title: '锔瓷修复',
+    category: '修复',
+    description: '以金属钉或胶合修复破损器物，呈现时间痕迹之美。',
+    content: '强调结构稳定与美学平衡，适合文物修复与生活器物再生设计。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Kintsugi%20style%20ceramic%20repair%20workshop'
+  },
+  {
+    id: 31,
+    title: '碑帖临摹',
+    category: '书法',
+    description: '以拓本与法帖为范本进行书写训练，理解笔意与结体。',
+    content: '强调线质与结构学习，适合传统书法的体系化研究与应用。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20calligraphy%20copying%20stele%20rubbings'
+  },
+  {
+    id: 32,
+    title: '篆书章法',
+    category: '书法',
+    description: '以篆书结体和章法布局形成庄重的文字美。',
+    content: '强调笔画节奏与结构均衡，适用于印章设计与古典美学表达。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Seal%20script%20calligraphy%20composition%20practice'
+  },
+  {
+    id: 33,
+    title: '斗方装裱',
+    category: '装裱',
+    description: '以宣纸与绫绢等材料进行装裱，保证画心稳定与观感。',
+    content: '强调托裱与压平技法，适合书画的保存与展示。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20mounting%20and%20framing%20studio'
+  },
+  {
+    id: 34,
+    title: '宣纸洇墨控制',
+    category: '绘画',
+    description: '以纸性与水墨浓稀关系控制洇化与层次。',
+    content: '强调水墨比例与用笔速度，适用于水墨画与书法效果研究。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Xuan%20paper%20ink%20bleeding%20study'
+  },
+  {
+    id: 35,
+    title: '破墨法',
+    category: '绘画',
+    description: '在湿墨未干时以色或墨破之，形成丰富肌理。',
+    content: '强调时机与媒介关系，适用于山水画的气韵表达与材质研究。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Traditional%20ink%20painting%20po%20mo%20technique'
+  },
+  {
+    id: 36,
+    title: '木作打磨与刷漆',
+    category: '木作',
+    description: '以打磨与刷漆形成平整与光泽的表面品质。',
+    content: '强调砂纸粒度与漆膜厚度控制，适用于家具与器物的表面工艺。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Woodworking%20sanding%20and%20varnishing%20workbench'
+  },
+  {
+    id: 37,
+    title: '手工烫金',
+    category: '印刷',
+    description: '以热压与金属箔转移形成金属光泽图文。',
+    content: '强调温度与压力控制，适用于包装、书籍与证件的视觉提升。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Hot%20foil%20stamping%20handcraft%20press'
+  },
+  {
+    id: 38,
+    title: '实木拼板',
+    category: '木作',
+    description: '以拼接板材获得稳定结构与纹理统一。',
+    content: '强调木性与胶合强度控制，适合家具板面与器物构造。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Solid%20wood%20panel%20glue%20up%20workshop'
+  },
+  {
+    id: 39,
+    title: '泥塑造型',
+    category: '雕塑',
+    description: '以黏土塑形构建体量与神采，便于后续翻制或烧制。',
+    content: '强调结构比例与体块关系，适用于模型制作与雕塑创作。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Clay%20sculpting%20studio%20handbuilding'
+  },
+  {
+    id: 40,
+    title: '釉下彩绘',
+    category: '陶瓷',
+    description: '在施釉前绘制图案，经高温烧成与釉层融合。',
+    content: '强调颜料与胎釉匹配，适合耐久图案与器物装饰。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Underglaze%20decoration%20ceramic%20painting'
+  },
+  {
+    id: 41,
+    title: '釉上粉彩',
+    category: '陶瓷',
+    description: '在低温釉面上以彩料绘制柔和色调，再次烧成固定。',
+    content: '强调色料层次与低温烧成控制，适合器物的细腻彩饰。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Overglaze%20famille%20rose%20porcelain%20painting'
+  },
+  {
+    id: 42,
+    title: '珐琅彩工艺',
+    category: '陶瓷',
+    description: '以玻璃质彩料在瓷胎上低温烧制呈现华美色彩。',
+    content: '强调彩料细腻与图案布局，适用于高端器物与艺术品。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Falangcai%20enamel%20on%20porcelain%20studio'
+  },
+  {
+    id: 43,
+    title: '琉璃烧制',
+    category: '玻艺',
+    description: '以高温熔融形成玻璃材质的器物与装饰。',
+    content: '强调配料与温度曲线，适用于艺术器物与建筑装饰。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Glass%20kiln%20casting%20liuli%20studio'
+  },
+  {
+    id: 44,
+    title: '皮革雕刻',
+    category: '皮艺',
+    description: '以压刻与染色在皮面形成立体纹样与层次。',
+    content: '强调湿润度与刀具控制，适合皮具个性化与工坊制作。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Leather%20carving%20tooling%20workbench'
+  },
+  {
+    id: 45,
+    title: '盘金绣',
+    category: '刺绣',
+    description: '以金线盘绕固定形成金属光泽与立体效果。',
+    content: '强调材料选择与固定针法节奏，适合礼服与陈设的华美表达。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Goldwork%20embroidery%20couching%20technique'
+  },
+  {
+    id: 46,
+    title: '苗绣折线针',
+    category: '刺绣',
+    description: '以折线结构形成几何纹样，呈现族群审美。',
+    content: '强调针法与图案之间的逻辑，适用于服饰与配件的图形语言。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Miao%20embroidery%20geometric%20stitches'
+  },
+  {
+    id: 47,
+    title: '苏扇制扇',
+    category: '工艺',
+    description: '以骨架、面料与绘饰综合呈现文人气质的团扇。',
+    content: '强调结构稳定与画心美学统一，适用于文化礼品与收藏。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20hand%20fan%20making%20studio'
+  },
+  {
+    id: 48,
+    title: '剪纸镂空',
+    category: '民俗',
+    description: '以刀剪在纸面形成镂空与正负形构图。',
+    content: '强调构图逻辑与纸张韧性，适用于节庆装饰与视觉符号。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20paper%20cutting%20craft%20studio'
+  },
+  {
+    id: 49,
+    title: '石版画制版',
+    category: '版画',
+    description: '以油水相斥原理在石版上制版印刷，层次细腻。',
+    content: '强调绘制与制版的精准控制，适用于艺术复制与海报印制研究。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Lithography%20printmaking%20studio'
+  },
+  {
+    id: 50,
+    title: '拓印技法',
+    category: '印刷',
+    description: '以纸墨覆盖并摩擦获取纹理与文字的印迹。',
+    content: '强调覆纸与摩擦力度控制，适合文物纹理采集与文化教育。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Rubbing%20technique%20Chinese%20ink%20and%20paper'
+  },
+  {
+    id: 51,
+    title: '黑陶烧制',
+    category: '陶艺',
+    description: '以还原气氛烧成形成黑色陶器，纹理质朴。',
+    content: '强调泥料与窑气控制，适用于器物的古拙美学表达与材料研究。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Black%20pottery%20kiln%20reduction%20firing'
+  },
+  {
+    id: 52,
+    title: '紫檀木打磨',
+    category: '木作',
+    description: '以细致磨抛呈现木材油性与光泽，提升触感。',
+    content: '强调砂纸序列与油蜡处理，适合高端家具与器物表面。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Rosewood%20sanding%20and%20polishing%20workbench'
+  },
+  {
+    id: 53,
+    title: '铜器铸造',
+    category: '金工',
+    description: '以砂型或金属模进行浇注，获得稳定器形与纹饰。',
+    content: '强调合金与浇注工艺控制，适用于器物、铃铛与装饰品。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Bronze%20casting%20foundry%20workshop'
+  },
+  {
+    id: 54,
+    title: '铠甲编结',
+    category: '编织',
+    description: '以金属片或皮革单元以结绳连接形成柔性护具。',
+    content: '强调连接结构与受力分布，适用于服饰装置与文化复原。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Lamellar%20armor%20lacing%20technique'
+  },
+  {
+    id: 55,
+    title: '结绳图案',
+    category: '编织',
+    description: '以绳结结构形成装饰性与功能性的图形语言。',
+    content: '强调结法与节奏，适用于饰品、器物与交互装置设计。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20knot%20patterns%20craft%20studio'
+  },
+  {
+    id: 56,
+    title: '鱼皮衣制作',
+    category: '服饰',
+    description: '以鱼皮加工与缝制形成独特材质服饰。',
+    content: '强调去鳞与软化处理及缝制结构，适用于文化服饰与材料实验。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Fish%20skin%20clothing%20traditional%20craft'
+  },
+  {
+    id: 57,
+    title: '牙雕微刻',
+    category: '雕刻',
+    description: '以微小刀具在牙材或替代材上细刻纹样与文字。',
+    content: '强调放大观察与稳定手势，适用于微观雕刻与首饰细节。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Miniature%20engraving%20ivory%20substitute%20material'
+  },
+  {
+    id: 58,
+    title: '玉雕抛光',
+    category: '雕刻',
+    description: '以磨抛与抛光展现玉材光泽与细腻触感。',
+    content: '强调磨料与水介质控制，适用于玉器收尾与表面提升。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Jade%20carving%20polishing%20workshop'
+  },
+  {
+    id: 59,
+    title: '银丝镶嵌',
+    category: '金工',
+    description: '以细银丝镶嵌木器或器物表面形成图案。',
+    content: '强调沟槽预制与银丝压入的细节控制，适用于器物装饰与高端工艺。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Silver%20wire%20inlay%20craft%20on%20wood'
+  },
+  {
+    id: 60,
+    title: '宜兴泥片成型',
+    category: '陶瓷',
+    description: '以泥片拍合成型，形成壶体等复杂器形。',
+    content: '强调泥性与接口压实控制，适用于功能器物的稳定构造与美学表达。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Yixing%20teapot%20slab%20building%20technique'
+  },
+  {
+    id: 61,
+    title: '石雕阳刻',
+    category: '雕刻',
+    description: '以阳刻方式保留线外体量，形成突出纹样。',
+    content: '强调层次与光影关系，适用于碑刻与装饰构件的立体表达。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Stone%20relief%20carving%20technique'
+  },
+  {
+    id: 62,
+    title: '金箔贴饰',
+    category: '装饰',
+    description: '以金箔贴覆在器物或建筑细部形成尊贵光泽。',
+    content: '强调底材平整与黏着介质控制，适用于佛像、家具与建筑细部的装饰。',
+    image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Gold%20leaf%20gilding%20application%20craft'
+  }
+];
 // 中文注释：继续扩充“传承人物”，增强地域与工艺多样性（将扩充放在数组声明之后）
 
 // 中文注释：传承人物数据（图片+详情）
@@ -1420,7 +1823,7 @@ export default function CulturalKnowledge() {
           setActiveTab('elements');
         }
       } else if (type === 'encyclopedia') {
-        const entry = [...encyclopediaEntries, ...encyclopediaEntriesExtra].find(e => e.id === numericId);
+        const entry = [...encyclopediaEntries, ...encyclopediaEntriesExtra, ...encyclopediaEntriesMore].find(e => e.id === numericId);
         if (entry) {
           setSelectedEntry(entry);
           setActiveTab('encyclopedia');
@@ -1918,7 +2321,7 @@ export default function CulturalKnowledge() {
               {/* 工艺百科 */}
               {activeTab === 'encyclopedia' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...encyclopediaEntries, ...encyclopediaEntriesExtra].map((entry) => (
+                  {[...encyclopediaEntries, ...encyclopediaEntriesExtra, ...encyclopediaEntriesMore].map((entry) => (
                     <motion.div
                       key={entry.id}
                       className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl`}

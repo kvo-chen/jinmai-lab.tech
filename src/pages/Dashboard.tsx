@@ -5,8 +5,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '@/contexts/authContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CreatorProfile from '../components/CreatorProfile';
- 
+
 import SidebarLayout from '@/components/SidebarLayout'
+import OnboardingGuide from '@/components/OnboardingGuide'
 
 // 模拟数据
 const performanceData = [
@@ -93,6 +94,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [showCreatorProfile, setShowCreatorProfile] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // 检查是否已登录
   useEffect(() => {
@@ -102,6 +104,12 @@ export default function Dashboard() {
       // 模拟加载数据
       setTimeout(() => {
         setIsLoading(false);
+        // 中文注释：首次登录展示新手引导（按用户维度持久化）
+        try {
+          const key = `onboarded-${user.id}`
+          const done = localStorage.getItem(key) === 'true'
+          if (!done) setShowOnboarding(true)
+        } catch {}
       }, 800);
     }
   }, [isAuthenticated, user, navigate]);
@@ -125,6 +133,15 @@ export default function Dashboard() {
   
   return (
     <SidebarLayout>
+      <OnboardingGuide
+        isOpen={showOnboarding}
+        onClose={(completed) => {
+          if (completed && user) {
+            try { localStorage.setItem(`onboarded-${user.id}`, 'true') } catch {}
+          }
+          setShowOnboarding(false)
+        }}
+      />
       <main className="container mx-auto px-4 py-8">
         {/* 欢迎区域 */}
         <motion.div 
@@ -143,9 +160,10 @@ export default function Dashboard() {
             
             <motion.button
               onClick={handleCreateNew}
-              className="mt-4 md:mt-0 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full flex items-center transition-colors"
+              className="mt-4 md:mt-0 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full flex items-center transition-colors min-h-[44px]"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
+              aria-label="开始创作"
             >
               <i className="fas fa-plus mr-2"></i>
               开始创作
@@ -188,13 +206,16 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
+                {/* 中文注释：移动端优化——详情切换按钮触控区统一至少44px，并增加无障碍属性 */}
                 <button 
                   onClick={() => setShowCreatorProfile(!showCreatorProfile)}
-                  className={`mt-3 md:mt-0 px-4 py-2 rounded-lg ${
+                  className={`mt-3 md:mt-0 px-4 py-2 rounded-lg min-h-[44px] ${
                     isDark 
                       ? 'bg-gray-700 hover:bg-gray-600' 
                       : 'bg-gray-100 hover:bg-gray-200'
                   } transition-colors text-sm`}
+                  aria-expanded={showCreatorProfile}
+                  aria-label={showCreatorProfile ? '收起创作者详情' : '查看创作者详情'}
                 >
                   {showCreatorProfile ? '收起详情' : '查看创作者详情'}
                 </button>
@@ -286,15 +307,18 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold">作品表现趋势</h2>
               <div className="flex space-x-2">
                 {['周', '月', '年'].map((period) => (
+                  // 中文注释：时间范围切换按钮——增大触控高度到44px，并标注选中状态
                   <button 
                     key={period}
-                    className={`px-3 py-1 rounded-lg text-sm ${
+                    type="button"
+                    className={`px-4 py-2 rounded-lg text-sm min-h-[44px] ${
                       period === '月' 
                         ? 'bg-red-600 text-white' 
                         : isDark 
                           ? 'bg-gray-700 hover:bg-gray-600' 
                           : 'bg-gray-100 hover:bg-gray-200'
                     } transition-colors`}
+                    aria-pressed={period === '月'}
                   >
                     {period}
                   </button>
@@ -389,7 +413,12 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-                    <button className="ml-2 text-gray-400 hover:text-gray-600">
+                    {/* 中文注释：列表更多操作按钮——统一触控尺寸到44px并提供语义化标签 */}
+                    <button 
+                      className="ml-2 text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full"
+                      aria-label="更多操作"
+                      type="button"
+                    >
                       <i className="fas fa-ellipsis-v"></i>
                     </button>
                   </div>
@@ -437,15 +466,36 @@ export default function Dashboard() {
             ].map((tool, index) => (
               <motion.div 
                 key={index}
-                className={`p-5 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border border-gray-200 transition-all hover:shadow-lg`}
+                className={`p-5 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border border-gray-200 transition-all hover:shadow-lg cursor-pointer`}
                 whileHover={{ y: -5 }}
+                // 中文注释：整卡可点击，跳转到对应创作工具页
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { 
+                  if (e.key === 'Enter' || e.key === ' ') { 
+                    e.preventDefault(); 
+                    const id = tool.icon === 'palette' ? 'sketch' : tool.icon === 'gem' ? 'pattern' : tool.icon === 'filter' ? 'filter' : 'trace'
+                    navigate(`/create?tool=${id}`)
+                  } 
+                }}
+                onClick={() => { const id = tool.icon === 'palette' ? 'sketch' : tool.icon === 'gem' ? 'pattern' : tool.icon === 'filter' ? 'filter' : 'trace'; navigate(`/create?tool=${id}`) }}
               >
                 <div className={`w-12 h-12 rounded-full bg-${tool.color}-100 text-${tool.color}-600 flex items-center justify-center mb-4`}>
                   <i className={`fas fa-${tool.icon} text-xl`}></i>
                 </div>
                 <h3 className="font-bold mb-2">{tool.title}</h3>
                 <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{tool.description}</p>
-                <button className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors">
+                {/* 中文注释：工具卡片CTA按钮——增大触控高度到44px并增加无障碍标签 */}
+                <button 
+                  className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors min-h-[44px]"
+                  aria-label={`使用 ${tool.title}`}
+                  onClick={(e) => { 
+                    // 中文注释：按钮点击跳转；阻止事件冒泡避免与整卡点击冲突
+                    e.stopPropagation(); 
+                    const id = tool.icon === 'palette' ? 'sketch' : tool.icon === 'gem' ? 'pattern' : tool.icon === 'filter' ? 'filter' : 'trace'; 
+                    navigate(`/create?tool=${id}`) 
+                  }}
+                >
                   立即使用
                   <i className="fas fa-arrow-right ml-1 text-xs"></i>
                 </button>

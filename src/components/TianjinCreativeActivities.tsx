@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import SidebarLayout from '@/components/SidebarLayout';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { TianjinImage, TianjinButton } from './TianjinStyleComponents';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/authContext';
+import { BRANDS } from '@/lib/brands';
 
 // 活动类型定义
 interface Activity {
@@ -63,6 +64,7 @@ export default function TianjinCreativeActivities() {
   const tabListRef = useRef<HTMLDivElement | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const openActivityDetail = (a: Activity) => setSelectedActivity(a);
@@ -79,6 +81,9 @@ export default function TianjinCreativeActivities() {
   const [selectedBrand, setSelectedBrand] = useState<TraditionalBrand | null>(null);
   const openBrandDetail = (b: TraditionalBrand) => setSelectedBrand(b);
   const closeBrandDetail = () => setSelectedBrand(null);
+  const brandSentinelRef = useRef<HTMLDivElement | null>(null); // 中文注释：品牌区无限滚动哨兵引用
+  const [brandPage, setBrandPage] = useState<number>(1); // 中文注释：品牌区当前分页
+  const brandPageSize = 36; // 中文注释：品牌区每页数量
   
   // 模拟数据加载
   useEffect(() => {
@@ -98,6 +103,7 @@ export default function TianjinCreativeActivities() {
       if (!el) return;
       setAtStart(el.scrollLeft <= 0);
       setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+      setHasOverflow(el.scrollWidth > el.clientWidth + 1);
     };
 
     const el = tabListRef.current;
@@ -112,6 +118,20 @@ export default function TianjinCreativeActivities() {
       window.removeEventListener('resize', onResize);
     };
   }, []);
+
+  const scrollTabs = (dir: 'left' | 'right') => {
+    const el = tabListRef.current;
+    if (!el) return;
+    const delta = Math.max(100, Math.floor(el.clientWidth * 0.8));
+    el.scrollBy({ left: dir === 'left' ? -delta : delta, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const el = tabListRef.current;
+    if (!el) return;
+    const activeEl = el.querySelector('[aria-selected="true"]') as HTMLElement | null;
+    if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }, [activeTab]);
   
   // 模拟活动数据
   const activities: Activity[] = [
@@ -309,6 +329,249 @@ export default function TianjinCreativeActivities() {
       endDate: '2026-04-05',
       image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20port%20industrial%20style%20poster%20design%20competition',
       participants: 76,
+      status: 'upcoming'
+    }
+    ,
+    // 中文注释：新增活动——海河音乐嘉年华（城市音乐节）
+    {
+      id: 19,
+      title: '海河音乐嘉年华',
+      description: '以海河为舞台，融合电音与民乐，打造城市音乐节品牌形象。',
+      startDate: '2026-06-01',
+      endDate: '2026-06-03',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20Music%20Carnival%20stage%20city%20festival%20electric%20and%20traditional%20music',
+      participants: 512,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——津门街舞公开赛（青年街头文化）
+    {
+      id: 20,
+      title: '津门街舞公开赛',
+      description: '面向全国街舞团队的公开赛，倡导青年街头文化与积极生活方式。',
+      startDate: '2026-05-10',
+      endDate: '2026-05-12',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20street%20dance%20open%20competition%20urban%20youth%20culture',
+      participants: 276,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——国潮服饰设计周（时尚设计）
+    {
+      id: 21,
+      title: '国潮服饰设计周',
+      description: '以国潮元素为灵感，发布服饰与配件设计，融合传统纹样与现代剪裁。',
+      startDate: '2026-09-05',
+      endDate: '2026-09-12',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Guochao%20fashion%20design%20week%20traditional%20pattern%20modern%20cutting',
+      participants: 348,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——青年创客市集与创意展（创客文化）
+    {
+      id: 22,
+      title: '青年创客市集与创意展',
+      description: '聚合创客作品与工作坊演示，展示开源硬件、互动艺术与手作。',
+      startDate: '2026-07-18',
+      endDate: '2026-07-20',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20maker%20fair%20open%20hardware%20interactive%20art%20market',
+      participants: 229,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——AI创意设计挑战赛（数字创意）
+    {
+      id: 23,
+      title: 'AI创意设计挑战赛',
+      description: '结合生成式模型，进行跨媒体视觉与叙事创作挑战，强调伦理与版权。',
+      startDate: '2026-01-28',
+      endDate: '2026-02-15',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=AI%20creative%20design%20challenge%20generative%20art%20ethical%20creation',
+      participants: 317,
+      status: 'active'
+    },
+    // 中文注释：新增活动——皮划艇运动摄影赛（运动与影像）
+    {
+      id: 24,
+      title: '海河皮划艇运动摄影赛',
+      description: '记录海河皮划艇赛事的速度与激情，征集运动美学摄影作品。',
+      startDate: '2026-04-10',
+      endDate: '2026-04-20',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20kayak%20sports%20photography%20competition%20action%20and%20speed',
+      participants: 165,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——津味美食影像节（美食文化）
+    {
+      id: 25,
+      title: '津味美食影像节',
+      description: '以纪录片与短视频形式讲述天津美食故事，搭建影像交流平台。',
+      startDate: '2025-12-12',
+      endDate: '2026-01-12',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20food%20film%20festival%20documentary%20and%20short%20video',
+      participants: 241,
+      status: 'active'
+    },
+    // 中文注释：新增活动——近现代建筑影像征集（城市记忆）
+    {
+      id: 26,
+      title: '近现代建筑影像征集',
+      description: '围绕五大道与意式风情区的建筑细节，征集影像作品与图像档案。',
+      startDate: '2025-11-01',
+      endDate: '2025-12-01',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20historic%20architecture%20visual%20archive%20collection',
+      participants: 302,
+      status: 'ended'
+    },
+    // 中文注释：新增活动——非遗工坊开放日（教育与传承）
+    {
+      id: 27,
+      title: '非遗工坊开放日',
+      description: '开放泥人张、风筝魏等非遗工坊，开展体验课程与讲座。',
+      startDate: '2026-03-25',
+      endDate: '2026-03-27',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20intangible%20heritage%20open%20day%20workshop%20education',
+      participants: 158,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——海河夜游灯光装置竞赛（公共艺术）
+    {
+      id: 28,
+      title: '海河夜游灯光装置竞赛',
+      description: '征集沿海河的交互式灯光装置方案，打造夜游公共艺术体验。',
+      startDate: '2026-08-10',
+      endDate: '2026-08-24',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20night%20interactive%20light%20installation%20competition%20public%20art',
+      participants: 214,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——市民LOGO共创计划（城市品牌）
+    {
+      id: 29,
+      title: '市民LOGO共创计划',
+      description: '面向市民征集城市品牌LOGO提案，鼓励公众参与与共创。',
+      startDate: '2026-02-01',
+      endDate: '2026-03-01',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20citizen%20co-creation%20logo%20design%20city%20branding',
+      participants: 427,
+      status: 'active'
+    },
+    // 中文注释：新增活动——校园艺术联展巡展（教育与艺术）
+    {
+      id: 30,
+      title: '校园艺术联展巡展',
+      description: '联合高校开展艺术联展巡展，建立校地合作的青年创作平台。',
+      startDate: '2026-04-01',
+      endDate: '2026-05-01',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=University%20art%20joint%20exhibition%20tour%20Tianjin%20collaboration',
+      participants: 196,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——电音与传统乐融合实验演出（音乐创新）
+    {
+      id: 31,
+      title: '电音×传统乐融合演出',
+      description: '将唢呐、笙等传统乐器与电子音乐融合，探索跨界现场。',
+      startDate: '2025-12-22',
+      endDate: '2025-12-22',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Electronic%20music%20meets%20traditional%20Chinese%20instruments%20live%20show%20Tianjin',
+      participants: 388,
+      status: 'active'
+    },
+    // 中文注释：新增活动——文旅联名创意方案赛（文旅融合）
+    {
+      id: 32,
+      title: '文旅联名创意方案赛',
+      description: '围绕天津文旅场景与品牌联名，征集整套创意方案与执行计划。',
+      startDate: '2026-03-02',
+      endDate: '2026-03-26',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20cultural%20tourism%20co-branding%20creative%20proposal%20competition',
+      participants: 134,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——海洋环保海报设计赛（公共议题）
+    {
+      id: 33,
+      title: '海洋环保海报设计赛',
+      description: '倡导海洋环保意识，围绕渤海生态主题创作公益海报。',
+      startDate: '2026-06-15',
+      endDate: '2026-06-30',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Ocean%20environmental%20protection%20poster%20design%20Bohai%20Sea%20Tianjin',
+      participants: 211,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——海河徒步摄影马拉松（社区参与）
+    {
+      id: 34,
+      title: '海河徒步摄影马拉松',
+      description: '以徒步形式完成沿海河的摄影创作打卡，提升公众参与度。',
+      startDate: '2026-05-28',
+      endDate: '2026-05-28',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20walking%20photo%20marathon%20community%20participation%20Tianjin',
+      participants: 322,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——城市IP吉祥物设计赛（品牌形象）
+    {
+      id: 35,
+      title: '城市IP吉祥物设计赛',
+      description: '征集代表天津气质的城市IP吉祥物形象，应用于文旅宣传。',
+      startDate: '2026-02-05',
+      endDate: '2026-02-28',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20mascot%20IP%20design%20competition%20branding',
+      participants: 403,
+      status: 'active'
+    },
+    // 中文注释：新增活动——儿童绘本创作季（天津故事）
+    {
+      id: 36,
+      title: '天津故事儿童绘本季',
+      description: '以天津的历史、人文与风物为素材，创作儿童绘本与故事插图。',
+      startDate: '2026-09-20',
+      endDate: '2026-10-20',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20children%27s%20picture%20book%20season%20story%20illustration',
+      participants: 147,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——运动生活方式视觉赛（骑行主题）
+    {
+      id: 37,
+      title: '骑行生活方式视觉赛',
+      description: '围绕城市骑行的健康生活方式，征集海报与短视频视觉作品。',
+      startDate: '2026-04-02',
+      endDate: '2026-04-16',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Urban%20cycling%20lifestyle%20visual%20competition%20poster%20video',
+      participants: 188,
+      status: 'upcoming'
+    },
+    // 中文注释：新增活动——社区公共空间改造提案赛（城市更新）
+    {
+      id: 38,
+      title: '社区公共空间改造提案赛',
+      description: '以社区公共空间为对象征集改造提案，强化设计与生活的连接。',
+      startDate: '2026-03-12',
+      endDate: '2026-03-31',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Community%20public%20space%20revitalization%20proposal%20competition%20Tianjin',
+      participants: 115,
+      status: 'active'
+    },
+    // 中文注释：新增活动——传统茶文化品牌焕新赛（品牌升级）
+    {
+      id: 39,
+      title: '传统茶文化品牌焕新赛',
+      description: '以津门茶文化为灵感，进行品牌识别与包装升级设计。',
+      startDate: '2025-12-05',
+      endDate: '2026-01-05',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20tea%20culture%20brand%20refresh%20identity%20and%20packaging',
+      participants: 236,
+      status: 'active'
+    },
+    // 中文注释：新增活动——海河帆船节视觉系统设计（VI系统）
+    {
+      id: 40,
+      title: '海河帆船节视觉系统设计',
+      description: '为海河帆船节打造完整视觉系统，涵盖徽标、旗帜与导视。',
+      startDate: '2026-07-02',
+      endDate: '2026-07-18',
+      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20Sailing%20Festival%20visual%20identity%20system%20design',
+      participants: 128,
       status: 'upcoming'
     }
   ];
@@ -943,6 +1206,18 @@ export default function TianjinCreativeActivities() {
       popularity: 79
     }
   ];
+
+  // 中文注释：扩充品牌数据（从 lib BRANDS 兼容映射）
+  const extraBrands: TraditionalBrand[] = useMemo(() => BRANDS.map((b, i) => ({
+    id: 1000 + i,
+    name: b.name,
+    logo: b.image,
+    description: b.story,
+    establishedYear: '—',
+    collaborationTools: 3 + (i % 7),
+    popularity: Math.min(99, 70 + (i % 30)),
+  })), []);
+  const allBrands: TraditionalBrand[] = useMemo(() => ([...traditionalBrands, ...extraBrands]), [traditionalBrands, extraBrands]);
   
   const handleApplyTemplate = (templateId: number) => {
     void templateId;
@@ -965,8 +1240,53 @@ export default function TianjinCreativeActivities() {
     ? offlineExperiences.filter((e) => [e.name, e.description, e.location].some((s) => s.toLowerCase().includes(searchLower)))
     : offlineExperiences;
   const filteredBrands = searchLower
-    ? traditionalBrands.filter((b) => [b.name, b.description, b.establishedYear].some((s) => s.toLowerCase().includes(searchLower)))
-    : traditionalBrands;
+    ? allBrands.filter((b) => [b.name, b.description, b.establishedYear].some((s) => s.toLowerCase().includes(searchLower)))
+    : allBrands;
+  const pagedBrands = useMemo(() => filteredBrands.slice(0, brandPage * brandPageSize), [filteredBrands, brandPage, brandPageSize]);
+
+  // 中文注释：进入“老字号联名”或搜索变化时重置分页
+  useEffect(() => { if (activeTab === 'brands') setBrandPage(1); }, [activeTab, search]);
+  // 中文注释：品牌区无限滚动（IntersectionObserver）
+  useEffect(() => {
+    if (activeTab !== 'brands') return;
+    const el = brandSentinelRef.current;
+    if (!el) return;
+    const maxPages = Math.ceil(filteredBrands.length / brandPageSize);
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting) {
+        setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeTab, filteredBrands.length, brandPageSize]);
+  // 中文注释：品牌区无限滚动降级方案（滚动到页面底部触发）
+  useEffect(() => {
+    if (activeTab !== 'brands') return;
+    const maxPages = Math.ceil(filteredBrands.length / brandPageSize);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const doc = document.documentElement;
+        const scrollBottom = (window.scrollY || doc.scrollTop) + window.innerHeight;
+        const docHeight = Math.max(
+          doc.scrollHeight,
+          doc.offsetHeight,
+          document.body ? document.body.scrollHeight : 0,
+          document.body ? document.body.offsetHeight : 0
+        );
+        if (scrollBottom >= docHeight - 300) {
+          setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
+        }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [activeTab, filteredBrands.length, brandPageSize]);
   
   // 骨架屏加载状态
   if (isLoading) {
@@ -1037,6 +1357,11 @@ export default function TianjinCreativeActivities() {
           aria-label="津味共创活动类别"
           ref={tabListRef}
           className="flex space-x-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-1"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight') scrollTabs('right');
+            if (e.key === 'ArrowLeft') scrollTabs('left');
+          }}
         >
           {[
             { id: 'activities', name: '主题活动' },
@@ -1065,19 +1390,19 @@ export default function TianjinCreativeActivities() {
         <div
           className={`pointer-events-none absolute right-0 top-0 bottom-0 w-8 ${
             isDark ? 'bg-gradient-to-l from-gray-800 to-transparent' : 'bg-gradient-to-l from-white to-transparent'
-          } ${atEnd ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+          } ${!hasOverflow || atEnd ? 'opacity-0' : 'opacity-100'} transition-opacity`}
         ></div>
         <button
           aria-label="向左滚动类别"
-          onClick={() => tabListRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
-          className={`absolute left-0 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} shadow-sm ${atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity`}
+          onClick={() => scrollTabs('left')}
+          className={`absolute left-0 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} shadow-sm ${!hasOverflow || atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity`}
         >
           <i className="fas fa-chevron-left"></i>
         </button>
         <button
           aria-label="向右滚动类别"
-          onClick={() => tabListRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-          className={`absolute right-0 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} shadow-sm ${atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity`}
+          onClick={() => scrollTabs('right')}
+          className={`absolute right-0 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} shadow-sm ${!hasOverflow || atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity`}
         >
           <i className="fas fa-chevron-right"></i>
         </button>
@@ -1272,7 +1597,7 @@ export default function TianjinCreativeActivities() {
       {/* 老字号联名内容 */}
       {activeTab === 'brands' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredBrands.map((brand) => (
+          {pagedBrands.map((brand) => (
             <motion.div
               key={brand.id}
               className={`p-4 rounded-xl shadow-md border transition-shadow ${
@@ -1331,6 +1656,15 @@ export default function TianjinCreativeActivities() {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+      {activeTab === 'brands' && (
+        <div className="text-center mt-6">
+          {brandPage * brandPageSize < filteredBrands.length ? (
+            <div ref={brandSentinelRef} className="h-10"></div>
+          ) : (
+            <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>已加载全部</span>
+          )}
         </div>
       )}
         {/* 活动详情弹层 */}

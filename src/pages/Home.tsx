@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Footer from '@/components/Footer'
 import { AuthContext } from '@/contexts/authContext';
 import { useContext } from 'react';
@@ -13,7 +13,7 @@ import voiceService from '@/services/voiceService'
 import { markPrefetched, isPrefetched } from '@/services/prefetch'
 
 export default function Home() {
-  const { isDark } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme();
   const { isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
   
@@ -23,15 +23,6 @@ export default function Home() {
   
   const handleExplore = () => {
     navigate('/explore');
-  };
-  const onProtectedClick = (e: React.MouseEvent, path: string) => {
-    if (!isAuthenticated) {
-      e.preventDefault();
-      toast.warning('请先登录后再访问此功能');
-      setTimeout(() => navigate('/login'), 800);
-      return;
-    }
-    navigate(path);
   };
   const [search, setSearch] = useState('');
   const [inspireOn, setInspireOn] = useState(false);
@@ -46,6 +37,15 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   // 快速标签常量
   const quickTags = ['国潮风格','适用人群','文献灵感','科创思维','地域素材','非遗元素'];
+  // 中文注释：首页英雄区A/B文案变体（用于验证不同文案对转化的影响，随机并持久化）
+  const [heroVariant] = useState<'A' | 'B'>(() => {
+    try {
+      const v = localStorage.getItem('heroVariant')
+      if (v === 'A' || v === 'B') return v as any
+    } catch {}
+    return Math.random() > 0.5 ? 'A' : 'B'
+  })
+  useEffect(() => { try { localStorage.setItem('heroVariant', heroVariant) } catch {} }, [heroVariant])
   
   
   // 页面内功能区定位引用（用于平滑滚动到对应区域）
@@ -56,12 +56,6 @@ export default function Home() {
   const tianjinRef = useRef<HTMLDivElement | null>(null); // 天津特色专区
 
   // 计算偏移并进行更准确的滚动（避免被顶部吸附或遮挡）
-  const scrollToEl = (el: HTMLElement) => {
-    const isMobile = window.innerWidth < 768;
-    const offset = isMobile ? 64 : 96;
-    const y = el.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top: y, behavior: 'smooth' });
-  };
 
   const ensurePrompt = (): string | null => {
     const base = search.trim();
@@ -75,12 +69,16 @@ export default function Home() {
   const handleInspireClick = () => {
     const p = ensurePrompt();
     if (!p) return;
+    // 中文注释：点击前预取目标页面，减少跳转卡顿
+    prefetchNeo();
     navigate(`/neo?from=home&query=${encodeURIComponent(p)}`);
   };
 
   const handleGenerateClick = () => {
     const p = ensurePrompt();
     if (!p) return;
+    // 中文注释：点击前预取目标页面，减少跳转卡顿
+    prefetchTools();
     navigate(`/tools?from=home&query=${encodeURIComponent(p)}`);
   };
 
@@ -174,29 +172,14 @@ export default function Home() {
     const next = s.replace(new RegExp(tag, 'g'), '').replace(/\s+/g, ' ').trim();
     return next;
   };
-  // 切换标签选中状态并滚动到作品区
+  // 切换标签选中状态（中文注释：仅更新选中与搜索，不触发滚动或跳转）
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
       const exists = prev.includes(tag);
       const next = exists ? prev.filter(t => t !== tag) : [...prev, tag];
+      // 中文注释：同步更新搜索框内容（选择则追加，取消则移除）
       setSearch((s) => exists ? removeTagFromSearch(s, tag) : appendTagToSearch(s, tag));
-      const map: Record<string, React.RefObject<HTMLDivElement>> = {
-        '文献灵感': creativeRef,
-        '适用人群': generatedRef,
-        '科创思维': optimizedRef,
-        '地域素材': tianjinRef,
-        '国潮风格': galleryRef,
-        '非遗元素': galleryRef,
-      };
-      const target = map[tag] || galleryRef;
-      const el = target.current;
-      if (el) {
-        requestAnimationFrame(() => scrollToEl(el));
-      } else {
-        requestAnimationFrame(() => {
-          if (galleryRef.current) scrollToEl(galleryRef.current);
-        });
-      }
+      // 中文注释：不进行任何滚动或页面跳转，保持当前视图位置
       return next;
     });
   };
@@ -234,8 +217,48 @@ export default function Home() {
   }, [diagnosedIssues.length]);
 
   const handleRecommendedClick = (text: string) => {
-    setSearch(text);
-    navigate(`/explore?q=${encodeURIComponent(text)}`);
+    const map: Record<string, { q?: string; tags?: string[]; tagMode?: 'AND' | 'OR' }> = {
+      '国潮风格的品牌包装如何设计': { q: '国潮', tags: ['礼盒', '联名'], tagMode: 'OR' },
+      '杨柳青年画如何现代化表达': { q: '杨柳青年画' },
+      '非遗元素适合哪些商业场景': { q: '非遗' },
+      '天津传统色彩的应用指南': { q: '传统色' },
+      '品牌与老字号共创的最佳实践': { q: '品牌', tags: ['联名'], tagMode: 'OR' },
+    };
+    let cfg = map[text] || { q: text };
+    if (!map[text]) {
+      const s = text;
+      const checks: Array<{ match: string[]; q?: string; tags?: string[]; tagMode?: 'AND' | 'OR' }> = [
+        { match: ['国潮', '国潮风格'], q: '国潮', tags: ['联名', '礼盒'], tagMode: 'OR' },
+        { match: ['杨柳青年画', '杨柳青'], q: '杨柳青年画' },
+        { match: ['非遗'], q: '非遗' },
+        { match: ['传统色', '传统色彩', '中国红'], q: '传统色' },
+        { match: ['联名'], q: (cfg.q || '品牌'), tags: ['联名'], tagMode: 'OR' },
+        { match: ['礼盒'], q: (cfg.q || '包装'), tags: ['礼盒'], tagMode: 'OR' },
+        { match: ['京剧'], q: '京剧', tags: ['戏曲'] },
+        { match: ['海河'], q: '海河' },
+        { match: ['同仁堂'], q: '同仁堂' },
+        { match: ['景德镇'], q: '景德镇' },
+      ];
+      let q = cfg.q;
+      const tags: string[] = [];
+      let mode: 'AND' | 'OR' | undefined = undefined;
+      for (const rule of checks) {
+        if (rule.match.some((m) => s.includes(m))) {
+          if (rule.q) q = rule.q;
+          if (rule.tags) tags.push(...rule.tags);
+          if (rule.tagMode) mode = rule.tagMode;
+        }
+      }
+      cfg = { q, tags: Array.from(new Set(tags)), tagMode: mode };
+    }
+    const params = new URLSearchParams();
+    if (cfg.q) params.set('q', cfg.q);
+    if (cfg.tags && cfg.tags.length) params.set('tags', cfg.tags.join(','));
+    if (cfg.tagMode) params.set('tagMode', cfg.tagMode);
+    setSearch(cfg.q || text);
+    // 中文注释：跳转前预取作品集页面
+    prefetchExplore();
+    navigate(`/explore?${params.toString()}`);
   };
   const recommended = [
     '国潮风格的品牌包装如何设计',
@@ -291,6 +314,24 @@ export default function Home() {
         animate="visible"
         variants={containerVariants}
       >
+        {/* 中文注释：首页右下角新增“主题切换”按钮，便于快速更换头部样式（light/dark/pink 循环） */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            onClick={toggleTheme}
+            className={`px-3 py-2 rounded-lg shadow-sm ring-1 transition-colors flex items-center ${
+              isDark
+                ? 'bg-gray-800 hover:bg-gray-700 ring-gray-700 text-gray-100'
+                : theme === 'pink'
+                  ? 'bg-pink-50 hover:bg-pink-100 ring-pink-200 text-pink-800'
+                  : 'bg-white hover:bg-gray-50 ring-gray-200 text-gray-900'
+            }`}
+            aria-label="切换主题"
+            title="切换主题（浅色/深色/粉色）"
+          >
+            <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'} mr-2`}></i>
+            切换主题
+          </button>
+        </div>
         
         
         <motion.div variants={itemVariants} className="max-w-7xl mx-auto mb-8">
@@ -300,9 +341,11 @@ export default function Home() {
           </h1>
           {/* 首页副标题：提升可读性（更大字号/行距），限制最大宽度，并根据主题切换不同灰度 */}
           <p className={`text-base md:text-lg leading-relaxed opacity-85 max-w-2xl text-center mx-auto ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
-            输入你的问题或灵感，我们帮你更快抵达答案与创作
+            {heroVariant === 'A' 
+              ? '输入你的问题或灵感，我们帮你更快抵达答案与创作' 
+              : '一句话描述创作目标，获得灵感、生成方案与优化建议'}
           </p>
-          <div className={`rounded-3xl shadow-sm ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} p-6`}> 
+          <div className={`rounded-3xl shadow-sm ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} p-4 md:p-6`}> 
             <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-3 md:space-y-0">
               <div className="relative flex-1">
                 <input
@@ -310,31 +353,35 @@ export default function Home() {
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateClick(); }}
                   placeholder="请输入创作问题或灵感关键词"
-                  className={`w-full px-4 py-3 rounded-lg ${isDark ? 'bg-gray-700 text-white ring-1 ring-gray-600 focus:ring-2 focus:ring-gray-500' : 'bg-white ring-1 ring-gray-300 focus:ring-2 focus:ring-blue-300'} focus:outline-none`}
+                  className={`w-full px-4 py-3 rounded-lg ${isDark ? 'bg-gray-700 text-white ring-1 ring-gray-600 focus:ring-2 focus:ring-gray-500' : 'bg-white ring-1 ring-gray-300 focus:ring-2 focus:ring-blue-300'} focus:outline-none text-base`}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  enterKeyHint="search"
+                  inputMode="text"
                 />
                 {search && (
                   <button
                     aria-label="清空输入"
                     title="清空"
                     onClick={() => { setSearch(''); setSelectedTags([]); }}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700'} hover:opacity-90`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 text-sm px-2 py-1 rounded ${isDark ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700'} hover:opacity-90`}
                   >清空</button>
                 )}
               </div>
-              <div className="flex items-center space-x-3">
-                <button onClick={handleInspireClick} className={`px-3 py-2 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors`}>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button onClick={handleInspireClick} className={`px-4 py-2 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors flex items-center`}>
                   <i className="fas fa-bolt mr-1"></i>
                   灵感
                 </button>
-                <button onClick={handleGenerateClick} className={`px-3 py-2 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors`}>
+                <button onClick={handleGenerateClick} className={`px-4 py-2 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors flex items-center`}>
                   <i className="fas fa-wand-magic-sparkles mr-1"></i>
                   生成
                 </button>
-                <button onClick={handleOptimizeClick} disabled={isOptimizing} className={`px-3 py-2 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors ${isOptimizing ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                <button onClick={handleOptimizeClick} disabled={isOptimizing} className={`px-4 py-2 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors ${isOptimizing ? 'opacity-60 cursor-not-allowed' : ''} flex items-center`}>
                   <i className="fas fa-adjust mr-1"></i>
                   {isOptimizing ? '优化中…' : '优化'}
                 </button>
-                <button onClick={toggleInspire} className={`px-3 py-2 rounded-lg text-sm ${inspireOn ? 'bg-blue-600 text-white' : isDark ? 'bg-gray-700' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors`}>
+                <button onClick={toggleInspire} className={`px-4 py-2 rounded-lg text-sm ${inspireOn ? 'bg-blue-600 text-white' : isDark ? 'bg-gray-700' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} transition-colors`}>
                   灵感加持 {inspireOn ? 'ON' : 'OFF'}
                 </button>
               </div>
@@ -342,17 +389,52 @@ export default function Home() {
             <div className="mt-4 flex flex-wrap gap-2 scroll-mt-24">
               {quickTags.map((t, i) => {
                 const active = selectedTags.includes(t);
-                const base = 'ring-1 text-xs px-3 py-1 rounded-full cursor-pointer';
+                const base = 'ring-1 text-xs px-3 py-1 rounded-full';
                 const activeCls = isDark ? 'bg-gray-700 text-white ring-gray-600' : 'bg-blue-50 text-blue-700 ring-blue-300';
                 const normalCls = isDark ? 'bg-gray-800 text-gray-300 ring-gray-700' : 'bg-white text-gray-700 ring-gray-200';
+                // 中文注释：使用按钮增强可访问性（支持键盘操作与aria状态）
                 return (
-                  <span
+                  <button
                     key={i}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => toggleTag(t)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTag(t); } }}
                     className={`${base} ${active ? activeCls : normalCls}`}
-                  >{t}</span>
+                  >{t}</button>
                 )
               })}
+            </div>
+            {/* 中文注释：PPPP—Prove（社会证明）与 Push（CTA） */}
+            <div className="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+                  <i className="fas fa-users mr-1"></i> 已注册 12,536 人
+                </span>
+                <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+                  <i className="fas fa-image mr-1"></i> 作品集收录 2,148 项
+                </span>
+                <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+                  <i className="fas fa-handshake mr-1"></i> 品牌合作 36 次
+                </span>
+                <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+                  <i className="fas fa-star mr-1"></i> 满意度 96%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleGenerateClick}
+                  className={`px-4 py-2 rounded-full ${isDark ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                >
+                  立即开始创作
+                </button>
+                <button
+                  onClick={handleExplore}
+                  className={`px-4 py-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                >
+                  浏览精选作品
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -360,9 +442,9 @@ export default function Home() {
         <motion.div variants={itemVariants} className="max-w-7xl mx-auto mb-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {recommended.map((r, idx) => (
-              <div key={idx} className={`p-3 rounded-xl ${isDark ? 'bg-gray-800 ring-1 ring-gray-700' : 'bg-white ring-1 ring-gray-200'} flex items-center justify-between hover:bg-gray-50 transition-colors`}>
-                <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm`}>{r}</span>
-                <button onClick={() => handleRecommendedClick(r)} className="text-red-600 text-sm">查看</button>
+              <div key={idx} className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 ring-1 ring-gray-700' : 'bg-white ring-1 ring-gray-200'} flex items-center justify-between hover:bg-gray-50 transition-colors`}>
+                <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm md:text-base`}>{r}</span>
+                <button onClick={() => handleRecommendedClick(r)} className="text-red-600 text-sm md:text-base px-2 py-1 rounded hover:bg-red-50 transition-colors">查看</button>
               </div>
             ))}
           </div>
@@ -405,7 +487,7 @@ export default function Home() {
                 <div className="mt-2 flex items-center gap-2">
                   <button onClick={speakOptimizations} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-green-700 text-white' : 'bg-green-600 text-white'}`}>朗读建议</button>
                   <button onClick={copyOptimizations} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900 ring-1 ring-gray-300'}`}>复制建议</button>
-                  <button onClick={() => navigate(`/tools?from=home&query=${encodeURIComponent(optimizationSummary || search)}`)} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white'}`}>应用到创作中心</button>
+                  <button onClick={() => { prefetchTools(); navigate(`/tools?from=home&query=${encodeURIComponent(optimizationSummary || search)}`) }} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-blue-700 text-white' : 'bg-blue-600 text-white'}`}>应用到创作中心</button>
                 </div>
                 {optimizeAudioUrl && (<audio controls src={optimizeAudioUrl} className="mt-2 w-full" />)}
               </div>
@@ -416,7 +498,7 @@ export default function Home() {
           <h2 className="text-xl font-bold">为你推荐</h2>
           <button onMouseEnter={prefetchExplore} onFocus={prefetchExplore} onClick={handleExplore} className="text-sm text-blue-600 hover:text-blue-700">去作品集</button>
         </motion.div>
-        <motion.div ref={galleryRef} variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 scroll-mt-24">
+        <motion.div ref={galleryRef} variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-24">
           {gallery.map(item => (
             <motion.div 
               key={item.id} 
@@ -425,17 +507,20 @@ export default function Home() {
               role="button"
               tabIndex={0}
               onClick={() => {
+                // 中文注释：卡片点击前预取作品集页面，优化跳转体验
+                prefetchExplore();
                 navigate(`/explore?q=${encodeURIComponent(item.title)}`)
               }}
               onMouseEnter={prefetchExplore}
               onFocus={prefetchExplore}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  prefetchExplore();
                   navigate(`/explore?q=${encodeURIComponent(item.title)}`)
                 }
               }}
             >
-              <div className="relative">
+              <div className="relative aspect-video">
                 <TianjinImage src={item.thumbnail} alt={item.title} ratio="landscape" rounded="2xl" sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw" />
                 <span className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full backdrop-blur ${isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700'}`}>
                   <i className="far fa-heart mr-1"></i>{item.likes}
@@ -443,7 +528,7 @@ export default function Home() {
               </div>
               <div className={`p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium">{item.title}</h3>
+                  <h3 className="font-medium text-sm md:text-base">{item.title}</h3>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>{item.category}</span>
                 </div>
                 <div className={`${isDark ? 'text-gray-400' : 'text-gray-500'} text-xs`}>精选创作 · 高质量示例</div>
@@ -649,22 +734,27 @@ export default function Home() {
                </h3>
               <button 
                 onClick={() => navigate('/tianjin')}
-                className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+                className="flex items-center text-blue-600 hover:text-blue-700 transition-colors text-sm"
               >
                  查看更多
                  <i className="fas fa-arrow-right ml-1"></i>
                </button>
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <motion.div
-                className={`rounded-xl overflow-hidden shadow-md border ${
-                  isDark ? 'border-gray-700' : 'border-blue-200'
-                }`}
+                className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700' : 'border-blue-200'}`}
                 whileHover={{ y: -5 }}
                 onClick={() => navigate('/tianjin')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    navigate('/tianjin')
+                  }
+                }}
               >
                 {/* 中文注释：卡片头部改为高质量图片，提升高级感 */}
-                <div className="h-40 relative">
+                <div className="relative aspect-video">
                   <img
                     src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Tianjin%20cultural%20heritage%20museum%20interior%2C%20warm%20premium%20lighting%2C%20modern%20minimal%20design%2C%20high%20detail"
                     alt="天津文化知识库封面"
@@ -674,21 +764,26 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent"></div>
                 </div>
                 <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
-                  <h4 className="font-bold mb-2">天津文化知识库</h4>
+                  <h4 className="font-bold mb-2 text-sm md:text-base">天津文化知识库</h4>
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     探索天津独特的历史文化、非遗技艺和地方特色
                   </p>
                 </div>
               </motion.div>
               <motion.div
-                className={`rounded-xl overflow-hidden shadow-md border ${
-                  isDark ? 'border-gray-700' : 'border-blue-200'
-                }`}
+                className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700' : 'border-blue-200'}`}
                 whileHover={{ y: -5 }}
                 onClick={() => navigate('/tianjin/activities')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    navigate('/tianjin/activities')
+                  }
+                }}
               >
                 {/* 中文注释：共创活动卡片使用现代工作室场景图片 */}
-                <div className="h-40 relative">
+                <div className="relative aspect-video">
                   <img
                     src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Creative%20co-creation%20workshop%2C%20premium%20studio%20lighting%2C%20designers%20collaborating%2C%20sleek%20minimal%20aesthetic%2C%20high%20detail"
                     alt="津味共创活动封面"
@@ -698,21 +793,26 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent"></div>
                 </div>
                 <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
-                  <h4 className="font-bold mb-2">津味共创活动</h4>
+                  <h4 className="font-bold mb-2 text-sm md:text-base">津味共创活动</h4>
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     参与天津特色主题创作活动，展示津门文化魅力
                   </p>
                 </div>
               </motion.div>
               <motion.div
-                className={`rounded-xl overflow-hidden shadow-md border ${
-                  isDark ? 'border-gray-700' : 'border-blue-200'
-                }`}
+                className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700' : 'border-blue-200'}`}
                 whileHover={{ y: -5 }}
                 onClick={() => navigate('/create')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    navigate('/create')
+                  }
+                }}
               >
                 {/* 中文注释：方言指令创作卡片采用未来感AI界面视觉 */}
-                <div className="h-40 relative">
+                <div className="relative aspect-video">
                   <img
                     src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Futuristic%20AI%20interface%20with%20Chinese%20calligraphy%20elements%2C%20premium%20neon%20glow%2C%20dark%20sleek%20UI%2C%20high%20detail"
                     alt="方言指令创作封面"
@@ -722,7 +822,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent"></div>
                 </div>
                 <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
-                  <h4 className="font-bold mb-2">方言指令创作</h4>
+                  <h4 className="font-bold mb-2 text-sm md:text-base">方言指令创作</h4>
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     使用天津方言指令进行AI创作，体验独特的交互方式
                   </p>
@@ -733,6 +833,16 @@ export default function Home() {
       </motion.section>
       
       <Footer variant="full" />
+      {/* 中文注释：首页右下角主题切换入口（与键盘 T 快捷键一致） */}
+      <button
+        aria-label="切换主题"
+        title="切换主题（快捷键：T）"
+        onClick={toggleTheme}
+        className={`fixed right-4 bottom-20 md:bottom-6 z-40 p-3 rounded-full shadow-lg ring-1 transition-colors ${isDark ? 'bg-gray-800 text-yellow-300 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-900 ring-gray-200 hover:bg-gray-50'}`}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) / 2)' }}
+      >
+        <i className={`fas ${isDark ? 'fa-moon' : 'fa-sun'}`}></i>
+      </button>
     </SidebarLayout>
   );
 }

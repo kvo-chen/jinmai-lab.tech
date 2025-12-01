@@ -128,6 +128,11 @@ export default function Login() {
                   : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border"
               )}
               placeholder="请输入您的邮箱"
+              autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              enterKeyHint="next"
               required
             />
           </div>
@@ -149,6 +154,10 @@ export default function Login() {
                   : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border"
               )}
               placeholder="请输入您的密码"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              enterKeyHint="done"
               required
             />
           </div>
@@ -193,7 +202,7 @@ export default function Login() {
             <div className={`flex-1 h-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
           </div>
           
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { name: 'wechat', color: 'bg-green-500', icon: 'fa-weixin' },
               { name: 'alipay', color: 'bg-blue-500', icon: 'fa-alipay' },
@@ -202,9 +211,10 @@ export default function Login() {
             ].map((item) => (
               <motion.button
                 key={item.name}
-                className={`h-12 rounded-xl ${item.color} flex items-center justify-center text-white transition-transform`}
+                className={`h-14 sm:h-12 rounded-xl ${item.color} flex items-center justify-center text-white transition-transform min-h-[44px]`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                aria-label={`使用${item.name}登录`}
                 onClick={async () => {
                   const ok = await quickLogin(item.name as any)
                   if (ok) {

@@ -88,7 +88,17 @@ export default function WorkDetail() {
               </div>
             </div>
             <div className="order-1 lg:order-2">
-              <img src={work.thumbnail} alt={work.title} className="w-full h-full object-cover max-h-[520px]" />
+              {/* 中文注释：如果存在视频地址，展示视频播放器；否则展示图片 */}
+              {work.videoUrl ? (
+                <video
+                  src={work.videoUrl}
+                  poster={work.thumbnail}
+                  controls
+                  className="w-full h-full object-cover max-h-[520px]"
+                />
+              ) : (
+                <img src={work.thumbnail} alt={work.title} className="w-full h-full object-cover max-h-[520px]" />
+              )}
             </div>
           </div>
         </motion.div>

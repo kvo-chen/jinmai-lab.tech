@@ -88,7 +88,7 @@ class ErrorLogger {
   }
 
   // 获取错误统计
-  getErrorStats(): {
+  getErrorStats(recentCount: number = 8): {
     total: number;
     byType: Record<string, number>;
     recent: ErrorInfo[];
@@ -96,7 +96,7 @@ class ErrorLogger {
     const stats = {
       total: this.errors.length,
       byType: {} as Record<string, number>,
-      recent: this.errors.slice(-8)
+      recent: recentCount > 0 ? this.errors.slice(-recentCount) : []
     };
 
     // 按类型统计错误
@@ -308,8 +308,8 @@ class ErrorService {
   /**
    * 获取错误日志统计
    */
-  getErrorStats() {
-    return this.logger.getErrorStats();
+  getErrorStats(recentCount: number = 8) {
+    return this.logger.getErrorStats(recentCount);
   }
 
   clearErrors() {

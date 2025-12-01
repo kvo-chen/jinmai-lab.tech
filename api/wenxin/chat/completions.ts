@@ -53,7 +53,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
     const ct = r.headers.get('content-type') || ''
     const data = ct.includes('application/json') ? await r.json() : await r.text()
-    if (!r.ok) { const msg = (data && (data as any).error_msg) || 'SERVER_ERROR'; res.status(r.status).json({ error: msg, data }); return }
+    if (!r.ok) { 
+      const msg = (data && (data as any).error_msg) || 'SERVER_ERROR'; 
+      const errCode = (data && (data as any).error_code) || '';
+      // 检测配额用完错误
+      if (msg.includes('quota exceeded') || msg.includes('配额') || errCode === '4001') {
+        res.status(429).json({ error: 'QUOTA_EXCEEDED', message: '百度千帆API免费额度已用完' }); 
+        return;
+      }
+      res.status(r.status).json({ error: msg, data }); 
+      return;
+    }
     res.status(200).json({ ok: true, data })
   } catch (e: any) {
     res.status(500).json({ error: 'SERVER_ERROR', message: e?.message || 'UNKNOWN' })

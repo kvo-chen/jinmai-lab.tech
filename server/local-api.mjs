@@ -1,12 +1,21 @@
 import http from 'http'
 import { URL } from 'url'
 import fs from 'fs'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import { initDb, getFavoriteTutorialIds, toggleFavoriteTutorial, upsertVideoTask, getVideoTask, getDbStats, createUser, findUserByEmail, findUserByUsername, findUserById } from './db.mjs'
 
-const PORT = 3001
+// 中文注释：端口支持环境变量覆盖，避免与前端端口冲突
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3001
 const BASE_URL = process.env.DOUBAO_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
 const API_KEY = process.env.DOUBAO_API_KEY || ''
-const MODEL_ID = process.env.DOUBAO_MODEL_ID || 'doubao-seedance-1-0-pro-250528'
+const MODEL_ID = process.env.DOUBAO_MODEL_ID || 'doubao-seedance-1-0-pro-250528';
 const ORIGIN = process.env.CORS_ALLOW_ORIGIN || '*'
+const MOCK = process.env.DOUBAO_MOCK === '1'
+
+// JWT配置
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 
 // Kimi (Moonshot) config
 const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1'
@@ -100,19 +109,35 @@ async function readBody(req) {
 }
 
 async function proxyFetch(path, method, body) {
+  // 确保使用最新的环境变量值
   const base = process.env.DOUBAO_BASE_URL || BASE_URL
   const key = process.env.DOUBAO_API_KEY || API_KEY
-  const resp = await fetch(`${base}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const contentType = resp.headers.get('content-type') || ''
-  const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
-  return { status: resp.status, ok: resp.ok, data }
+  
+  // 确保基础URL和API密钥存在
+  if (!base || !key) {
+    return { status: 500, ok: false, data: { error: { code: 'CONFIG_MISSING', message: 'Missing base URL or API key' } } }
+  }
+  
+  try {
+    const resp = await fetch(`${base}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    const contentType = resp.headers.get('content-type') || ''
+    const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
+    return { status: resp.status, ok: resp.ok, data }
+  } catch (error) {
+    console.error('Proxy fetch error:', error)
+    return { 
+      status: 500, 
+      ok: false, 
+      data: { error: { code: 'REQUEST_ERROR', message: error?.message || 'Failed to send request' } } 
+    }
+  }
 }
 
 async function kimiFetch(path, method, body) {
@@ -279,6 +304,42 @@ function sendJson(res, status, obj) {
   res.end(JSON.stringify(obj))
 }
 
+// JWT验证中间件
+function verifyToken(req) {
+  const authHeader = req.headers.authorization
+  if (!authHeader) return null
+  
+  const token = authHeader.split(' ')[1]
+  if (!token) return null
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    return decoded
+  } catch (error) {
+    console.error('JWT验证失败:', error.message)
+    return null
+  }
+}
+
+// 中文注释：初始化数据库连接（仅在服务启动时执行一次）
+const __db = initDb()
+
+// 中文注释：安全读取社区配置文件（每次请求时读取，便于热更新）
+function loadCommunityConfig() {
+  try {
+    const rawPath = new URL('./data/community.json', import.meta.url).pathname
+    const pathA = decodeURIComponent(rawPath)
+    const pathB = `${process.cwd()}/server/data/community.json`
+    const final = fs.existsSync(pathA) ? pathA : (fs.existsSync(pathB) ? pathB : '')
+    if (!final) return null
+    const text = fs.readFileSync(final, 'utf-8')
+    const json = JSON.parse(text)
+    return json && typeof json === 'object' ? json : null
+  } catch {
+    return null
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   setCors(res)
   if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
@@ -288,12 +349,35 @@ const server = http.createServer(async (req, res) => {
   // Skip global Doubao key check; validate per-route
 
   try {
-    // 简单内存收藏状态（教程收藏），仅用于本地开发演示
-    globalThis.__tutorialFavorites = globalThis.__tutorialFavorites || new Set()
-    const favSet = globalThis.__tutorialFavorites
-
+    // 中文注释：教程收藏改为使用数据库持久化
     if (req.method === 'GET' && path === '/api/favorites/tutorials') {
-      sendJson(res, 200, { ok: true, ids: Array.from(favSet) })
+      const ids = getFavoriteTutorialIds(__db)
+      sendJson(res, 200, { ok: true, ids })
+      return
+    }
+
+    // 中文注释：社区标签（用于前端热门话题展示）
+    if (req.method === 'GET' && path === '/api/community/tags') {
+      const cfg = loadCommunityConfig()
+      const details = Array.isArray(cfg?.tagDetails) ? cfg.tagDetails : null
+      if (details) {
+        sendJson(res, 200, { ok: true, data: details })
+        return
+      }
+      const tags = Array.isArray(cfg?.tags) ? cfg.tags : ['国潮设计', '非遗传承', '品牌联名', '校园活动', '文旅推广']
+      sendJson(res, 200, { ok: true, data: tags })
+      return
+    }
+
+    // 中文注释：精选社群条目（用于前端精选社群列表）
+    if (req.method === 'GET' && path === '/api/community/featured') {
+      const cfg = loadCommunityConfig()
+      const items = Array.isArray(cfg?.featured) ? cfg.featured : [
+        { name: '国潮共创组', members: 128, path: '/community?group=guochao' },
+        { name: '非遗研究社', members: 96, path: '/community?group=heritage' },
+        { name: '品牌联名工坊', members: 73, path: '/community?group=brand' },
+      ]
+      sendJson(res, 200, { ok: true, data: items })
       return
     }
 
@@ -301,8 +385,8 @@ const server = http.createServer(async (req, res) => {
       const b = await readBody(req)
       const id = Number(b?.id)
       if (!id || Number.isNaN(id)) { sendJson(res, 400, { error: 'ID_INVALID' }); return }
-      if (favSet.has(id)) favSet.delete(id); else favSet.add(id)
-      sendJson(res, 200, { ok: true, ids: Array.from(favSet) })
+      const ids = toggleFavoriteTutorial(__db, id)
+      sendJson(res, 200, { ok: true, ids })
       return
     }
 
@@ -429,28 +513,154 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && path === '/api/doubao/videos/tasks') {
       const key = process.env.DOUBAO_API_KEY || API_KEY
-      if (!key) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+      if (MOCK || !key) {
+        const b = await readBody(req)
+        const mid = `mock-${Date.now()}`
+        const model = 'doubao-seedance-1-0-pro-fast-251015'
+        try { upsertVideoTask(__db, { id: mid, status: 'succeeded', model, payload: b }) } catch {}
+        sendJson(res, 200, { ok: true, data: { id: mid, status: 'succeeded', content: { video_url: 'https://example.com/mock.mp4', last_frame_url: 'https://example.com/mock.jpg' } } })
+        return
+      }
+      
       const b = await readBody(req)
-      const content = Array.isArray(b.content) ? b.content.map((it) => {
-        if (it?.type === 'text') return { type: 'text', text: String(it.text || '').replace(/`/g, '').trim() }
-        if (it?.type === 'image_url') return { type: 'image_url', image_url: { url: String(it?.image_url?.url || '').replace(/`/g, '').trim() } }
+      
+      // Validate request body
+      if (!b.content || !Array.isArray(b.content)) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: 'Content must be a non-empty array' });
+        return
+      }
+      
+      // Process and sanitize content
+      const content = b.content.map((it) => {
+        if (it?.type === 'text') return { 
+          type: 'text', 
+          text: String(it.text || '').replace(/`/g, '').trim() 
+        }
+        if (it?.type === 'image_url') return { 
+          type: 'image_url', 
+          image_url: { 
+            url: String(it?.image_url?.url || '').replace(/`/g, '').trim() 
+          } 
+        }
         return it
-      }) : []
-      const payload = { model: b.model || MODEL_ID, content }
-      const r = await proxyFetch('/contents/generations/tasks', 'POST', payload)
-      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.code) || 'SERVER_ERROR', data: r.data }); return }
-      sendJson(res, 200, { ok: true, data: r.data })
-      return
+      }).filter(item => { 
+        // Remove empty or invalid items
+        if (item?.type === 'text') return item.text.length > 0;
+        if (item?.type === 'image_url') return item.image_url?.url && item.image_url.url.length > 0;
+        return false;
+      })
+      
+      if (content.length === 0) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: 'No valid content provided' });
+        return;
+      }
+      
+      // 检查是否包含图片URL（图生视频）
+      const hasImageUrl = content.some(item => item.type === 'image_url');
+      
+      // 根据内容类型选择合适的模型
+      if (hasImageUrl) {
+        // 图生视频 - 优先使用快速模型，不开通则回退到标准模型
+        const fastModel = 'doubao-seedance-1-0-pro-fast-251015'
+        const fallbackModel = MODEL_ID // 默认配置或 'doubao-seedance-1-0-pro-250528'
+        const payload = { model: fastModel, content };
+        
+        let r = await proxyFetch('/contents/generations/tasks', 'POST', payload);
+        
+        if (!r.ok && (r.data?.error?.code === 'ModelNotOpen')) {
+          const fallbackPayload = { model: fallbackModel, content }
+          r = await proxyFetch('/contents/generations/tasks', 'POST', fallbackPayload)
+        }
+        
+        if (!r.ok) {
+          // 进一步回退：改为文本生成视频
+          const textOnly = content.filter(it => it.type === 'text')
+          if (textOnly.length > 0) {
+            const r2 = await proxyFetch('/contents/generations/tasks', 'POST', { model: fallbackModel, content: textOnly })
+            if (!r2.ok) {
+              sendJson(res, r2.status, { error: (r2.data?.error?.code) || 'SERVER_ERROR', message: (r2.data?.error?.message) || 'Video generation failed', data: r2.data })
+              return
+            }
+            try { upsertVideoTask(__db, { id: r2.data?.id, status: r2.data?.status, model: r2.data?.model || fallbackModel, payload: { model: fallbackModel, content: textOnly } }) } catch {}
+            sendJson(res, 200, { ok: true, data: r2.data });
+            return
+          }
+          sendJson(res, r.status, { 
+            error: (r.data?.error?.code) || 'SERVER_ERROR', 
+            message: (r.data?.error?.message) || 'Image-to-video generation failed',
+            data: r.data 
+          }); 
+          return 
+        }
+        
+        try { upsertVideoTask(__db, { id: r.data?.id, status: r.data?.status, model: r.data?.model || fastModel, payload }) } catch {}
+        sendJson(res, 200, { ok: true, data: r.data });
+        return;
+      } else {
+        // 文本生成视频
+        const model = b.model || MODEL_ID;
+        const payload = { model, content };
+        
+        let r = await proxyFetch('/contents/generations/tasks', 'POST', payload);
+
+        // 如果模型未开通，自动降级到已测试可用的快速模型
+        if (!r.ok && (r.data?.error?.code === 'ModelNotOpen')) {
+          const fallbackPayload = { model: 'doubao-seedance-1-0-pro-fast-251015', content };
+          r = await proxyFetch('/contents/generations/tasks', 'POST', fallbackPayload);
+        }
+
+        if (!r.ok) {
+          sendJson(res, r.status, { 
+            error: (r.data?.error?.code) || 'SERVER_ERROR', 
+            message: (r.data?.error?.message) || 'Video generation failed',
+            data: r.data 
+          }); 
+          return 
+        }
+
+        try { upsertVideoTask(__db, { id: r.data?.id, status: r.data?.status, model, payload }) } catch {}
+        sendJson(res, 200, { ok: true, data: r.data });
+        return;
+      }
     }
 
     if (req.method === 'GET' && path.startsWith('/api/doubao/videos/tasks/')) {
-      const key = process.env.DOUBAO_API_KEY || API_KEY
-      if (!key) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
       const id = path.split('/').pop() || ''
-      const r = await proxyFetch(`/contents/generations/tasks/${id}`, 'GET')
-      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.code) || 'SERVER_ERROR', data: r.data }); return }
-      sendJson(res, 200, { ok: true, data: r.data })
-      return
+      
+      // Validate task ID
+      if (!id || typeof id !== 'string' || id.trim().length === 0) {
+        sendJson(res, 400, { error: 'INVALID_TASK_ID', message: 'Invalid task ID provided' });
+        return
+      }
+      
+      const key = process.env.DOUBAO_API_KEY || API_KEY
+      if (MOCK || !key) {
+        sendJson(res, 200, { ok: true, data: { id, status: 'succeeded', content: { video_url: 'https://example.com/mock.mp4', last_frame_url: 'https://example.com/mock.jpg' } } })
+        return
+      }
+      
+      try {
+        const r = await proxyFetch(`/contents/generations/tasks/${id}`, 'GET')
+        
+        if (!r.ok) {
+          sendJson(res, r.status, { 
+            error: (r.data?.error?.code) || 'SERVER_ERROR', 
+            message: (r.data?.error?.message) || 'Failed to get video task status',
+            data: r.data 
+          }); 
+          return 
+        }
+        
+        try { upsertVideoTask(__db, { id, status: r.data?.status }) } catch {}
+        sendJson(res, 200, { ok: true, data: r.data })
+        return
+      } catch (error) {
+        sendJson(res, 500, { 
+          error: 'INTERNAL_ERROR', 
+          message: 'An error occurred while retrieving the video task status' 
+        });
+        return
+      }
     }
 
     if (req.method === 'POST' && path === '/api/volc/tts/synthesize') {
@@ -474,6 +684,291 @@ const server = http.createServer(async (req, res) => {
       const safe = remote.startsWith('https://') && (remote.includes('volces.com') || remote.includes('tos-cn-beijing'))
       if (!safe) { sendJson(res, 400, { error: 'URL_NOT_ALLOWED' }); return }
       await proxyBinary(remote, req, res)
+      return
+    }
+
+    if (req.method === 'GET' && path === '/api/proxy/video/meta') {
+      const remote = (new URL(req.url, `http://localhost:${PORT}`)).searchParams.get('url') || ''
+      const safe = remote.startsWith('https://') && (remote.includes('volces.com') || remote.includes('tos-cn-beijing'))
+      if (!safe) { sendJson(res, 400, { error: 'URL_NOT_ALLOWED' }); return }
+      try {
+        let resp = await fetch(remote, { method: 'HEAD' })
+        if (!resp.ok) {
+          resp = await fetch(remote, { method: 'GET' })
+        }
+        const ct = resp.headers.get('content-type') || 'application/octet-stream'
+        const cl = Number(resp.headers.get('content-length') || 0)
+        const ar = resp.headers.get('accept-ranges') || ''
+        sendJson(res, 200, { ok: true, content_type: ct, content_length: cl, accept_ranges: ar })
+      } catch (e) {
+        sendJson(res, 500, { error: 'META_ERROR', message: e?.message || 'UNKNOWN' })
+      }
+      return
+    }
+
+    // 健康检查：返回各模型的配置状态，便于前端快速定位问题
+    if (req.method === 'GET' && path === '/api/health/llms') {
+      const status = {
+        doubao: { configured: !!(process.env.DOUBAO_API_KEY || API_KEY), base: (process.env.DOUBAO_BASE_URL || BASE_URL) },
+        kimi: { configured: !!(process.env.KIMI_API_KEY || KIMI_API_KEY), base: (process.env.KIMI_BASE_URL || KIMI_BASE_URL) },
+        deepseek: { configured: !!(process.env.DEEPSEEK_API_KEY || DEEPSEEK_API_KEY), base: (process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL) },
+        qwen: { configured: !!(process.env.DASHSCOPE_API_KEY || DASHSCOPE_API_KEY), base: (process.env.DASHSCOPE_BASE_URL || DASHSCOPE_BASE_URL), model: (process.env.DASHSCOPE_MODEL_ID || DASHSCOPE_MODEL_ID) },
+        wenxin: {
+          configured: !!(process.env.QIANFAN_AUTH || QIANFAN_AUTH || process.env.QIANFAN_ACCESS_TOKEN || QIANFAN_ACCESS_TOKEN || process.env.QIANFAN_AK || QIANFAN_AK),
+          base: (process.env.QIANFAN_BASE_URL || QIANFAN_BASE_URL),
+          token_cached: !!__qf_token
+        }
+      }
+      sendJson(res, 200, { ok: true, status })
+      return
+    }
+
+    if (req.method === 'GET' && path === '/api/health/ping') {
+      sendJson(res, 200, { ok: true, message: 'pong', port: PORT })
+      return
+    }
+    
+    // 图生视频专用路由
+    if (req.method === 'POST' && path === '/api/doubao/videos/image-to-video') {
+      const key = process.env.DOUBAO_API_KEY || API_KEY
+      const b = await readBody(req)
+      if (MOCK || !key) {
+        const mid = `mock-${Date.now()}`
+        const model = b.model || 'doubao-seedance-1-0-pro-fast-251015'
+        try { upsertVideoTask(__db, { id: mid, status: 'succeeded', model, payload: b }) } catch {}
+        sendJson(res, 200, { ok: true, data: { id: mid, status: 'succeeded', content: { video_url: 'https://example.com/mock.mp4', last_frame_url: 'https://example.com/mock.jpg' } } })
+        return
+      }
+      
+      // Validate request body
+      if (!b.content || !Array.isArray(b.content) || b.content.length === 0) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: 'Content must be a non-empty array' });
+        return
+      }
+      
+      // 验证是否包含图片URL
+      const hasImageUrl = b.content.some(item => item?.type === 'image_url');
+      if (!hasImageUrl) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: 'Content must include at least one image_url item' });
+        return;
+      }
+      
+      // Process and sanitize content
+      const content = b.content.map((it) => {
+        if (it?.type === 'text') return { 
+          type: 'text', 
+          text: String(it.text || '').replace(/`/g, '').trim() 
+        }
+        if (it?.type === 'image_url') return { 
+          type: 'image_url', 
+          image_url: { 
+            url: String(it?.image_url?.url || '').replace(/`/g, '').trim() 
+          } 
+        }
+        return it
+      }).filter(item => {
+        if (item?.type === 'text') return item.text.length > 0;
+        if (item?.type === 'image_url') return item.image_url?.url && item.image_url.url.length > 0;
+        return false;
+      })
+      
+      if (content.length === 0) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: 'No valid content provided' });
+        return;
+      }
+      
+      // 使用图生视频专用模型，未开通则回退到标准模型
+      const fastModel = (b.model && String(b.model).includes('fast')) ? b.model : 'doubao-seedance-1-0-pro-fast-251015';
+      const fallbackModel = MODEL_ID;
+      const payload = { model: fastModel, content };
+      
+      let r = await proxyFetch('/contents/generations/tasks', 'POST', payload);
+      
+      if (!r.ok && (r.data?.error?.code === 'ModelNotOpen')) {
+        const fallbackPayload = { model: fallbackModel, content }
+        r = await proxyFetch('/contents/generations/tasks', 'POST', fallbackPayload)
+      }
+      
+      if (!r.ok) {
+        sendJson(res, r.status, { 
+          error: (r.data?.error?.code) || 'SERVER_ERROR', 
+          message: (r.data?.error?.message) || 'Image-to-video generation failed',
+          data: r.data 
+        }); 
+        return 
+      }
+      
+      try { upsertVideoTask(__db, { id: r.data?.id, status: r.data?.status, model: r.data?.model || fastModel, payload }) } catch {}
+      sendJson(res, 200, { ok: true, data: r.data });
+      return;
+    }
+
+    // 中文注释：数据库状态与视频任务查询（本地存储）
+    if (req.method === 'GET' && path === '/api/db/status') {
+      const stats = getDbStats(__db)
+      sendJson(res, 200, { ok: true, stats })
+      return
+    }
+
+    if (req.method === 'GET' && path.startsWith('/api/video_tasks/')) {
+      const id = path.split('/').pop() || ''
+      const row = getVideoTask(__db, id)
+      if (!row) { sendJson(res, 404, { error: 'NOT_FOUND' }); return }
+      sendJson(res, 200, { ok: true, data: row })
+      return
+    }
+
+    // 用户认证相关API
+    
+    // 用户注册
+    if (req.method === 'POST' && path === '/api/auth/register') {
+      const b = await readBody(req)
+      
+      // 验证必填字段
+      if (!b.username || !b.email || !b.password) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '用户名、邮箱和密码不能为空' })
+        return
+      }
+      
+      // 验证用户名格式
+      if (b.username.length < 2 || b.username.length > 20) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '用户名长度必须在2-20个字符之间' })
+        return
+      }
+      
+      // 验证密码格式
+      if (b.password.length < 6) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '密码长度不能少于6个字符' })
+        return
+      }
+      
+      // 检查用户名是否已存在
+      const existingUserByUsername = findUserByUsername(__db, b.username)
+      if (existingUserByUsername) {
+        sendJson(res, 400, { error: 'USERNAME_EXISTS', message: '用户名已被注册' })
+        return
+      }
+      
+      // 检查邮箱是否已存在
+      const existingUserByEmail = findUserByEmail(__db, b.email)
+      if (existingUserByEmail) {
+        sendJson(res, 400, { error: 'EMAIL_EXISTS', message: '邮箱已被注册' })
+        return
+      }
+      
+      // 密码哈希
+      const salt = await bcrypt.genSalt(10)
+      const password_hash = await bcrypt.hash(b.password, salt)
+      
+      // 创建用户
+      const userId = createUser(__db, {
+        username: b.username,
+        email: b.email,
+        password_hash,
+        phone: b.phone || null,
+        avatar_url: b.avatar_url || null,
+        interests: b.interests ? JSON.stringify(b.interests) : null
+      })
+      
+      if (!userId) {
+        sendJson(res, 500, { error: 'SERVER_ERROR', message: '创建用户失败' })
+        return
+      }
+      
+      // 生成JWT令牌
+      const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+      
+      sendJson(res, 201, { 
+        ok: true, 
+        message: '注册成功',
+        token,
+        user: {
+          id: userId,
+          username: b.username,
+          email: b.email,
+          phone: b.phone || null,
+          avatar_url: b.avatar_url || null,
+          interests: b.interests || null
+        }
+      })
+      return
+    }
+    
+    // 用户登录
+    if (req.method === 'POST' && path === '/api/auth/login') {
+      const b = await readBody(req)
+      
+      // 验证必填字段
+      if (!b.email || !b.password) {
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '邮箱和密码不能为空' })
+        return
+      }
+      
+      // 查找用户
+      const user = findUserByEmail(__db, b.email)
+      if (!user) {
+        sendJson(res, 401, { error: 'INVALID_CREDENTIALS', message: '邮箱或密码错误' })
+        return
+      }
+      
+      // 验证密码
+      const isPasswordValid = await bcrypt.compare(b.password, user.password_hash)
+      if (!isPasswordValid) {
+        sendJson(res, 401, { error: 'INVALID_CREDENTIALS', message: '邮箱或密码错误' })
+        return
+      }
+      
+      // 生成JWT令牌
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+      
+      sendJson(res, 200, { 
+        ok: true, 
+        message: '登录成功',
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone || null,
+          avatar_url: user.avatar_url || null,
+          interests: user.interests ? JSON.parse(user.interests) : null
+        }
+      })
+      return
+    }
+    
+    // 获取当前用户信息
+    if (req.method === 'GET' && path === '/api/auth/me') {
+      const decoded = verifyToken(req)
+      if (!decoded) {
+        sendJson(res, 401, { error: 'UNAUTHORIZED', message: '未授权访问' })
+        return
+      }
+      
+      const user = findUserById(__db, decoded.userId)
+      if (!user) {
+        sendJson(res, 404, { error: 'USER_NOT_FOUND', message: '用户不存在' })
+        return
+      }
+      
+      sendJson(res, 200, { 
+        ok: true, 
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone || null,
+          avatar_url: user.avatar_url || null,
+          interests: user.interests ? JSON.parse(user.interests) : null
+        }
+      })
+      return
+    }
+    
+    // 用户登出
+    if (req.method === 'POST' && path === '/api/auth/logout') {
+      // JWT是无状态的，登出只需客户端删除令牌即可
+      sendJson(res, 200, { ok: true, message: '登出成功' })
       return
     }
 

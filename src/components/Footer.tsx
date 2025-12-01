@@ -79,7 +79,7 @@ export default function Footer({ variant = 'full', simpleText }: FooterProps) {
               <li><Link to="/wizard" className="hover:text-red-600 transition-colors">创作教程</Link></li>
               <li><Link to="/knowledge" className="hover:text-red-600 transition-colors">文化知识库</Link></li>
               <li><Link to="/about" className="hover:text-red-600 transition-colors">版权说明</Link></li>
-              <li><Link to="/about" className="hover:text-red-600 transition-colors">常见问题</Link></li>
+              <li><Link to="/help" className="hover:text-red-600 transition-colors">常见问题</Link></li>
             </ul>
           </div>
 
@@ -117,7 +117,7 @@ export default function Footer({ variant = 'full', simpleText }: FooterProps) {
           <div className="flex items-center space-x-6">
             <div className="flex space-x-6 opacity-60">
               <Link to="/about" className="hover:opacity-100 transition-opacity">隐私政策</Link>
-              <Link to="/about" className="hover:opacity-100 transition-opacity">服务条款</Link>
+              <Link to="/terms" className="hover:opacity-100 transition-opacity">服务条款</Link>
               <Link to="/about" className="hover:opacity-100 transition-opacity">Cookie政策</Link>
             </div>
             <button
@@ -135,4 +135,3 @@ export default function Footer({ variant = 'full', simpleText }: FooterProps) {
     </footer>
   )
 }
-

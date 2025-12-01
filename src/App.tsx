@@ -11,6 +11,8 @@ const Admin = lazy(() => import("@/pages/admin/Admin"));
 const ErrorMonitoringDashboard = lazy(() => import("@/components/ErrorMonitoringDashboard"));
 const Tools = lazy(() => import("@/pages/Tools"));
 const About = lazy(() => import("@/pages/About"));
+const Terms = lazy(() => import("@/pages/Terms"));
+const Help = lazy(() => import("@/pages/Help"));
 const BrandGuide = lazy(() => import("@/pages/BrandGuide"));
 const InputHub = lazy(() => import("@/pages/InputHub"));
 const Generation = lazy(() => import("@/pages/Generation"));
@@ -22,6 +24,7 @@ const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const Wizard = lazy(() => import("@/pages/Wizard"));
 const Neo = lazy(() => import("@/pages/Neo"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
 import PrivateRoute from "@/components/PrivateRoute";
 import AdminRoute from "@/components/AdminRoute";
 const CulturalKnowledge = lazy(() => import("@/pages/CulturalKnowledge"));
@@ -32,6 +35,7 @@ const IPIncubationCenter = lazy(() => import("@/components/IPIncubationCenter"))
 const CrossDeviceSync = lazy(() => import("@/components/CrossDeviceSync"));
 const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
 const Drafts = lazy(() => import("@/pages/Drafts"));
+const Lab = lazy(() => import("@/pages/Lab"));
 
 export default function App() {
   return (
@@ -44,7 +48,10 @@ export default function App() {
           <Route path="/explore/:id" element={<WorkDetail />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/about" element={<About />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/neo" element={<Neo />} />
+          <Route path="/lab" element={<PrivateRoute component={Lab} />} />
           <Route path="/wizard" element={<PrivateRoute component={Wizard} />} />
           <Route path="/brand" element={<PrivateRoute component={BrandGuide} />} />
           <Route path="/input" element={<PrivateRoute component={InputHub} />} />
@@ -74,6 +81,11 @@ export default function App() {
           <Route 
             path="/settings" 
             element={<PrivateRoute component={Settings} />} 
+          />
+          
+          <Route 
+            path="/analytics" 
+            element={<PrivateRoute component={Analytics} />} 
           />
           
           <Route 

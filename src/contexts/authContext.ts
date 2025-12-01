@@ -1,5 +1,5 @@
 import React from "react";
-import { createContext, useState, ReactNode } from "react";
+import { createContext, useState, ReactNode, useEffect } from "react";
 
 // 用户类型定义
 export interface User {
@@ -7,6 +7,8 @@ export interface User {
   username: string;
   email: string;
   avatar?: string;
+  phone?: string;
+  interests?: string[];
   isAdmin?: boolean;
   age?: number;
   tags?: string[];
@@ -42,30 +44,26 @@ export const AuthContext = createContext<AuthContextType>({
   updateUser: () => {},
 });
 
-// 模拟用户数据
-const mockUsers: Array<User & { password: string }> = [
-  {
-    id: "1",
-    username: "管理员",
-    email: "admin@example.com",
-    password: "Admin123",
-    avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Admin%20avatar",
-    isAdmin: true
-  },
-  {
-    id: "2",
-    username: "设计师小明",
-    email: "user@example.com",
-    password: "User123",
-    avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaoming"
-  }
-];
+// API请求工具函数
+async function apiRequest(url: string, method: string, data?: any) {
+  const response = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+    },
+    body: data ? JSON.stringify(data) : undefined
+  });
+  
+  const result = await response.json();
+  return { response, result };
+}
 
 // AuthProvider 组件
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 从本地存储获取用户认证状态
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('isAuthenticated') === 'true';
+    return !!localStorage.getItem('token');
   });
   
   // 从本地存储获取用户信息
@@ -74,65 +72,93 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return userData ? JSON.parse(userData) : null;
   });
 
+  // 检查用户认证状态
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token && !user) {
+        try {
+          const { result } = await apiRequest('/api/auth/me', 'GET');
+          if (result.ok && result.user) {
+            setUser(result.user);
+            setIsAuthenticated(true);
+          } else {
+            // 令牌无效，清除本地存储
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setIsAuthenticated(false);
+            setUser(null);
+          }
+        } catch (error) {
+          console.error('检查认证状态失败:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      }
+    };
+    
+    checkAuth();
+  }, [user]);
+
   // 登录方法
   const login = async (email: string, password: string): Promise<boolean> => {
-    // 模拟API请求延迟
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // 查找匹配的用户
-        const foundUser = mockUsers.find(
-          (user) => user.email === email && user.password === password
-        );
+    try {
+      const { result } = await apiRequest('/api/auth/login', 'POST', {
+        email,
+        password
+      });
+      
+      if (result.ok && result.token && result.user) {
+        // 存储令牌和用户信息
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
         
-        if (foundUser) {
-          // 移除密码字段
-          const { password, ...userWithoutPassword } = foundUser;
-          
-          // 更新状态
-          setIsAuthenticated(true);
-          setUser(userWithoutPassword);
-          
-          // 存储到本地存储
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      }, 800);
-    });
+        // 更新状态
+        setIsAuthenticated(true);
+        setUser(result.user);
+        
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error('登录失败:', error);
+      return false;
+    }
   };
 
   // 注册方法
   const register = async (username: string, email: string, password: string): Promise<boolean> => {
-    // 模拟API请求延迟
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // 检查邮箱是否已存在
-        const emailExists = mockUsers.some((user) => user.email === email);
+    try {
+      const { result } = await apiRequest('/api/auth/register', 'POST', {
+        username,
+        email,
+        password
+      });
+      
+      if (result.ok && result.token && result.user) {
+        // 存储令牌和用户信息
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
         
-        if (emailExists) {
-          resolve(false);
-        } else {
-          // 创建新用户
-          const newUser: User = {
-            id: `user-${Date.now()}`,
-            username,
-            email,
-            avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=New%20user%20avatar"
-          };
-          
-          // 添加到模拟用户数组
-          mockUsers.push({ ...newUser, password });
-          
-          resolve(true);
-        }
-      }, 800);
-    });
+        // 更新状态
+        setIsAuthenticated(true);
+        setUser(result.user);
+        
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error('注册失败:', error);
+      return false;
+    }
   };
 
   const quickLogin = async (provider: 'wechat' | 'phone' | 'alipay' | 'qq' | 'weibo'): Promise<boolean> => {
+    // 暂时保持模拟，后续可以扩展为真实的第三方登录
     return new Promise((resolve) => {
       setTimeout(() => {
         const baseUser: User = {
@@ -158,8 +184,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     
     // 清除本地存储
-    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
   };
 
   // 中文注释：更新用户信息并写入本地存储

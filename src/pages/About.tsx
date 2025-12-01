@@ -94,9 +94,9 @@ export default function About() {
             © 2025 AI共创平台. 保留所有权利
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link to="/about" className={`text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>隐私政策</Link>
-            <Link to="/about" className={`text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>服务条款</Link>
-            <Link to="/about" className={`text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>帮助中心</Link>
+            <Link to="/about" className={`${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>隐私政策</Link>
+            <Link to="/terms" className={`${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>服务条款</Link>
+            <Link to="/help" className={`${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>帮助中心</Link>
           </div>
         </div>
       </footer>

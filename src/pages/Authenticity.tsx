@@ -46,11 +46,27 @@ export default function Authenticity() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <div className="mb-2">输入内容</div>
-            <textarea value={input} onChange={(e) => setInput(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} w-full h-32 px-4 py-3 rounded-lg border`} />
+            <textarea 
+              value={input} 
+              onChange={(e) => setInput(e.target.value)} 
+              className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} w-full h-32 px-4 py-3 rounded-lg border`} 
+              autoCapitalize="none" 
+              autoCorrect="off" 
+              enterKeyHint="send" 
+              inputMode="text"
+            />
           </div>
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <div className="mb-2">知识库内容</div>
-            <textarea value={knowledge} onChange={(e) => setKnowledge(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} w-full h-32 px-4 py-3 rounded-lg border`} />
+            <textarea 
+              value={knowledge} 
+              onChange={(e) => setKnowledge(e.target.value)} 
+              className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} w-full h-32 px-4 py-3 rounded-lg border`} 
+              autoCapitalize="none" 
+              autoCorrect="off" 
+              enterKeyHint="send" 
+              inputMode="text"
+            />
           </div>
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <div className="mb-2">评分</div>
@@ -62,7 +78,7 @@ export default function Authenticity() {
                   <span>{f}</span>
                   <button
                     onClick={() => toggleAck(f)}
-                    className={`text-xs px-2 py-1 rounded-full ${acks[f] ? 'bg-green-600 text-white' : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
+                    className={`text-xs px-3 py-2 rounded-full min-h-[44px] ${acks[f] ? 'bg-green-600 text-white' : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}
                   >{acks[f] ? '已优化' : '标记已优化'}</button>
                 </li>
               ))}

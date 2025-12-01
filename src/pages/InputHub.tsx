@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
 import voiceService from '@/services/voiceService'
+import UploadBox from '@/components/UploadBox'
 
 export default function InputHub() {
   const { isDark } = useTheme()
@@ -49,10 +50,23 @@ export default function InputHub() {
           </div>
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <div className="mb-2">语音与图片</div>
-            <input type="file" accept="audio/*" onChange={onAudio} className="mb-3" />
-            <input type="file" accept="image/*" onChange={onImage} className="mb-3" />
-            {loadingVoice && <div className="text-sm">语音转文字中...</div>}
-            {image && <img src={image} alt="preview" className="w-full h-40 object-cover rounded-lg" loading="lazy" decoding="async" />}
+            <UploadBox
+              accept="audio/*"
+              variant="audio"
+              title="上传语音"
+              description="支持拖拽与点击选择，自动转文字"
+              onFile={async (file) => { setLoadingVoice(true); const t = await voiceService.transcribeAudio(file); setText(t); setLoadingVoice(false) }}
+              className="mb-3"
+            />
+            <UploadBox
+              accept="image/*"
+              variant="image"
+              title="上传图片"
+              description="支持拖拽与点击选择，自动显示预览"
+              previewUrl={image || undefined}
+              onFile={(file) => { const url = URL.createObjectURL(file); setImage(url) }}
+            />
+            {loadingVoice && <div className="text-sm mt-2">语音转文字中...</div>}
           </div>
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <div className="mb-2">实时预览</div>

@@ -11,11 +11,16 @@ interface CreateDraftData {
   aiExplanation: string
   updatedAt: number
 }
+interface CreateSnapshot extends CreateDraftData {
+  scale: number; brightness: number; contrast: number; saturate: number; hueRotate: number; blur: number;
+  overlayText: string; overlaySize: number; overlayColor: string;
+}
 
 export default function Drafts() {
   const { isDark } = useTheme()
   const navigate = useNavigate()
   const [draft, setDraft] = useState<CreateDraftData | null>(null)
+  const [history, setHistory] = useState<CreateSnapshot[]>([])
 
   // 中文注释：组件初始化时从本地存储读取草稿数据
   useEffect(() => {
@@ -34,6 +39,11 @@ export default function Drafts() {
         setDraft(safe)
       } else {
         setDraft(null)
+      }
+      const histRaw = localStorage.getItem('CREATE_HISTORY')
+      if (histRaw) {
+        const list = JSON.parse(histRaw) as CreateSnapshot[]
+        if (Array.isArray(list)) setHistory(list)
       }
     } catch {
       setDraft(null)
@@ -59,6 +69,28 @@ export default function Drafts() {
       toast.success('草稿已删除')
     } catch {
       toast.error('删除草稿失败')
+    }
+  }
+
+  // 中文注释：恢复历史快照为当前草稿并跳转创作中心
+  const restoreSnapshot = (snap: CreateSnapshot) => {
+    try {
+      localStorage.setItem('CREATE_DRAFT', JSON.stringify(snap))
+      toast.success('已恢复到当前草稿')
+      navigate('/create')
+    } catch {
+      toast.error('恢复失败')
+    }
+  }
+
+  // 中文注释：清空历史记录
+  const clearHistory = () => {
+    try {
+      localStorage.removeItem('CREATE_HISTORY')
+      setHistory([])
+      toast.success('历史记录已清空')
+    } catch {
+      toast.error('清空失败')
     }
   }
 
@@ -107,7 +139,7 @@ export default function Drafts() {
               <div className="mt-6 flex items-center space-x-3">
                 <button 
                   onClick={resumeDraft}
-                  className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white"
+                  className="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text白"
                 >继续编辑</button>
                 <button 
                   onClick={deleteDraft}
@@ -115,10 +147,33 @@ export default function Drafts() {
                 >删除草稿</button>
               </div>
             </div>
+
+            <div className={`${isDark ? 'bg-gray-800 ring-1 ring-gray-700' : 'bg-white ring-1 ring-gray-200'} rounded-2xl p-6`}> 
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-lg font-bold">历史记录</span>
+                <button onClick={clearHistory} className="px-3 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-sm">清空</button>
+              </div>
+              {history.length === 0 ? (
+                <div className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm`}>暂无历史快照</div>
+              ) : (
+                <ul className="space-y-3 max-h-80 overflow-auto">
+                  {history.map((h, idx) => (
+                    <li key={`${h.updatedAt}-${idx}`} className="flex items-center justify-between">
+                      <div className="min-w-0 mr-3">
+                        <div className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm truncate`}>{h.prompt || '（无提示）'}</div>
+                        <div className={`${isDark ? 'text-gray-500' : 'text-gray-500'} text-xs`}>步骤 {h.currentStep}/3 · {new Date(h.updatedAt).toLocaleString()}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => restoreSnapshot(h)} className="px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs">恢复</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
       </main>
     </SidebarLayout>
   )
 }
-

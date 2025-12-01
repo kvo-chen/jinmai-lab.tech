@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import BRANDS from '@/lib/brands'
 import { useWorkflow } from '@/contexts/workflowContext.tsx'
 import voiceService from '@/services/voiceService'
+import UploadBox from '@/components/UploadBox'
 import { scoreAuthenticity } from '@/services/authenticityService'
 import postService from '@/services/postService'
 import { useNavigate } from 'react-router-dom'
@@ -47,7 +48,12 @@ export default function Wizard() {
       setAiDirections(dirs)
       const elems = llmService.recommendCulturalElements(base)
       setCulturalElements(elems)
-      await llmService.generateResponse(base, { onDelta: (chunk: string) => setAiText(chunk) })
+      const zhPolicy = '请用中文分点回答，避免 Markdown 标题或装饰符（如###、####、** 等），每点精炼。'
+      const enLetters = (base.match(/[A-Za-z]/g) || []).length
+      const zhChars = (base.match(/[\u4e00-\u9fa5]/g) || []).length
+      const isEnglish = enLetters > zhChars && enLetters > 0
+      const promptWithPolicy = isEnglish ? base : `${zhPolicy}\n\n${base}`
+      await llmService.generateResponse(promptWithPolicy, { onDelta: (chunk: string) => setAiText(chunk) })
     } catch {}
     setIsGenerating(false)
   }
@@ -137,39 +143,44 @@ export default function Wizard() {
               <div className="text-xs opacity-60">{(state.inputText || '').length}/500</div>
             </div>
 
-            {/* 中文注释：快捷标签，点击自动补充到输入内容 */}
             {(() => {
               const add = (t: string) => setState({ inputText: `${(state.inputText || '').trim()} ${t}`.trim() })
               const styles = ['国潮', '极简', '复古', '现代', '黑金', '赛博']
               const scenes = ['门店', '展会', '线上活动', '校园联名', '节日档']
               const elements = ['回纹', '祥云', '京剧元素', '海河地标', '杨柳青年画']
               const tones = ['喜庆', '高端', '亲民', '科技感', '自然']
+
+              const TagChip = ({ label, onClick }: { label: string; onClick: () => void }) => (
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={onClick}
+                  className={`text-xs px-3 py-1.5 rounded-full transition-all ${isDark ? 'bg-gray-700 text-white ring-1 ring-gray-600 hover:bg-gray-600' : 'bg-white text-gray-900 ring-1 ring-gray-200 hover:bg-gray-50'} shadow-sm`}
+                >
+                  {label}
+                </motion.button>
+              )
+
+              const Section = ({ title, icon, tags }: { title: string; icon: string; tags: string[] }) => (
+                <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-3 ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} shadow-sm`}> 
+                  <div className="flex items-center mb-2">
+                    <i className={`${icon} ${isDark ? 'text-gray-300' : 'text-gray-600'} mr-2`}></i>
+                    <span className="text-xs opacity-80">{title}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map(t => (
+                      <TagChip key={t} label={t} onClick={() => add(t)} />
+                    ))}
+                  </div>
+                </div>
+              )
+
               return (
-                <div className="mt-3 space-y-2">
-                  <div className="text-xs opacity-60">风格</div>
-                  <div className="flex flex-wrap gap-2">
-                    {styles.map(s => (
-                      <button key={s} onClick={() => add(s)} className={`text-xs px-3 py-1 rounded-full border ${isDark ? 'border-gray-600 text-gray-300 hover:border-gray-500' : 'border-gray-300 text-gray-700 hover:border-gray-400'}`}>{s}</button>
-                    ))}
-                  </div>
-                  <div className="text-xs opacity-60">场景</div>
-                  <div className="flex flex-wrap gap-2">
-                    {scenes.map(s => (
-                      <button key={s} onClick={() => add(s)} className={`text-xs px-3 py-1 rounded-full border ${isDark ? 'border-gray-600 text-gray-300 hover:border-gray-500' : 'border-gray-300 text-gray-700 hover:border-gray-400'}`}>{s}</button>
-                    ))}
-                  </div>
-                  <div className="text-xs opacity-60">元素</div>
-                  <div className="flex flex-wrap gap-2">
-                    {elements.map(s => (
-                      <button key={s} onClick={() => add(s)} className={`text-xs px-3 py-1 rounded-full border ${isDark ? 'border-gray-600 text-gray-300 hover:border-gray-500' : 'border-gray-300 text-gray-700 hover:border-gray-400'}`}>{s}</button>
-                    ))}
-                  </div>
-                  <div className="text-xs opacity-60">语气</div>
-                  <div className="flex flex-wrap gap-2">
-                    {tones.map(s => (
-                      <button key={s} onClick={() => add(s)} className={`text-xs px-3 py-1 rounded-full border ${isDark ? 'border-gray-600 text-gray-300 hover:border-gray-500' : 'border-gray-300 text-gray-700 hover:border-gray-400'}`}>{s}</button>
-                    ))}
-                  </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Section title="风格" icon="fas fa-palette" tags={styles} />
+                  <Section title="场景" icon="fas fa-store" tags={scenes} />
+                  <Section title="元素" icon="fas fa-shapes" tags={elements} />
+                  <Section title="语气" icon="far fa-comment" tags={tones} />
                 </div>
               )
             })()}
@@ -194,10 +205,21 @@ export default function Wizard() {
               >清空输入</button>
             </div>
 
-            {/* 中文注释：语音与图片导入 */}
-            <div className="mt-4 flex gap-3 items-center">
-              <input type="file" accept="audio/*" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const t = await voiceService.transcribeAudio(f); setState({ inputText: t }) }} />
-              <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const url = URL.createObjectURL(f); setState({ imageUrl: url }) }} />
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <UploadBox
+                accept="audio/*"
+                variant="audio"
+                title="上传语音"
+                description="支持拖拽与点击选择，自动转文字"
+                onFile={async (file) => { const t = await voiceService.transcribeAudio(file); setState({ inputText: t }) }}
+              />
+              <UploadBox
+                accept="image/*"
+                variant="image"
+                title="上传参考图片"
+                description="支持拖拽与点击选择，自动显示预览"
+                onFile={(file) => { const url = URL.createObjectURL(file); setState({ imageUrl: url }) }}
+              />
             </div>
             {state.imageUrl && <TianjinImage src={state.imageUrl} alt="upload" ratio="landscape" rounded="lg" className="mt-4" />}
 

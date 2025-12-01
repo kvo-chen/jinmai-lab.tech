@@ -6,6 +6,7 @@ import postsApi, { Post } from '@/services/postService'
 import SidebarLayout from '@/components/SidebarLayout'
 import GradientHero from '@/components/GradientHero'
 import { mockWorks } from '@/pages/Explore'
+import apiClient from '@/lib/apiClient'
 
 // 中文注释：广场初始示例作品（可作为冷启动内容）
 const SEED: Post[] = [
@@ -54,6 +55,117 @@ export default function Square() {
   const params = useParams()
   const navigate = useNavigate()
   const [posts, setPosts] = useState<Post[]>([])
+  // 中文注释：热门话题标签（支持按点击热度排序）
+  const DEFAULT_TAGS = ['国潮设计', '非遗传承', '品牌联名', '校园活动', '文旅推广']
+  const TAG_KEY = 'jmzf_tag_clicks'
+  const [tagClicks, setTagClicks] = useState<Record<string, number>>(() => {
+    try { const raw = localStorage.getItem(TAG_KEY); return raw ? JSON.parse(raw) : {} } catch { return {} }
+  })
+  const [tags, setTags] = useState<string[]>(DEFAULT_TAGS)
+  const [tagMeta, setTagMeta] = useState<Record<string, { weight?: number; group?: string; desc?: string }>>({})
+  const [tagsLoading, setTagsLoading] = useState(false)
+  const [tagsError, setTagsError] = useState<string | null>(null)
+  const sortTagsByClicks = (list: string[], clicks: Record<string, number>) => {
+    const orderMap = new Map<string, number>(list.map((t, i) => [t, i]))
+    return [...list].sort((a,b) => {
+      const wa = tagMeta[a]?.weight || 0
+      const wb = tagMeta[b]?.weight || 0
+      if (wb !== wa) return wb - wa
+      const ca = clicks[a] || 0
+      const cb = clicks[b] || 0
+      if (cb !== ca) return cb - ca
+      return (orderMap.get(a)! - orderMap.get(b)!)
+    })
+  }
+  useEffect(() => {
+    setTags(sortTagsByClicks(DEFAULT_TAGS, tagClicks))
+  }, [])
+  // 中文注释：从本地API加载话题标签（失败则回退默认）
+  useEffect(() => {
+    let mounted = true
+    setTagsLoading(true)
+    setTagsError(null)
+    apiClient.get<{ ok: boolean; data: any[] }>('/api/community/tags')
+      .then((resp) => {
+        if (!mounted) return
+        if (resp.ok && Array.isArray(resp.data?.data)) {
+          const arr = resp.data!.data
+          if (arr.length > 0 && typeof arr[0] === 'object') {
+            const meta: Record<string, { weight?: number; group?: string; desc?: string }> = {}
+            const labels: string[] = []
+            arr.forEach((it: any) => {
+              const label = String(it.label || '').trim()
+              if (!label) return
+              labels.push(label)
+              meta[label] = { weight: Number(it.weight) || 0, group: it.group ? String(it.group) : undefined, desc: it.desc ? String(it.desc) : undefined }
+            })
+            setTagMeta(meta)
+            setTags(sortTagsByClicks(labels, tagClicks))
+          } else {
+            const list = arr.map((x: any) => String(x))
+            setTagMeta({})
+            setTags(sortTagsByClicks(list, tagClicks))
+          }
+        } else {
+          setTagMeta({})
+          setTags(DEFAULT_TAGS)
+          setTagsError(resp.error || '加载失败')
+        }
+      })
+      .catch((e) => { if (!mounted) return; setTagMeta({}); setTags(DEFAULT_TAGS); setTagsError(e?.message || '网络错误') })
+      .finally(() => { if (mounted) setTagsLoading(false) })
+    return () => { mounted = false }
+  }, [])
+  const incTagClick = (tag: string) => {
+    const next = { ...tagClicks, [tag]: (tagClicks[tag] || 0) + 1 }
+    setTagClicks(next)
+    try { localStorage.setItem(TAG_KEY, JSON.stringify(next)) } catch {}
+    setTags(sortTagsByClicks(DEFAULT_TAGS, next))
+  }
+  const hotTagSet = useMemo(() => {
+    // 中文注释：取点击次数前两名作为“热”标签（次数>0）
+    const pairs = tags.map(t => ({ t, c: tagClicks[t] || 0 }))
+    pairs.sort((a,b) => b.c - a.c)
+    const top = pairs.filter(p => p.c > 0).slice(0,2).map(p => p.t)
+    return new Set(top)
+  }, [tags, tagClicks])
+  // 中文注释：精选社群数据（从本地API加载；失败回退本地静态）
+  type FeaturedCommunity = { name: string; members: number; path: string; official?: boolean; topic?: string; tags?: string[] }
+  const DEFAULT_FEATURED: FeaturedCommunity[] = [
+    { name: '国潮共创组', members: 128, path: '/community?group=guochao' },
+    { name: '非遗研究社', members: 96, path: '/community?group=heritage' },
+    { name: '品牌联名工坊', members: 73, path: '/community?group=brand' },
+  ]
+  const [featuredCommunities, setFeaturedCommunities] = useState<FeaturedCommunity[]>(DEFAULT_FEATURED)
+  const [featLoading, setFeatLoading] = useState(false)
+  const [featError, setFeatError] = useState<string | null>(null)
+  useEffect(() => {
+    let mounted = true
+    setFeatLoading(true)
+    setFeatError(null)
+    apiClient.get<{ ok: boolean; data: any[] }>('/api/community/featured')
+      .then((resp) => {
+        if (!mounted) return
+        if (resp.ok && Array.isArray(resp.data?.data)) {
+          const arr = resp.data!.data
+          const items = arr.map((x: any) => ({
+            name: String(x.name || ''),
+            members: Number(x.members) || 0,
+            path: String(x.path || '/community'),
+            official: Boolean(x.official),
+            topic: x.topic ? String(x.topic) : undefined,
+            tags: Array.isArray(x.tags) ? x.tags.map((t: any) => String(t)) : undefined,
+          }))
+          setFeaturedCommunities(items)
+        } else {
+          setFeaturedCommunities(DEFAULT_FEATURED)
+          setFeatError(resp.error || '加载失败')
+        }
+      })
+      .catch((e) => { if (!mounted) return; setFeaturedCommunities(DEFAULT_FEATURED); setFeatError(e?.message || '网络错误') })
+      .finally(() => { if (mounted) setFeatLoading(false) })
+    return () => { mounted = false }
+  }, [])
   // 中文注释：社区模式与筛选（风格/题材）
   const [communityMode, setCommunityMode] = useState<'all' | 'style' | 'topic'>('all')
   const [selectedStyle, setSelectedStyle] = useState<string>('全部')
@@ -227,7 +339,21 @@ export default function Square() {
   // 中文注释：广场页内的“共创社群”模块（可展开/收起）与快捷跳转
   const [communityOpen, setCommunityOpen] = useState(true)
   const gotoCommunity = (path?: string) => {
-    const target = '/community' + (path ? path : '')
+    // 中文注释：健壮的社群跳转——兼容绝对路径与查询参数，避免出现 /community/community 双重前缀
+    const p = (path || '').trim()
+    let target = '/community'
+    if (p) {
+      if (p.startsWith('/')) {
+        // 中文注释：传入绝对路径（含 /community 前缀），直接跳转
+        target = p
+      } else if (p.startsWith('?')) {
+        // 中文注释：仅传入查询参数，拼接到 /community
+        target = `/community${p}`
+      } else {
+        // 中文注释：传入相对子路径，规范化为 /community/子路径
+        target = `/community/${p}`
+      }
+    }
     navigate(target)
   }
   const createPost = () => {
@@ -288,7 +414,7 @@ export default function Square() {
             </div>
             <button
               className={`p-2 rounded-lg ring-1 transition duration-200 ${isDark ? 'ring-gray-700/70 hover:bg-gray-700/60' : 'ring-gray-200/70 hover:bg-white/70'}`}
-              onClick={() => setCommunityOpen(v => !v)}
+              onClick={() => setCommunityOpen(v => { const next = !v; try { localStorage.setItem('jmzf_community_open', JSON.stringify(next)) } catch {} return next })}
               aria-expanded={communityOpen}
               aria-label="展开/收起社群模块"
             >
@@ -296,46 +422,135 @@ export default function Square() {
             </button>
           </div>
           {communityOpen && (
-            <div className="px-4 pb-3">
-              {/* 中文注释：热门话题标签（点击跳转到社群页并附带查询参数） */}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {['国潮设计', '非遗传承', '品牌联名', '校园活动', '文旅推广'].map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => gotoCommunity(`?tag=${encodeURIComponent(tag)}`)}
-                    className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} hover:opacity-90`}
-                  >{tag}</button>
-                ))}
+            // 中文注释：社群模块内容卡片 —— 提升信息层级与可点击性；支持整体点击跳转
+            <motion.div 
+              initial={{ opacity: 0, y: 6 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className={`${isDark ? 'bg-gray-800/60 ring-1 ring-gray-700' : 'bg-white/60 ring-1 ring-gray-200'} px-4 pb-3 rounded-xl cursor-pointer`} 
+              role="button"
+              tabIndex={0}
+              aria-label="打开社群首页"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); gotoCommunity('?context=cocreation&tab=joined') } }}
+              onClick={(e) => {
+                const target = e.target as HTMLElement
+                // 中文注释：如果点击的是内部交互元素（button/a/input/textarea），则不触发整体跳转
+                if (target.closest('button, a, input, textarea')) return
+                gotoCommunity('?context=cocreation&tab=joined')
+              }}
+            > 
+              {/* 中文注释：分组标题 —— 强化信息结构，便于快速扫读 */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs opacity-70 flex items-center gap-1">
+                  <i className={`fas fa-fire ${isDark ? 'text-orange-400' : 'text-orange-500'}`}></i>
+                  <span>热门话题</span>
+                </div>
+                <button
+                  onClick={() => gotoCommunity('')}
+                  className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  aria-label="查看全部社群"
+                >查看全部</button>
               </div>
-              {/* 中文注释：精选社群条目（示例入口），快速加入或查看 */}
-              <ul className="space-y-1">
-                {[
-                  { name: '国潮共创组', members: 128, path: '/community?group=guochao' },
-                  { name: '非遗研究社', members: 96, path: '/community?group=heritage' },
-                  { name: '品牌联名工坊', members: 73, path: '/community?group=brand' },
-                ].map((g) => (
-                  <li key={g.name}>
-                    <button
+              {/* 中文注释：话题标签改为更易点击的 Chip，增加描边与过渡动画 */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {tagsLoading && (
+                  <div className="flex flex-wrap gap-2 w-full">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className={`animate-pulse h-7 px-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                    ))}
+                  </div>
+                )}
+                {!tagsLoading && tags.map((tag) => (
+                  <motion.button
+                    key={tag}
+                    onClick={() => { incTagClick(tag); gotoCommunity(`?tag=${encodeURIComponent(tag)}`) }}
+                    aria-label={`按话题 ${tag} 筛选社群`}
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); incTagClick(tag); gotoCommunity(`?tag=${encodeURIComponent(tag)}`) } }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`text-xs px-2.5 py-1.5 min-h-[28px] rounded-full transition focus:outline-none focus:ring-2 ${
+                      isDark 
+                        ? 'bg-gray-700 text-gray-200 ring-1 ring-gray-600 hover:bg-gray-600 focus:ring-blue-500' 
+                        : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 hover:bg-gray-200 focus:ring-blue-400'
+                    }`}
+                    title={tagMeta[tag]?.desc || tagMeta[tag]?.group || ''}
+                  >
+                    <i className="fas fa-hashtag mr-1"></i>
+                    {tag}
+                    {(tagClicks[tag] || 0) > 0 && (
+                      <span className={`ml-1 inline-flex items-center px-1.5 py-[1px] rounded-full text-[10px] ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} title="点击热度">{tagClicks[tag]}</span>
+                    )}
+                    {hotTagSet.has(tag) && (
+                      <i className={`fas fa-fire ml-1 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} title="热度较高"></i>
+                    )}
+                  </motion.button>
+                ))}
+                {!tagsLoading && tagsError && (
+                  <div className={`text-[11px] mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>标签加载失败，已使用默认列表</div>
+                )}
+              </div>
+              {/* 中文注释：精选社群 —— 提供更清晰的条目样式与分隔线 */}
+              <div className="text-xs opacity-70 mb-1">精选社群</div>
+              <div className="sr-only">精选社群列表</div>
+              <ul className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'} rounded-lg ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} overflow-hidden`} role="list">
+                {featLoading && (
+                  <li>
+                    <div className={`px-3 py-2 ${isDark ? 'bg-gray-800' : 'bg-white'} animate-pulse`}>
+                      <div className={`h-3 w-32 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                    </div>
+                  </li>
+                )}
+                {!featLoading && featuredCommunities.map((g) => (
+                  <li key={g.name} role="listitem">
+                    <motion.button
                       onClick={() => gotoCommunity(g.path)}
-                      className={`w-full text-left px-2 py-1 rounded-lg flex items-center justify-between ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                      aria-label={`打开社群 ${g.name}`}
+                      whileHover={{ x: 2 }}
+                      className={`w-full text-left px-3 py-2 flex items中心 justify-between transition focus:outline-none focus:ring-2 ${isDark ? 'hover:bg-gray-700 focus:ring-blue-500' : 'hover:bg-gray-50 focus:ring-blue-400'}`}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); gotoCommunity(g.path) } }}
                     >
-                      <span className="text-xs">{g.name}</span>
-                      <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{g.members} 人</span>
-                    </button>
+                      <span className="text-xs font-medium flex items-center gap-2">
+                        <i className={`fas fa-users ${isDark ? 'text-gray-300' : 'text-gray-500'} text-[11px]`}></i>
+                        {g.name}
+                        {g.official && (
+                          <span className={`px-1.5 py-[1px] rounded text-[10px] ${isDark ? 'bg-blue-700 text-blue-100' : 'bg-blue-100 text-blue-700'}`}>官方</span>
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{g.members} 人</span>
+                        <i className={`fas fa-chevron-right ${isDark ? 'text-gray-400' : 'text-gray-400'} text-[10px]`}></i>
+                      </span>
+                    </motion.button>
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 flex gap-2">
+              {!featLoading && featError && (
+                <div className={`text-[11px] mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>精选社群加载失败，已使用默认列表</div>
+              )}
+              {/* 中文注释：主行动按钮 —— 强化主次层级，提升转化 */}
+              <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => gotoCommunity('?context=cocreation&tab=joined')}
-                  className={`flex-1 px-2 py-1 text-xs rounded-lg ${isDark ? 'bg-gray-700 text-white ring-1 ring-gray-600 hover:bg-gray-600' : 'bg-white text-gray-900 ring-1 ring-gray-200 shadow-sm hover:bg-gray-50'}`}
-                >进入社群</button>
+                  aria-label="进入社群列表"
+                  className={`flex-1 px-3 py-1.5 text-xs rounded-lg ${isDark ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-500'}`}
+                >
+                  进入社群
+                  <i className="fas fa-arrow-right ml-1 text-[10px]"></i>
+                </button>
                 <button
                   onClick={() => gotoCommunity('?context=cocreation&tab=user')}
-                  className={`px-2 py-1 text-xs rounded-lg ${isDark ? 'bg-purple-700 text-white hover:bg-purple-600' : 'bg-purple-600 text-white hover:bg-purple-500'}`}
-                >创建社群</button>
+                  aria-label="创建社群"
+                  className={`px-3 py-1.5 text-xs rounded-lg ${isDark ? 'bg-purple-700 text-white hover:bg-purple-600' : 'bg-purple-600 text-white hover:bg-purple-500'}`}
+                >
+                  创建社群
+                  <i className="fas fa-plus ml-1 text-[10px]"></i>
+                </button>
               </div>
-            </div>
+              {/* 中文注释：补充承诺与证明（Promise/Prove）微文案，提升转化信心 */}
+              <div className={`mt-2 text-[11px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                加入后可参与共创招募、线上活动与资源共享（每周精选推荐）。
+              </div>
+            </motion.div>
           )}
         </div>
         <div className="flex items-center gap-2 mb-6">

@@ -3,17 +3,21 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
 import { AuthContext } from '@/contexts/authContext'
 import { markPrefetched, isPrefetched } from '@/services/prefetch'
+import ErrorFeedback from '@/components/ErrorFeedback'
+import { toast } from 'sonner'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
 }
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
-  const { isDark, toggleTheme } = useTheme()
+  const { theme, isDark, toggleTheme } = useTheme()
   const { isAuthenticated, user, logout, updateUser } = useContext(AuthContext)
   const location = useLocation()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
+  // 中文注释：滚动隐藏底部导航，提高内容可见面积（仅移动端）
+  const [showMobileNav, setShowMobileNav] = useState(true)
   const [width, setWidth] = useState<number>(() => {
     const saved = localStorage.getItem('sidebarWidth')
     // 中文注释：默认侧边栏更窄（180px），并将可拖拽的最小宽度下调到 180px
@@ -22,6 +26,18 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const dragging = useRef(false)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [search, setSearch] = useState('')
+  // 中文注释：搜索建议与最近搜索（用于提高搜索功能的使用率与转化）
+  const suggestions = useMemo(() => (
+    ['品牌设计', '国潮设计', '老字号品牌', 'IP设计', '插画设计', '工艺创新', '非遗传承', '共创向导']
+  ), [])
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem('recentSearches')
+      if (s) return JSON.parse(s)
+    } catch {}
+    return []
+  })
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   // 中文注释：通知数据类型与状态管理
   interface Notification {
     id: string
@@ -32,6 +48,24 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     type?: 'info' | 'success' | 'warning'
   }
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
+  // 中文注释：滚动超过一定距离后显示“回到顶部”悬浮按钮，提升长页可用性
+  const [showBackToTop, setShowBackToTop] = useState(false)
+  // 中文注释：快捷键提示弹层（提高功能可发现性）
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const shortcutsRef = useRef<HTMLDivElement | null>(null)
+  // 中文注释：问题反馈弹层显示状态
+  const [showFeedback, setShowFeedback] = useState(false)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!shortcutsRef.current) return
+      if (!shortcutsRef.current.contains(e.target as Node)) {
+        setShowShortcuts(false)
+      }
+    }
+    if (showShortcuts) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showShortcuts])
   const notifRef = useRef<HTMLDivElement | null>(null)
   const [notifications, setNotifications] = useState<Notification[]>(() => {
     try {
@@ -117,6 +151,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       case '/create': import('@/pages/Create'); markPrefetched('create', ttlMs); break
       case '/tools': import('@/pages/Tools'); markPrefetched('tools', ttlMs); break
       case '/neo': import('@/pages/Neo'); markPrefetched('neo', ttlMs); break
+      case '/lab': import('@/pages/Lab'); markPrefetched('lab', ttlMs); break
       case '/wizard': import('@/pages/Wizard'); markPrefetched('wizard', ttlMs); break
       case '/square': import('@/pages/Square'); markPrefetched('square', ttlMs); break
       case '/community': import('@/pages/Community'); markPrefetched('community', ttlMs); break
@@ -124,6 +159,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       case '/tianjin': import('@/components/TianjinCreativeActivities'); markPrefetched('tianjin', ttlMs); break
       case '/brand': import('@/pages/BrandGuide'); markPrefetched('brand', ttlMs); break
       case '/about': import('@/pages/About'); markPrefetched('about', ttlMs); break
+      case '/dashboard': import('@/pages/Dashboard'); markPrefetched('dashboard', ttlMs); break
       default: break
     }
   }
@@ -131,7 +167,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   // 中文注释：在浏览器空闲时优先预加载“共创向导”，保障首次进入体验
   useEffect(() => {
     const idle = (window as any).requestIdleCallback || ((fn: Function) => setTimeout(fn, 500))
-    const handle = idle(() => prefetchRoute('/wizard', 300000))
+    idle(() => prefetchRoute('/wizard', 300000))
     return () => {
       // 中文注释：兼容不同idle实现，简单清理
     }
@@ -194,12 +230,30 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [toggleTheme])
 
+  // 中文注释：监听滚动方向，向下滚动时隐藏底部导航，向上滚动或靠近顶部时显示
+  useEffect(() => {
+    let lastY = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      const delta = y - lastY
+      lastY = y
+      if (Math.abs(delta) < 6) return
+      setShowMobileNav(delta <= 0 || y < 80)
+      // 中文注释：当滚动距离超过 480px 时展示“回到顶部”按钮
+      setShowBackToTop(y > 480)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // 中文注释：暗色主题下的导航项采用更柔和的文字与半透明悬停背景，提升高级质感
   const navItemClass = useMemo(() => (
-    `${isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-50'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 active:scale-95`
+    `${isDark ? 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]' : 'text-gray-700 hover:bg-gray-50'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 active:scale-95`
   ), [isDark])
 
+  // 中文注释：暗色主题激活态使用更深的卡片底色与轻微阴影，强化层次
   const activeClass = useMemo(() => (
-    `${isDark ? 'bg-gray-700 text-white ring-1 ring-gray-600' : 'bg-white text-gray-900 ring-1 ring-gray-200 shadow-sm'}`
+    `${isDark ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] ring-1 ring-[var(--accent-red)] shadow-[var(--shadow-md)]' : 'bg-white text-gray-900 ring-1 ring-gray-200 shadow-sm'}`
   ), [isDark])
 
   const title = useMemo(() => {
@@ -223,6 +277,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     // 中文注释：为生成页提供明确的顶部标题显示
     if (p.startsWith('/generate')) return 'AI生成引擎'
     if (p.startsWith('/neo')) return '灵感引擎'
+    if (p.startsWith('/lab')) return '新窗口实验室'
     if (p.startsWith('/wizard')) return '共创向导'
     if (p.startsWith('/admin')) return '管理控制台'
     return '津脉智坊'
@@ -230,33 +285,43 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
 
   const onSearchSubmit = () => {
     if (!search.trim()) return
-    navigate(`/explore?q=${encodeURIComponent(search.trim())}`)
+    const q = search.trim()
+    // 中文注释：跳转到探索页并记录最近搜索（去重、限6条）
+    navigate(`/explore?q=${encodeURIComponent(q)}`)
+    setRecentSearches((prev) => {
+      const next = [q, ...prev.filter((x) => x !== q)].slice(0, 6)
+      try { localStorage.setItem('recentSearches', JSON.stringify(next)) } catch {}
+      return next
+    })
   }
 
   // 中文注释：共创社群模块展开状态与快捷导航方法
-  const [communityOpen, setCommunityOpen] = useState(true)
-  const gotoCommunity = (path?: string) => {
-    const target = '/community' + (path ? path : '')
-    navigate(target)
+
+  // 中文注释：根据查询参数精确判断当前激活的社群类型，避免两个导航同时高亮
+  const isCommunityActive = (ctx: 'cocreation' | 'creator') => {
+    const sp = new URLSearchParams(location.search)
+    return location.pathname.startsWith('/community') && sp.get('context') === ctx
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'} flex`}> 
+    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-[#0b0e13] via-[#0e1218] to-[#0b0e13] text-gray-100' : theme === 'pink' ? 'bg-gradient-to-br from-[#fff0f5] via-[#ffe4ec] to-[#fff0f5] text-gray-900' : 'bg-white text-gray-900'} flex`}> 
+      {/* 中文注释：暗色侧栏采用半透明+毛玻璃质感，提升整体高级感 */}
       <aside 
-        className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r relative ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`} 
+        className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
         style={{ width: collapsed ? 72 : width }}
       >
-        <div className="px-3 py-3 flex items-center justify-between">
+        <div className={`px-4 py-3 flex items-center justify-between rounded-lg transition-colors group ${isDark ? 'hover:bg-gray-800/60' : theme === 'pink' ? 'hover:bg-pink-50' : 'hover:bg-gray-50'}`}>
           <div className="flex items-center space-x-2">
-            <span className={`font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>津脉</span>
+            <span className={`font-extrabold bg-gradient-to-r ${isDark ? 'from-red-400 to-rose-500' : 'from-red-600 to-rose-500'} bg-clip-text text-transparent tracking-tight`}>津脉</span>
             {!collapsed && <span className="font-bold">智坊</span>}
           </div>
           <button
-            className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}
+            className={`p-2 rounded-lg ring-1 transition-all ${isDark ? 'hover:bg-gray-800/70 ring-gray-800 hover:ring-2' : 'hover:bg-gray-100 ring-gray-200 hover:ring-2'} hover:shadow-sm`}
             onClick={() => setCollapsed(!collapsed)}
             aria-label="折叠侧边栏"
+            title={collapsed ? '展开侧边栏' : '折叠侧边栏'}
           >
-            <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+            <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-gray-500 transition-transform group-hover:translate-x-0.5`}></i>
           </button>
         </div>
 
@@ -277,6 +342,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             <i className="fas fa-bolt mr-2"></i>
             {!collapsed && '灵感引擎'}
           </NavLink>
+          <NavLink to="/lab" title={collapsed ? '新窗口实验室' : undefined} onMouseEnter={() => prefetchRoute('/lab')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+            <i className="fas fa-window-restore mr-2"></i>
+            {!collapsed && '新窗口实验室'}
+          </NavLink>
           {/* 中文注释：为“共创向导”导航项补充辅助功能与预加载触发，提升可访问性与响应速度 */}
           <NavLink 
             to="/wizard" 
@@ -295,13 +364,18 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             <i className="fas fa-th-large mr-2"></i>
             {!collapsed && '共创广场'}
           </NavLink>
-          {!collapsed && (
-            <NavLink to="/community?context=cocreation&tab=joined" title={collapsed ? '共创社群' : undefined} onMouseEnter={() => prefetchRoute('/community?context=cocreation&tab=joined')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}>
-              <i className="fas fa-user-friends mr-2"></i>
-              {!collapsed && '共创社群'}
-            </NavLink>
-          )}
-          <NavLink to="/community?context=creator" title={collapsed ? '创作者社区' : undefined} onMouseEnter={() => prefetchRoute('/community?context=creator')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+          {/* 中文注释：共创社群在折叠时也显示图标，便于快速进入 */}
+          <NavLink 
+            to="/community?context=cocreation&tab=joined" 
+            title={collapsed ? '共创社群' : undefined} 
+            data-discover="true"
+            onMouseEnter={() => prefetchRoute('/community')} 
+            className={() => `${navItemClass} ${isCommunityActive('cocreation') ? activeClass : ''}`}
+          >
+            <i className="fas fa-user-friends mr-2"></i>
+            {!collapsed && '共创社群'}
+          </NavLink>
+          <NavLink to="/community?context=creator" title={collapsed ? '创作者社区' : undefined} onMouseEnter={() => prefetchRoute('/community')} className={() => `${navItemClass} mt-2 ${isCommunityActive('creator') ? activeClass : ''}`}> 
             <i className="fas fa-users mr-2"></i>
             {!collapsed && '创作者社区'}
           </NavLink>
@@ -323,85 +397,9 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           </NavLink>
         </nav>
 
-        {/* 中文注释：新增“共创社群”模块，提供侧栏内的快速发现与参与入口 */}
-        {false && !collapsed && (
-          // 中文注释：社群模块外层容器，使用半透明+毛玻璃，让视觉更柔和，不突兀
-          <div className={`mx-2 mt-2 mb-24 rounded-xl ring-1 shadow-sm ${
-            isDark ? 'ring-gray-700/70 bg-gray-800/80 backdrop-blur-sm' : 'ring-gray-200/70 bg-white/80 backdrop-blur-sm'
-          }`}>
-            {/* 中文注释：标题行增加圆角与过渡，图标与文字使用较柔的灰色 */}
-            <div className={`px-3 py-2 flex items-center justify-between rounded-lg transition-colors ${
-              isDark ? 'hover:bg-gray-700/60' : 'hover:bg-gray-50'
-            }`}>
-              <div className="flex items-center gap-2">
-                <i className={`fas fa-users ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-                <span className={`${isDark ? 'text-gray-200' : 'text-gray-700'} text-sm font-medium`}>共创社群</span>
-              </div>
-              <button
-                className={`p-2 rounded-lg ring-1 transition duration-200 ${
-                  isDark ? 'ring-gray-700/70 hover:bg-gray-700/70' : 'ring-gray-200/70 hover:bg-white/70'
-                }`}
-                onClick={() => setCommunityOpen(v => !v)}
-                aria-expanded={communityOpen}
-                aria-label="展开/收起社群模块"
-              >
-                <i className={`fas ${communityOpen ? 'fa-chevron-up' : 'fa-chevron-down'} ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-              </button>
-            </div>
-            {communityOpen && (
-              <div className="px-3 pb-3">
-                {/* 中文注释：热门话题标签（点击跳转到社群页并附带查询参数） */}
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {['国潮设计', '非遗传承', '品牌联名', '校园活动', '文旅推广'].map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => gotoCommunity(`?tag=${encodeURIComponent(tag)}`)}
-                      className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} hover:opacity-90`}
-                    >{tag}</button>
-                  ))}
-                </div>
-                {/* 中文注释：精选社群条目（示例入口），快速加入或查看 */}
-                <ul className="space-y-1">
-                  {[
-                    { name: '国潮共创组', members: 128, path: '/community?group=guochao' },
-                    { name: '非遗研究社', members: 96, path: '/community?group=heritage' },
-                    { name: '品牌联名工坊', members: 73, path: '/community?group=brand' },
-                  ].map((g) => (
-                    <li key={g.name}>
-                      <button
-                        onClick={() => gotoCommunity(g.path)}
-                        className={`w-full text-left px-2 py-1 rounded-lg flex items-center justify-between ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
-                      >
-                        <span className="text-xs">{g.name}</span>
-                        <span className={`text-[10px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{g.members} 人</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    onClick={() => gotoCommunity('?context=cocreation&tab=joined')}
-                    className={`flex-1 px-2 py-1 text-xs rounded-lg ${isDark ? 'bg-gray-700 text-white ring-1 ring-gray-600 hover:bg-gray-600' : 'bg-white text-gray-900 ring-1 ring-gray-200 shadow-sm hover:bg-gray-50'}`}
-                  >进入社群</button>
-                  <button
-                    onClick={() => gotoCommunity('?context=cocreation&tab=user')}
-                    className={`px-2 py-1 text-xs rounded-lg ${isDark ? 'bg-purple-700 text-white hover:bg-purple-600' : 'bg-purple-600 text-white hover:bg-purple-500'}`}
-                  >创建社群</button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* 中文注释：侧栏保留预留的社群模块占位，后续再完善 */}
 
-        <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-          <button
-            onClick={toggleTheme}
-            className={`w-full flex items-center justify-center px-3 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 ring-1 ring-gray-600' : 'bg-white hover:bg-gray-50 ring-1 ring-gray-200 shadow-sm'} transition-colors`}
-          >
-            <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'} mr-2`}></i>
-            {!collapsed && '切换主题'}
-          </button>
-        </div>
+        {/* 中文注释：原侧边栏底部“主题切换”入口移除，改在首页右下角提供统一入口 */}
 
         {!collapsed && (
           <div
@@ -418,8 +416,15 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           aria-hidden="true"
         />
       )}
-      <div className="flex-1 min-w-0">
-        <header className={`sticky top-0 z-40 ${isDark ? 'bg-gray-900' : 'bg-white'} border-b ${isDark ? 'border-gray-800' : 'border-gray-200'} px-4 py-3`}> 
+      {/* 中文注释：为移动端底部导航预留更大安全区（包含中心悬浮按钮），支持 iOS 刘海屏 */}
+      <div 
+        className="flex-1 min-w-0 md:pb-0"
+        // 中文注释：当用户点击右侧内容区域时，自动收起左侧导航栏，减少视觉占用、聚焦内容
+        onClick={() => { if (!collapsed) setCollapsed(true) }}
+        style={{ paddingBottom: showMobileNav ? 'calc(90px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)' }}
+      >
+        {/* 中文注释：暗色头部采用半透明背景与毛玻璃，弱化硬边 */}
+        <header className={`sticky top-0 z-40 ${isDark ? 'bg-[#0b0e13]/80 backdrop-blur-sm' : theme === 'pink' ? 'bg-white/80 backdrop-blur-sm' : 'bg-white'} border-b ${isDark ? 'border-gray-800' : theme === 'pink' ? 'border-pink-200' : 'border-gray-200'} px-4 py-3`}> 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <button
@@ -431,24 +436,134 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
               </button>
               <h2 className="text-lg font-bold">{title}</h2>
             </div>
-            <div className="flex items-center space-x-3 w-1/2">
-              <div className={`flex-1 rounded-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} px-3 py-2 flex items-center`}>
-                <i className={`fas fa-search ${isDark ? 'text-gray-400' : 'text-gray-500'} mr-2`}></i>
-                <input
-                  ref={searchRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+            <div className="flex items-center space-x-3 w-full md:w-1/2">
+              {/* 中文注释：桌面端搜索框支持“建议与最近搜索”下拉 */}
+              <div className="relative hidden md:flex flex-1">
+                <div className={`w-full rounded-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} px-3 py-2 items-center flex`}>
+                  <i className={`fas fa-search ${isDark ? 'text-gray-400' : 'text-gray-500'} mr-2`}></i>
+                  <input
+                    ref={searchRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') onSearchSubmit() }}
-                  placeholder="搜索作品、素材或用户"
-                  className={`flex-1 outline-none ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
-                />
-                <button
-                  onClick={onSearchSubmit}
-                  className="ml-2 px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
-                >
-                  搜索
-                </button>
+                  onFocus={() => setShowSearchDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowSearchDropdown(false), 150)}
+                    placeholder="搜索作品、素材或用户"
+                    className={`flex-1 outline-none ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
+                  />
+                  <button
+                    onClick={onSearchSubmit}
+                    className="ml-2 px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    搜索
+                  </button>
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className={`ml-2 p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                      aria-label="清空"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
+                </div>
+                {showSearchDropdown && (
+                  <div className={`absolute left-0 right-0 mt-2 rounded-xl shadow-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'}`} role="listbox" aria-label="搜索建议">
+                    <div className="px-3 py-2">
+                      <div className="text-xs mb-2 opacity-70">热门分类</div>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestions.map((s) => (
+                          <button
+                            key={s}
+                            className={`text-xs px-2.5 py-1 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                            onMouseDown={(e) => { e.preventDefault(); setSearch(s); onSearchSubmit(); }}
+                          >{s}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {recentSearches.length > 0 && (
+                      <div className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} px-3 py-2`}>
+                        <div className="text-xs mb-2 opacity-70">最近搜索</div>
+                        <div className="flex flex-wrap gap-2">
+                          {recentSearches.map((r) => (
+                            <button
+                              key={r}
+                              className={`text-xs px-2.5 py-1 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                              onMouseDown={(e) => { e.preventDefault(); setSearch(r); onSearchSubmit(); }}
+                            >{r}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+              {/* 中文注释：快捷键提示入口 */}
+              <div className="relative" ref={shortcutsRef}>
+                <button
+                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
+                  aria-label="查看快捷键"
+                  aria-expanded={showShortcuts}
+                  onClick={() => setShowShortcuts(v => !v)}
+                  title="快捷键提示"
+                >
+                  <i className="fas fa-keyboard"></i>
+                </button>
+                {showShortcuts && (
+                  <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'}`} role="dialog" aria-label="快捷键列表">
+                    <div className="px-4 py-3 border-b flex items-center justify-between">
+                      <span className="font-medium">快捷键</span>
+                      <button className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`} onClick={() => setShowShortcuts(false)}>关闭</button>
+                    </div>
+                    <ul className="px-4 py-2 text-sm space-y-1">
+                      <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>/ 聚焦搜索</li>
+                      <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>T 切换主题</li>
+                      <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>B 折叠侧边栏</li>
+                      <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>1–0 快速导航（首页至关于）</li>
+                      <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>移动端：下滑隐藏底部导航</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              {/* 中文注释：问题反馈入口 */}
+              <button
+                className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
+                aria-label="问题反馈"
+                title="问题反馈"
+                onClick={() => setShowFeedback(true)}
+              >
+                <i className="fas fa-bug"></i>
+              </button>
+              <button
+                className={`md:hidden p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
+                aria-label="搜索"
+                onClick={() => setShowMobileSearch(true)}
+              >
+                <i className="fas fa-search"></i>
+              </button>
+              <button
+                title="分享"
+                aria-label="分享当前页面"
+                className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
+                onClick={() => {
+                  try {
+                    const url = window.location.href
+                    if (navigator.share && window.isSecureContext) {
+                      navigator.share({
+                        title: document.title,
+                        url: url
+                      })
+                    } else {
+                      navigator.clipboard.writeText(url)
+                      toast.success('分享链接已复制到剪贴板')
+                    }
+                  } catch {
+                    toast.error('分享失败，请重试')
+                  }
+                }}
+              >
+                <i className="fas fa-share-nodes"></i>
+              </button>
               <div className="relative" ref={notifRef}>
                 <button
                   className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
@@ -537,6 +652,9 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/settings') }}>设置</button>
                         </li>
                         <li>
+                          <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/analytics') }}>数据分析</button>
+                        </li>
+                        <li>
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => fileRef.current?.click()}>更换头像</button>
                         </li>
                         <li>
@@ -562,6 +680,151 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           </div>
         </header>
         {children}
+        {/* 中文注释：全局“回到顶部”悬浮按钮（自适应暗色/浅色主题） */}
+        {showBackToTop && (
+          <button
+            aria-label="回到顶部"
+            title="回到顶部"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className={`fixed right-4 ${showMobileNav ? 'bottom-[96px]' : 'bottom-6'} z-40 p-3 rounded-full shadow-lg ring-1 transition-colors ${isDark ? 'bg-gray-800 text-white ring-gray-700 hover:bg-gray-700' : theme === 'pink' ? 'bg-white text-gray-900 ring-pink-200 hover:bg-pink-50' : 'bg-white text-gray-900 ring-gray-200 hover:bg-gray-50'}`}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) / 2)' }}
+          >
+            <i className="fas fa-arrow-up"></i>
+          </button>
+        )}
+        {showMobileSearch && (
+          <div className={`fixed inset-x-0 top-0 z-50 md:hidden ${isDark ? 'bg-[#0b0e13]/95' : 'bg-white'} px-4 py-3 border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+            <div className={`rounded-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} px-3 py-2 flex items-center`}>
+              <i className={`fas fa-search ${isDark ? 'text-gray-400' : 'text-gray-500'} mr-2`}></i>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { onSearchSubmit(); setShowMobileSearch(false) } }}
+                placeholder="搜索作品、素材或用户"
+                className={`flex-1 outline-none ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
+                autoFocus
+              />
+              <button
+                onClick={() => { onSearchSubmit(); setShowMobileSearch(false) }}
+                className="ml-2 px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white"
+              >
+                搜索
+              </button>
+              <button
+                onClick={() => setShowMobileSearch(false)}
+                className={`ml-2 p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                aria-label="关闭"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            {/* 中文注释：移动端在输入框下提供“热门分类”和“最近搜索”便捷入口 */}
+            <div className="mt-3">
+              <div className="text-xs mb-2 opacity-70">热门分类</div>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    className={`text-xs px-2.5 py-1 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                    onClick={() => { setSearch(s); onSearchSubmit(); setShowMobileSearch(false) }}
+                  >{s}</button>
+                ))}
+              </div>
+              {recentSearches.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-xs mb-2 opacity-70">最近搜索</div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((r) => (
+                      <button
+                        key={r}
+                        className={`text-xs px-2.5 py-1 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                        onClick={() => { setSearch(r); onSearchSubmit(); setShowMobileSearch(false) }}
+                      >{r}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {showFeedback && (
+          <ErrorFeedback onClose={() => setShowFeedback(false)} autoShow={true} />
+        )}
+        {/* 中文注释：玻璃拟态底部导航（含中心悬浮“创作”按钮） */}
+        <nav className={`fixed bottom-0 inset-x-0 md:hidden ${isDark ? 'bg-[#0b0e13]/80 backdrop-blur-xl ring-1 ring-gray-800/70' : theme === 'pink' ? 'bg-white/80 backdrop-blur-xl ring-1 ring-pink-200/70' : 'bg-white/85 backdrop-blur-xl ring-1 ring-gray-200/70'} z-40 transform transition-transform duration-200 shadow-2xl`} style={{ paddingBottom: 'env(safe-area-inset-bottom)', transform: showMobileNav ? 'translateY(0)' : 'translateY(100%)' }}> 
+          <ul className="grid grid-cols-5 text-xs px-2 py-1">
+            <li>
+              <NavLink 
+                to="/"
+                onTouchStart={() => prefetchRoute('/')}
+                className={({ isActive }) => `flex flex-col items-center justify-center py-2.5 ${isActive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-300' : 'text-gray-700')}`}
+                aria-label="首页"
+              >
+                <i className="fas fa-home"></i>
+                <span className="mt-0.5">首页</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/explore"
+                onTouchStart={() => prefetchRoute('/explore')}
+                className={({ isActive }) => `flex flex-col items-center justify-center py-2.5 ${isActive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-300' : 'text-gray-700')}`}
+                aria-label="探索"
+              >
+                <i className="fas fa-compass"></i>
+                <span className="mt-0.5">探索</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/create"
+                onTouchStart={() => prefetchRoute('/create')}
+                className={({ isActive }) => `flex flex-col items-center justify-center py-2.5 ${isActive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-300' : 'text-gray-700')}`}
+                aria-label="创作"
+              >
+                <i className="fas fa-plus-circle"></i>
+                <span className="mt-0.5">创作</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/neo"
+                onTouchStart={() => prefetchRoute('/neo')}
+                className={({ isActive }) => `flex flex-col items-center justify-center py-2.5 ${isActive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-300' : 'text-gray-700')}`}
+                aria-label="灵感"
+              >
+                <i className="fas fa-bolt"></i>
+                <span className="mt-0.5">灵感</span>
+              </NavLink>
+            </li>
+            <li>
+              {isAuthenticated ? (
+                <NavLink 
+                  to="/dashboard"
+                  onTouchStart={() => prefetchRoute('/dashboard')}
+                  className={({ isActive }) => `relative flex flex-col items-center justify-center py-2.5 ${isActive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-300' : 'text-gray-700')}`}
+                  aria-label="我的"
+                >
+                  <i className="fas fa-user"></i>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-6 inline-flex items-center justify-center w-2 h-2 rounded-full bg-red-500"></span>
+                  )}
+                  <span className="mt-0.5">我的</span>
+                </NavLink>
+              ) : (
+                <NavLink 
+                  to="/wizard"
+                  onTouchStart={() => prefetchRoute('/wizard', 300000)}
+                  className={({ isActive }) => `relative flex flex-col items-center justify-center py-2.5 ${isActive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-300' : 'text-gray-700')}`}
+                  aria-label="向导"
+                >
+                  <i className="fas fa-hat-wizard"></i>
+                  <span className="mt-0.5">向导</span>
+                </NavLink>
+              )}
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   )

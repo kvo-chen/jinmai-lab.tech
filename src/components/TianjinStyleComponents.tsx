@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 
 // 天津特色按钮组件 - 风筝飘带效果
@@ -33,6 +33,7 @@ export const TianjinButton: React.FC<{
   rightIcon,
 }) => {
   const { isDark } = useTheme();
+  const reduceMotion = useReducedMotion();
 
   // 中文注释：风筝飘带动画变体（悬浮轻微上抬）
   const ribbonVariants = {
@@ -41,26 +42,27 @@ export const TianjinButton: React.FC<{
   };
 
   // 中文注释：尺寸映射（统一内边距与字号）
+  // 中文注释：统一提升触控目标尺寸，保证手机端最小44px高度
   const sizeMap: Record<'sm' | 'md' | 'lg', string> = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-5 py-2.5 text-base',
+    sm: 'px-3 py-2 text-sm min-h-[44px]',
+    md: 'px-4 py-2.5 text-sm min-h-[44px]',
+    lg: 'px-5 py-3 text-base min-h-[48px]',
   };
 
   // 中文注释：风格变体（根据主题与暗色模式切换）
   const v = variant || (primary ? 'primary' : 'secondary');
   const bgMap: Record<string, string> = {
-    primary: isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-600 hover:bg-blue-700',
-    secondary: isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50 ring-1 ' + (isDark ? 'ring-gray-600' : 'ring-gray-200'),
-    danger: 'bg-red-600 hover:bg-red-700',
-    ghost: isDark ? 'bg-transparent hover:bg-gray-800 ring-1 ring-gray-700' : 'bg-transparent hover:bg-gray-50 ring-1 ring-gray-200',
+    primary: isDark ? 'bg-[var(--accent-red)] hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-700',
+    secondary: isDark ? 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] ring-1 ring-[var(--border-primary)]' : 'bg-white hover:bg-gray-50 ring-1 ' + (isDark ? 'ring-gray-600' : 'ring-gray-200'),
+    danger: isDark ? 'bg-[var(--accent-red)] hover:bg-red-700' : 'bg-red-600 hover:bg-red-700',
+    ghost: isDark ? 'bg-transparent hover:bg-[var(--bg-hover)] ring-1 ring-[var(--border-secondary)]' : 'bg-transparent hover:bg-gray-50 ring-1 ring-gray-200',
     heritage: 'bg-gradient-to-r from-red-700 to-amber-500 hover:from-red-600 hover:to-amber-600',
   };
   const textMap: Record<string, string> = {
     primary: 'text-white',
-    secondary: isDark ? 'text-white' : 'text-gray-900',
+    secondary: isDark ? 'text-[var(--text-primary)]' : 'text-gray-900',
     danger: 'text-white',
-    ghost: isDark ? 'text-gray-200' : 'text-gray-800',
+    ghost: isDark ? 'text-[var(--text-secondary)]' : 'text-gray-800',
     heritage: 'text-white',
   };
 
@@ -71,9 +73,9 @@ export const TianjinButton: React.FC<{
   return (
     <motion.button
       variants={ribbonVariants}
-      initial="rest"
-      whileHover={disabled || loading ? undefined : 'hover'}
-      whileTap={disabled || loading ? undefined : { scale: 0.98 }}
+      initial={reduceMotion ? undefined : 'rest'}
+      whileHover={disabled || loading || reduceMotion ? undefined : 'hover'}
+      whileTap={disabled || loading || reduceMotion ? undefined : { scale: 0.98 }}
       onClick={disabled || loading ? undefined : onClick}
       type={type}
       aria-label={ariaLabel}
@@ -82,7 +84,8 @@ export const TianjinButton: React.FC<{
       className={`rounded-lg font-medium transition-colors relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 ${sizeMap[size]} ${bgMap[v]} ${textMap[v]} ${widthCls} ${disabledCls} ${className}`}
     >
       {/* 中文注释：点击涟漪（加载或禁用时关闭动画） */}
-      {!disabled && !loading && (
+      {/* 中文注释：在“减少动态效果”偏好下关闭点击涟漪动画 */}
+      {!disabled && !loading && !reduceMotion && (
         <motion.div
           className="absolute inset-0 bg-white opacity-20 rounded-full scale-0 origin-center"
           initial={{ scale: 0 }}
@@ -322,11 +325,13 @@ export const TianjinTag: React.FC<{
   color?: 'blue' | 'red' | 'green' | 'yellow';
   className?: string;
 }> = ({ children, color = 'blue', className = '' }) => {
+  const { isDark } = useTheme();
+  
   const colorMap = {
-    blue: 'bg-blue-100 text-blue-600 border-blue-200',
-    red: 'bg-red-100 text-red-600 border-red-200',
-    green: 'bg-green-100 text-green-600 border-green-200',
-    yellow: 'bg-yellow-100 text-yellow-600 border-yellow-200'
+    blue: isDark ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-100 text-blue-600 border-blue-200',
+    red: isDark ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-100 text-red-600 border-red-200',
+    green: isDark ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-100 text-green-600 border-green-200',
+    yellow: isDark ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-100 text-yellow-600 border-yellow-200'
   };
   
   return (
@@ -345,18 +350,20 @@ export const YangliuqingCard: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => {
+  const { isDark } = useTheme();
+  
   return (
-    <div className={`relative overflow-hidden rounded-xl shadow-md ${className}`}>
+    <div className={`relative overflow-hidden rounded-xl ${isDark ? 'shadow-[var(--shadow-lg)] bg-[var(--bg-secondary)]' : 'shadow-md'} ${className} card`}>
       {/* 边框装饰 */}
-      <div className="absolute inset-0 border-2 border-double border-blue-600 rounded-xl pointer-events-none"></div>
+      <div className={`absolute inset-0 border-2 border-double ${isDark ? 'border-blue-500' : 'border-blue-600'} rounded-xl pointer-events-none`}></div>
       
       {/* 四角装饰 */}
-      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-600 rounded-tl-xl"></div>
-      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600 rounded-tr-xl"></div>
-      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-600 rounded-bl-xl"></div>
-      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-600 rounded-br-xl"></div>
+      <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${isDark ? 'border-red-500' : 'border-red-600'} rounded-tl-xl`}></div>
+      <div className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${isDark ? 'border-red-500' : 'border-red-600'} rounded-tr-xl`}></div>
+      <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${isDark ? 'border-red-500' : 'border-red-600'} rounded-bl-xl`}></div>
+      <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${isDark ? 'border-red-500' : 'border-red-600'} rounded-br-xl`}></div>
       
-      <div className="p-4 relative z-10">
+      <div className={`p-4 relative z-10 ${isDark ? 'text-[var(--text-primary)]' : ''}`}>
         {children}
       </div>
     </div>
@@ -522,6 +529,7 @@ export const TianjinImage: React.FC<{
   const { isDark } = useTheme();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     if (!src) {
       setError(true);
@@ -571,9 +579,9 @@ export const TianjinImage: React.FC<{
           sizes={sizes}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: loaded ? 1 : 0 }}
-          transition={{ duration: 0.4 }}
+          initial={reduceMotion ? undefined : { opacity: 0 }}
+          animate={reduceMotion ? undefined : { opacity: loaded ? 1 : 0 }}
+          transition={reduceMotion ? undefined : { duration: 0.4 }}
         />
       )}
       {badge && (

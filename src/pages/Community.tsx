@@ -20,8 +20,11 @@ type Thread = {
 }
 
 const THREAD_KEY = 'jmzf_threads'
-const ANNOUNCE_KEY = 'jmzf_announcements'
 const SCHEDULE_KEY = 'jmzf_scheduled'
+const THREAD_DRAFT_KEY = 'jmzf_thread_draft'
+const FOLLOW_KEY = 'jmzf_followed_creators'
+const JOINED_KEY = 'jmzf_joined_communities'
+const THREAD_FAV_KEY = 'jmzf_thread_favorites'
 
 // 中文注释：创作者类型与示例数据（用于展示社区头像与在线状态）
 type Creator = {
@@ -616,9 +619,12 @@ export default function Community() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [newTitle, setNewTitle] = useState('') // 中文注释：新帖标题
   const [newContent, setNewContent] = useState('') // 中文注释：新帖内容
+  const [threadDraft, setThreadDraft] = useState<{ title?: string; content?: string; mode?: 'style' | 'topic'; selected?: string } | null>(null)
   const [threadSearch, setThreadSearch] = useState('') // 中文注释：讨论搜索（原始输入值）
   const [debouncedThreadSearch, setDebouncedThreadSearch] = useState('') // 中文注释：讨论搜索（防抖后的值）
   const [threadSort, setThreadSort] = useState<'new' | 'reply' | 'hot'>('new') // 中文注释：排序方式
+  const [favOnly, setFavOnly] = useState(false) // 中文注释：只看收藏
+  const [favoriteThreads, setFavoriteThreads] = useState<string[]>([]) // 中文注释：收藏的帖子ID
   const [replyText, setReplyText] = useState<Record<string, string>>({})
   const [announcement, setAnnouncement] = useState('') // 中文注释：公告内容
   const [announceSaved, setAnnounceSaved] = useState(true) // 中文注释：公告是否已保存
@@ -653,6 +659,11 @@ export default function Community() {
   const [pinnedJoined, setPinnedJoined] = useState<string[]>([])
   const [mutedCommunities, setMutedCommunities] = useState<string[]>([])
   const [joinedSearch, setJoinedSearch] = useState('')
+  const [preferPinned, setPreferPinned] = useState(true)
+  const [hideMuted, setHideMuted] = useState(false)
+  // 中文注释：社群列表 + 聊天的当前选中社群ID与搜索关键词
+  const [activeChatCommunityId, setActiveChatCommunityId] = useState<string | null>(null)
+  const [chatSearch, setChatSearch] = useState('')
   const [editDraft, setEditDraft] = useState<{ id: string; name: string; desc: string; tags: string } | null>(null)
   // 中文注释：我创建的社群的管理抽屉（成员、公告、隐私）状态
   const MEMBER_KEY = 'jmzf_community_members'
@@ -683,10 +694,20 @@ export default function Community() {
       else setCommunityTab('user')
     }
   }, [communityContext, searchParams])
+  // 中文注释：支持通过 URL 参数 ?join=communityId 自动加入目标社群并选中聊天
+  useEffect(() => {
+    const joinId = searchParams.get('join')
+    if (joinId) {
+      setJoinedCommunities(prev => prev.includes(joinId) ? prev : [...prev, joinId])
+      setActiveChatCommunityId(joinId)
+    }
+  }, [searchParams])
   const [communitySearch, setCommunitySearch] = useState('')
   const [communitySort, setCommunitySort] = useState<'members' | 'alphabet'>('members')
   const [communityOpen, setCommunityOpen] = useState(false)
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null)
+
+  
 
   useEffect(() => {
     const current = postsApi.getPosts()
@@ -711,6 +732,22 @@ export default function Community() {
     try {
       const guard = localStorage.getItem(UPVOTE_GUARD_KEY)
       setUpvoteGuard(guard ? JSON.parse(guard) : {})
+    } catch {}
+    try {
+      const fd = localStorage.getItem(FOLLOW_KEY)
+      setFollowedCreators(fd ? JSON.parse(fd) : [])
+    } catch {}
+    try {
+      const jd = localStorage.getItem(JOINED_KEY)
+      setJoinedCommunities(jd ? JSON.parse(jd) : [])
+    } catch {}
+    try {
+      const td = localStorage.getItem(THREAD_DRAFT_KEY)
+      setThreadDraft(td ? JSON.parse(td) : null)
+    } catch {}
+    try {
+      const fav = localStorage.getItem(THREAD_FAV_KEY)
+      setFavoriteThreads(fav ? JSON.parse(fav) : [])
     } catch {}
     try {
       const rawMsg = localStorage.getItem(COMMUNITY_MSG_KEY)
@@ -751,6 +788,21 @@ export default function Community() {
   useEffect(() => { try { localStorage.setItem(ANNOUNCE_KEY, JSON.stringify(announceStore)) } catch {} }, [announceStore])
   useEffect(() => { try { localStorage.setItem(PRIVACY_KEY, JSON.stringify(privacyStore)) } catch {} }, [privacyStore])
   useEffect(() => { try { localStorage.setItem(ADMIN_KEY, JSON.stringify(adminStore)) } catch {} }, [adminStore])
+  useEffect(() => { try { localStorage.setItem(FOLLOW_KEY, JSON.stringify(followedCreators)) } catch {} }, [followedCreators])
+  useEffect(() => { try { localStorage.setItem(JOINED_KEY, JSON.stringify(joinedCommunities)) } catch {} }, [joinedCommunities])
+  // 中文注释：当加入社群变化时，自动选择一个社群用于右侧聊天（优先置顶）
+  useEffect(() => {
+    if (!joinedCommunities.length) { setActiveChatCommunityId(null); return }
+    if (activeChatCommunityId && joinedCommunities.includes(activeChatCommunityId)) return
+    const pinnedFirst = pinnedJoined.find(id => joinedCommunities.includes(id))
+    setActiveChatCommunityId(pinnedFirst || joinedCommunities[0] || null)
+  }, [joinedCommunities, pinnedJoined])
+  useEffect(() => {
+    const payload = { title: newTitle.trim(), content: newContent.trim(), mode, selected: mode === 'style' ? selectedStyle : selectedTopic }
+    try { localStorage.setItem(THREAD_DRAFT_KEY, JSON.stringify(payload)) } catch {}
+  }, [newTitle, newContent, mode, selectedStyle, selectedTopic])
+
+  useEffect(() => { try { localStorage.setItem(THREAD_FAV_KEY, JSON.stringify(favoriteThreads)) } catch {} }, [favoriteThreads])
 
   // 中文注释：置顶/静音切换与创建社群编辑流程
   const togglePinJoined = (id: string) => {
@@ -888,6 +940,15 @@ export default function Community() {
     return '老字号'
   }
 
+  const insertRandomIdea = () => {
+    const baseTitle = mode === 'style' ? `${selectedStyle}风格联名海报设计讨论` : `${selectedTopic}主题传播视觉讨论`
+    const baseContent = mode === 'style'
+      ? `围绕「${selectedStyle}」视觉风格，分享你的配色、版式与元素融合建议；欢迎附上参考图或草图。`
+      : `围绕「${selectedTopic}」主题的传播视觉，讨论关键词选取、图文编排与落地物料。`
+    setNewTitle(baseTitle)
+    setNewContent(baseContent)
+  }
+
   const filteredPosts = useMemo(() => {
     return posts.filter(p => mode === 'style' ? pickStyle(p.title) === selectedStyle : pickTopic(p.title) === selectedTopic)
   }, [posts, mode, selectedStyle, selectedTopic])
@@ -957,6 +1018,19 @@ export default function Community() {
     setThreads(next)
     localStorage.setItem(THREAD_KEY, JSON.stringify(next))
     toast.success('回复已删除')
+  }
+
+  const toggleFavoriteThread = (id: string) => {
+    setFavoriteThreads(prev => prev.includes(id) ? prev.filter(x => x !== id) : [id, ...prev])
+  }
+
+  const deleteMessage = (id?: string) => {
+    if (!id) return
+    setMessages(prev => prev.filter(m => m.id !== id))
+  }
+  const togglePinMessage = (id?: string) => {
+    if (!id) return
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, pinned: !m.pinned } : m))
   }
 
   const saveAnnouncement = () => {
@@ -1095,14 +1169,24 @@ export default function Community() {
     const all = [...recommendedCommunities, ...userCommunities]
     return all.filter(c => joinedCommunities.includes(c.id))
   }, [joinedCommunities, userCommunities])
-  // 中文注释：进入的社群展示（置顶优先、支持搜索过滤）
-  const displayJoined = useMemo(() => {
-    const q = joinedSearch.trim().toLowerCase()
+  // 中文注释：用于左侧“社群列表”栏的搜索过滤（只作用于已加入社群）
+  const chatJoinedList = useMemo(() => {
+    const q = chatSearch.trim().toLowerCase()
     const base = joinedList.filter(c => q ? `${c.name} ${c.description} ${c.tags.join(' ')}`.toLowerCase().includes(q) : true)
     const pinned = base.filter(c => pinnedJoined.includes(c.id))
     const others = base.filter(c => !pinnedJoined.includes(c.id))
     return [...pinned, ...others]
-  }, [joinedList, joinedSearch, pinnedJoined])
+  }, [joinedList, chatSearch, pinnedJoined])
+  // 中文注释：进入的社群展示（置顶优先、支持搜索过滤）
+  const displayJoined = useMemo(() => {
+    const q = joinedSearch.trim().toLowerCase()
+    let base = joinedList.filter(c => q ? `${c.name} ${c.description} ${c.tags.join(' ')}`.toLowerCase().includes(q) : true)
+    if (hideMuted) base = base.filter(c => !mutedCommunities.includes(c.id))
+    if (!preferPinned) return base
+    const pinned = base.filter(c => pinnedJoined.includes(c.id))
+    const others = base.filter(c => !pinnedJoined.includes(c.id))
+    return [...pinned, ...others]
+  }, [joinedList, joinedSearch, pinnedJoined, preferPinned, hideMuted, mutedCommunities])
 
   return (
     <SidebarLayout>
@@ -1123,6 +1207,95 @@ export default function Community() {
             { label: '话题', value: '标签' },
           ]}
         />
+
+        {/* 中文注释：横向社群列表条（置于聊天模块上方，便于快速切换社群） */}
+        {communityContext === 'cocreation' && communityTab === 'joined' && (
+          <div className={`sticky top-16 z-40 mb-4 ${isDark ? 'bg-gray-800/95' : 'bg-white/95'} backdrop-blur-md rounded-2xl p-3 ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} shadow-sm`}> 
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium">我加入的社群</div>
+              <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{joinedList.length} 个</div>
+            </div>
+            <div className="overflow-x-auto">
+              <div className="flex items-center gap-2 min-w-full">
+                {joinedList.length === 0 ? (
+                  <div className="text-sm opacity-60 px-2 py-1">暂无已加入社群</div>
+                ) : (
+                  joinedList.map(c => (
+                    <button key={`strip-${c.id}`} onClick={() => setActiveChatCommunityId(c.id)} className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs whitespace-nowrap ring-1 transition-colors ${activeChatCommunityId === c.id ? (isDark ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-indigo-600 text-white ring-indigo-600') : (isDark ? 'bg-gray-700 text-gray-200 ring-gray-700 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 ring-gray-200 hover:bg-gray-200')}`}>
+                      <span className="font-medium">{c.name}</span>
+                      {pinnedJoined.includes(c.id) && (<span className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-indigo-100 text-indigo-700'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-indigo-200'}`}>置顶</span>)}
+                      {mutedCommunities.includes(c.id) && (<span className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>静音</span>)}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* 中文注释：社群列表 + 聊天双栏布局（仅在共创社群“进入的社群”标签显示；置于页面上方便于发现） */}
+        {communityContext === 'cocreation' && communityTab === 'joined' && (
+        <motion.section
+          className={`mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-4`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium">社群列表与聊天</h3>
+            <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>快速交流</span>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-2 mb-2">
+                <input value={chatSearch} onChange={e => setChatSearch(e.target.value)} placeholder="搜索已加入社群..." className={`${isDark ? 'bg-gray-800 text-white ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-300'} px-3 py-2 rounded-lg flex-1 focus:outline-none focus:ring-2 ${isDark ? 'focus:ring-purple-500' : 'focus:ring-pink-300'}`} />
+              </div>
+              <ul className="space-y-2 max-h-[38vh] overflow-y-auto">
+                {chatJoinedList.length === 0 ? (
+                  <li className="text-sm opacity-60">暂无已加入社群</li>
+                ) : (
+                  chatJoinedList.map(c => (
+                    <li key={`chatlist-top-${c.id}`}>
+                      <button onClick={() => setActiveChatCommunityId(c.id)} className={`w-full text-left p-2 rounded-lg text-sm ring-1 ${activeChatCommunityId === c.id ? (isDark ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-indigo-600 text-white ring-indigo-600') : (isDark ? 'bg-gray-700 text-white ring-gray-700' : 'bg-gray-100 text-gray-900 ring-gray-200')}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium truncate mr-2">{c.name}</div>
+                          {pinnedJoined.includes(c.id) && (<span className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-indigo-100 text-indigo-700'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-indigo-200'}`}>置顶</span>)}
+                          {mutedCommunities.includes(c.id) && (<span className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>静音</span>)}
+                        </div>
+                        <div className={`text-xs opacity-70 mt-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{c.tags.slice(0,3).join(' · ')}</div>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+            <div className="lg:col-span-2">
+              {activeChatCommunityId ? (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium">{(joinedList.find(ci => ci.id === activeChatCommunityId)?.name) || '社群'}</div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => togglePinJoined(activeChatCommunityId)} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-indigo-100 text-indigo-700'} text-xs px-3 py-1 rounded-full`}>{pinnedJoined.includes(activeChatCommunityId) ? '取消置顶' : '置顶'}</button>
+                      <button onClick={() => toggleMuteCommunity(activeChatCommunityId)} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'} text-xs px-3 py-1 rounded-full`}>{mutedCommunities.includes(activeChatCommunityId) ? '取消静音' : '静音'}</button>
+                      <button onClick={() => toggleJoinCommunity(activeChatCommunityId)} className={`text-xs px-3 py-1 rounded-full ${joinedCommunities.includes(activeChatCommunityId) ? 'bg-red-600 text-white' : (isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900')}`}>{joinedCommunities.includes(activeChatCommunityId) ? '退出' : '加入'}</button>
+                    </div>
+                  </div>
+                  <DiscussionSection
+                    isDark={isDark}
+                    messages={communityMessages[activeChatCommunityId] || []}
+                    onSend={(t: string) => sendCommunityMessage(activeChatCommunityId, t)}
+                    canSend={joinedCommunities.includes(activeChatCommunityId)}
+                    showModeration={joinedCommunities.includes(activeChatCommunityId)}
+                    onDelete={(id: string) => deleteCommunityMessage(activeChatCommunityId, id)}
+                    onTogglePin={(id: string) => togglePinCommunityMessage(activeChatCommunityId, id)}
+                  />
+                </div>
+              ) : (
+                <div className="text-sm opacity-60">请选择左侧社群开始交流</div>
+              )}
+            </div>
+          </div>
+        </motion.section>
+        )}
 
         {/* 中文注释：社群板块（推荐社群 / 我创建的社群 / 进入的社群），上下文配色区分 */}
         <motion.section
@@ -1255,7 +1428,8 @@ export default function Community() {
               <div className="text-sm opacity-70 mb-2">我已加入的社群</div>
               <div className="mb-3 flex items-center gap-2">
                 <input value={joinedSearch} onChange={e => setJoinedSearch(e.target.value)} placeholder="搜索我加入的社群..." className={`${isDark ? 'bg-gray-800 text-white ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-300'} px-3 py-2 rounded-lg flex-1 focus:outline-none focus:ring-2 ${isDark ? 'focus:ring-purple-500' : 'focus:ring-pink-300'}`} />
-                <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-white' : 'bg-indigo-100 text-indigo-700'}`}>置顶优先</span>
+                <button onClick={() => setPreferPinned(p => !p)} className={`text-xs px-2 py-0.5 rounded-full ${preferPinned ? 'bg-indigo-600 text-white ring-1 ring-indigo-600' : (isDark ? 'bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-gray-100 text-gray-900 ring-1 ring-gray-200')}`}>{preferPinned ? '置顶优先' : '默认排序'}</button>
+                <button onClick={() => setHideMuted(h => !h)} className={`text-xs px-2 py-0.5 rounded-full ${(isDark ? 'bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-gray-100 text-gray-900 ring-1 ring-gray-200')}`}>{hideMuted ? '隐藏静音: 开' : '隐藏静音: 关'}</button>
               </div>
               {joinedList.length === 0 ? (
                 <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>暂无已加入社群，先在推荐社群里点击“加入”。</div>
@@ -1429,12 +1603,12 @@ export default function Community() {
           transition={{ duration: 0.4 }}
         >
           <h3 className="font-medium mb-3">社群讨论区</h3>
-          <DiscussionSection isDark={isDark} creators={mockCreators} messages={messages} onSend={(text: string) => {
+          <DiscussionSection isDark={isDark} messages={messages} onSend={(text: string) => {
             const user = mockCreators.find(c => c.online) || mockCreators[0]
-            const next = { user: user.name, text, time: '刚刚', avatar: user.avatar }
+            const next = { id: `m-${Date.now()}`, user: user.name, text, avatar: user.avatar, createdAt: Date.now(), pinned: false }
             setMessages(prev => [next, ...prev])
             toast.success('已发送到社群')
-          }} />
+          }} showModeration onDelete={deleteMessage} onTogglePin={togglePinMessage} />
         </motion.section>
         )}
         {/* 中文注释：公告栏 */}
@@ -1532,17 +1706,29 @@ export default function Community() {
                   <option value="reply">最多回复</option>
                   <option value="hot">热度</option>
                 </select>
+                <button onClick={() => setFavOnly(f => !f)} className={`${favOnly ? 'bg-red-600 text-white' : (isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900')} px-3 py-1 rounded-lg text-sm transition-colors`}>{favOnly ? '只看收藏' : '全部'}</button>
+                <button onClick={() => insertRandomIdea()} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} px-3 py-1 rounded-lg text-sm transition-colors`}>随机灵感</button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               <input value={newTitle} onChange={e => setNewTitle(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors`} placeholder="帖子标题（如：京剧角色设计打磨建议）" aria-label="帖子标题" />
               <button onClick={submitThread} disabled={!newTitle.trim() || !newContent.trim()} aria-disabled={!newTitle.trim() || !newContent.trim()} className={`px-3 py-2 rounded-lg transition-colors ${(!newTitle.trim() || !newContent.trim()) ? (isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-600') : 'bg-red-600 text-white hover:bg-red-700 shadow-sm'}`}>发布新帖</button>
             </div>
+            {threadDraft && (threadDraft.title || threadDraft.content) && (
+              <div className="flex items-center justify-between mb-2">
+                <div className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-xs`}>检测到草稿，可恢复上一编辑</div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setNewTitle(threadDraft.title || ''); setNewContent(threadDraft.content || ''); if (threadDraft.mode) { setMode(threadDraft.mode); if (threadDraft.mode === 'style' && threadDraft.selected) setSelectedStyle(threadDraft.selected); if (threadDraft.mode === 'topic' && threadDraft.selected) setSelectedTopic(threadDraft.selected); } }} className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} px-3 py-1 rounded-lg text-xs ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>恢复草稿</button>
+                  <button onClick={() => { setThreadDraft(null); try { localStorage.removeItem(THREAD_DRAFT_KEY) } catch {} }} className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} px-3 py-1 rounded-lg text-xs ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>清除草稿</button>
+                </div>
+              </div>
+            )}
             <textarea value={newContent} onChange={e => setNewContent(e.target.value)} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'} w-full h-24 px-3 py-2 rounded-lg border mb-4 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors`} placeholder="详细内容" />
 
             <div className="space-y-3">
               {threads
                 .filter(t => (mode === 'style' ? t.topic === selectedStyle : t.topic === selectedTopic))
+                .filter(t => favOnly ? favoriteThreads.includes(t.id) : true)
                 .filter(t => debouncedThreadSearch ? (t.title.includes(debouncedThreadSearch) || t.content.includes(debouncedThreadSearch)) : true)
                 .sort((a, b) => {
                   const pinDiff = Number(b.pinned) - Number(a.pinned)
@@ -1560,6 +1746,7 @@ export default function Community() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button onClick={() => upvote(t.id)} aria-label="点赞帖子" className="px-3 py-1 rounded-lg text-xs bg-red-600 text-white hover:bg-red-700 transition-colors">点赞 {t.upvotes || 0}</button>
+                        <button onClick={() => toggleFavoriteThread(t.id)} aria-label="收藏帖子" className={`${favoriteThreads.includes(t.id) ? 'bg-blue-600 text-white' : (isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900')} px-3 py-1 rounded-lg text-xs ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>{favoriteThreads.includes(t.id) ? '已收藏' : '收藏'}</button>
                         <button onClick={() => convertToSquarePost(t)} aria-label="转为作品" className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} px-3 py-1 rounded-lg text-xs ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>转为作品</button>
                         <button onClick={() => togglePin(t.id)} aria-label={t.pinned ? '取消置顶' : '置顶'} className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} px-3 py-1 rounded-lg text-xs ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>{t.pinned ? '取消置顶' : '置顶'}</button>
                         <button onClick={() => removeThread(t.id)} aria-label="删除帖子" className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} px-3 py-1 rounded-lg text-xs ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>删除</button>
@@ -1787,7 +1974,6 @@ export default function Community() {
                     </div>
                     <DiscussionSection
                       isDark={isDark}
-                      creators={mockCreators}
                       messages={communityMessages[activeCommunity.id] || []}
                       onSend={(t: string) => sendCommunityMessage(activeCommunity.id, t)}
                       canSend={joinedCommunities.includes(activeCommunity.id)}
@@ -1807,7 +1993,7 @@ export default function Community() {
 }
 
 // 中文注释：社群讨论区（轻量消息）组件
-function DiscussionSection({ isDark, creators, messages, onSend, canSend = true, onDelete, onTogglePin, showModeration = false }: { isDark: boolean; creators: Creator[]; messages: ChatMessage[]; onSend: (text: string) => void; canSend?: boolean; onDelete?: (id: string) => void; onTogglePin?: (id: string) => void; showModeration?: boolean }) {
+function DiscussionSection({ isDark, messages, onSend, canSend = true, onDelete, onTogglePin, showModeration = false }: { isDark: boolean; messages: ChatMessage[]; onSend: (text: string) => void; canSend?: boolean; onDelete?: (id: string) => void; onTogglePin?: (id: string) => void; showModeration?: boolean }) {
   const [text, setText] = useState('');
   return (
     <div>

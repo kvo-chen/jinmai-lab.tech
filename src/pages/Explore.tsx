@@ -5,8 +5,9 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import SidebarLayout from '@/components/SidebarLayout'
 import GradientHero from '@/components/GradientHero'
 import { isPrefetched } from '@/services/prefetch'
-import { TianjinImage } from '@/components/TianjinStyleComponents'
+import { TianjinImage, TianjinButton } from '@/components/TianjinStyleComponents'
 import llmService from '@/services/llmService'
+import { BRANDS } from '@/lib/brands'
  
 
 type Work = {
@@ -21,6 +22,10 @@ type Work = {
   category: string;
   tags: string[];
   featured: boolean;
+  // 中文注释：可选视频地址（存在则视为视频作品）
+  videoUrl?: string;
+  // 中文注释：视频时长（可选，用于展示）
+  duration?: string;
 };
 
 // 中文注释：本页专注作品探索，社区相关内容已迁移到创作者社区页面
@@ -2119,6 +2124,100 @@ const categories = [
   '全部', '国潮设计', '纹样设计', '品牌设计', '非遗传承', '插画设计', '工艺创新', '老字号品牌', 'IP设计', '包装设计'
 ];
 
+// 中文注释：为探索页追加一批“视频作品”，用于丰富内容展示
+mockWorks.push(
+  {
+    id: 200,
+    title: '狗不理品牌·短片包装片头',
+    creator: '动效设计师小谷',
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Designer%20avatar%20motion%20xiaogu',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Motion%20graphics%20opener%20for%20Goubuli%20brand%2C%20red%20and%20gold%2C%20clean%20layout&image_size=landscape_16_9',
+    likes: 356,
+    comments: 41,
+    views: 1986,
+    category: '动效与视频',
+    tags: ['狗不理', '视频', '动效'],
+    featured: true,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    duration: '02:10',
+  },
+  {
+    id: 201,
+    title: '桂发祥·联名宣传短视频',
+    creator: '视频导演阿宁',
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Director%20avatar%20Aning',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Promo%20video%20cover%20for%20Guifaxiang%20collab%2C%20warm%20tone%2C%20studio%20lighting&image_size=landscape_16_9',
+    likes: 289,
+    comments: 26,
+    views: 1438,
+    category: '老字号品牌',
+    tags: ['桂发祥', '联名', '视频'],
+    featured: false,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    duration: '01:35',
+  },
+  {
+    id: 202,
+    title: '同仁堂·草本文化品牌片',
+    creator: '视频设计师小药',
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Designer%20avatar%20xiaoyao%20video',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Tongrentang%20herbal%20brand%20film%20cover%2C%20red%20and%20gold%2C%20high%20detail&image_size=landscape_16_9',
+    likes: 318,
+    comments: 28,
+    views: 1672,
+    category: '品牌设计',
+    tags: ['同仁堂', '视频', '品牌片'],
+    featured: true,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    duration: '02:45',
+  },
+  {
+    id: 203,
+    title: '海河城市·纪念片段剪辑',
+    creator: '剪辑师小河',
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Editor%20avatar%20Haihe',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Haihe%20city%20commemorative%20film%20cover%2C%20blue%20accent%20waves&image_size=landscape_16_9',
+    likes: 244,
+    comments: 21,
+    views: 1206,
+    category: '品牌设计',
+    tags: ['海河', '纪念', '视频'],
+    featured: false,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+    duration: '01:20',
+  },
+  {
+    id: 204,
+    title: '泥人张·IP周边动效演示',
+    creator: '动效设计师小张',
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Designer%20avatar%20xiaozhang%20motion',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Nirenzhang%20IP%20merch%20motion%20demo%20cover%2C%20flat%20style&image_size=landscape_16_9',
+    likes: 273,
+    comments: 23,
+    views: 1359,
+    category: 'IP设计',
+    tags: ['泥人张', 'IP', '视频'],
+    featured: false,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    duration: '00:55',
+  },
+  {
+    id: 205,
+    title: '京剧元素·教育动效课堂',
+    creator: '动效讲师小戏',
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Teacher%20avatar%20Peking%20opera%20motion',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Peking%20opera%20motion%20education%20class%20cover%2C%20high%20detail&image_size=landscape_16_9',
+    likes: 226,
+    comments: 18,
+    views: 1104,
+    category: '插画设计',
+    tags: ['京剧', '教育', '视频'],
+    featured: false,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    duration: '01:05',
+  }
+);
+
 export default function Explore() {
   const { isDark } = useTheme();
   const navigate = useNavigate();
@@ -2132,9 +2231,11 @@ export default function Explore() {
   const [restored, setRestored] = useState(false);
   const [savedPlans, setSavedPlans] = useState<Array<{ id: string; title: string; query: string; aiText: string; ts: number }>>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  // 中文注释：作品收藏本地存储（仅当前设备），便于快速归档喜欢的案例
+  const [favoriteWorkIds, setFavoriteWorkIds] = useState<number[]>([]);
   const [page, setPage] = useState(1);
-  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [tagSortMode, setTagSortMode] = useState<'frequency' | 'alphabet'>('frequency');
   const [tagFilterMode, setTagFilterMode] = useState<'AND' | 'OR'>('AND');
   const [tagQuery, setTagQuery] = useState('');
@@ -2145,25 +2246,52 @@ export default function Explore() {
   const [showOnlyFavorite, setShowOnlyFavorite] = useState(false);
   const pageSize = 6;
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const brandSentinelRef = useRef<HTMLDivElement | null>(null); // 中文注释：品牌区无限滚动哨兵引用
   // 中文注释：精选作品横向滚动容器引用，用于左右箭头滚动
   const featuredScrollRef = useRef<HTMLDivElement | null>(null);
   const [featuredAtStart, setFeaturedAtStart] = useState(true);
   const [featuredAtEnd, setFeaturedAtEnd] = useState(false);
   // 中文注释：本地点赞状态（不影响真实数据，仅前端交互展示）
   const [liked, setLiked] = useState<Record<number, boolean>>({});
-  const [communityAnnouncement, setCommunityAnnouncement] = useState('');
-  const [announcementSaved, setAnnouncementSaved] = useState(false);
-  const [subCommunityGroup, setSubCommunityGroup] = useState<'style' | 'topic'>('style');
-  const [activeSub, setActiveSub] = useState('');
-  const [discussionTitle, setDiscussionTitle] = useState('');
-  const [discussionContent, setDiscussionContent] = useState('');
-  const [discussions, setDiscussions] = useState<Array<{ title: string; content: string; ts: number }>>([]);
-  const [scheduleTitle, setScheduleTitle] = useState('');
-  const [scheduleContent, setScheduleContent] = useState('');
-  const [scheduleTime, setScheduleTime] = useState('');
-  const [scheduleGroup, setScheduleGroup] = useState<'style' | 'topic'>('style');
-  const [scheduleSub, setScheduleSub] = useState('国潮');
-  const [schedules, setSchedules] = useState<Array<{ title: string; content: string; time: string; group: string; sub: string }>>([]);
+  
+  // 中文注释：品牌区的“最新”排序与分页
+  const [brandSort, setBrandSort] = useState<'latest' | 'default'>('latest');
+  const [brandPage, setBrandPage] = useState<number>(1);
+  const brandPageSize = 36;
+  const brandSource = useMemo(() => (brandSort === 'latest' ? [...BRANDS].reverse() : BRANDS), [brandSort]);
+  const pagedBrands = useMemo(() => brandSource.slice(0, brandPage * brandPageSize), [brandSource, brandPage, brandPageSize]);
+  const [autoScrollBrands, setAutoScrollBrands] = useState(false); // 中文注释：品牌区“连滑加载”开关
+  
+
+  const keywordSynonyms: Record<string, { keywords: string[]; tags: string[] }> = {
+    '国潮': { keywords: ['国潮', '中国风'], tags: ['联名', '礼盒'] },
+    '杨柳青年画': { keywords: ['杨柳青年画', '年画'], tags: ['联名', '节庆'] },
+    '非遗': { keywords: ['非遗'], tags: ['IP', '教育'] },
+    '传统色': { keywords: ['传统色', '中国红'], tags: ['配色', 'KV'] },
+    '品牌': { keywords: ['品牌'], tags: ['联名'] },
+    '京剧': { keywords: ['京剧'], tags: ['戏曲', '教育'] },
+    '海河': { keywords: ['海河'], tags: ['文旅', '系列'] },
+    '同仁堂': { keywords: ['同仁堂'], tags: ['科普', '信息图'] },
+    '景德镇': { keywords: ['景德镇', '青花瓷'], tags: ['器皿', '插画'] },
+  };
+  const extractKeys = (q: string) => {
+    const keys: string[] = [];
+    Object.keys(keywordSynonyms).forEach((k) => { if (q.includes(k)) keys.push(k); });
+    return Array.from(new Set(keys));
+  };
+  const suggestedKeywords = useMemo(() => {
+    if (!searchTerm) return [] as string[];
+    const keys = extractKeys(searchTerm);
+    let list: string[] = [];
+    keys.forEach((k) => { list = list.concat(keywordSynonyms[k].keywords); });
+    return Array.from(new Set(list)).filter((w) => w !== searchTerm).slice(0, 6);
+  }, [searchTerm]);
+  const suggestedTags = useMemo(() => {
+    const keys = searchTerm ? extractKeys(searchTerm) : [];
+    let list: string[] = [];
+    keys.forEach((k) => { list = list.concat(keywordSynonyms[k].tags); });
+    return Array.from(new Set(list.filter((t) => !selectedTags.includes(t)))).slice(0, 8);
+  }, [searchTerm, selectedTags]);
   
   // 模拟加载数据
   useEffect(() => {
@@ -2218,9 +2346,13 @@ export default function Explore() {
         result = result.filter(work => work.tags.some(t => selectedTags.includes(t)));
       }
     }
+    // 中文注释：当启用“只看收藏”时，仅保留已收藏作品
+    if (showOnlyFavorite && favoriteWorkIds.length > 0) {
+      result = result.filter(work => favoriteWorkIds.includes(work.id));
+    }
     setFilteredWorks(result);
     setPage(1);
-  }, [selectedCategory, searchTerm, selectedTags, tagFilterMode]);
+  }, [selectedCategory, searchTerm, selectedTags, tagFilterMode, showOnlyFavorite, favoriteWorkIds]);
 
   // 解析查询参数同步到搜索框
   useEffect(() => {
@@ -2281,6 +2413,30 @@ export default function Explore() {
       navigate({ pathname: location.pathname, search: next }, { replace: true });
     }
   }, [searchTerm, selectedTags, tagFilterMode, favFirst, showOnlyFavorite]);
+  // 中文注释：初始化收藏列表
+  useEffect(() => {
+    try { const raw = localStorage.getItem('EXPLORE_FAVORITES'); setFavoriteWorkIds(raw ? JSON.parse(raw) : []) } catch {}
+  }, []);
+  // 中文注释：收藏变化时持久化
+  useEffect(() => {
+    try { localStorage.setItem('EXPLORE_FAVORITES', JSON.stringify(favoriteWorkIds)) } catch {}
+  }, [favoriteWorkIds]);
+  // 中文注释：切换作品收藏状态
+  const toggleFavoriteWork = (id: number) => {
+    setFavoriteWorkIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+  // 中文注释：分享作品（支持系统分享，不支持时复制链接）
+  const shareWork = async (work: Work) => {
+    const url = `${window.location.origin}/explore?work=${work.id}`
+    try {
+      if ((navigator as any).share) {
+        await (navigator as any).share({ title: work.title, text: `${work.title} - ${work.creator}`, url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        alert('链接已复制')
+      }
+    } catch {}
+  }
   
   const handleWorkClick = (workId: number) => {
     navigate(`/explore/${workId}`)
@@ -2319,9 +2475,7 @@ export default function Explore() {
   const popularTagsDisplay = useMemo(() => (
     favFirst ? [...popularTags].sort((a, b) => Number(favoriteTags.includes(b)) - Number(favoriteTags.includes(a))) : popularTags
   ), [popularTags, favFirst, favoriteTags]);
-  const otherTags = useMemo(() => (
-    uniqueTags.filter(t => !popularTags.includes(t)).sort((a, b) => a.localeCompare(b, 'zh-Hans'))
-  ), [uniqueTags, popularTags]);
+  
   // 中文注释：AI标签推荐（命中已有标签与新标签）
   const aiTagRecommendations = useMemo(() => {
     const topic = `${selectedCategory !== '全部' ? selectedCategory : ''} ${searchTerm}`.trim();
@@ -2408,10 +2562,61 @@ export default function Explore() {
     setTagQuery('');
   };
   useEffect(() => {
-    setTagsExpanded(false);
     setTagQuery('');
     setTagsOpen(false);
   }, [selectedCategory]);
+  // 中文注释：品牌区无限滚动观察（仅在“老字号品牌”频道下工作）
+  useEffect(() => {
+    if (selectedCategory !== '老字号品牌') return;
+    const el = brandSentinelRef.current;
+    if (!el) return;
+    const maxPages = Math.ceil(brandSource.length / brandPageSize);
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting) {
+        setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
+        // 中文注释：若开启“连滑加载”，每次加载后轻微向下滚动，保证哨兵再次进入视口
+        if (autoScrollBrands) {
+          setTimeout(() => {
+            try {
+              window.scrollBy({ top: 600, behavior: 'smooth' });
+            } catch {}
+          }, 60);
+        }
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [selectedCategory, brandSource.length, brandPageSize, pagedBrands.length, autoScrollBrands]);
+
+  // 中文注释：品牌区无限滚动降级方案（部分环境下 IntersectionObserver 不触发）
+  useEffect(() => {
+    if (selectedCategory !== '老字号品牌') return;
+    const maxPages = Math.ceil(brandSource.length / brandPageSize);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const doc = document.documentElement;
+        const scrollBottom = (window.scrollY || doc.scrollTop) + window.innerHeight;
+        const docHeight = Math.max(
+          doc.scrollHeight,
+          doc.offsetHeight,
+          document.body ? document.body.scrollHeight : 0,
+          document.body ? document.body.offsetHeight : 0
+        );
+        if (scrollBottom >= docHeight - 300) {
+          setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
+        }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [selectedCategory, brandSource.length, brandPageSize]);
+  // 中文注释：当排序或频道变化时重置品牌分页
+  useEffect(() => { setBrandPage(1); }, [brandSort, selectedCategory]);
   const pagedWorks = filteredWorks.slice(0, page * pageSize);
 
   
@@ -2419,6 +2624,7 @@ export default function Explore() {
   // 中文注释：导出工具（下载为文件）
   // 中文注释：联名主题控制（老字号或“联名”标签时启用中国红+金色视觉）
   const isHeritage = selectedCategory === '老字号品牌' || selectedTags.includes('联名');
+  const worksRef = useRef<HTMLDivElement | null>(null)
   const downloadFile = (filename: string, content: string, mime: string) => {
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -2470,7 +2676,7 @@ export default function Explore() {
               ))}
             </div>
             {/* 中文注释：加载状态下的主区域骨架改为三列布局 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} h-64 rounded-xl animate-pulse`}></div>
               <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} h-64 rounded-xl animate-pulse`}></div>
               <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} h-64 rounded-xl animate-pulse`}></div>
@@ -2528,10 +2734,63 @@ export default function Explore() {
                   ? (isHeritage ? 'bg-gray-700/70 ring-1 ring-gray-600 text-white placeholder-gray-400 focus:ring-amber-500' : 'bg-gray-700/70 ring-1 ring-gray-600 text-white placeholder-gray-400 focus:ring-purple-500') 
                   : (isHeritage ? 'bg-white/80 ring-1 ring-gray-300 text-gray-900 placeholder-gray-400 focus:ring-amber-300' : 'bg-white/80 ring-1 ring-gray-300 text-gray-900 placeholder-gray-400 focus:ring-pink-300')
               }`}
+              autoCapitalize="none"
+              autoCorrect="off"
+              enterKeyHint="search"
+              inputMode="text"
             />
             <i className={`fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}></i>
           </div>
+          {/* 中文注释：联想建议提示（基于输入内容动态生成），提升检索成功率 */}
+          {(suggestedKeywords.length > 0 || suggestedTags.length > 0) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {suggestedKeywords.slice(0, 6).map((k) => (
+                <button
+                  key={`sug-k-inline-${k}`}
+                  onClick={() => { setSearchTerm(k); setSelectedCategory('全部'); }}
+                  className={`px-3 py-1 rounded-full text-xs ring-1 ${isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'}`}
+                >{`尝试：${k}`}</button>
+              ))}
+              {suggestedTags.slice(0, 8).map((t) => (
+                <button
+                  key={`sug-t-inline-${t}`}
+                  onClick={() => setSelectedTags((prev) => (prev.includes(t) ? prev : [...prev, t]))}
+                  className={`px-3 py-1 rounded-full text-xs ring-1 ${isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'}`}
+                >{`添加标签：${t}`}</button>
+              ))}
+            </div>
+          )}
         </motion.div>
+
+        {/* 中文注释：粘性快捷条（显示筛选状态与快速操作/CTA），提升转化与可用性 */}
+        <div className={`sticky top-16 z-30 mb-6 ${isDark ? 'bg-gray-900/70' : 'bg-white/70'} backdrop-blur-lg rounded-2xl ring-1 ${isDark ? 'ring-gray-800' : 'ring-gray-200'} px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3`}>
+          <div className="flex items-center flex-wrap gap-2">
+            <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+              <i className="fas fa-layer-group mr-1"></i> 频道：{selectedCategory}
+            </span>
+            <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+              <i className="fas fa-tags mr-1"></i> 标签：{selectedTags.length}
+            </span>
+            <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+              <i className="fas fa-images mr-1"></i> 结果：{filteredWorks.length}
+            </span>
+          </div>
+          <div className="flex items-center flex-wrap gap-2">
+            <button onClick={() => setSelectedTags(prev => prev.includes('联名') ? prev.filter(t => t !== '联名') : [...prev, '联名'])} className={`text-xs px-3 py-1 rounded-full ${selectedTags.includes('联名') ? 'bg-red-600 text-white' : (isDark ? 'bg-gray-800 text-gray-200 ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-200')}`}>联名</button>
+            <button onClick={() => setSelectedTags(prev => prev.includes('视频') ? prev.filter(t => t !== '视频') : [...prev, '视频'])} className={`text-xs px-3 py-1 rounded-full ${selectedTags.includes('视频') ? 'bg-indigo-600 text-white' : (isDark ? 'bg-gray-800 text-gray-200 ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-200')}`}>视频</button>
+            <button onClick={() => setSelectedTags(prev => prev.includes('礼盒') ? prev.filter(t => t !== '礼盒') : [...prev, '礼盒'])} className={`text-xs px-3 py-1 rounded-full ${selectedTags.includes('礼盒') ? 'bg-amber-600 text-white' : (isDark ? 'bg-gray-800 text-gray-200 ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-200')}`}>礼盒</button>
+            <button onClick={() => setSelectedTags(prev => prev.includes('信息图') ? prev.filter(t => t !== '信息图') : [...prev, '信息图'])} className={`text-xs px-3 py-1 rounded-full ${selectedTags.includes('信息图') ? 'bg-green-600 text-white' : (isDark ? 'bg-gray-800 text-gray-200 ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-200')}`}>信息图</button>
+            <button onClick={() => navigate(`/tools?from=explore&query=${encodeURIComponent(searchTerm || selectedTags.join(' '))}`)} className={`text-xs px-3 py-1 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
+              用当前筛选在创作中心生成
+            </button>
+            {/* 中文注释：只看收藏（移动端友好开关按钮） */}
+            <button onClick={() => setShowOnlyFavorite(v => !v)} className={`text-xs px-3 py-1 rounded-full ${showOnlyFavorite ? 'bg-red-600 text-white' : (isDark ? 'bg-gray-800 text-gray-200 ring-1 ring-gray-700' : 'bg-white text-gray-900 ring-1 ring-gray-200')}`}>
+              {showOnlyFavorite ? '只看收藏：开' : '只看收藏：关'}
+            </button>
+            {/* 中文注释：收藏集入口（快速切换只看收藏并滚动到结果） */}
+            <button onClick={() => { setShowOnlyFavorite(true); worksRef.current?.scrollIntoView({ behavior: 'smooth' }) }} className={`text-xs px-3 py-1 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>收藏集</button>
+          </div>
+        </div>
 
         {savedPlans.length > 0 && (
           <motion.div
@@ -2734,6 +2993,9 @@ export default function Explore() {
                     }}
                     placeholder="搜索标签"
                     className={`text-xs px-3 py-1 pr-8 rounded-full focus:outline-none focus:ring-2 ${isDark ? (isHeritage ? 'bg-gray-700 text-gray-200 ring-1 ring-gray-600 focus:ring-amber-500' : 'bg-gray-700 text-gray-200 ring-1 ring-gray-600 focus:ring-purple-500') : (isHeritage ? 'bg-white text-gray-700 ring-1 ring-gray-200 focus:ring-amber-300' : 'bg-white text-gray-700 ring-1 ring-gray-200 focus:ring-purple-300')}`}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    enterKeyHint="done"
                   />
                   {tagQuery && (
                     <button
@@ -2764,13 +3026,13 @@ export default function Explore() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap mb-4">
                 {favoriteTags.filter(t => uniqueTags.includes(t)).length > 0 && (
                   <div className="w-full">
                     <div className="text-xs opacity-70 mb-1">常用标签</div>
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap mb-2">
                       {favoriteTags.filter(t => uniqueTags.includes(t)).slice(0, 24).map(tag => (
-                        <div key={`fav-${tag}`} className="inline-flex items-center gap-1">
+                        <div key={`fav-${tag}`} className="flex items-center gap-1">
                           <button
                             onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
                             className={`text-xs px-3 py-1 rounded-full transition-all ${selectedTags.includes(tag) ? (isHeritage ? 'bg-amber-600 text-white' : 'bg-purple-600 text-white') : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}
@@ -2787,7 +3049,7 @@ export default function Explore() {
                   </div>
                 )}
                 {popularTagsDisplay.map(tag => (
-                  <div key={`pop-${tag}`} className="inline-flex items-center gap-1">
+                  <div key={`pop-${tag}`} className="flex items-center gap-1">
                     <button
                       onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
                       className={`text-xs px-3 py-1 rounded-full transition-all ${selectedTags.includes(tag) ? (isHeritage ? 'bg-amber-600 text-white' : 'bg-purple-600 text-white') : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}
@@ -2804,7 +3066,7 @@ export default function Explore() {
                   {aiTagRecommendations.hits.length > 0 && (
                     <div className="mb-2">
                       <div className="text-xs opacity-70 mb-1">AI建议标签（命中已有）</div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                         {aiTagRecommendations.hits.map(tag => (
                           <button key={`ai-hit-${tag}`} onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev : [...prev, tag])} className={`text-xs px-3 py-1 rounded-full ${selectedTags.includes(tag) ? (isHeritage ? 'bg-amber-600 text-white' : 'bg-purple-600 text-white') : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}>{tag}</button>
                         ))}
@@ -2814,7 +3076,7 @@ export default function Explore() {
                   {aiTagRecommendations.novel.length > 0 && (
                     <div>
                       <div className="text-xs opacity-70 mb-1">AI新标签（可能暂无作品）</div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                         {aiTagRecommendations.novel.map(tag => (
                           <button key={`ai-novel-${tag}`} onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev : [...prev, tag])} className={`text-xs px-3 py-1 rounded-full ${selectedTags.includes(tag) ? (isHeritage ? 'bg-amber-600 text-white' : 'bg-purple-600 text-white') : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}>{tag}</button>
                         ))}
@@ -2825,9 +3087,9 @@ export default function Explore() {
               )}
               <div className="mb-2 text-sm opacity-70">全部标签</div>
               <div className="max-h-44 overflow-y-auto pr-1">
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   {displayTagList.map(tag => (
-                    <div key={`all-${tag}`} className="inline-flex items-center gap-1">
+                    <div key={`all-${tag}`} className="flex items-center gap-1">
                       <button
                         onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
                         className={`text-xs px-3 py-1 rounded-full transition-all ${selectedTags.includes(tag) ? (isHeritage ? 'bg-amber-600 text-white' : 'bg-purple-600 text-white') : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}
@@ -2862,6 +3124,71 @@ export default function Explore() {
 
         {/* 中文注释：社群详情弹窗已迁移至创作者社区页面 */}
         
+        {/* 中文注释：当选择“老字号品牌”频道时，展示联名品牌清单 */}
+        {selectedCategory === '老字号品牌' && (() => {
+          // 中文注释：品牌区的“最新更新”排序与分页（默认显示最新）
+          return (
+            <motion.div
+              className="mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold flex items-center">
+                  <i className="fas fa-store text-amber-600 mr-2"></i>
+                  老字号联名品牌
+                  <span className="ml-3 text-sm font-normal opacity-70">{BRANDS.length} 个</span>
+                </h2>
+              <div className="flex items-center gap-2">
+                <TianjinButton size="sm" variant={brandSort === 'latest' ? 'heritage' : 'secondary'} onClick={() => setBrandSort('latest')}>最新</TianjinButton>
+                <TianjinButton size="sm" variant={brandSort === 'default' ? 'heritage' : 'secondary'} onClick={() => setBrandSort('default')}>默认</TianjinButton>
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>已显示 {pagedBrands.length} / {brandSource.length}</span>
+                <TianjinButton size="sm" variant={autoScrollBrands ? 'primary' : 'secondary'} onClick={() => setAutoScrollBrands(v => !v)}>{autoScrollBrands ? '连滑：开' : '连滑：关'}</TianjinButton>
+              </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pagedBrands.map((b) => (
+                  <div key={b.id} className={`${isDark ? 'bg-gray-800 ring-1 ring-gray-700' : 'bg-white ring-1 ring-gray-200'} rounded-2xl overflow-hidden shadow-sm`}>
+                    <TianjinImage src={b.image} alt={b.name} ratio="landscape" rounded="2xl" />
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-bold tracking-tight">{b.name}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>老字号品牌</span>
+                      </div>
+                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} line-clamp-2`}>{b.story}</p>
+                      <div className="mt-3 flex gap-2">
+                        <TianjinButton
+                          variant="heritage"
+                          size="sm"
+                          leftIcon={<i className="fas fa-tools" />}
+                          onClick={() => navigate(`/tools?from=explore&query=${encodeURIComponent(b.name + ' 联名 工具')}&mode=inspire`)}
+                        >
+                          查看联名工具
+                        </TianjinButton>
+                        <TianjinButton
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setSelectedTags(prev => prev.includes('联名') ? prev : [...prev, '联名'])}
+                        >
+                          看相关作品
+                        </TianjinButton>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-center mt-6">
+                {brandPage * brandPageSize < brandSource.length ? (
+                  <div ref={brandSentinelRef} className="h-10"></div>
+                ) : (
+                  <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>已加载全部</span>
+                )}
+              </div>
+            </motion.div>
+          );
+        })()}
+
         {/* 精选作品 */}
         {featuredWorks.length > 0 && (
           <motion.div 
@@ -2897,6 +3224,12 @@ export default function Explore() {
                           {work.tags.includes('联名') && (
                             <span className={`text-xs px-2 py-1 rounded-full backdrop-blur ${isHeritage ? 'bg-amber-600/80 ring-1 ring-amber-500 text-white' : (isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700')}`}>
                               联名
+                            </span>
+                          )}
+                          {/* 中文注释：视频作品徽章（存在视频地址时显示） */}
+                          {work.videoUrl && (
+                            <span className={`text-xs px-2 py-1 rounded-full backdrop-blur ${isDark ? 'bg-blue-600/80 ring-1 ring-blue-500 text-white' : 'bg-blue-600/90 ring-1 ring-blue-500 text-white'}`}>
+                              视频
                             </span>
                           )}
                         </div>
@@ -2975,7 +3308,19 @@ export default function Explore() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <h2 className="text-2xl font-bold mb-6">探索作品</h2>
+          {/* 中文注释：移动端底部筛选操作条（根据已选标签显示），提供快速查看结果与清空 */}
+          {(selectedTags.length > 0) && (
+            <div className={`fixed bottom-3 inset-x-4 md:hidden z-30 px-3 py-2 rounded-full shadow-lg ring-1 backdrop-blur ${isDark ? 'bg-gray-800/90 ring-gray-700 text-white' : 'bg-white/90 ring-gray-200 text-gray-900'}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs">已选 {selectedTags.length} 个标签</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setSelectedTags([])} className={`text-xs px-3 py-1 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>清空</button>
+                  <button onClick={() => { worksRef.current?.scrollIntoView({ behavior: 'smooth' }); }} className="text-xs px-3 py-1 rounded-full bg-red-600 text-white">查看结果</button>
+                </div>
+              </div>
+            </div>
+          )}
+          <h2 className="text-2xl font-bold mb-6" ref={worksRef}>探索作品</h2>
           
           {pagedWorks.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2987,28 +3332,50 @@ export default function Explore() {
                   whileHover={{ y: -5 }}
                   onClick={() => handleWorkClick(work.id)}
                 >
-                  <div className="relative">
+                  <div className="relative aspect-video">
                     <TianjinImage src={work.thumbnail} alt={work.title} ratio="landscape" rounded="2xl" />
-                    {work.tags.includes('联名') && (
-                      <div className="absolute top-3 left-3">
-                        {/* 中文注释：联名徽章（普通卡片） */}
-                        <span className={`text-xs px-2 py-1 rounded-full backdrop-blur ${isHeritage ? 'bg-amber-600/80 ring-1 ring-amber-500 text-white' : (isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700')}`}>
-                          联名
-                        </span>
+                    {/* 中文注释：左上角徽章区：根据作品属性显示“联名”与“视频” */}
+                    {(work.tags.includes('联名') || work.videoUrl) && (
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        {work.tags.includes('联名') && (
+                          <span className={`text-xs px-2 py-1 rounded-full backdrop-blur ${isHeritage ? 'bg-amber-600/80 ring-1 ring-amber-500 text-white' : (isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700')}`}>
+                            联名
+                          </span>
+                        )}
+                        {work.videoUrl && (
+                          <span className={`text-xs px-2 py-1 rounded-full backdrop-blur ${isDark ? 'bg-blue-600/80 ring-1 ring-blue-500 text-white' : 'bg-blue-600/90 ring-1 ring-blue-500 text-white'}`}>
+                            视频 {work.duration ? `· ${work.duration}` : ''}
+                          </span>
+                        )}
                       </div>
                     )}
-                    <div className="absolute top-3 right-3">
-                      <button className={`p-2 rounded-full transition-colors ${
-                        isDark ? 'bg-gray-900/60 hover:bg-gray-900/80' : 'bg-white/70 hover:bg-white'
-                      } ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} shadow-sm` }>
-                        <i className="far fa-heart"></i>
+                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                      {/* 中文注释：收藏（本地），再次点击取消 */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavoriteWork(work.id) }}
+                        className={`p-2 rounded-full transition-colors ${
+                          isDark ? 'bg-gray-900/60 hover:bg-gray-900/80' : 'bg-white/70 hover:bg-white'
+                        } ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} shadow-sm` }
+                        aria-label="收藏作品"
+                      >
+                        <i className={`${favoriteWorkIds.includes(work.id) ? 'fas fa-heart text-red-600' : 'far fa-heart'}`}></i>
+                      </button>
+                      {/* 中文注释：分享（系统原生；降级为复制链接） */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); shareWork(work) }}
+                        className={`p-2 rounded-full transition-colors ${
+                          isDark ? 'bg-gray-900/60 hover:bg-gray-900/80' : 'bg-white/70 hover:bg-white'
+                        } ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} shadow-sm` }
+                        aria-label="分享作品"
+                      >
+                        <i className="fas fa-share-nodes"></i>
                       </button>
                     </div>
                   </div>
                   
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-bold tracking-tight">{work.title}</h3>
+                      <h3 className="font-bold tracking-tight text-sm md:text-base">{work.title}</h3>
                       <span className={`text-sm px-2 py-0.5 rounded-full ${
                         work.category === '老字号品牌' 
                           ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' 
@@ -3057,8 +3424,10 @@ export default function Explore() {
                         <span>{work.comments}</span>
                       </div>
                     </div>
-                    <div className="mt-3">
+                    <div className="mt-3 flex items-center gap-2">
                       <button onClick={(e) => { e.stopPropagation(); const prompt = `${work.title} · ${work.category} · ${work.tags.join(' / ')}`; navigate(`/create?from=explore&prompt=${encodeURIComponent(prompt)}`) }} className="px-3 py-1.5 rounded text-xs bg-blue-600 text-white">应用到创作中心</button>
+                      {/* 中文注释：复制提示词，便于跨应用快速使用 */}
+                      <button onClick={async (e) => { e.stopPropagation(); const prompt = `${work.title} · ${work.category} · ${work.tags.join(' / ')}`; try { await navigator.clipboard.writeText(prompt); } catch {} }} className={`${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} px-3 py-1.5 rounded text-xs`}>复制提示词</button>
                     </div>
                   </div>
                 </motion.div>
@@ -3070,9 +3439,31 @@ export default function Explore() {
                 <i className="fas fa-search"></i>
               </div>
               <h3 className="text-xl font-medium mb-2">未找到相关作品</h3>
-              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                请尝试其他关键词或分类
-              </p>
+              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>请尝试其他关键词或分类{showOnlyFavorite ? '，或关闭“只看收藏”' : ''}</p>
+              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                {suggestedKeywords.map((k) => (
+                  <button
+                    key={`sug-k-${k}`}
+                    onClick={() => { setSearchTerm(k); setSelectedCategory('全部'); }}
+                    className={`px-3 py-1 rounded-full text-xs ring-1 ${isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'}`}
+                  >{`尝试：${k}`}</button>
+                ))}
+                {suggestedTags.map((t) => (
+                  <button
+                    key={`sug-t-${t}`}
+                    onClick={() => setSelectedTags((prev) => (prev.includes(t) ? prev : [...prev, t]))}
+                    className={`px-3 py-1 rounded-full text-xs ring-1 ${isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'}`}
+                  >{`添加标签：${t}`}</button>
+                ))}
+                <button
+                  onClick={() => { setSearchTerm(''); setSelectedTags([]); setSelectedCategory('全部'); }}
+                  className={`px-3 py-1 rounded-full text-xs ring-1 ${isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'}`}
+                >重置筛选</button>
+                {showOnlyFavorite && (
+                  <button onClick={() => setShowOnlyFavorite(false)} className={`px-3 py-1 rounded-full text-xs ring-1 ${isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'}`}>关闭只看收藏</button>
+                )}
+                <button onClick={() => { setFavoriteWorkIds([]); try { localStorage.removeItem('EXPLORE_FAVORITES') } catch {} }} className="px-3 py-1 rounded-full text-xs bg-red-600 text-white">清空收藏</button>
+              </div>
             </div>
           )}
           
