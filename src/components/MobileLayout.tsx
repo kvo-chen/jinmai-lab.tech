@@ -448,14 +448,10 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
               className={({ isActive }) => `flex flex-col items-center justify-center py-2.5 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
               aria-label="创作"
             >
-              {({ isActive }) => (
-                <>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-1 transition-all duration-300 ease-in-out shadow-lg ${isActive ? (isDark ? 'bg-red-400/30 ring-2 ring-red-400' : 'bg-red-100 ring-2 ring-red-500') : (isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200')} transform ${isActive ? 'translate-y-[-4px]' : 'translate-y-0'}`}>
-                    <i className="fas fa-plus text-2xl" style={{ color: isActive ? (isDark ? '#fb7185' : '#dc2626') : (isDark ? '#9ca3af' : '#6b7280') }}></i>
-                  </div>
-                  <span className="font-medium">创作</span>
-                </>
-              )}
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-1 transition-all duration-300 ease-in-out shadow-lg bg-gray-800 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 bg-gray-100 hover:bg-gray-200 transform transition-transform duration-300 ease-in-out">
+                <i className="fas fa-plus text-2xl" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}></i>
+              </div>
+              <span className="font-medium">创作</span>
             </NavLink>
           </li>
           <li>
