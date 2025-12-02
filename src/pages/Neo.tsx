@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { scoreAuthenticity } from '@/services/authenticityService'
-import SidebarLayout from '@/components/SidebarLayout'
 import { useTheme } from '@/hooks/useTheme'
 import llmService from '@/services/llmService'
 import voiceService from '@/services/voiceService'
