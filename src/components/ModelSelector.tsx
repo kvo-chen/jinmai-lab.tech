@@ -1011,7 +1011,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
               setWenxinVariant('ERNIE-Speed-8K');
               setQwenBase('https://dashscope.aliyuncs.com/api/v1');
               setQwenVariant('qwen-plus');
-            }},
+            }
             className={`px-5 py-2.5 rounded-lg transition-colors ${
               isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
             }`}
