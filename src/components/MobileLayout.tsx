@@ -419,68 +419,46 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
             <NavLink 
               to="/"
               onTouchStart={() => prefetchRoute('/')}
-              className={({ isActive }) => `flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
+              className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
               aria-label="首页"
             >
-              {({ isActive }) => (
-                <>
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 ${isActive ? (isDark ? 'bg-red-400/20' : 'bg-red-100') : 'bg-transparent'}`}>
-                    <i className="fas fa-home text-lg"></i>
-                  </div>
-                  <span className="mt-0.5 font-medium">首页</span>
-                </>
-              )}
+              <i className="fas fa-home text-lg"></i>
+              <span className="mt-0.5 font-medium">首页</span>
             </NavLink>
           </li>
           <li className="flex items-center justify-center">
             <NavLink 
               to="/explore"
               onTouchStart={() => prefetchRoute('/explore')}
-              className={({ isActive }) => `flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
+              className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
               aria-label="探索"
             >
-              {({ isActive }) => (
-                <>
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 ${isActive ? (isDark ? 'bg-red-400/20' : 'bg-red-100') : 'bg-transparent'}`}>
-                    <i className="fas fa-compass text-lg"></i>
-                  </div>
-                  <span className="mt-0.5 font-medium">探索</span>
-                </>
-              )}
+              <i className="fas fa-compass text-lg"></i>
+              <span className="mt-0.5 font-medium">探索</span>
             </NavLink>
           </li>
           <li className="flex items-center justify-center">
             <NavLink 
               to="/create"
               onTouchStart={() => prefetchRoute('/create')}
-              className={({ isActive }) => `flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
+              className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out`}
               aria-label="创作"
             >
-              {({ isActive }) => (
-                <>
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 ${isActive ? (isDark ? 'bg-red-400/20' : 'bg-red-100') : 'bg-red-500'}`}>
-                    <i className="fas fa-plus text-lg" style={{ color: isActive ? (isDark ? '#f87171' : '#dc2626') : '#ffffff' }}></i>
-                  </div>
-                  <span className="mt-0.5 font-medium">创作</span>
-                </>
-              )}
+              <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center -mt-4 shadow-lg">
+                <i className="fas fa-plus text-xl text-white"></i>
+              </div>
+              <span className="mt-1 font-medium" style={{ color: isDark ? '#f87171' : '#dc2626' }}>创作</span>
             </NavLink>
           </li>
           <li className="flex items-center justify-center">
             <NavLink 
               to="/neo"
               onTouchStart={() => prefetchRoute('/neo')}
-              className={({ isActive }) => `flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
+              className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
               aria-label="灵感"
             >
-              {({ isActive }) => (
-                <>
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 ${isActive ? (isDark ? 'bg-red-400/20' : 'bg-red-100') : 'bg-transparent'}`}>
-                    <i className="fas fa-bolt text-lg"></i>
-                  </div>
-                  <span className="mt-0.5 font-medium">灵感</span>
-                </>
-              )}
+              <i className="fas fa-bolt text-lg"></i>
+              <span className="mt-0.5 font-medium">灵感</span>
             </NavLink>
           </li>
           <li className="flex items-center justify-center">
@@ -488,35 +466,23 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
               <NavLink 
                 to="/dashboard"
                 onTouchStart={() => prefetchRoute('/dashboard')}
-                className={({ isActive }) => `relative flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
+                className={`relative flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                 aria-label="我的"
               >
-                {({ isActive }) => (
-                  <>
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 ${isActive ? (isDark ? 'bg-red-400/20' : 'bg-red-100') : 'bg-transparent'}`}>
-                      <i className="fas fa-user text-lg"></i>
-                    </div>
-                    {unreadCount > 0 && (
-                      <span className="absolute top-1 right-4 inline-flex items-center justify-center w-3 h-3 rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white dark:ring-gray-800"></span>
-                    )}
-                    <span className="mt-0.5 font-medium">我的</span>
-                  </>
+                <i className="fas fa-user text-lg"></i>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-4 inline-flex items-center justify-center w-3 h-3 rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white dark:ring-gray-800"></span>
                 )}
+                <span className="mt-0.5 font-medium">我的</span>
               </NavLink>
             ) : (
               <NavLink 
                 to="/login"
-                className={({ isActive }) => `flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isActive ? (isDark ? 'text-red-400 scale-110' : 'text-red-600 scale-110') : (isDark ? 'text-gray-300 hover:text-gray-200 scale-105' : 'text-gray-700 hover:text-gray-900 scale-105')}`}
+                className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                 aria-label="登录"
               >
-                {({ isActive }) => (
-                  <>
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 ${isActive ? (isDark ? 'bg-red-400/20' : 'bg-red-100') : 'bg-transparent'}`}>
-                      <i className="fas fa-sign-in-alt text-lg"></i>
-                    </div>
-                    <span className="mt-0.5 font-medium">登录</span>
-                  </>
-                )}
+                <i className="fas fa-sign-in-alt text-lg"></i>
+                <span className="mt-0.5 font-medium">登录</span>
               </NavLink>
             )}
           </li>
