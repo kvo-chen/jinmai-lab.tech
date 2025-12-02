@@ -27,7 +27,11 @@
       }
     },
     {
-      "src": "/((?!api/).*)",
+      "src": "\.(js|css|png|jpg|gif|ico|svg|woff|woff2|ttf|eot)$",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
       "dest": "/index.html",
       "status": 200
     }
