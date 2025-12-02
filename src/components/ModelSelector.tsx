@@ -64,8 +64,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
     if (isOpen) {
       setSelectedModel(llmService.getCurrentModel());
       setModelConfig(llmService.getConfig());
-    }
-  }, [isOpen]);
+    }}, [isOpen]);
 
   const handleModelChange = (modelId: string) => {
     const model = AVAILABLE_MODELS.find(m => m.id === modelId);
@@ -74,8 +73,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
       setTimeout(() => {
         if (configRef.current) {
           configRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 50);
+        }}, 50);
     }
   };
 
@@ -261,22 +259,22 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }},
-            className={`fixed inset-0 z-50 flex items-center justify-center ${
+      exit={{ opacity: 0 }}
+      className={`fixed inset-0 z-50 flex items-center justify-center ${
         isDark ? 'bg-gray-900 bg-opacity-80' : 'bg-gray-50 bg-opacity-80'
       } backdrop-blur-sm`}
     >
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }},
-            className={`rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-xl max-w-md w-full mx-4 overflow-hidden flex flex-col`}
+        transition={{ duration: 0.5 }}
+        className={`rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-xl max-w-md w-full mx-4 overflow-hidden flex flex-col`}
       >
         {/* 面板头部 */}
         <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
           <h3 className="text-xl font-bold">模型选择</h3>
           <button
-            onClick={onClose},
+            onClick={onClose}
             className={`p-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
             aria-label="关闭"
           >
@@ -304,8 +302,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   type="button"
                   role="radio"
                   aria-checked={selectedModel.id === model.id}
-                  tabIndex={0},
-            className={`relative w-full text-left p-4 rounded-xl border transition-all ${
+                  tabIndex={0}
+                  className={`relative w-full text-left p-4 rounded-xl border transition-all ${
                     selectedModel.id === model.id
                       ? 'border-red-600 bg-red-100 dark:bg-red-900/20 ring-2 ring-red-500 shadow-md'
                       : isDark
@@ -339,8 +337,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {model.strengths.map((strength, index) => (
                       <span
-                        key={index},
-            className={`text-xs px-2 py-0.5 rounded-full ${
+                        key={index}
+                        className={`text-xs px-2 py-0.5 rounded-full ${
                           isDark ? 'bg-gray-700' : 'bg-gray-100'
                         }`}
                       >
@@ -377,8 +375,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">Base URL（区域）</label>
                   <select
                     value={kimiBase}
-                    onChange={(e) => setKimiBase(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setKimiBase(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="https://api.moonshot.cn/v1">中国区</option>
@@ -389,8 +387,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">模型规格（上下文长度）</label>
                   <select
                     value={kimiVariant}
-                    onChange={(e) => setKimiVariant(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setKimiVariant(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="moonshot-v1-8k">moonshot-v1-8k</option>
@@ -419,8 +417,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">Base URL</label>
                   <select
                     value={deepseekBase}
-                    onChange={(e) => setDeepseekBase(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setDeepseekBase(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="https://api.deepseek.com">https://api.deepseek.com</option>
@@ -431,8 +429,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">模型规格</label>
                   <select
                     value={deepseekVariant}
-                    onChange={(e) => setDeepseekVariant(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setDeepseekVariant(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="deepseek-chat">deepseek-chat</option>
@@ -460,8 +458,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">Base URL</label>
                   <select
                     value={doubaoBase}
-                    onChange={(e) => setDoubaoBase(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setDoubaoBase(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="https://api.doubao.com/v1">https://api.doubao.com/v1</option>
@@ -471,8 +469,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">模型规格</label>
                   <select
                     value={doubaoVariant}
-                    onChange={(e) => setDoubaoVariant(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setDoubaoVariant(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="doubao-pro-32k">doubao-pro-32k</option>
@@ -500,8 +498,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">Base URL</label>
                   <select
                     value={wenxinBase}
-                    onChange={(e) => setWenxinBase(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setWenxinBase(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions">https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions</option>
@@ -511,8 +509,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">模型规格</label>
                   <select
                     value={wenxinVariant}
-                    onChange={(e) => setWenxinVariant(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setWenxinVariant(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="ERNIE-Speed-8K">ERNIE-Speed-8K</option>
@@ -540,8 +538,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">Base URL</label>
                   <select
                     value={qwenBase}
-                    onChange={(e) => setQwenBase(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setQwenBase(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="https://dashscope.aliyuncs.com/api/v1">https://dashscope.aliyuncs.com/api/v1</option>
@@ -551,8 +549,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   <label className="text-sm font-medium mb-1 block">模型规格</label>
                   <select
                     value={qwenVariant}
-                    onChange={(e) => setQwenVariant(e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => setQwenVariant(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     disabled={isLoading}
                   >
                     <option value="qwen-plus">qwen-plus</option>
@@ -567,8 +565,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
           {/* 高级设置 */}
           <div className="mb-6">
             <button
-              onClick={() => setShowAdvancedSettings(!showAdvancedSettings)},
-            className={`flex items-center justify-between w-full p-3 rounded-xl text-left ${
+              onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+              className={`flex items-center justify-between w-full p-3 rounded-xl text-left ${
                 isDark ? 'bg-gray-700' : 'bg-gray-100'
               }`}
               disabled={isLoading}
@@ -582,8 +580,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }},
-            className="mt-4 space-y-4"
+                transition={{ duration: 0.3 }}
+                className="mt-4 space-y-4"
               >
                 {/* 温度设置 */}
                 <div>
@@ -597,8 +595,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="1"
                     step="0.1"
                     value={modelConfig.temperature}
-                    onChange={(e) => handleConfigChange('temperature', parseFloat(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('temperature', parseFloat(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <div className="flex justify-between text-xs mt-1">
@@ -623,8 +621,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="1"
                     step="0.1"
                     value={modelConfig.top_p}
-                    onChange={(e) => handleConfigChange('top_p', parseFloat(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('top_p', parseFloat(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <div className="flex justify-between text-xs mt-1">
@@ -643,8 +641,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                   </div>
                   <textarea
                     value={modelConfig.system_prompt}
-                    onChange={(e) => handleConfigChange('system_prompt', e.target.value)},
-            className={`w-full p-3 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    onChange={(e) => handleConfigChange('system_prompt', e.target.value)}
+                    className={`w-full p-3 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                     rows={3}
                     disabled={isLoading}
                   />
@@ -664,8 +662,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="50"
                     step="1"
                     value={modelConfig.max_history}
-                    onChange={(e) => handleConfigChange('max_history', parseInt(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('max_history', parseInt(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -693,8 +691,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="5000"
                     step="500"
                     value={modelConfig.max_tokens}
-                    onChange={(e) => handleConfigChange('max_tokens', parseInt(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('max_tokens', parseInt(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <div className="flex justify-between text-xs mt-1">
@@ -719,8 +717,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="60"
                     step="5"
                     value={Math.round(modelConfig.timeout / 1000)}
-                    onChange={(e) => handleConfigChange('timeout', parseInt(e.target.value) * 1000)},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('timeout', parseInt(e.target.value) * 1000)}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <div className="flex justify-between text-xs mt-1">
@@ -745,8 +743,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="2"
                     step="0.1"
                     value={modelConfig.presence_penalty}
-                    onChange={(e) => handleConfigChange('presence_penalty', parseFloat(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('presence_penalty', parseFloat(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <div className="flex justify-between text-xs mt-1">
@@ -771,8 +769,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="2"
                     step="0.1"
                     value={modelConfig.frequency_penalty}
-                    onChange={(e) => handleConfigChange('frequency_penalty', parseFloat(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('frequency_penalty', parseFloat(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <div className="flex justify-between text-xs mt-1">
@@ -797,8 +795,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="5"
                     step="1"
                     value={modelConfig.retry}
-                    onChange={(e) => handleConfigChange('retry', parseInt(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('retry', parseInt(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -818,8 +816,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     max="2000"
                     step="100"
                     value={modelConfig.backoff_ms}
-                    onChange={(e) => handleConfigChange('backoff_ms', parseInt(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                    onChange={(e) => handleConfigChange('backoff_ms', parseInt(e.target.value))}
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                     disabled={isLoading}
                   />
                   <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -855,8 +853,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                       max="50"
                       step="5"
                       value={modelConfig.memory_window}
-                      onChange={(e) => handleConfigChange('memory_window', parseInt(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                      onChange={(e) => handleConfigChange('memory_window', parseInt(e.target.value))}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                       disabled={isLoading || !modelConfig.enable_memory}
                     />
                     <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -875,8 +873,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                       max="128000"
                       step="2048"
                       value={modelConfig.context_window}
-                      onChange={(e) => handleConfigChange('context_window', parseInt(e.target.value))},
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
+                      onChange={(e) => handleConfigChange('context_window', parseInt(e.target.value))}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                       disabled={isLoading}
                     />
                     <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -909,8 +907,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     </div>
                     <select
                       value={modelConfig.image_resolution}
-                      onChange={(e) => handleConfigChange('image_resolution', e.target.value)},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                      onChange={(e) => handleConfigChange('image_resolution', e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                       disabled={isLoading || !modelConfig.enable_multimodal}
                     >
                       <option value="512x512">512x512</option>
@@ -947,8 +945,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                     </div>
                     <select
                       value={modelConfig.safety_level}
-                      onChange={(e) => handleConfigChange('safety_level', e.target.value as 'low' | 'medium' | 'high')},
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                      onChange={(e) => handleConfigChange('safety_level', e.target.value as 'low' | 'medium' | 'high')}
+                      className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
                       disabled={isLoading || !modelConfig.enable_safety_check}
                     >
                       <option value="low">低</option>
@@ -1011,7 +1009,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
               setWenxinVariant('ERNIE-Speed-8K');
               setQwenBase('https://dashscope.aliyuncs.com/api/v1');
               setQwenVariant('qwen-plus');
-            },
+            }},
             className={`px-5 py-2.5 rounded-lg transition-colors ${
               isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
             }`}
@@ -1020,7 +1018,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
             恢复默认
           </button>
           <button
-            onClick={handleTestConnection},
+            onClick={handleTestConnection}
             className={`px-5 py-2.5 rounded-lg transition-colors ${
               isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
             }`}
@@ -1029,7 +1027,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
             连接测试
           </button>
           <button
-            onClick={onClose},
+            onClick={onClose}
             className={`px-5 py-2.5 rounded-lg transition-colors ${
               isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
             }`}
@@ -1038,7 +1036,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
             取消
           </button>
           <button
-            onClick={handleSave},
+            onClick={handleSave}
             className={`px-5 py-2.5 rounded-lg transition-colors ${
               isLoading
                 ? 'bg-gray-500 cursor-not-allowed'
