@@ -14,7 +14,8 @@ if (fs.existsSync('.env')) {
 export const DB_TYPE = {
   SQLITE: 'sqlite',
   MONGODB: 'mongodb',
-  POSTGRESQL: 'postgresql'
+  POSTGRESQL: 'postgresql',
+  NEON_API: 'neon_api'
 }
 
 // 配置管理
@@ -30,6 +31,15 @@ const config = {
     maxRetries: parseInt(process.env.DB_MAX_RETRIES || '3'),
     retryDelay: parseInt(process.env.DB_RETRY_DELAY || '1000'),
     timeout: parseInt(process.env.DB_TIMEOUT || '5000')
+  },
+  
+  // Neon API 配置
+  neon_api: {
+    endpoint: process.env.NEON_API_ENDPOINT || 'https://ep-bold-flower-agmuls0b.apirest.c-2.eu-central-1.aws.neon.tech/neondb/rest/v1',
+    apiKey: process.env.NEON_API_KEY || '',
+    dbName: process.env.NEON_DB_NAME || 'neondb',
+    maxRetries: parseInt(process.env.DB_MAX_RETRIES || '3'),
+    retryDelay: parseInt(process.env.DB_RETRY_DELAY || '1000')
   },
   
   // MongoDB 配置
@@ -372,6 +382,8 @@ async function createPostgreSQLTables(pool) {
         phone VARCHAR(20),
         avatar_url VARCHAR(255),
         interests TEXT,
+        age INTEGER,
+        tags TEXT,
         created_at BIGINT NOT NULL,
         updated_at BIGINT NOT NULL
       );
@@ -436,6 +448,51 @@ async function getDBWithRetry(initFn, dbType, retries = 0) {
 }
 
 /**
+ * Neon API请求函数
+ */
+async function neonApiRequest(method, path, body = null) {
+  const { endpoint, apiKey, dbName } = config.neon_api
+  
+  const url = `${endpoint}/${path}`
+  const headers = {
+    'Content-Type': 'application/json',
+    'accept': 'application/json'
+  }
+  
+  // 如果有API密钥，添加到请求头
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`
+  }
+  
+  const options = {
+    method,
+    headers
+  }
+  
+  if (body) {
+    options.body = JSON.stringify(body)
+  }
+  
+  const response = await fetch(url, options)
+  
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || `Neon API请求失败: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
+/**
+ * Neon API数据库实例
+ */
+const neonApiDb = {
+  async query(sql, params = []) {
+    return neonApiRequest('POST', 'sql', { sql, params, options: { "connection": { "database": config.neon_api.dbName } } })
+  }
+}
+
+/**
  * 获取当前配置的数据库实例
  */
 export async function getDB() {
@@ -459,6 +516,15 @@ export async function getDB() {
         dbInstances.postgresql = await getDBWithRetry(initPostgreSQL, DB_TYPE.POSTGRESQL)
       }
       return dbInstances.postgresql
+      
+    case DB_TYPE.NEON_API:
+      // Neon API是无状态的，不需要连接管理
+      connectionStatus.neon_api = {
+        connected: true,
+        lastConnected: Date.now(),
+        error: null
+      }
+      return neonApiDb
       
     default:
       throw new Error(`不支持的数据库类型: ${dbType}`)
@@ -554,6 +620,14 @@ export const userDB = {
         `, [username, email, password_hash, phone, avatar_url, interests, age, tags, now, now])
         return rows[0]
         
+      case DB_TYPE.NEON_API:
+        const neonResult = await db.query(`
+          INSERT INTO users (username, email, password_hash, phone, avatar_url, interests, age, tags, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING id
+        `, [username, email, password_hash, phone, avatar_url, interests, age, tags, now, now])
+        return neonResult.result.rows[0]
+        
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)
     }
@@ -575,6 +649,10 @@ export const userDB = {
       case DB_TYPE.POSTGRESQL:
         const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email])
         return rows[0]
+        
+      case DB_TYPE.NEON_API:
+        const neonResult = await db.query('SELECT * FROM users WHERE email = $1', [email])
+        return neonResult.result.rows[0]
         
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)
@@ -598,6 +676,10 @@ export const userDB = {
         const { rows } = await db.query('SELECT * FROM users WHERE username = $1', [username])
         return rows[0]
         
+      case DB_TYPE.NEON_API:
+        const neonResult = await db.query('SELECT * FROM users WHERE username = $1', [username])
+        return neonResult.result.rows[0]
+        
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)
     }
@@ -620,6 +702,10 @@ export const userDB = {
         const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [id])
         return rows[0]
         
+      case DB_TYPE.NEON_API:
+        const neonResult = await db.query('SELECT * FROM users WHERE id = $1', [id])
+        return neonResult.result.rows[0]
+        
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)
     }
@@ -641,6 +727,10 @@ export const userDB = {
       case DB_TYPE.POSTGRESQL:
         const { rows } = await db.query('SELECT * FROM users ORDER BY created_at DESC')
         return rows
+        
+      case DB_TYPE.NEON_API:
+        const neonResult = await db.query('SELECT * FROM users ORDER BY created_at DESC')
+        return neonResult.result.rows
         
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)

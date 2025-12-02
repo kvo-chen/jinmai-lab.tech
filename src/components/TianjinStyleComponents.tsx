@@ -32,7 +32,8 @@ export const TianjinButton: React.FC<{
   leftIcon,
   rightIcon,
 }) => {
-  const { isDark } = useTheme();
+  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  const { isDark = false } = useTheme() || {};
   const reduceMotion = useReducedMotion();
 
   // 中文注释：风筝飘带动画变体（悬浮轻微上抬）
@@ -279,7 +280,8 @@ export const YangliuqingNodAnimation: React.FC = () => {
 
 // 天津风格空状态组件
 export const TianjinEmptyState: React.FC = () => {
-  const { isDark } = useTheme();
+  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  const { isDark = false } = useTheme() || {};
   
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -325,7 +327,8 @@ export const TianjinTag: React.FC<{
   color?: 'blue' | 'red' | 'green' | 'yellow';
   className?: string;
 }> = ({ children, color = 'blue', className = '' }) => {
-  const { isDark } = useTheme();
+  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  const { isDark = false } = useTheme() || {};
   
   const colorMap = {
     blue: isDark ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-100 text-blue-600 border-blue-200',
@@ -350,7 +353,8 @@ export const YangliuqingCard: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className = '' }) => {
-  const { isDark } = useTheme();
+  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  const { isDark = false } = useTheme() || {};
   
   return (
     <div className={`relative overflow-hidden rounded-xl ${isDark ? 'shadow-[var(--shadow-lg)] bg-[var(--bg-secondary)]' : 'shadow-md'} ${className} card`}>
@@ -503,6 +507,7 @@ export const FishAndPancakeAnimation: React.FC = () => {
   );
 };
 
+// 天津风格图片组件 - 修复了useTheme钩子的安全问题
 export const TianjinImage: React.FC<{
   src: string;
   alt: string;
@@ -530,7 +535,8 @@ export const TianjinImage: React.FC<{
   priority = false,
   blurDataURL,
 }) => {
-  const { isDark } = useTheme();
+  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  const { isDark = false } = useTheme() || {};
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const reduceMotion = useReducedMotion();

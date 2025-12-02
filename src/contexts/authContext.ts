@@ -20,7 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string, age?: string, tags?: string[]) => Promise<boolean>;
   logout: () => void;
   setIsAuthenticated: (value: boolean) => void;
   quickLogin: (provider: 'wechat' | 'phone' | 'alipay' | 'qq' | 'weibo') => Promise<boolean>;
@@ -122,12 +122,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // 注册方法
-  const register = async (username: string, email: string, password: string): Promise<boolean> => {
+  const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<boolean> => {
     try {
       const response = await apiClient.post<AuthResponse>('/api/auth/register', {
         username,
         email,
-        password
+        password,
+        age: age ? parseInt(age) : null,
+        tags
       });
       
       if (response.ok && response.data && response.data.token && response.data.user) {

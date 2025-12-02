@@ -17,8 +17,8 @@ const registerSchema = z.object({
   email: z.string()
     .email({ message: '请输入有效的邮箱地址' }),
   password: z.string()
-    .min(6, { message: '密码至少需要6个字符' })
-    .regex(/[A-Z]/, { message: '密码需要包含至少一个大写字母' })
+    .min(8, { message: '密码至少需要8个字符' })
+    .regex(/[a-zA-Z]/, { message: '密码需要包含至少一个字母' })
     .regex(/[0-9]/, { message: '密码需要包含至少一个数字' }),
 });
 
@@ -62,11 +62,11 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      const success = await register(username, email, password);
+      const success = await register(username, email, password, age, tags);
       
       if (success) {
-        toast.success('注册成功！请登录');
-        navigate('/login');
+        toast.success('注册成功！自动登录中...');
+        navigate('/dashboard');
       } else {
         toast.error('注册失败，请稍后重试');
       }

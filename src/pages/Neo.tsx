@@ -44,7 +44,8 @@ const saveCustomTags = (tags: string[]) => {
 }
 
 export default function Neo() {
-  const { isDark } = useTheme()
+  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  const { isDark = false } = useTheme() || {}
   const location = useLocation()
   const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined)?.trim() || (typeof window !== 'undefined' && /localhost:3000$/.test(window.location.host) ? 'http://localhost:3001' : '')
   const shortenUrl = (u: string) => {
@@ -133,9 +134,12 @@ export default function Neo() {
   
   // 过滤和排序历史记录
   const filteredHistory = videoHistory.filter(item => {
+    // 确保item是有效的且有url
+    if (!item || !item.url) return false;
+    
     // 搜索过滤
     const matchesSearch = historySearch === '' || 
-      item.url.includes(historySearch) ||
+      (item.url && item.url.includes(historySearch)) ||
       (item.width && item.height && `${item.width}×${item.height}`.includes(historySearch))
     
     // 类型过滤
@@ -146,6 +150,11 @@ export default function Neo() {
     
     return matchesSearch && matchesFilter
   }).sort((a, b) => {
+    // 确保a和b是有效的
+    if (!a || !b || typeof a.createdAt !== 'number' || typeof b.createdAt !== 'number') {
+      return 0;
+    }
+    
     // 排序
     if (historySort === 'latest') {
       return b.createdAt - a.createdAt

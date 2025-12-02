@@ -848,10 +848,10 @@ const server = http.createServer(async (req, res) => {
         return
       }
       
-      // 验证密码格式
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+      // 验证密码格式（简化要求，至少8个字符，包含字母和数字）
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/
       if (!passwordRegex.test(b.password)) {
-        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '密码至少8个字符，包含至少一个大写字母、一个小写字母、一个数字和一个特殊字符(@$!%*?&)' })
+        sendJson(res, 400, { error: 'INVALID_REQUEST', message: '密码至少8个字符，包含至少一个字母和一个数字' })
         return
       }
       
