@@ -28,7 +28,7 @@
     },
     {
       "src": "/((?!api/).*)",
-      "dest": "/$1",
+      "dest": "/index.html",
       "status": 200
     }
   ],
