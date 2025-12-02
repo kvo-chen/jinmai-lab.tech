@@ -131,6 +131,9 @@ export default function Create() {
   const toolRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [selectedPatternId, setSelectedPatternId] = useState<number | null>(null);
   const [filterName, setFilterName] = useState<string>('复古胶片');
+  // 流式输出控制状态
+  const [streamStatus, setStreamStatus] = useState<'idle' | 'running' | 'paused' | 'completed' | 'error'>('idle');
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [filterIntensity, setFilterIntensity] = useState<number>(5);
   const [autoGenerate, setAutoGenerate] = useState<boolean>(true);
   const [showQuickActions, setShowQuickActions] = useState<boolean>(false);
@@ -411,28 +414,52 @@ export default function Create() {
     } catch {}
   }, [prompt, selectedResult, currentStep, aiExplanation]);
   
+  // 取消生成函数
+  const handleCancelGenerate = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setStreamStatus('idle');
+      setIsGenerating(false);
+      toast.info('AI生成已取消');
+    }
+  };
+  
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error('请输入创作提示');
       return;
     }
+    
     setIsGenerating(true);
+    setStreamStatus('running');
     setAiExplanation('');
+    
+    // 创建AbortController用于取消请求
+    const controller = new AbortController();
+    setAbortController(controller);
+    
     try {
       const cfg = llmService.getConfig();
       if (cfg.stream) {
         await llmService.generateResponse(prompt, {
           onDelta: (full) => {
             setAiExplanation(full);
-          }
+          },
+          signal: controller.signal
         });
       } else {
         const withStyle = stylePreset ? `${prompt}；风格：${stylePreset}` : prompt;
-        const resp = await llmService.generateResponse(withStyle);
+        const resp = await llmService.generateResponse(withStyle, {
+          signal: controller.signal
+        });
         setAiExplanation(resp);
       }
+      
+      setStreamStatus('completed');
       setCurrentStep(2);
       toast.success('AI创作完成！请选择一个方案进行编辑');
+      
       if (engine === 'doubao') {
         try {
           const input = stylePreset ? `${prompt}；风格：${stylePreset}` : prompt;
@@ -453,10 +480,16 @@ export default function Create() {
           setGeneratedResults(aiGeneratedResults)
         }
       }
-    } catch {
-      toast.error('生成失败，请稍后重试');
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        setStreamStatus('idle');
+      } else {
+        setStreamStatus('error');
+        toast.error('生成失败，请稍后重试');
+      }
     } finally {
       setIsGenerating(false);
+      setAbortController(null);
     }
   };
 
@@ -501,7 +534,40 @@ export default function Create() {
         <div className="mb-6 p-3 rounded-xl bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600">
           <div className="font-medium mb-2">一键设计</div>
           <div className="text-xs mb-3 text-gray-600 dark:text-gray-300">输入提示后点击生成即可获得方案</div>
-          <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()} className="w-full text-sm px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 min-h-[44px]">立即生成</button>
+          
+          {/* 流式输出状态显示 */}
+          {isGenerating && (
+            <div className="mb-3 flex items-center justify-between text-xs p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300">
+              <span>
+                {streamStatus === 'running' && <i className="fas fa-spinner fa-spin mr-1"></i>}
+                {streamStatus === 'running' && 'AI正在生成内容...'}
+                {streamStatus === 'paused' && 'AI生成已暂停'}
+                {streamStatus === 'completed' && 'AI生成完成'}
+                {streamStatus === 'error' && 'AI生成出错'}
+              </span>
+              <button 
+                onClick={handleCancelGenerate} 
+                className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+              >
+                取消
+              </button>
+            </div>
+          )}
+          
+          <button 
+            onClick={handleGenerate} 
+            disabled={isGenerating || !prompt.trim()} 
+            className="w-full text-sm px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 min-h-[44px]"
+          >
+            {isGenerating ? (
+              <>
+                <i className="fas fa-spinner fa-spin mr-2"></i>
+                生成中...
+              </>
+            ) : (
+              '立即生成'
+            )}
+          </button>
         </div>
       );
     }
