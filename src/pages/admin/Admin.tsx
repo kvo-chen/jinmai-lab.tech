@@ -814,7 +814,7 @@ export default function Admin() {
                         <td className="px-4 py-3 text-sm">
                           <div className="flex flex-wrap gap-1">
                             {user.tags && user.tags.length > 0 ? (
-                              user.tags.map((tag, index) => (
+                              user.tags.map((tag: string, index: number) => (
                                 <span key={index} className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
                                   {tag}
                                 </span>

@@ -32,5 +32,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "api/types/**/*.d.ts"],
+  "exclude": ["node_modules", "api", "server"]
 }

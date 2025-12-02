@@ -1299,7 +1299,7 @@ export default function Community() {
                 <VirtualList
                   items={displayRecommended}
                   renderItem={(c) => (
-                    <motion.div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300`} whileHover={{ y: -2, shadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                    <motion.div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300`} whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
                       <div className="relative">
                         <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105" />
                         <div className="absolute top-3 right-3">

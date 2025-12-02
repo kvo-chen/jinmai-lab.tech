@@ -19,8 +19,9 @@
     "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["@types/node", "@vercel/node"]
   },
-  "include": ["api/**/*.ts"],
+  "include": ["api/**/*.ts", "api/types/**/*.d.ts", "server/**/*.mjs"],
   "exclude": ["node_modules"]
 }
