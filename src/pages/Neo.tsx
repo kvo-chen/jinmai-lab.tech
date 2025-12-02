@@ -2255,7 +2255,6 @@ export default function Neo() {
                 </div>
               )}
             </div>
-          )}
         </div>
       </main>
       
