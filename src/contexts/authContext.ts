@@ -124,6 +124,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 注册方法
   const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<boolean> => {
     try {
+      console.log('AuthContext.register: 1. Starting registration');
+      console.log('AuthContext.register: 2. Request data:', { username, email, password, age, tags });
+      
       const response = await apiClient.post<AuthResponse>('/api/auth/register', {
         username,
         email,
@@ -131,6 +134,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         age: age ? parseInt(age) : null,
         tags
       });
+      
+      console.log('AuthContext.register: 3. Response received:', { ok: response.ok, status: response.status, data: response.data, error: response.error });
       
       if (response.ok && response.data && response.data.token && response.data.user) {
         // 存储令牌和用户信息
@@ -146,7 +151,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return false;
       }
     } catch (error) {
-      console.error('注册失败:', error);
+      console.error('AuthContext.register: 4. Error occurred:', error);
       return false;
     }
   };

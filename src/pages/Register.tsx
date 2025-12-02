@@ -42,13 +42,17 @@ export default function Register() {
   }
   
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('1. handleSubmit called');
     e.preventDefault();
     
     // 表单验证
     try {
+      console.log('2. Validating form');
       registerSchema.parse({ username, email, password });
+      console.log('3. Form validation passed');
       setErrors({});
     } catch (err) {
+      console.error('4. Form validation failed:', err);
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
         err.issues.forEach(issue => {
@@ -59,10 +63,13 @@ export default function Register() {
       return;
     }
     
+    console.log('5. Setting isLoading to true');
     setIsLoading(true);
     
     try {
+      console.log('6. Calling register function with:', { username, email, password, age, tags });
       const success = await register(username, email, password, age, tags);
+      console.log('8. Register function returned:', success);
       
       if (success) {
         toast.success('注册成功！自动登录中...');
@@ -71,8 +78,10 @@ export default function Register() {
         toast.error('注册失败，请稍后重试');
       }
     } catch (error) {
+      console.error('8. Register failed with error:', error);
       toast.error('注册失败，请稍后重试');
     } finally {
+      console.log('9. Setting isLoading to false');
       setIsLoading(false);
     }
   };
