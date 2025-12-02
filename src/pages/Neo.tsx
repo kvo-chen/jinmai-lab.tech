@@ -910,7 +910,7 @@ export default function Neo() {
               {/* 视频参数自定义 */}
               <div className={`rounded-xl p-4 mb-4 ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                 <h3 className="text-sm font-medium mb-3">视频参数设置</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div>
                     <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">时长（秒）</label>
                     <input
@@ -919,52 +919,52 @@ export default function Neo() {
                       max="30"
                       value={videoParams.duration}
                       onChange={(e) => setVideoParams(prev => ({ ...prev, duration: parseInt(e.target.value) || 5 }))}
-                      className={`w-full text-sm px-3 py-2 rounded border ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
+                      className={`w-full text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     />
                   </div>
-                  <div>
+                  <div className="sm:col-span-1 lg:col-span-2">
                     <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">分辨率</label>
                     <select
                       value={videoParams.resolution}
                       onChange={(e) => setVideoParams(prev => ({ ...prev, resolution: e.target.value as '480p' | '720p' | '1080p' }))}
-                      className={`w-full text-sm px-3 py-2 rounded border ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
+                      className={`w-full text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                     >
                       <option value="480p">480p</option>
                       <option value="720p">720p</option>
                       <option value="1080p">1080p</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">相机模式</label>
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-1 cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer text-sm">
                         <input
                           type="radio"
                           name="cameraMode"
                           value="false"
                           checked={!videoParams.cameraFixed}
                           onChange={() => setVideoParams(prev => ({ ...prev, cameraFixed: false }))}
-                          className="text-red-600"
+                          className="text-red-600 h-4 w-4"
                         />
-                        <span className="text-sm">动态</span>
+                        <span>动态</span>
                       </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
+                      <label className="flex items-center gap-2 cursor-pointer text-sm">
                         <input
                           type="radio"
                           name="cameraMode"
                           value="true"
                           checked={videoParams.cameraFixed}
                           onChange={() => setVideoParams(prev => ({ ...prev, cameraFixed: true }))}
-                          className="text-red-600"
+                          className="text-red-600 h-4 w-4"
                         />
-                        <span className="text-sm">固定</span>
+                        <span>固定</span>
                       </label>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 gap-4 mb-4">
                 {images.map((src, i) => {
                   const val = videoByIndex[i] || ''
                   const processing = val === '生成中...'
@@ -972,14 +972,14 @@ export default function Neo() {
                   return (
                     <div key={i} className={`rounded-xl overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} transition-all duration-300 hover:shadow-lg`}>
                       <div className="relative">
-                        <TianjinImage src={src} alt="result" ratio="square" rounded="xl" className="cursor-pointer transition-transform duration-300 hover:scale-105" onClick={() => (!processing ? genVideoAt(i) : undefined)} />
+                        <TianjinImage src={src} alt="result" ratio="landscape" rounded="xl" className="cursor-pointer transition-transform duration-300 hover:scale-105 w-full" onClick={() => (!processing ? genVideoAt(i) : undefined)} />
                         {processing && (
                           <div className="absolute top-2 left-2 text-xs px-2 py-1 rounded-full bg-blue-600 text-white shadow-md">生成中…</div>
                         )}
                       </div>
-                      <div className="p-3 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => genVideoAt(i)} disabled={processing} className={`text-sm px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} disabled:opacity-60 disabled:cursor-not-allowed active:scale-98`}>{processing ? '生成中…' : '生成视频'}</button>
+                      <div className="p-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <button onClick={() => genVideoAt(i)} disabled={processing} className={`text-sm px-3 py-3 rounded-md transition-all duration-200 ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} disabled:opacity-60 disabled:cursor-not-allowed active:scale-98 font-medium`}>{processing ? '生成中…' : '生成视频'}</button>
                           <button 
                             onClick={async () => {
                               try {
@@ -1008,37 +1008,37 @@ export default function Neo() {
                                 }
                               }
                             }}
-                            className={`text-sm px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'} active:scale-98 flex items-center justify-center gap-1`}
+                            className={`text-sm px-3 py-3 rounded-md transition-all duration-200 ${isDark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'} active:scale-98 flex items-center justify-center gap-1 font-medium`}
                           >
                             <i className="fas fa-share-alt"></i> 分享
                           </button>
                         </div>
-                        <div className="mt-2 flex justify-between items-center">
+                        <div className="flex justify-between items-center">
                           <button
                             onClick={() => setShowFeedback(`result-${i}`)}
-                            className={`text-xs px-3 py-1 rounded transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                            className={`text-sm px-3 py-2 rounded-md transition-colors ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'} active:scale-98`}
                           >
                             {feedbacks[`result-${i}`] ? '查看/修改反馈' : '提交反馈'}
                           </button>
                           
                           {/* 显示已提交的评分 */}
                           {feedbacks[`result-${i}`] && (
-                            <div className="text-xs flex items-center gap-1">
-                              <span className="text-yellow-500">{'★'.repeat(feedbacks[`result-${i}`]!.rating)}{'☆'.repeat(5 - feedbacks[`result-${i}`]!.rating)}</span>
-                              <span className="text-gray-500">({feedbacks[`result-${i}`]!.rating}/5)</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-yellow-500 text-lg">{'★'.repeat(feedbacks[`result-${i}`]!.rating)}{'☆'.repeat(5 - feedbacks[`result-${i}`]!.rating)}</span>
+                              <span className="text-sm text-gray-500">({feedbacks[`result-${i}`]!.rating}/5)</span>
                             </div>
                           )}
                         </div>
                         
                         {/* 反馈弹窗 */}
                         {showFeedback === `result-${i}` && (
-                          <div className={`mt-3 p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
-                            <h4 className="text-sm font-medium mb-2">提交反馈</h4>
+                          <div className={`mt-3 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border ${isDark ? 'border-gray-600' : 'border-gray-200'} shadow-md`}>
+                            <h4 className="text-sm font-medium mb-3">提交反馈</h4>
                             
                             {/* 评分 */}
-                            <div className="mb-3">
-                              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">评分：</label>
-                              <div className="flex gap-1">
+                            <div className="mb-4">
+                              <label className="text-sm text-gray-500 dark:text-gray-400 mb-2 block">评分：</label>
+                              <div className="flex gap-2">
                                 {[1, 2, 3, 4, 5].map(star => (
                                   <button
                                     key={star}
@@ -1046,7 +1046,7 @@ export default function Neo() {
                                       const current = feedbacks[`result-${i}`] || { rating: 0, comment: '' }
                                       saveFeedback(`result-${i}`, star, current.comment)
                                     }}
-                                    className={`text-xl transition-all duration-200 ${(feedbacks[`result-${i}`]?.rating || 0) >= star ? 'text-yellow-500 transform scale-110' : 'text-gray-400 hover:text-yellow-500'}`}
+                                    className={`text-2xl transition-all duration-200 ${(feedbacks[`result-${i}`]?.rating || 0) >= star ? 'text-yellow-500 transform scale-110' : 'text-gray-400 hover:text-yellow-500'}`}
                                   >
                                     ★
                                   </button>
@@ -1055,8 +1055,8 @@ export default function Neo() {
                             </div>
                             
                             {/* 文字反馈 */}
-                            <div className="mb-3">
-                              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">反馈意见：</label>
+                            <div className="mb-4">
+                              <label className="text-sm text-gray-500 dark:text-gray-400 mb-2 block">反馈意见：</label>
                               <textarea
                                 value={feedbacks[`result-${i}`]?.comment || ''}
                                 onChange={(e) => {
@@ -1064,8 +1064,8 @@ export default function Neo() {
                                   saveFeedback(`result-${i}`, current.rating, e.target.value)
                                 }}
                                 placeholder="请输入您的反馈意见..."
-                                className={`w-full text-xs px-3 py-2 rounded border ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
-                                rows={3}
+                                className={`w-full text-sm px-3 py-3 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                                rows={4}
                               />
                             </div>
                             
@@ -1073,7 +1073,7 @@ export default function Neo() {
                             <div className="flex justify-end">
                               <button
                                 onClick={() => setShowFeedback(null)}
-                                className={`text-xs px-3 py-1 rounded transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'}`}
+                                className={`text-sm px-4 py-2 rounded-md transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'} active:scale-98 font-medium`}
                               >
                                 关闭
                               </button>
@@ -1091,7 +1091,7 @@ export default function Neo() {
               )}
             </div>
           )}
-          <div className={`rounded-2xl shadow-md ${isDark ? 'bg-gray-800' : 'bg-white'} p-4 sm:p-6 mt-6`}>
+          <div className={`rounded-2xl shadow-md ${isDark ? 'bg-gray-800' : 'bg-white'} p-4 mt-6`}>
             <div className="font-bold mb-3 flex items-center justify-between">
               <span>AI建议</span>
               <button onClick={regenerateDirections} className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:scale-105`}>刷新建议</button>
@@ -1099,25 +1099,27 @@ export default function Neo() {
             {aiDirections.length > 0 ? (
               <div className="flex flex-wrap gap-2 mb-4">
                 {aiDirections.map((d, i) => (
-                  <button key={i} onClick={() => applyDirection(d)} className={`text-xs sm:text-sm px-3 py-2 rounded-full border transition-all duration-200 ${isDark ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-100'}`}>
+                  <button key={i} onClick={() => applyDirection(d)} className={`text-sm px-4 py-2.5 rounded-full border transition-all duration-200 ${isDark ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-100'}`}>
                     {d}
                   </button>
                 ))}
               </div>
             ) : (
-              <div className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-sm flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4`}>
+              <div className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-sm flex flex-col items-start gap-2 mb-4`}>
                 <span>点击“注入灵感”以获取建议</span>
                 <button onClick={startGeneration} className={`text-xs px-3 py-2 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:scale-105`}>快速注入灵感</button>
               </div>
             )}
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-bold">AI文案</div>
+            <div className="flex flex-col gap-3 mb-2">
+              <div className="flex items-center justify-between">
+                <div className="font-bold">AI文案</div>
+              </div>
               <div className="flex items-center gap-2">
                 <label className="text-xs text-gray-500 dark:text-gray-400">风格：</label>
                 <select
                   value={textStyle}
                   onChange={(e) => setTextStyle(e.target.value as any)}
-                  className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
+                  className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
                   <option value="creative">创意</option>
                   <option value="formal">正式</option>
@@ -1126,24 +1128,24 @@ export default function Neo() {
                 </select>
               </div>
             </div>
-            <div className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm whitespace-pre-wrap min-h-20 sm:min-h-24 p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>{aiText}</div>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <button onClick={async () => { const base = aiText.trim() ? aiText : prompt.trim(); if (!base) { toast.warning('请先生成文案或填写提示'); return } try { const r = await voiceService.synthesize(base, { format: 'mp3' }); setTtsUrl(r.audioUrl) } catch (e: any) { toast.error(e?.message || '朗读失败') } }} className="text-sm px-3 py-2 rounded-md bg-green-600 text-white transition-all duration-200 hover:bg-green-700 active:scale-98 min-h-[36px]">朗读</button>
-              <button onClick={() => { const text = aiText.trim(); if (!text) { toast.warning('暂无可复制的文案'); return } try { navigator.clipboard.writeText(text); toast.success('已复制文案'); } catch { toast.error('复制失败'); } }} className={`text-sm px-3 py-2 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 min-h-[36px]`}>复制文案</button>
-              <button onClick={() => { const text = aiText.trim(); if (!text) { toast.warning('暂无文案可插入'); return } setPrompt(text); toast.success('已插入到输入框'); }} className={`text-sm px-3 py-2 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 min-h-[36px]`}>插入到输入框</button>
-              <button onClick={() => { if (!aiText.trim()) { toast.warning('暂无文案可保存'); return } try { const raw = localStorage.getItem('NEO_COPY_HISTORY'); const arr = raw ? JSON.parse(raw) : []; const entry = { id: Date.now(), text: aiText.trim() }; const next = [entry, ...arr].slice(0, 50); localStorage.setItem('NEO_COPY_HISTORY', JSON.stringify(next)); toast.success('已保存到本地'); } catch { toast.error('保存失败'); } }} className={`text-sm px-3 py-2 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 min-h-[36px]`}>保存文案</button>
-              <button onClick={() => { setAiText(''); toast.success('已清空文案'); }} className={`text-sm px-3 py-2 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 min-h-[36px]`}>清空文案</button>
+            <div className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm whitespace-pre-wrap min-h-24 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>{aiText}</div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <button onClick={async () => { const base = aiText.trim() ? aiText : prompt.trim(); if (!base) { toast.warning('请先生成文案或填写提示'); return } try { const r = await voiceService.synthesize(base, { format: 'mp3' }); setTtsUrl(r.audioUrl) } catch (e: any) { toast.error(e?.message || '朗读失败') } }} className="text-sm px-3 py-3 rounded-md bg-green-600 text-white transition-all duration-200 hover:bg-green-700 active:scale-98 font-medium">朗读</button>
+              <button onClick={() => { const text = aiText.trim(); if (!text) { toast.warning('暂无可复制的文案'); return } try { navigator.clipboard.writeText(text); toast.success('已复制文案'); } catch { toast.error('复制失败'); } }} className={`text-sm px-3 py-3 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 font-medium`}>复制文案</button>
+              <button onClick={() => { const text = aiText.trim(); if (!text) { toast.warning('暂无文案可插入'); return } setPrompt(text); toast.success('已插入到输入框'); }} className={`text-sm px-3 py-3 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 font-medium`}>插入到输入框</button>
+              <button onClick={() => { if (!aiText.trim()) { toast.warning('暂无文案可保存'); return } try { const raw = localStorage.getItem('NEO_COPY_HISTORY'); const arr = raw ? JSON.parse(raw) : []; const entry = { id: Date.now(), text: aiText.trim() }; const next = [entry, ...arr].slice(0, 50); localStorage.setItem('NEO_COPY_HISTORY', JSON.stringify(next)); toast.success('已保存到本地'); } catch { toast.error('保存失败'); } }} className={`text-sm px-3 py-3 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 font-medium`}>保存文案</button>
+              <button onClick={() => { setAiText(''); toast.success('已清空文案'); }} className={`text-sm px-3 py-3 rounded-md ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} transition-all duration-200 hover:bg-opacity-80 active:scale-98 font-medium col-span-2`}>清空文案</button>
             </div>
             {ttsUrl && (
-              <div className="mt-3">
-                <audio controls src={ttsUrl} className="w-full rounded-md" />
+              <div className="mt-4">
+                <audio controls src={ttsUrl} className="w-full rounded-md border ${isDark ? 'border-gray-600' : 'border-gray-200'}" />
               </div>
             )}
-            {isGenerating && (<div className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-xs mt-2`}>生成中…</div>)}
+            {isGenerating && (<div className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-sm mt-2`}>生成中…</div>)}
           </div>
           {videoHistory.length > 0 && (
-            <div className={`rounded-2xl shadow-md ${isDark ? 'bg-gray-800' : 'bg-white'} p-4 md:p-6`}>
-              <div className="font-bold mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className={`rounded-2xl shadow-md ${isDark ? 'bg-gray-800' : 'bg-white'} p-4 mt-6`}>
+              <div className="font-bold mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <span>视频历史</span>
                 <div className="flex flex-wrap items-center gap-2">
                   <button className={`text-xs px-3 py-2 rounded transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-all duration-200 hover:scale-105`} onClick={() => { setVideoHistory([]); try { localStorage.removeItem('NEO_VIDEO_HISTORY') } catch {} }}>清空历史</button>
@@ -1159,41 +1161,43 @@ export default function Neo() {
                     placeholder="搜索历史记录..."
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
-                    className={`w-full text-sm px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
+                    className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
                   />
                 </div>
                 
                 {/* 筛选和排序 */}
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* 筛选 */}
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs text-gray-500 dark:text-gray-400">筛选：</label>
-                    <select
-                      value={historyFilter}
-                      onChange={(e) => setHistoryFilter(e.target.value as any)}
-                      className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
-                    >
-                      <option value="all">全部</option>
-                      <option value="favorite">收藏</option>
-                      <option value="video">视频</option>
-                    </select>
-                  </div>
-                  
-                  {/* 排序 */}
-                  <div className="flex items-center gap-1">
-                    <label className="text-xs text-gray-500 dark:text-gray-400">排序：</label>
-                    <select
-                      value={historySort}
-                      onChange={(e) => setHistorySort(e.target.value as any)}
-                      className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none`}
-                    >
-                      <option value="latest">最新</option>
-                      <option value="oldest">最早</option>
-                    </select>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* 筛选 */}
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500 dark:text-gray-400">筛选：</label>
+                      <select
+                        value={historyFilter}
+                        onChange={(e) => setHistoryFilter(e.target.value as any)}
+                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      >
+                        <option value="all">全部</option>
+                        <option value="favorite">收藏</option>
+                        <option value="video">视频</option>
+                      </select>
+                    </div>
+                    
+                    {/* 排序 */}
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500 dark:text-gray-400">排序：</label>
+                      <select
+                        value={historySort}
+                        onChange={(e) => setHistorySort(e.target.value as any)}
+                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      >
+                        <option value="latest">最新</option>
+                        <option value="oldest">最早</option>
+                      </select>
+                    </div>
                   </div>
                   
                   {/* 历史记录统计 */}
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
                     共 {filteredHistory.length} 条记录
                   </div>
                 </div>
@@ -1204,49 +1208,51 @@ export default function Neo() {
                 <div className="space-y-4">
                   {filteredHistory.map((h, idx) => (
                     <div key={idx} className="flex flex-col gap-3">
-                      <div className="flex flex-wrap items-start gap-3">
-                        <div className="w-14 h-14 rounded overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
-                          <img src={h.thumb || h.image} alt="thumb" className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-xs break-all text-blue-600 flex-1">
-                              <a href={h.url} target="_blank" rel="noreferrer" className="underline hover:text-blue-800 transition-colors" title={h.url}>{shortenUrl(h.url)}</a>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-20 h-12 rounded overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
+                            <img src={h.thumb || h.image} alt="thumb" className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="text-xs break-all text-blue-600 flex-1">
+                                <a href={h.url} target="_blank" rel="noreferrer" className="underline hover:text-blue-800 transition-colors" title={h.url}>{shortenUrl(h.url)}</a>
+                              </div>
+                              {/* 收藏按钮 */}
+                              <button
+                                onClick={() => toggleFavorite(h.url)}
+                                className={`p-1 rounded-full transition-all duration-200 ${h.isFavorite ? 'text-yellow-500 transform scale-110' : 'text-gray-400 hover:text-yellow-500'}`}
+                                title={h.isFavorite ? '取消收藏' : '收藏'}
+                              >
+                                {h.isFavorite ? '★' : '☆'}
+                              </button>
                             </div>
-                            {/* 收藏按钮 */}
-                            <button
-                              onClick={() => toggleFavorite(h.url)}
-                              className={`p-1 rounded-full transition-all duration-200 ${h.isFavorite ? 'text-yellow-500 transform scale-110' : 'text-gray-400 hover:text-yellow-500'}`}
-                              title={h.isFavorite ? '取消收藏' : '收藏'}
-                            >
-                              {h.isFavorite ? '★' : '☆'}
-                            </button>
-                          </div>
-                          <div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'} flex flex-wrap gap-x-2 gap-y-1 mt-1`}>
-                            {formatResolution(h.width, h.height) && <span>分辨率：{formatResolution(h.width, h.height)}</span>}
-                            {formatDuration(h.duration) && <span>时长：{formatDuration(h.duration)}</span>}
-                            {formatTime(h.createdAt) && <span>生成时间：{formatTime(h.createdAt)}</span>}
-                            {h.isFavorite && <span className="text-yellow-500">已收藏</span>}
+                            <div className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'} flex flex-wrap gap-x-2 gap-y-1 mt-1`}>
+                              {formatResolution(h.width, h.height) && <span>分辨率：{formatResolution(h.width, h.height)}</span>}
+                              {formatDuration(h.duration) && <span>时长：{formatDuration(h.duration)}</span>}
+                              {formatTime(h.createdAt) && <span>生成时间：{formatTime(h.createdAt)}</span>}
+                              {h.isFavorite && <span className="text-yellow-500">已收藏</span>}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-1">
-                          <button className={`px-2 py-1 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98`} onClick={() => { try { navigator.clipboard.writeText(h.url); toast.success('已复制链接') } catch {} }} aria-label="复制">
-                            <i className="fas fa-copy text-xs"></i>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button className={`px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98 text-sm`} onClick={() => { try { navigator.clipboard.writeText(h.url); toast.success('已复制链接') } catch {} }} aria-label="复制">
+                            <i className="fas fa-copy mr-1"></i> 复制
                           </button>
-                          <button className={`px-2 py-1 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98`} onClick={() => { try { window.open(h.url, '_blank') } catch {} }} aria-label="打开">
-                            <i className="fas fa-external-link-alt text-xs"></i>
+                          <button className={`px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98 text-sm`} onClick={() => { try { window.open(h.url, '_blank') } catch {} }} aria-label="打开">
+                            <i className="fas fa-external-link-alt mr-1"></i> 打开
                           </button>
-                          <a className={`px-2 py-1 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`} href={`${apiBase ? `${apiBase}` : ''}/api/proxy/video?url=${encodeURIComponent(h.url)}`} download aria-label="下载">
-                            <i className="fas fa-download text-xs"></i>
+                          <a className={`px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98 text-sm`} href={`${apiBase ? `${apiBase}` : ''}/api/proxy/video?url=${encodeURIComponent(h.url)}`} download aria-label="下载">
+                            <i className="fas fa-download mr-1"></i> 下载
                           </a>
-                          <button className={`px-2 py-1 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98`} onClick={() => setHistoryPreviewOpen(prev => ({ ...prev, [h.url]: !prev[h.url] }))} aria-label={historyPreviewOpen[h.url] ? '收起预览' : '预览'}>
-                            <i className={`fas fa-${historyPreviewOpen[h.url] ? 'chevron-up' : 'chevron-down'} text-xs`}></i>
+                          <button className={`px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} active:scale-98 text-sm`} onClick={() => setHistoryPreviewOpen(prev => ({ ...prev, [h.url]: !prev[h.url] }))} aria-label={historyPreviewOpen[h.url] ? '收起预览' : '预览'}>
+                            <i className={`fas fa-${historyPreviewOpen[h.url] ? 'chevron-up' : 'chevron-down'} mr-1`}></i> {historyPreviewOpen[h.url] ? '收起' : '预览'}
                           </button>
                         </div>
                       </div>
                       {historyPreviewOpen[h.url] && (
                         <div className="mt-2 w-full">
-                          <video controls src={`${apiBase ? `${apiBase}` : ''}/api/proxy/video?url=${encodeURIComponent(h.url)}`} className="w-full rounded-lg shadow-md" />
+                          <video controls src={`${apiBase ? `${apiBase}` : ''}/api/proxy/video?url=${encodeURIComponent(h.url)}`} className="w-full rounded-lg shadow-md border ${isDark ? 'border-gray-600' : 'border-gray-200'}" />
                         </div>
                       )}
                     </div>
