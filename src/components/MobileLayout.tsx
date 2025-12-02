@@ -441,13 +441,11 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
             <NavLink 
               to="/create"
               onTouchStart={() => prefetchRoute('/create')}
-              className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out`}
+              className={`flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out ${isDark ? 'text-gray-300 hover:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900' : 'text-gray-700 hover:text-gray-900'}`}
               aria-label="创作"
             >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center -mt-4 shadow-lg ${isDark ? 'bg-red-600 hover:bg-red-500' : theme === 'pink' ? 'bg-pink-600 hover:bg-pink-500' : 'bg-red-500 hover:bg-red-600'}`}>
-                <i className="fas fa-plus text-xl text-white"></i>
-              </div>
-              <span className="mt-1 font-medium" style={{ color: isDark ? '#f87171' : theme === 'pink' ? '#db2777' : '#dc2626' }}>创作</span>
+              <i className="fas fa-plus text-lg"></i>
+              <span className="mt-0.5 font-medium">创作</span>
             </NavLink>
           </li>
           <li className="flex items-center justify-center">

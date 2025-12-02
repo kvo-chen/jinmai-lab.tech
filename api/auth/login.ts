@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import bcryptjs from 'bcryptjs'
-import { generateToken } from '../../server/jwt.mjs'
-import { userDB } from '../../server/database.mjs'
-import { sendErrorResponse, sendSuccessResponse, API_ERRORS } from '../../server/api-error-handler.mjs'
+const { generateToken } = require('../../server/jwt.mjs')
+const { userDB } = require('../../server/database.mjs')
+const { sendErrorResponse, sendSuccessResponse, API_ERRORS } = require('../../server/api-error-handler.mjs')
 
 
 

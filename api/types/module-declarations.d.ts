@@ -1,6 +1,6 @@
 // 声明.mjs模块的类型
 
-declare module '../../server/jwt.mjs' {
+declare module '*/server/jwt.mjs' {
   export function generateToken(payload: any, options?: any): string;
   export function verifyToken(token: string): any;
   export function decodeToken(token: string): any;
@@ -9,7 +9,7 @@ declare module '../../server/jwt.mjs' {
   export function getJwtConfig(): any;
 }
 
-declare module '../../server/database.mjs' {
+declare module '*/server/database.mjs' {
   export const userDB: any;
   export const favoriteDB: any;
   export const videoTaskDB: any;
@@ -19,7 +19,7 @@ declare module '../../server/database.mjs' {
   export const reconnectDB: () => Promise<any>;
 }
 
-declare module '../../server/api-error-handler.mjs' {
+declare module '*/server/api-error-handler.mjs' {
   export const API_ERRORS: any;
   export const ERROR_STATUS_CODES: any;
   export const ERROR_MESSAGES: any;
