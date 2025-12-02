@@ -9,13 +9,14 @@ interface VirtualListProps<T> {
   height?: number;
 }
 
-const VirtualList = React.memo(<T,>({
+// 简化泛型组件定义
+export default function VirtualList<T>({
   items,
   renderItem,
   columns,
   isDark,
   height = 600,
-}: VirtualListProps<T>) => {
+}: VirtualListProps<T>) {
   const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   // 响应式调整列数
@@ -46,6 +47,4 @@ const VirtualList = React.memo(<T,>({
       ))}
     </div>
   );
-});
-
-export default VirtualList;
+}

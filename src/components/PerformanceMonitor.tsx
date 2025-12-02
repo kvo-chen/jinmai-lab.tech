@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import llmService, { ModelPerformance, PerformanceRecord } from '../services/llmService';
+import llmService, { ModelPerformance, PerformanceRecord, AVAILABLE_MODELS, LLMModel } from '../services/llmService';
 
 const PerformanceMonitor: React.FC = () => {
   const [performanceData, setPerformanceData] = useState<Record<string, ModelPerformance>>({});
@@ -37,7 +37,7 @@ const PerformanceMonitor: React.FC = () => {
 
   // 获取模型名称
   const getModelName = (modelId: string) => {
-    const model = llmService.getConfigTemplates().find(t => t.id === modelId);
+    const model = AVAILABLE_MODELS.find((t: LLMModel) => t.id === modelId);
     return model ? model.name : modelId;
   };
 

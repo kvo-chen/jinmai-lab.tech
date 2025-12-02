@@ -1,6 +1,42 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useTheme } from '@/hooks/useTheme'
+
+// 添加SpeechRecognition类型定义
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: {
+    [index: number]: {
+      isFinal: boolean;
+      [index: number]: {
+        transcript: string;
+      };
+    };
+    length: number;
+  };
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: () => void;
+  onend: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  start: () => void;
+  stop: () => void;
+}
+
+// 扩展Window类型
+interface Window {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+}
 
 interface SpeechInputProps {
   onTextRecognized: (text: string) => void
@@ -16,8 +52,8 @@ export default function SpeechInput({ onTextRecognized, onRecordingStatusChange,
   const [recognizedText, setRecognizedText] = useState('')
 
   // 检查浏览器是否支持语音识别
-  useState(() => {
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (SpeechRecognition) {
       setIsSupported(true)
       const recognition = new SpeechRecognition()
@@ -39,7 +75,7 @@ export default function SpeechInput({ onTextRecognized, onRecordingStatusChange,
         }
       }
       
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         let finalText = ''
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i]
@@ -56,7 +92,7 @@ export default function SpeechInput({ onTextRecognized, onRecordingStatusChange,
         }
       }
       
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error)
         setIsRecording(false)
         if (onRecordingStatusChange) {
@@ -81,12 +117,12 @@ export default function SpeechInput({ onTextRecognized, onRecordingStatusChange,
         toast.error(errorMessage)
       }
       
-      recognitionRef.current = recognition
+      recognitionRef.current = recognition as SpeechRecognition
     } else {
       setIsSupported(false)
       toast.error('您的浏览器不支持语音识别功能')
     }
-  })
+  }, [language, onRecordingStatusChange, onTextRecognized])
 
   // 开始录音
   const startRecording = () => {

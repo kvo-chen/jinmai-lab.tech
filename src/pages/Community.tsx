@@ -1310,7 +1310,7 @@ export default function Community() {
               <div className="rounded-xl overflow-hidden shadow-md">
                 <VirtualList
                   items={displayRecommended}
-                  renderItem={(c) => (
+                  renderItem={(c: Community, index: number) => (
                     <div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg`}>
                       <div className="relative">
                         <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105" loading="lazy" decoding="async" />
@@ -1322,7 +1322,7 @@ export default function Community() {
                         <div className="font-medium mb-1 line-clamp-1">{c.name}</div>
                         <div className={`text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'} line-clamp-2`}>{c.description}</div>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {c.tags.map((t, i) => (
+                          {c.tags.map((t: string, i: number) => (
                             <button key={i} onClick={() => setSelectedStyle(t)} className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} transition-colors hover:opacity-80`}>#{t}</button>
                           ))}
                         </div>
@@ -1336,8 +1336,6 @@ export default function Community() {
                       </div>
                     </div>
                   )}
-                  itemHeight={300} // 调整为适合社群卡片的高度
-                  itemWidth={300} // 调整为适合社群卡片的宽度
                   columns={3} // 根据屏幕尺寸动态调整列数（组件内部会自动响应式处理）
                   isDark={isDark}
                 />
