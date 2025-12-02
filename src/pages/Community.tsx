@@ -717,6 +717,11 @@ export default function Community() {
   useEffect(() => {
     const current = postsApi.getPosts()
     setPosts(current)
+    
+    // 异步读取 localStorage 数据，避免阻塞页面加载
+    const loadLocalStorageData = () => {
+      // 使用 setTimeout 将 localStorage 读取放在事件循环的下一个周期执行
+      setTimeout(() => {
     try {
       const raw = localStorage.getItem(THREAD_KEY)
       setThreads(raw ? JSON.parse(raw) : [])
@@ -785,6 +790,13 @@ export default function Community() {
       const adm = localStorage.getItem(ADMIN_KEY)
       setAdminStore(adm ? JSON.parse(adm) : {})
     } catch {}
+        
+        // 关闭 setTimeout
+      }, 0)
+    }
+    
+    // 调用异步加载函数
+    loadLocalStorageData()
   }, [])
 
   useEffect(() => { try { localStorage.setItem(PIN_KEY, JSON.stringify(pinnedJoined)) } catch {} }, [pinnedJoined])
@@ -1299,9 +1311,9 @@ export default function Community() {
                 <VirtualList
                   items={displayRecommended}
                   renderItem={(c) => (
-                    <motion.div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300`} whileHover={{ y: -2, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                    <div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg`}>
                       <div className="relative">
-                        <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105" />
+                        <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105" loading="lazy" decoding="async" />
                         <div className="absolute top-3 right-3">
                           <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-black/40 text-gray-200' : 'bg-white/70 text-gray-700'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>官方</span>
                         </div>
@@ -1365,8 +1377,8 @@ export default function Community() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {displayJoined.map(c => (
-                    <motion.div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white/80'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-indigo-200'} rounded-xl overflow-hidden shadow-sm`} whileHover={{ y: -4 }}>
-                      <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover" />
+                    <div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white/80'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-indigo-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-4 hover:shadow-lg`}>
+                      <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover" loading="lazy" decoding="async" />
                       <div className="p-4">
                         <div className="font-medium mb-1 flex items-center gap-2">
                           {c.name}
@@ -1665,7 +1677,7 @@ export default function Community() {
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-4">
-                  <img src={activeCreator.avatar} alt={activeCreator.name} className="w-12 h-12 rounded-full mr-3 ring-1 ring-gray-300" />
+                  <img src={activeCreator.avatar} alt={activeCreator.name} className="w-12 h-12 rounded-full mr-3 ring-1 ring-gray-300" loading="lazy" decoding="async" />
                   <div>
                     <div className="font-medium">{activeCreator.name}</div>
                     <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{activeCreator.role}</div>
@@ -1711,7 +1723,7 @@ export default function Community() {
                 </button>
               </div>
               <div className="p-6 max-h-[70vh] overflow-y-auto">
-                <img src={activeCommunity.cover} alt={activeCommunity.name} className="w-full aspect-[4/3] object-cover rounded-xl" />
+                <img src={activeCommunity.cover} alt={activeCommunity.name} className="w-full aspect-[4/3] object-cover rounded-xl" loading="lazy" decoding="async" />
                 <div className="mt-4 flex items-start justify-between">
                   <div>
                     <div className="font-medium text-lg">{activeCommunity.name}</div>
@@ -1737,7 +1749,7 @@ export default function Community() {
                       .map((m, idx) => (
                         <div key={idx} className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} p-3 rounded-xl`}>
                           <div className="flex items-start">
-                            <img src={m.avatar} alt={m.user} className="w-8 h-8 rounded-full mr-3" />
+                            <img src={m.avatar} alt={m.user} className="w-8 h-8 rounded-full mr-3" loading="lazy" decoding="async" />
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">

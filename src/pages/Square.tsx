@@ -50,28 +50,51 @@ const EXPLORE_SEEDS: Post[] = mockWorks.map((w) => ({
 // 中文注释：批量生成多期衍生作品（2~5期），标题带期数后缀，点赞数作轻微调整
 const EXPANDED_EXPLORE_SEEDS: Post[] = [
   ...EXPLORE_SEEDS,
-  ...[2, 3, 4, 5].flatMap((phase) => (
-    mockWorks.map((w) => ({
-      id: `ex${phase}-${w.id}`,
-      title: `${w.title}·${phase}期`,
-      thumbnail: `${w.thumbnail}${w.thumbnail.includes('?') ? '&' : '?'}phase=${phase}`,
-      likes: Math.max(0, w.likes + phase * 10 - 20),
-      comments: [],
-      date: new Date().toISOString().slice(0, 10),
-      category: 'design' as const,
-      tags: [],
-      description: '',
-      views: 0,
-      shares: 0,
-      isFeatured: false,
-      isDraft: false,
-      completionStatus: 'completed' as const,
-      creativeDirection: '',
-      culturalElements: [],
-      colorScheme: [],
-      toolsUsed: []
+  ...[2, 3, 4, 5].flatMap((phase) => 
+    mockWorks.map((w) => {
+      // 优化URL生成逻辑：使用不同的提示词而不是phase参数
+      const basePrompt = w.thumbnail.includes('prompt=') 
+        ? decodeURIComponent(new URL(w.thumbnail).searchParams.get('prompt') || '')
+        : w.title;
+      
+      // 为不同期数生成独特的提示词
+      const uniquePrompt = `${basePrompt} ${phase === 2 ? 'modern twist' : phase === 3 ? 'vintage style' : phase === 4 ? 'minimal design' : 'abstract interpretation'}`;
+      
+      // 重新构建URL，避免使用phase参数
+      let newThumbnail = '';
+      try {
+        const url = new URL(w.thumbnail);
+        url.searchParams.set('prompt', encodeURIComponent(uniquePrompt));
+        // 移除可能存在的phase参数
+        url.searchParams.delete('phase');
+        newThumbnail = url.toString();
+      } catch {
+        // 如果URL解析失败，使用原始URL但不添加phase参数
+        newThumbnail = w.thumbnail;
+      }
+      
+      return {
+        id: `ex${phase}-${w.id}`,
+        title: `${w.title}·${phase}期`,
+        thumbnail: newThumbnail,
+        likes: Math.max(0, w.likes + phase * 10 - 20),
+        comments: [],
+        date: new Date().toISOString().slice(0, 10),
+        category: 'design' as const,
+        tags: [],
+        description: '',
+        views: 0,
+        shares: 0,
+        isFeatured: false,
+        isDraft: false,
+        completionStatus: 'completed' as const,
+        creativeDirection: '',
+        culturalElements: [],
+        colorScheme: [],
+        toolsUsed: []
+      };
     })
-  ))),
+  ),
 ]
 
 export default function Square() {

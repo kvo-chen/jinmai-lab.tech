@@ -539,17 +539,34 @@ export const TianjinImage: React.FC<{
   const { isDark = false } = useTheme() || {};
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const reduceMotion = useReducedMotion();
+  const maxRetries = 3;
   
   useEffect(() => {
     if (!src) {
       setError(true);
       setLoaded(false);
+      setRetryCount(0);
       return;
     }
     setError(false);
     setLoaded(false);
+    setRetryCount(0);
   }, [src]);
+  
+  // 自动重试机制
+  useEffect(() => {
+    if (error && retryCount < maxRetries) {
+      const retryTimer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setError(false);
+        setLoaded(false);
+      }, 1000 * (retryCount + 1)); // 指数退避策略
+      
+      return () => clearTimeout(retryTimer);
+    }
+  }, [error, retryCount]);
   
   const ratioStyle =
     ratio === 'square'
@@ -574,9 +591,28 @@ export const TianjinImage: React.FC<{
   const getLowQualityUrl = (url: string) => {
     // 如果是本地开发环境或已知的图片服务，添加低质量参数
     if (url.includes('trae-api-sg.mchost.guru')) {
-      return `${url}&quality=20`;
+      try {
+        const urlObj = new URL(url);
+        urlObj.searchParams.set('quality', '20');
+        return urlObj.toString();
+      } catch {
+        return url;
+      }
     }
     return url;
+  };
+  
+  // 生成备用图片URL
+  const getFallbackUrl = () => {
+    const prompt = encodeURIComponent(`Beautiful ${alt} design, colorful, high quality`);
+    return `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${prompt}&image_size=square`;
+  };
+  
+  // 手动重试函数
+  const handleManualRetry = () => {
+    setRetryCount(0);
+    setError(false);
+    setLoaded(false);
   };
   
   return (
@@ -589,14 +625,35 @@ export const TianjinImage: React.FC<{
       {!loaded && !error && (
         <div className={`absolute inset-0 ${isDark ? 'bg-gray-800' : 'bg-gray-100'} animate-pulse`}>
           {/* 更丰富的骨架屏效果 */}
-          <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100'} animate-pulse`} style={{ backgroundSize: '200% 100%' }}></div>
+          <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100'} animate-pulse`} style={{ backgroundSize: '200% 100%', animationDuration: '1.5s' }}></div>
         </div>
       )}
       
       {error ? (
-        <div className={`absolute inset-0 flex flex-col items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-white'} text-center p-4`}>
+        <div className={`absolute inset-0 flex flex-col items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-white'} text-center p-4 cursor-pointer`} onClick={handleManualRetry}>
           <i className={`fas fa-image ${isDark ? 'text-gray-500' : 'text-gray-400'} text-3xl mb-2`}></i>
-          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>图片加载失败</div>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>图片加载失败</div>
+          <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} mb-3`}>已自动重试 {retryCount} 次</div>
+          <button 
+            onClick={handleManualRetry}
+            className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+          >
+            点击重试
+          </button>
+          {/* 备用图片显示 */}
+          <div className="mt-3 text-xs text-gray-500">
+            或显示
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                // 这里可以添加显示备用图片的逻辑
+                setLoaded(true);
+              }}
+              className="ml-1 text-blue-500 hover:underline"
+            >
+              备用图片
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -615,6 +672,7 @@ export const TianjinImage: React.FC<{
           
           {/* 主图片 - 优化动画 */}
           <motion.img
+            key={`${src}-${retryCount}`} // 强制重新渲染以实现重试
             src={src}
             alt={alt}
             className={`absolute inset-0 w-full h-full object-${fit}`}

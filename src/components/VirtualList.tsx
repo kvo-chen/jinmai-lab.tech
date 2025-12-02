@@ -4,18 +4,14 @@ import { motion } from 'framer-motion';
 interface VirtualListProps<T> {
   items: T[];
   renderItem: (item: T, index: number) => React.ReactNode;
-  itemHeight: number;
-  itemWidth: number;
   columns: number;
   isDark: boolean;
   height?: number;
 }
 
-const VirtualList = <T,>({
+const VirtualList = React.memo(<T,>({
   items,
   renderItem,
-  itemHeight,
-  itemWidth,
   columns,
   isDark,
   height = 600,
@@ -50,6 +46,6 @@ const VirtualList = <T,>({
       ))}
     </div>
   );
-};
+});
 
 export default VirtualList;

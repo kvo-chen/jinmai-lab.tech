@@ -42,6 +42,43 @@ const saveCustomTags = (tags: string[]) => {
   } catch {}
 }
 
+// 预设类型定义
+interface StylePreset {
+  id: string;
+  name: string;
+  description?: string;
+  brand: string;
+  tags: string[];
+  prompt: string;
+  engine: 'sdxl' | 'doubao';
+  textStyle: 'formal' | 'humorous' | 'creative' | 'poetic';
+  videoParams: {
+    duration: number;
+    resolution: '480p' | '720p' | '1080p';
+    cameraFixed: boolean;
+  };
+  createdAt: number;
+  updatedAt: number;
+}
+
+// 获取风格预设
+const getStylePresets = (): StylePreset[] => {
+  try {
+    const raw = localStorage.getItem('NEO_STYLE_PRESETS')
+    const presets = raw ? JSON.parse(raw) : []
+    return Array.isArray(presets) ? presets : []
+  } catch {
+    return []
+  }
+}
+
+// 保存风格预设
+const saveStylePresets = (presets: StylePreset[]) => {
+  try {
+    localStorage.setItem('NEO_STYLE_PRESETS', JSON.stringify(presets))
+  } catch {}
+}
+
 export default function Neo() {
   // 获取主题信息
   const { isDark } = useTheme()
@@ -76,6 +113,20 @@ export default function Neo() {
   const [historySearch, setHistorySearch] = useState('')
   const [historyFilter, setHistoryFilter] = useState<'all' | 'favorite' | 'video'>('all')
   const [historySort, setHistorySort] = useState<'latest' | 'oldest'>('latest')
+  
+  // 高级历史记录管理状态
+  const [dateRange, setDateRange] = useState({
+    start: '',
+    end: ''
+  })
+  const [advancedFilters, setAdvancedFilters] = useState({
+    resolution: '',
+    minDuration: '',
+    maxDuration: ''
+  })
+  const [selectedHistory, setSelectedHistory] = useState<string[]>([])
+  const [showBatchActions, setShowBatchActions] = useState(false)  
+  const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('json')
   
   // 加载历史记录
   useEffect(() => {
@@ -130,6 +181,129 @@ export default function Neo() {
       return next
     })
   }
+
+  // 批量操作功能
+  const toggleSelectHistory = (url: string) => {
+    setSelectedHistory(prev => {
+      const newSelection = prev.includes(url)
+        ? prev.filter(u => u !== url)
+        : [...prev, url]
+      setShowBatchActions(newSelection.length > 0)
+      return newSelection
+    })
+  }
+
+  const selectAllHistory = () => {
+    if (selectedHistory.length === filteredHistory.length) {
+      // 取消全选
+      setSelectedHistory([])
+      setShowBatchActions(false)
+    } else {
+      // 全选
+      const allUrls = filteredHistory.map(item => item.url)
+      setSelectedHistory(allUrls)
+      setShowBatchActions(true)
+    }
+  }
+
+  const batchDeleteHistory = () => {
+    if (selectedHistory.length === 0) return
+    
+    setVideoHistory(prev => {
+      const next = prev.filter(item => !selectedHistory.includes(item.url))
+      try { localStorage.setItem('NEO_VIDEO_HISTORY', JSON.stringify(next)) } catch {}
+      return next
+    })
+    
+    setSelectedHistory([])
+    setShowBatchActions(false)
+    toast.success(`已删除 ${selectedHistory.length} 条历史记录`)
+  }
+
+  const batchToggleFavorite = () => {
+    if (selectedHistory.length === 0) return
+    
+    setVideoHistory(prev => {
+      // 检查选中项是否都已收藏
+      const allFavorites = selectedHistory.every(url => {
+        const item = prev.find(i => i.url === url)
+        return item?.isFavorite === true
+      })
+      
+      // 批量切换收藏状态
+      const next = prev.map(item => {
+        if (selectedHistory.includes(item.url)) {
+          return { ...item, isFavorite: !allFavorites }
+        }
+        return item
+      })
+      
+      try { localStorage.setItem('NEO_VIDEO_HISTORY', JSON.stringify(next)) } catch {}
+      return next
+    })
+    
+    setSelectedHistory([])
+    setShowBatchActions(false)
+    toast.success(`已更新 ${selectedHistory.length} 条历史记录的收藏状态`)
+  }
+
+  // 导出历史记录
+  const exportHistory = () => {
+    if (filteredHistory.length === 0) {
+      toast.warning('没有可导出的历史记录')
+      return
+    }
+    
+    let data: string
+    let fileName: string
+    
+    if (exportFormat === 'json') {
+      data = JSON.stringify(filteredHistory, null, 2)
+      fileName = `neo-history-${new Date().toISOString().slice(0, 10)}.json`
+    } else {
+      // CSV格式
+      const headers = ['URL', 'Thumbnail', 'Created At', 'Duration', 'Resolution', 'Favorite', 'Type']
+      const rows = filteredHistory.map(item => [
+        item.url,
+        item.thumb || item.image,
+        new Date(item.createdAt || 0).toISOString(),
+        item.duration || '',
+        item.width && item.height ? `${item.width}×${item.height}` : '',
+        item.isFavorite ? 'Yes' : 'No',
+        item.type || 'video'
+      ])
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n')
+      
+      data = csvContent
+      fileName = `neo-history-${new Date().toISOString().slice(0, 10)}.csv`
+    }
+    
+    // 创建下载链接
+    const blob = new Blob([data], { type: exportFormat === 'json' ? 'application/json' : 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success(`已导出 ${filteredHistory.length} 条历史记录`)
+  }
+
+  // 重置筛选条件
+  const resetFilters = () => {
+    setHistorySearch('')
+    setHistoryFilter('all')
+    setHistorySort('latest')
+    setDateRange({ start: '', end: '' })
+    setAdvancedFilters({ resolution: '', minDuration: '', maxDuration: '' })
+  }
   
   // 过滤和排序历史记录
   const filteredHistory = videoHistory.filter(item => {
@@ -147,7 +321,36 @@ export default function Neo() {
       (historyFilter === 'favorite' && item.isFavorite) ||
       (historyFilter === 'video' && item.type === 'video')
     
-    return matchesSearch && matchesFilter
+    // 日期范围过滤
+    const matchesDateRange = !dateRange.start || !dateRange.end || (
+      (() => {
+        const createdAtDate = new Date(item.createdAt || 0);
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        endDate.setHours(23, 59, 59, 999); // 设置为结束日期的最后一刻
+        return createdAtDate >= startDate && createdAtDate <= endDate;
+      })()
+    )
+    
+    // 分辨率过滤
+    const matchesResolution = !advancedFilters.resolution || (
+      (() => {
+        const resolutionStr = `${item.width}×${item.height}`;
+        return resolutionStr.includes(advancedFilters.resolution);
+      })()
+    )
+    
+    // 时长范围过滤
+    const matchesDuration = (
+      (() => {
+        const duration = item.duration || 0;
+        const minDur = advancedFilters.minDuration ? parseFloat(advancedFilters.minDuration) : 0;
+        const maxDur = advancedFilters.maxDuration ? parseFloat(advancedFilters.maxDuration) : Infinity;
+        return duration >= minDur && duration <= maxDur;
+      })()
+    )
+    
+    return matchesSearch && matchesFilter && matchesDateRange && matchesResolution && matchesDuration
   }).sort((a, b) => {
     // 确保a和b是有效的
     if (!a || !b || typeof a.createdAt !== 'number' || typeof b.createdAt !== 'number') {
@@ -238,12 +441,48 @@ export default function Neo() {
   const [generationStatus, setGenerationStatus] = useState<string>('')
   const [videoProgress, setVideoProgress] = useState<Record<string, number>>({})
   const [videoStatus, setVideoStatus] = useState<Record<string, string>>({})
+  
+  // 图片编辑工具状态
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null)
+  const [editMode, setEditMode] = useState<'crop' | 'rotate' | 'filter' | 'resize'>('crop')
+  const [cropParams, setCropParams] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0
+  })
+  const [rotation, setRotation] = useState(0)
+  const [scale, setScale] = useState(1)
+  const [filter, setFilter] = useState('none')
+  const [filteredImages, setFilteredImages] = useState<string[]>([])
+  const [originalImage, setOriginalImage] = useState('')
+  const [showEditPanel, setShowEditPanel] = useState(false)
   // 视频参数自定义
   const [videoParams, setVideoParams] = useState({
     duration: 5,
     resolution: '720p' as '480p' | '720p' | '1080p',
     cameraFixed: false
   })
+  
+  // 风格预设相关状态
+  const [stylePresets, setStylePresets] = useState<StylePreset[]>([])
+  const [showPresetModal, setShowPresetModal] = useState(false)
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null)
+  const [presetForm, setPresetForm] = useState({
+    name: '',
+    description: '',
+    brand: '',
+    tags: [] as string[],
+    prompt: '',
+    engine: 'sdxl' as 'sdxl' | 'doubao',
+    textStyle: 'creative' as 'formal' | 'humorous' | 'creative' | 'poetic',
+    videoParams: {
+      duration: 5,
+      resolution: '720p' as '480p' | '720p' | '1080p',
+      cameraFixed: false
+    }
+  })
+  
   const engineCardRef = useRef<HTMLDivElement | null>(null)
   const optTimerRef = useRef<any>(null)
 
@@ -305,9 +544,120 @@ export default function Neo() {
     }
   }, [location.search])
 
+  // 加载风格预设
+  useEffect(() => {
+    setStylePresets(getStylePresets())
+  }, [])
+
   useEffect(() => {
     return () => { if (optTimerRef.current) clearTimeout(optTimerRef.current) }
   }, [])
+
+  // 打开预设模态框
+  const openPresetModal = (preset?: StylePreset) => {
+    if (preset) {
+      setEditingPresetId(preset.id)
+      setPresetForm({
+        name: preset.name,
+        description: preset.description || '',
+        brand: preset.brand,
+        tags: preset.tags,
+        prompt: preset.prompt,
+        engine: preset.engine,
+        textStyle: preset.textStyle,
+        videoParams: preset.videoParams
+      })
+    } else {
+      setEditingPresetId(null)
+      setPresetForm({
+        name: '',
+        description: '',
+        brand: brand,
+        tags: tags,
+        prompt: prompt,
+        engine: engine,
+        textStyle: textStyle,
+        videoParams: videoParams
+      })
+    }
+    setShowPresetModal(true)
+  }
+
+  // 关闭预设模态框
+  const closePresetModal = () => {
+    setShowPresetModal(false)
+    setTimeout(() => {
+      setEditingPresetId(null)
+      setPresetForm({
+        name: '',
+        description: '',
+        brand: '',
+        tags: [],
+        prompt: '',
+        engine: 'sdxl',
+        textStyle: 'creative',
+        videoParams: {
+          duration: 5,
+          resolution: '720p',
+          cameraFixed: false
+        }
+      })
+    }, 300)
+  }
+
+  // 保存预设
+  const savePreset = () => {
+    if (!presetForm.name.trim()) {
+      toast.warning('请输入预设名称')
+      return
+    }
+
+    const newPreset: StylePreset = {
+      id: editingPresetId || `preset-${Date.now()}`,
+      name: presetForm.name.trim(),
+      description: presetForm.description.trim(),
+      brand: presetForm.brand,
+      tags: presetForm.tags,
+      prompt: presetForm.prompt,
+      engine: presetForm.engine,
+      textStyle: presetForm.textStyle,
+      videoParams: presetForm.videoParams,
+      createdAt: editingPresetId ? stylePresets.find(p => p.id === editingPresetId)?.createdAt || Date.now() : Date.now(),
+      updatedAt: Date.now()
+    }
+
+    let updatedPresets: StylePreset[]
+    if (editingPresetId) {
+      updatedPresets = stylePresets.map(p => p.id === editingPresetId ? newPreset : p)
+    } else {
+      updatedPresets = [...stylePresets, newPreset]
+    }
+
+    setStylePresets(updatedPresets)
+    saveStylePresets(updatedPresets)
+    toast.success(editingPresetId ? '预设已更新' : '预设已创建')
+    closePresetModal()
+  }
+
+  // 删除预设
+  const deletePreset = (id: string) => {
+    const updatedPresets = stylePresets.filter(p => p.id !== id)
+    setStylePresets(updatedPresets)
+    saveStylePresets(updatedPresets)
+    toast.success('预设已删除')
+  }
+
+  // 应用预设
+  const applyPreset = (preset: StylePreset) => {
+    setBrand(preset.brand)
+    updateStory(preset.brand)
+    setTags(preset.tags)
+    setPrompt(preset.prompt)
+    setEngine(preset.engine)
+    setTextStyle(preset.textStyle)
+    setVideoParams(preset.videoParams)
+    toast.success('预设已应用')
+  }
 
   const updateStory = (val: string) => {
     setBrand(val)
@@ -635,6 +985,57 @@ export default function Neo() {
                 <button onClick={() => setEngine('sdxl')} className={`px-3 py-1.5 rounded-full text-sm transition-colors ${engine==='sdxl' ? 'bg-red-600 hover:bg-red-700 text-white' : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')}`}>SDXL</button>
                 <button onClick={() => setEngine('doubao')} className={`px-3 py-1.5 rounded-full text-sm transition-colors ${engine==='doubao' ? 'bg-red-600 hover:bg-red-700 text-white' : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')}`}>Doubao</button>
               </div>
+            </div>
+            
+            {/* 风格预设 */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium">风格预设</span>
+                <button 
+                  onClick={() => openPresetModal()}
+                  className={`text-xs px-3 py-2 rounded-md transition-all duration-200 ${isDark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'} active:scale-98`}
+                >
+                  + 保存当前设置为预设
+                </button>
+              </div>
+              
+              {/* 预设列表 */}
+              {stylePresets.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {stylePresets.map(preset => (
+                    <div key={preset.id} className="relative group">
+                      <button
+                        onClick={() => applyPreset(preset)}
+                        className={`text-xs px-3 py-2 rounded-xl border transition-all duration-200 transform hover:scale-105 active:scale-95 ${isDark ? 'border-purple-500 text-purple-400 bg-purple-900 bg-opacity-20 hover:bg-opacity-30' : 'border-purple-500 text-purple-600 bg-purple-50 hover:bg-purple-100'}`}
+                        style={{ minWidth: '80px', textAlign: 'center' }}
+                        title={preset.description}
+                      >
+                        {preset.name}
+                      </button>
+                      <div className="absolute right-0 -top-1 -translate-x-full group-hover:flex hidden flex-col gap-1 ml-1 bg-white dark:bg-gray-800 p-1 rounded-lg shadow-lg border dark:border-gray-700 z-10">
+                        <button
+                          onClick={() => openPresetModal(preset)}
+                          className="text-xs px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
+                          style={{ minWidth: '45px' }}
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => deletePreset(preset.id)}
+                          className="text-xs px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors flex items-center justify-center"
+                          style={{ minWidth: '45px' }}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-3`}>
+                  暂无预设，点击"+ 保存当前设置为预设"创建您的第一个预设
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 mb-4">
@@ -1153,63 +1554,197 @@ export default function Neo() {
               </div>
               
               {/* 历史记录搜索和筛选 */}
-              <div className="mb-4 space-y-3">
-                {/* 搜索框 */}
-                <div>
-                  <input
-                    type="text"
-                    placeholder="搜索历史记录..."
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                    className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                  />
-                </div>
-                
-                {/* 筛选和排序 */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    {/* 筛选 */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">筛选：</label>
-                      <select
-                        value={historyFilter}
-                        onChange={(e) => setHistoryFilter(e.target.value as any)}
-                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      >
-                        <option value="all">全部</option>
-                        <option value="favorite">收藏</option>
-                        <option value="video">视频</option>
-                      </select>
-                    </div>
-                    
-                    {/* 排序 */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">排序：</label>
-                      <select
-                        value={historySort}
-                        onChange={(e) => setHistorySort(e.target.value as any)}
-                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                      >
-                        <option value="latest">最新</option>
-                        <option value="oldest">最早</option>
-                      </select>
-                    </div>
+            <div className="mb-4 space-y-3">
+              {/* 搜索框 */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="搜索历史记录..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                />
+              </div>
+              
+              {/* 基础筛选和排序 */}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* 筛选 */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">筛选：</label>
+                    <select
+                      value={historyFilter}
+                      onChange={(e) => setHistoryFilter(e.target.value as any)}
+                      className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    >
+                      <option value="all">全部</option>
+                      <option value="favorite">收藏</option>
+                      <option value="video">视频</option>
+                    </select>
                   </div>
                   
-                  {/* 历史记录统计 */}
-                  <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
-                    共 {filteredHistory.length} 条记录
+                  {/* 排序 */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">排序：</label>
+                    <select
+                      value={historySort}
+                      onChange={(e) => setHistorySort(e.target.value as any)}
+                      className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    >
+                      <option value="latest">最新</option>
+                      <option value="oldest">最早</option>
+                    </select>
                   </div>
                 </div>
               </div>
               
+              {/* 高级筛选 */}
+              <div className={`rounded-lg p-4 ${isDark ? 'bg-gray-700' : 'bg-gray-50'} border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* 日期范围 */}
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">日期范围</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                      <input
+                        type="date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* 分辨率 */}
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">分辨率</label>
+                    <input
+                      type="text"
+                      placeholder="例如：1920×1080"
+                      value={advancedFilters.resolution}
+                      onChange={(e) => setAdvancedFilters(prev => ({ ...prev, resolution: e.target.value }))}
+                      className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    />
+                  </div>
+                  
+                  {/* 时长范围 */}
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">时长范围（秒）</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        placeholder="最小"
+                        min="0"
+                        step="0.1"
+                        value={advancedFilters.minDuration}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, minDuration: e.target.value }))}
+                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                      <input
+                        type="number"
+                        placeholder="最大"
+                        min="0"
+                        step="0.1"
+                        value={advancedFilters.maxDuration}
+                        onChange={(e) => setAdvancedFilters(prev => ({ ...prev, maxDuration: e.target.value }))}
+                        className={`text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* 重置按钮 */}
+                  <div className="flex items-end">
+                    <button
+                      onClick={resetFilters}
+                      className={`text-xs px-3 py-2 rounded transition-colors ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'} transition-all duration-200 hover:scale-105`}
+                    >
+                      重置筛选条件
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 批量操作和导出 */}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  {/* 批量操作按钮 */}
+                  {showBatchActions && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={batchToggleFavorite}
+                        className={`text-xs px-3 py-2 rounded transition-colors ${isDark ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : 'bg-yellow-600 hover:bg-yellow-700 text-white'} transition-all duration-200 hover:scale-105`}
+                      >
+                        批量收藏/取消收藏
+                      </button>
+                      <button
+                        onClick={batchDeleteHistory}
+                        className={`text-xs px-3 py-2 rounded transition-colors ${isDark ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'} transition-all duration-200 hover:scale-105`}
+                      >
+                        批量删除
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* 导出功能 */}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={exportFormat}
+                      onChange={(e) => setExportFormat(e.target.value as 'json' | 'csv')}
+                      className={`text-xs px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    >
+                      <option value="json">JSON格式</option>
+                      <option value="csv">CSV格式</option>
+                    </select>
+                    <button
+                      onClick={exportHistory}
+                      className={`text-xs px-3 py-2 rounded transition-colors ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} transition-all duration-200 hover:scale-105`}
+                    >
+                      导出历史记录
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 历史记录统计 */}
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
+                  共 {filteredHistory.length} 条记录
+                  {selectedHistory.length > 0 && (
+                    <span className="ml-2">已选择 {selectedHistory.length} 条</span>
+                  )}
+                </div>
+              </div>
+            </div>
+              
               {/* 历史记录列表 */}
               {filteredHistory.length > 0 ? (
                 <div className="space-y-4">
+                  {/* 全选复选框 */}
+                  <div className={`flex items-center gap-3 p-2 rounded-md ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedHistory.length === filteredHistory.length && filteredHistory.length > 0}
+                      onChange={selectAllHistory}
+                      className="text-red-600 h-4 w-4"
+                    />
+                    <span className="text-xs font-medium">全选/取消全选</span>
+                  </div>
+                  
                   {filteredHistory.map((h, idx) => (
                     <div key={idx} className="flex flex-col gap-3">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start gap-3">
+                          {/* 复选框 */}
+                          <input
+                            type="checkbox"
+                            checked={selectedHistory.includes(h.url)}
+                            onChange={() => toggleSelectHistory(h.url)}
+                            className="mt-1 text-red-600 h-4 w-4"
+                          />
+                          
                           <div className="w-20 h-12 rounded overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
                             <img src={h.thumb || h.image} alt="thumb" className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
                           </div>
@@ -1266,7 +1801,173 @@ export default function Neo() {
             </div>
           )}
         </div>
+        </div>
       </main>
+      
+      {/* 风格预设模态框 */}
+      {showPresetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className={`rounded-2xl shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} p-6 max-w-md w-full max-h-[90vh] overflow-y-auto transition-all duration-300 transform scale-100 opacity-100`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">{editingPresetId ? '编辑风格预设' : '创建风格预设'}</h2>
+              <button 
+                onClick={closePresetModal}
+                className={`p-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} transition-all duration-200 hover:scale-110`}
+                aria-label="关闭"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* 预设名称 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">预设名称 *</label>
+                <input
+                  type="text"
+                  value={presetForm.name}
+                  onChange={(e) => setPresetForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="输入预设名称"
+                  className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                />
+              </div>
+              
+              {/* 预设描述 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">预设描述</label>
+                <textarea
+                  value={presetForm.description}
+                  onChange={(e) => setPresetForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="输入预设描述（可选）"
+                  className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} resize-y`}
+                  rows={2}
+                />
+              </div>
+              
+              {/* 品牌 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">品牌</label>
+                <input
+                  type="text"
+                  value={presetForm.brand}
+                  onChange={(e) => setPresetForm(prev => ({ ...prev, brand: e.target.value }))}
+                  placeholder="输入品牌名称"
+                  className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                />
+              </div>
+              
+              {/* 提示词 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">提示词</label>
+                <textarea
+                  value={presetForm.prompt}
+                  onChange={(e) => setPresetForm(prev => ({ ...prev, prompt: e.target.value }))}
+                  placeholder="输入提示词"
+                  className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} resize-y`}
+                  rows={3}
+                />
+              </div>
+              
+              {/* 引擎选择 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">生成引擎</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setPresetForm(prev => ({ ...prev, engine: 'sdxl' }))} className={`px-3 py-2 rounded-full text-sm transition-colors ${presetForm.engine==='sdxl' ? 'bg-red-600 hover:bg-red-700 text-white' : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')}`}>SDXL</button>
+                  <button onClick={() => setPresetForm(prev => ({ ...prev, engine: 'doubao' }))} className={`px-3 py-2 rounded-full text-sm transition-colors ${presetForm.engine==='doubao' ? 'bg-red-600 hover:bg-red-700 text-white' : (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')}`}>Doubao</button>
+                </div>
+              </div>
+              
+              {/* 文本风格 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">文本风格</label>
+                <select
+                  value={presetForm.textStyle}
+                  onChange={(e) => setPresetForm(prev => ({ ...prev, textStyle: e.target.value as any }))}
+                  className={`w-full text-sm px-3 py-3 rounded-lg border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                >
+                  <option value="creative">创意</option>
+                  <option value="formal">正式</option>
+                  <option value="humorous">幽默</option>
+                  <option value="poetic">诗意</option>
+                </select>
+              </div>
+              
+              {/* 视频参数 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">视频参数</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">时长（秒）</label>
+                    <input
+                      type="number"
+                      min="3"
+                      max="30"
+                      value={presetForm.videoParams.duration}
+                      onChange={(e) => setPresetForm(prev => ({ ...prev, videoParams: { ...prev.videoParams, duration: parseInt(e.target.value) || 5 } }))}
+                      className={`w-full text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">分辨率</label>
+                    <select
+                      value={presetForm.videoParams.resolution}
+                      onChange={(e) => setPresetForm(prev => ({ ...prev, videoParams: { ...prev.videoParams, resolution: e.target.value as any } }))}
+                      className={`w-full text-sm px-3 py-2 rounded border focus:ring-2 focus:ring-red-500 transition-all duration-300 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                    >
+                      <option value="480p">480p</option>
+                      <option value="720p">720p</option>
+                      <option value="1080p">1080p</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">相机模式</label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="presetCameraMode"
+                        value="false"
+                        checked={!presetForm.videoParams.cameraFixed}
+                        onChange={() => setPresetForm(prev => ({ ...prev, videoParams: { ...prev.videoParams, cameraFixed: false } }))}
+                        className="text-red-600 h-4 w-4"
+                      />
+                      <span>动态</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="presetCameraMode"
+                        value="true"
+                        checked={presetForm.videoParams.cameraFixed}
+                        onChange={() => setPresetForm(prev => ({ ...prev, videoParams: { ...prev.videoParams, cameraFixed: true } }))}
+                        className="text-red-600 h-4 w-4"
+                      />
+                      <span>固定</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={savePreset}
+                className={`flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium transition-all duration-200 min-h-[44px] active:scale-98`}
+              >
+                {editingPresetId ? '更新预设' : '保存预设'}
+              </button>
+              <button 
+                onClick={closePresetModal}
+                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 min-h-[44px] active:scale-98 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4`}>
         <div className="container mx-auto flex justify-between items-center">
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>© 2025 AI共创平台. 保留所有权利</p>
