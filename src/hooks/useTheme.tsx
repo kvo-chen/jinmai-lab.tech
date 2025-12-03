@@ -12,8 +12,8 @@ interface ThemeContextType {
 
 // 创建 ThemeContext
 export const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
-  isDark: false,
+  theme: 'dark',
+  isDark: true,
   setTheme: () => {},
   toggleTheme: () => {},
   availableThemes: []
@@ -30,7 +30,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     if (savedTheme) {
       return savedTheme;
     }
-    return 'auto';
+    return 'dark';
   });
 
   // 监听系统主题变化

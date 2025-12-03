@@ -39,7 +39,6 @@ const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
 const Drafts = lazy(() => import("@/pages/Drafts"));
 const Lab = lazy(() => import("@/pages/Lab"));
 const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
-const NewsDetail = lazy(() => import("@/pages/NewsDetail"));
 import SidebarLayout from '@/components/SidebarLayout';
 import MobileLayout from '@/components/MobileLayout';
 
@@ -205,12 +204,6 @@ export default function App() {
           <Route 
             path="/knowledge/:type/:id" 
             element={<PrivateRoute component={CulturalKnowledge} />} 
-          />
-          
-          {/* 文化资讯详情页 */}
-          <Route 
-            path="/news/:id" 
-            element={<NewsDetail />} 
           />
           
           

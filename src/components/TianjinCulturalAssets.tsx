@@ -362,11 +362,9 @@ export default function TianjinCulturalAssets() {
   const [activeTab, setActiveTab] = useState<'heritage' | 'symbols' | 'dialect'>('heritage');
   const [isLoading, setIsLoading] = useState(true);
   
-  // 模拟数据加载
+  // 移除人为加载延迟，直接设置为加载完成
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    setIsLoading(false);
   }, []);
   const [error, setError] = useState<string | null>(null);
   
