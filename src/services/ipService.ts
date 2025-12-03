@@ -140,6 +140,32 @@ class IPService {
     return newAsset;
   }
 
+  // 更新IP资产信息
+  updateIPAsset(id: string, updates: Partial<Omit<IPAsset, 'id' | 'createdAt' | 'stages'>>): boolean {
+    const assetIndex = this.ipAssets.findIndex(asset => asset.id === id);
+    if (assetIndex !== -1) {
+      this.ipAssets[assetIndex] = {
+        ...this.ipAssets[assetIndex],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+      this.saveAssets();
+      return true;
+    }
+    return false;
+  }
+
+  // 删除IP资产
+  deleteIPAsset(id: string): boolean {
+    const initialLength = this.ipAssets.length;
+    this.ipAssets = this.ipAssets.filter(asset => asset.id !== id);
+    if (this.ipAssets.length < initialLength) {
+      this.saveAssets();
+      return true;
+    }
+    return false;
+  }
+
   // 更新IP资产阶段
   updateIPStage(ipId: string, stageId: string, completed: boolean): boolean {
     const asset = this.getIPAssetById(ipId);
@@ -156,6 +182,89 @@ class IPService {
       }
     }
     return false;
+  }
+
+  // 搜索IP资产
+  searchIPAssets(query: string): IPAsset[] {
+    const lowerQuery = query.toLowerCase();
+    return this.ipAssets.filter(asset => 
+      asset.name.toLowerCase().includes(lowerQuery) ||
+      asset.description.toLowerCase().includes(lowerQuery) ||
+      asset.type.toLowerCase().includes(lowerQuery)
+    );
+  }
+
+  // 筛选IP资产
+  filterIPAssets(filters: {
+    type?: IPAsset['type'];
+    status?: 'in-progress' | 'completed' | 'pending';
+    minValue?: number;
+  }): IPAsset[] {
+    return this.ipAssets.filter(asset => {
+      let match = true;
+      
+      if (filters.type && asset.type !== filters.type) {
+        match = false;
+      }
+      
+      if (filters.status) {
+        const isCompleted = asset.stages.every(stage => stage.completed);
+        const isInProgress = asset.stages.some(stage => stage.completed) && !isCompleted;
+        
+        if (filters.status === 'completed' && !isCompleted) {
+          match = false;
+        } else if (filters.status === 'in-progress' && !isInProgress) {
+          match = false;
+        } else if (filters.status === 'pending' && isCompleted) {
+          match = false;
+        }
+      }
+      
+      if (filters.minValue && asset.commercialValue < filters.minValue) {
+        match = false;
+      }
+      
+      return match;
+    });
+  }
+
+  // 获取IP资产价值趋势
+  getIPValueTrend(): { timestamp: string; value: number }[] {
+    // 按创建时间分组，计算每个月的IP资产总价值
+    const monthlyValues: Record<string, number> = {};
+    
+    this.ipAssets.forEach(asset => {
+      const monthKey = asset.createdAt.slice(0, 7); // YYYY-MM
+      if (!monthlyValues[monthKey]) {
+        monthlyValues[monthKey] = 0;
+      }
+      monthlyValues[monthKey] += asset.commercialValue;
+    });
+    
+    // 转换为数组格式
+    return Object.entries(monthlyValues).map(([timestamp, value]) => ({
+      timestamp,
+      value
+    })).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  }
+
+  // 获取IP资产类型分布
+  getIPTypeDistribution(): { type: IPAsset['type']; count: number; percentage: number }[] {
+    const typeCounts: Record<string, number> = {};
+    
+    this.ipAssets.forEach(asset => {
+      if (!typeCounts[asset.type]) {
+        typeCounts[asset.type] = 0;
+      }
+      typeCounts[asset.type]++;
+    });
+    
+    const total = this.ipAssets.length;
+    return Object.entries(typeCounts).map(([type, count]) => ({
+      type: type as IPAsset['type'],
+      count,
+      percentage: Math.round((count / total) * 100)
+    }));
   }
 
   // 获取所有商业合作

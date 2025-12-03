@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { toast } from 'sonner';
 import achievementService from '../services/achievementService';
 
 // 3D模型展示的成就类型定义
@@ -21,6 +22,10 @@ export default function AchievementMuseum() {
   const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'achievements' | 'exhibits' | 'vr'>('achievements');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+  const [showAchievementDetail, setShowAchievementDetail] = useState(false);
+  const [shareOptions, setShareOptions] = useState<string[]>(['copy', 'twitter', 'facebook', 'linkedin']);
+  const [exportFormat, setExportFormat] = useState<'image' | 'pdf' | 'json'>('image');
 
   // 模拟加载数据
   useEffect(() => {
@@ -82,6 +87,71 @@ export default function AchievementMuseum() {
       default:
         return 'bg-gray-100 text-gray-600';
     }
+  };
+  
+  // 分享成就
+  const shareAchievement = async (achievement: any, platform: string) => {
+    const shareUrl = `${window.location.origin}/achievement/${achievement.id}`;
+    const shareText = `我在创意平台获得了成就：${achievement.name}！`;
+    
+    try {
+      switch(platform) {
+        case 'copy':
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success('成就链接已复制到剪贴板');
+          break;
+        case 'twitter':
+          window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+          break;
+        case 'facebook':
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+          break;
+        case 'linkedin':
+          window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+          break;
+      }
+    } catch (error) {
+      toast.error('分享失败，请重试');
+    }
+  };
+  
+  // 导出成就
+  const exportAchievement = (achievement: any, format: 'image' | 'pdf' | 'json') => {
+    switch(format) {
+      case 'image':
+        toast.info('正在生成成就图片...');
+        // 模拟导出过程
+        setTimeout(() => {
+          toast.success('成就图片已导出');
+        }, 1500);
+        break;
+      case 'pdf':
+        toast.info('正在生成成就PDF...');
+        setTimeout(() => {
+          toast.success('成就PDF已导出');
+        }, 1500);
+        break;
+      case 'json':
+        toast.info('正在生成成就JSON数据...');
+        setTimeout(() => {
+          toast.success('成就JSON数据已导出');
+        }, 1500);
+        break;
+    }
+  };
+  
+  // 打开成就详情
+  const openAchievementDetail = (achievement: any) => {
+    setSelectedAchievement(achievement);
+    setShowAchievementDetail(true);
+  };
+  
+  // 关闭成就详情
+  const closeAchievementDetail = () => {
+    setShowAchievementDetail(false);
+    setTimeout(() => {
+      setSelectedAchievement(null);
+    }, 300);
   };
 
   // 骨架屏加载状态
@@ -325,10 +395,28 @@ export default function AchievementMuseum() {
                       </div>
                     </div>
                     {achievement.isUnlocked && achievement.unlockedAt && (
-                      <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        解锁时间: {achievement.unlockedAt}
-                      </p>
-                    )}
+                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          解锁时间: {achievement.unlockedAt}
+                        </p>
+                      )}
+                      {achievement.isUnlocked && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-200 hover:bg-gray-300'} transition-colors flex items-center gap-1`}
+                            onClick={() => shareAchievement(achievement, 'copy')}
+                          >
+                            <i className="fas fa-share-alt"></i>
+                            分享
+                          </button>
+                          <button
+                            className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-200 hover:bg-gray-300'} transition-colors flex items-center gap-1`}
+                            onClick={() => exportAchievement(achievement, 'image')}
+                          >
+                            <i className="fas fa-download"></i>
+                            导出
+                          </button>
+                        </div>
+                      )}
                   </div>
                 </div>
               </motion.div>

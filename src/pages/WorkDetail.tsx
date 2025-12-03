@@ -1,11 +1,24 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, lazy, Suspense } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
 import SidebarLayout from '@/components/SidebarLayout'
 import { useNavigate, useParams } from 'react-router-dom'
 import { mockWorks } from '@/pages/Explore'
-import ARPreview, { ARPreviewConfig } from '@/components/ARPreview'
+// 使用React.lazy实现ARPreview组件的延迟加载
+const ARPreview = lazy(() => import('@/components/ARPreview'))
 import postsApi from '@/services/postService'
+import exportService, { ExportOptions, ExportFormat } from '@/services/exportService'
+
+// 定义ARPreviewConfig类型
+interface ARPreviewConfig {
+  modelUrl?: string;
+  imageUrl?: string;
+  scale?: number;
+  rotation?: { x: number; y: number; z: number };
+  position?: { x: number; y: number; z: number };
+  type: '3d' | '2d';
+  animations?: boolean;
+}
 
 export default function WorkDetail() {
   const { isDark } = useTheme()
@@ -17,6 +30,17 @@ export default function WorkDetail() {
   const [likes, setLikes] = useState(work ? work.likes : 0)
   const [bookmarked, setBookmarked] = useState(false)
   const [isARPreviewOpen, setIsARPreviewOpen] = useState(false)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [exportOptions, setExportOptions] = useState<ExportOptions>({
+    format: 'png',
+    resolution: 'medium',
+    quality: 0.8,
+    includeMetadata: true,
+    includeComments: false,
+    includeCulturalElements: false,
+    includeColorScheme: false,
+    includeToolsUsed: false
+  })
 
   const related = useMemo(() => {
     if (!work) return []
@@ -59,6 +83,37 @@ export default function WorkDetail() {
       }
       setBookmarked(!bookmarked)
     }
+  }
+
+  // 处理导出功能
+  const handleExport = () => {
+    if (!work) return
+
+    // 将Work转换为ExportableWork类型
+    const exportableWork = {
+      id: work.id.toString(),
+      title: work.title,
+      description: work.title,
+      images: [work.thumbnail],
+      category: work.category,
+      tags: work.tags,
+      culturalElements: work.tags.filter(tag => ['国潮', '传统', '非遗', '民俗', '文化'].some(keyword => tag.includes(keyword))),
+      colorScheme: [],
+      toolsUsed: [],
+      date: new Date().toISOString(),
+      author: work.creator,
+      likes: work.likes,
+      views: work.views,
+      comments: []
+    }
+
+    exportService.exportWork(exportableWork, exportOptions)
+    setIsExportDialogOpen(false)
+  }
+
+  // 处理导出选项变更
+  const handleExportOptionChange = (key: keyof ExportOptions, value: any) => {
+    setExportOptions(prev => ({ ...prev, [key]: value }))
   }
 
   if (!work) {
@@ -122,6 +177,13 @@ export default function WorkDetail() {
                   <i className="fas fa-camera"></i>
                   AR预览
                 </button>
+                <button 
+                  onClick={() => setIsExportDialogOpen(true)}
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white flex items-center gap-2"
+                >
+                  <i className="fas fa-download"></i>
+                  导出作品
+                </button>
               </div>
             </div>
             <div className="order-1 lg:order-2">
@@ -162,18 +224,121 @@ export default function WorkDetail() {
           )}
         </motion.div>
         
-        {/* AR预览组件 */}
+        {/* AR预览组件 - 使用Suspense支持延迟加载 */}
         {isARPreviewOpen && (
-          <ARPreview
-            config={{
-              imageUrl: work?.thumbnail || '',
-              type: '2d',
-              scale: 1.0,
-              rotation: { x: 0, y: 0, z: 0 },
-              position: { x: 0, y: 0, z: 0 }
-            }}
-            onClose={() => setIsARPreviewOpen(false)}
-          />
+          <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+            <div className="text-white text-xl">加载AR预览中...</div>
+          </div>}>
+            <ARPreview
+              config={{
+                imageUrl: work?.thumbnail || '',
+                type: '2d',
+                scale: 1.0,
+                rotation: { x: 0, y: 0, z: 0 },
+                position: { x: 0, y: 0, z: 0 }
+              }}
+              onClose={() => setIsARPreviewOpen(false)}
+            />
+          </Suspense>
+        )}
+
+        {/* 导出选项对话框 */}
+        {isExportDialogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+            <div className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} rounded-xl p-6 w-full max-w-md`}>
+              <h2 className="text-xl font-bold mb-4">导出作品</h2>
+              
+              <div className="space-y-4">
+                {/* 导出格式选择 */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">导出格式</label>
+                  <select 
+                    value={exportOptions.format} 
+                    onChange={(e) => handleExportOptionChange('format', e.target.value as ExportFormat)}
+                    className={`w-full p-2 rounded-lg ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'} border`}
+                  >
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="svg">SVG</option>
+                    <option value="pdf">PDF</option>
+                    <option value="json">JSON</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="text">纯文本</option>
+                  </select>
+                </div>
+
+                {/* 分辨率选择 */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">分辨率</label>
+                  <select 
+                    value={exportOptions.resolution}
+                    onChange={(e) => handleExportOptionChange('resolution', e.target.value as 'low' | 'medium' | 'high')}
+                    className={`w-full p-2 rounded-lg ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'} border`}
+                  >
+                    <option value="low">低</option>
+                    <option value="medium">中</option>
+                    <option value="high">高</option>
+                  </select>
+                </div>
+
+                {/* 质量选择 */}
+                {(exportOptions.format === 'jpg' || exportOptions.format === 'png') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">质量: {Math.round((exportOptions.quality || 0.8) * 100)}%</label>
+                    <input 
+                      type="range" 
+                      min="0.1" 
+                      max="1" 
+                      step="0.1"
+                      value={exportOptions.quality}
+                      onChange={(e) => handleExportOptionChange('quality', parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+
+                {/* 包含元数据 */}
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    id="includeMetadata"
+                    checked={exportOptions.includeMetadata}
+                    onChange={(e) => handleExportOptionChange('includeMetadata', e.target.checked)}
+                    className={`mr-2 ${isDark ? 'text-purple-500' : 'text-purple-600'}`}
+                  />
+                  <label htmlFor="includeMetadata" className="text-sm">包含元数据</label>
+                </div>
+
+                {/* 包含文化元素 */}
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    id="includeCulturalElements"
+                    checked={exportOptions.includeCulturalElements}
+                    onChange={(e) => handleExportOptionChange('includeCulturalElements', e.target.checked)}
+                    className={`mr-2 ${isDark ? 'text-purple-500' : 'text-purple-600'}`}
+                  />
+                  <label htmlFor="includeCulturalElements" className="text-sm">包含文化元素</label>
+                </div>
+              </div>
+
+              {/* 按钮组 */}
+              <div className="flex justify-end space-x-3 mt-6">
+                <button 
+                  onClick={() => setIsExportDialogOpen(false)}
+                  className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} transition-colors`}
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={handleExport}
+                  className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                >
+                  导出
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
   )

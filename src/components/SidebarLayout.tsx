@@ -164,20 +164,21 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     if (isPrefetched(key)) return
     try {
       switch (path) {
-        case '/': import('@/pages/Home').then(() => markPrefetched('home', ttlMs)); break
-        case '/explore': import('@/pages/Explore').then(() => markPrefetched('explore', ttlMs)); break
-        case '/create': import('@/pages/Create').then(() => markPrefetched('create', ttlMs)); break
-        case '/tools': import('@/pages/Tools').then(() => markPrefetched('tools', ttlMs)); break
-        case '/neo': import('@/pages/Neo').then(() => markPrefetched('neo', ttlMs)); break
-        case '/lab': import('@/pages/Lab').then(() => markPrefetched('lab', ttlMs)); break
-        case '/wizard': import('@/pages/Wizard').then(() => markPrefetched('wizard', ttlMs)); break
-        case '/square': import('@/pages/Square').then(() => markPrefetched('square', ttlMs)); break
-        case '/community': import('@/pages/Community').then(() => markPrefetched('community', ttlMs)); break
-        case '/knowledge': import('@/pages/CulturalKnowledge').then(() => markPrefetched('knowledge', ttlMs)); break
+        case '/': import('@/pages/Home').then(() => markPrefetched('home', { ttlMs })); break
+        case '/explore': import('@/pages/Explore').then(() => markPrefetched('explore', { ttlMs })); break
+        case '/create': import('@/pages/Create').then(() => markPrefetched('create', { ttlMs })); break
+        case '/tools': import('@/pages/Tools').then(() => markPrefetched('tools', { ttlMs })); break
+        case '/neo': import('@/pages/Neo').then(() => markPrefetched('neo', { ttlMs })); break
+        case '/lab': import('@/pages/Lab').then(() => markPrefetched('lab', { ttlMs })); break
+        case '/wizard': import('@/pages/Wizard').then(() => markPrefetched('wizard', { ttlMs })); break
+        case '/square': import('@/pages/Square').then(() => markPrefetched('square', { ttlMs })); break
+        case '/community': import('@/pages/Community').then(() => markPrefetched('community', { ttlMs })); break
+        case '/knowledge': import('@/pages/CulturalKnowledge').then(() => markPrefetched('knowledge', { ttlMs })); break
         case '/tianjin': break
-        case '/brand': import('@/pages/BrandGuide').then(() => markPrefetched('brand', ttlMs)); break
-        case '/about': import('@/pages/About').then(() => markPrefetched('about', ttlMs)); break
-        case '/dashboard': import('@/pages/Dashboard').then(() => markPrefetched('dashboard', ttlMs)); break
+        case '/brand': import('@/pages/BrandGuide').then(() => markPrefetched('brand', { ttlMs })); break
+        case '/about': import('@/pages/About').then(() => markPrefetched('about', { ttlMs })); break
+        case '/dashboard': import('@/pages/Dashboard').then(() => markPrefetched('dashboard', { ttlMs })); break
+        case '/events': import('@/pages/CulturalEvents').then(() => markPrefetched('events', { ttlMs })); break
         default: break
       }
     } catch (error) {
@@ -398,6 +399,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             <i className="fas fa-chart-line mr-2"></i>
             {!collapsed && '排行榜'}
           </NavLink>
+          <NavLink to="/analytics" title={collapsed ? '数据分析' : undefined} onMouseEnter={() => prefetchRoute('/analytics')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+            <i className="fas fa-chart-pie mr-2"></i>
+            {!collapsed && '数据分析'}
+          </NavLink>
           <NavLink to="/knowledge" title={collapsed ? '文化知识库' : undefined} onMouseEnter={() => prefetchRoute('/knowledge')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-book mr-2"></i>
             {!collapsed && '文化知识库'}
@@ -405,6 +410,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           <NavLink to="/tianjin" title={collapsed ? '天津特色专区' : undefined} onMouseEnter={() => prefetchRoute('/tianjin')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-landmark mr-2"></i>
             {!collapsed && '天津特色专区'}
+          </NavLink>
+          <NavLink to="/events" title={collapsed ? '文化活动' : undefined} onMouseEnter={() => prefetchRoute('/events')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+            <i className="fas fa-calendar-alt mr-2"></i>
+            {!collapsed && '文化活动'}
           </NavLink>
           <NavLink to="/brand" title={collapsed ? '品牌合作' : undefined} onMouseEnter={() => prefetchRoute('/brand')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-handshake mr-2"></i>

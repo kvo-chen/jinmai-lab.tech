@@ -4,11 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>津脉智坊 - 津门老字号共创平台</title>
+    <!-- 优化 Font Awesome 加载策略 -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
       crossorigin="anonymous"
+      media="print"
+      onload="this.media='all'"
     />
+    <!-- 添加回退机制 -->
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        crossorigin="anonymous"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

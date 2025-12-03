@@ -1,373 +1,549 @@
-/**
- * 创作者数据分析服务
- * 提供作品表现和用户互动数据分析
- */
+// 数据分析服务
 
-import { MultimodalContent } from './multimodalService';
-import { getAllContent } from './multimodalService';
-import { getPosts } from './postService';
+// 数据指标类型
+export type MetricType = 'works' | 'likes' | 'views' | 'comments' | 'shares' | 'followers' | 'participation';
 
-// 定义数据类型
-export interface CreatorAnalytics {
-  // 作品统计
-  totalWorks: number;
-  worksByType: Record<string, number>;
-  worksByMonth: Array<{ month: string; count: number }>;
-  
-  // 互动统计
-  totalLikes: number;
-  totalViews: number;
-  totalShares: number;
-  totalComments: number;
-  
-  // 趋势数据
-  monthlyEngagement: Array<{ month: string; likes: number; views: number; shares: number; comments: number }>;
-  
-  // 热门作品
-  topWorks: Array<{
-    id: string;
-    title: string;
-    type: string;
-    likes: number;
-    views: number;
-    shares: number;
-    comments: number;
-    engagement: number;
-  }>;
-  
-  // 平均数据
-  avgLikesPerWork: number;
-  avgViewsPerWork: number;
-  avgSharesPerWork: number;
-  avgCommentsPerWork: number;
-  
-  // 增长数据
-  growthRate: {
-    works: number;
-    likes: number;
-    views: number;
+// 时间范围类型
+export type TimeRange = '7d' | '30d' | '90d' | '1y' | 'all';
+
+// 数据分组类型
+export type GroupBy = 'day' | 'week' | 'month' | 'year' | 'category' | 'theme' | 'user';
+
+// 数据点接口
+export interface DataPoint {
+  timestamp: number;
+  value: number;
+  label: string;
+  category?: string;
+  theme?: string;
+  userId?: string;
+}
+
+// 数据统计接口
+export interface DataStats {
+  total: number;
+  average: number;
+  growth: number; // 增长率（百分比）
+  peak: number;
+  trough: number;
+  trend: 'up' | 'down' | 'stable';
+}
+
+// 数据分析查询参数接口
+export interface AnalyticsQueryParams {
+  metric: MetricType;
+  timeRange: TimeRange;
+  groupBy: GroupBy;
+  filters?: {
+    category?: string;
+    theme?: string;
+    userId?: string;
+    dateRange?: {
+      start: number;
+      end: number;
+    };
   };
 }
 
-// 常量定义
-const ANALYTICS_KEY = 'jmzf_creator_analytics';
-
-/**
- * 获取创作者数据分析
- */
-export function getCreatorAnalytics(): CreatorAnalytics {
-  // 获取所有内容
-  const allContent = getAllContent();
-  const allPosts = getPosts();
-  
-  // 合并所有作品
-  const allWorks = [...allContent, ...allPosts];
-  
-  // 计算作品统计
-  const totalWorks = allWorks.length;
-  
-  // 按类型统计作品
-  const worksByType = allWorks.reduce((acc, work) => {
-    const type = 'type' in work ? work.type || 'text' : 'post';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  // 按月份统计作品
-  const worksByMonth = calculateWorksByMonth(allWorks);
-  
-  // 计算互动统计
-  const totalLikes = allWorks.reduce((acc, work) => acc + (work.likes || 0), 0);
-  const totalViews = allWorks.reduce((acc, work) => acc + (work.views || 0), 0);
-  const totalShares = allWorks.reduce((acc, work) => acc + (work.shares || 0), 0);
-  const totalComments = allWorks.reduce((acc, work) => {
-    const commentsCount = Array.isArray(work.comments) ? work.comments.length : (work.comments || 0);
-    return acc + commentsCount;
-  }, 0);
-  
-  // 计算月度互动数据
-  const monthlyEngagement = calculateMonthlyEngagement(allWorks);
-  
-  // 计算热门作品
-  const topWorks = calculateTopWorks(allWorks);
-  
-  // 计算平均数据
-  const avgLikesPerWork = totalWorks > 0 ? totalLikes / totalWorks : 0;
-  const avgViewsPerWork = totalWorks > 0 ? totalViews / totalWorks : 0;
-  const avgSharesPerWork = totalWorks > 0 ? totalShares / totalWorks : 0;
-  const avgCommentsPerWork = totalWorks > 0 ? totalComments / totalWorks : 0;
-  
-  // 计算增长数据
-  const growthRate = calculateGrowthRate(allWorks);
-  
-  return {
-    totalWorks,
-    worksByType,
-    worksByMonth,
-    totalLikes,
-    totalViews,
-    totalShares,
-    totalComments,
-    monthlyEngagement,
-    topWorks,
-    avgLikesPerWork,
-    avgViewsPerWork,
-    avgSharesPerWork,
-    avgCommentsPerWork,
-    growthRate
-  };
-}
-
-/**
- * 计算作品按月份分布
- */
-function calculateWorksByMonth(works: Array<any>): Array<{ month: string; count: number }> {
-  const monthlyData: Record<string, number> = {};
-  
-  // 生成过去6个月的月份标签
-  const months = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
-    months.push(monthKey);
-    monthlyData[monthKey] = 0;
-  }
-  
-  // 统计每个月的作品数量
-  works.forEach(work => {
-    const createdAt = new Date(work.createdAt);
-    const monthKey = createdAt.toISOString().slice(0, 7);
-    if (monthlyData[monthKey] !== undefined) {
-      monthlyData[monthKey]++;
-    }
-  });
-  
-  // 转换为数组格式
-  return months.map(month => ({
-    month,
-    count: monthlyData[month]
-  }));
-}
-
-/**
- * 计算月度互动数据
- */
-function calculateMonthlyEngagement(works: Array<any>): Array<{ month: string; likes: number; views: number; shares: number; comments: number }> {
-  const monthlyData: Record<string, { likes: number; views: number; shares: number; comments: number }> = {};
-  
-  // 生成过去6个月的月份标签
-  const months = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
-    months.push(monthKey);
-    monthlyData[monthKey] = { likes: 0, views: 0, shares: 0, comments: 0 };
-  }
-  
-  // 统计每个月的互动数据
-  works.forEach(work => {
-    const createdAt = new Date(work.createdAt);
-    const monthKey = createdAt.toISOString().slice(0, 7);
-    if (monthlyData[monthKey] !== undefined) {
-      monthlyData[monthKey].likes += work.likes || 0;
-      monthlyData[monthKey].views += work.views || 0;
-      monthlyData[monthKey].shares += work.shares || 0;
-      monthlyData[monthKey].comments += work.comments || 0;
-    }
-  });
-  
-  // 转换为数组格式
-  return months.map(month => ({
-    month,
-    ...monthlyData[month]
-  }));
-}
-
-/**
- * 计算热门作品
- */
-function calculateTopWorks(works: Array<any>, limit: number = 5): Array<{
-  id: string;
+// 作品表现接口
+export interface WorkPerformance {
+  workId: string;
   title: string;
-  type: string;
-  likes: number;
-  views: number;
-  shares: number;
-  comments: number;
-  engagement: number;
-}> {
-  return works
-    .map(work => ({
-      id: work.id,
-      title: work.title,
-      type: work.type || 'text',
-      likes: work.likes || 0,
-      views: work.views || 0,
-      shares: work.shares || 0,
-      comments: work.comments || 0,
-      engagement: (work.likes || 0) + (work.views || 0) + (work.shares || 0) + (work.comments || 0)
-    }))
-    .sort((a, b) => b.engagement - a.engagement)
-    .slice(0, limit);
+  thumbnail: string;
+  category: string;
+  metrics: {
+    likes: number;
+    views: number;
+    comments: number;
+    shares: number;
+    engagementRate: number;
+  };
+  trend: 'up' | 'down' | 'stable';
+  ranking: number;
 }
 
-/**
- * 计算增长率
- */
-function calculateGrowthRate(works: Array<any>): {
-  works: number;
-  likes: number;
-  views: number;
-} {
-  // 计算过去30天和前30天的数据
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-  
-  // 统计过去30天的数据
-  const recentWorks = works.filter(work => {
-    const createdAt = new Date(work.createdAt);
-    return createdAt >= thirtyDaysAgo;
-  });
-  
-  // 统计前30天的数据
-  const previousWorks = works.filter(work => {
-    const createdAt = new Date(work.createdAt);
-    return createdAt >= sixtyDaysAgo && createdAt < thirtyDaysAgo;
-  });
-  
-  // 计算各项增长率
-  const calculateGrowth = (current: number, previous: number): number => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
+// 用户活动接口
+export interface UserActivity {
+  userId: string;
+  username: string;
+  avatar: string;
+  metrics: {
+    worksCreated: number;
+    likesReceived: number;
+    viewsReceived: number;
+    commentsReceived: number;
+    commentsMade: number;
+    sharesMade: number;
   };
-  
-  const recentLikes = recentWorks.reduce((acc, work) => acc + (work.likes || 0), 0);
-  const previousLikes = previousWorks.reduce((acc, work) => acc + (work.likes || 0), 0);
-  
-  const recentViews = recentWorks.reduce((acc, work) => acc + (work.views || 0), 0);
-  const previousViews = previousWorks.reduce((acc, work) => acc + (work.views || 0), 0);
-  
-  return {
-    works: calculateGrowth(recentWorks.length, previousWorks.length),
-    likes: calculateGrowth(recentLikes, previousLikes),
-    views: calculateGrowth(recentViews, previousViews)
-  };
+  engagementScore: number;
+  ranking: number;
 }
 
-/**
- * 获取作品详细分析
- */
-export function getWorkAnalytics(workId: string): any {
-  const allWorks = [...getAllContent(), ...getPosts()];
-  const work = allWorks.find(w => w.id === workId);
-  
-  if (!work) {
-    return null;
+// 主题趋势接口
+export interface ThemeTrend {
+  theme: string;
+  category: string;
+  popularity: number;
+  growth: number;
+  relatedTags: string[];
+  worksCount: number;
+  ranking: number;
+}
+
+// 数据分析服务类
+class AnalyticsService {
+  // 模拟数据存储
+  private dataPoints: DataPoint[] = [];
+  private nextDataPointId = 1;
+
+  constructor() {
+    this.initMockData();
   }
-  
-  // 计算作品的各项指标
-  const views = work.views || 0;
-  const likes = work.likes || 0;
-  const commentsCount = Array.isArray(work.comments) ? work.comments.length : (work.comments || 0);
-  const shares = work.shares || 0;
-  
-  const engagementRate = views > 0 ? (likes + commentsCount + shares) / views : 0;
-  const likeRate = views > 0 ? likes / views : 0;
-  const commentRate = views > 0 ? commentsCount / views : 0;
-  const shareRate = views > 0 ? shares / views : 0;
-  
-  return {
-    ...work,
-    engagementRate,
-    likeRate,
-    commentRate,
-    shareRate
-  };
+
+  // 初始化模拟数据
+  private initMockData(): void {
+    const now = Date.now();
+    const daysInYear = 365;
+    const categories = ['国潮设计', '非遗传承', '老字号品牌', 'IP设计', '插画设计'];
+    const themes = ['中国红', '青花瓷', '京剧', '回纹', '泥人张', '海河', '同仁堂'];
+
+    // 生成一年的模拟数据
+    for (let i = 0; i < daysInYear; i++) {
+      const timestamp = now - (daysInYear - i) * 24 * 60 * 60 * 1000;
+      
+      // 为每个指标生成数据点
+      const metrics: MetricType[] = ['works', 'likes', 'views', 'comments', 'shares', 'followers', 'participation'];
+      
+      metrics.forEach(metric => {
+        // 生成随机值，带有一定的趋势
+        const baseValue = 100 + Math.sin(i / 30) * 50;
+        const randomFactor = Math.random() * 30;
+        const value = Math.max(0, Math.round(baseValue + randomFactor));
+
+        // 随机选择分类和主题
+        const category = categories[Math.floor(Math.random() * categories.length)];
+        const theme = themes[Math.floor(Math.random() * themes.length)];
+
+        this.dataPoints.push({
+          timestamp,
+          value,
+          label: new Date(timestamp).toLocaleDateString('zh-CN'),
+          category,
+          theme
+        });
+      });
+    }
+  }
+
+  // 获取数据点
+  getMetricsData(query: AnalyticsQueryParams): DataPoint[] {
+    // 基础过滤
+    let filteredData = this.dataPoints;
+
+    // 应用时间范围过滤
+    const now = Date.now();
+    let timeRangeStart = 0;
+
+    switch (query.timeRange) {
+      case '7d':
+        timeRangeStart = now - 7 * 24 * 60 * 60 * 1000;
+        break;
+      case '30d':
+        timeRangeStart = now - 30 * 24 * 60 * 60 * 1000;
+        break;
+      case '90d':
+        timeRangeStart = now - 90 * 24 * 60 * 60 * 1000;
+        break;
+      case '1y':
+        timeRangeStart = now - 365 * 24 * 60 * 60 * 1000;
+        break;
+      case 'all':
+      default:
+        timeRangeStart = 0;
+    }
+
+    filteredData = filteredData.filter(point => point.timestamp >= timeRangeStart);
+
+    // 应用自定义日期范围过滤
+    if (query.filters?.dateRange) {
+      filteredData = filteredData.filter(point => 
+        point.timestamp >= query.filters.dateRange!.start && 
+        point.timestamp <= query.filters.dateRange!.end
+      );
+    }
+
+    // 应用分类过滤
+    if (query.filters?.category) {
+      filteredData = filteredData.filter(point => point.category === query.filters?.category);
+    }
+
+    // 应用主题过滤
+    if (query.filters?.theme) {
+      filteredData = filteredData.filter(point => point.theme === query.filters?.theme);
+    }
+
+    // 分组和聚合逻辑
+    const groupedData: Record<string, number> = {};
+
+    filteredData.forEach(point => {
+      let key: string;
+      const date = new Date(point.timestamp);
+
+      // 根据分组类型生成键
+      switch (query.groupBy) {
+        case 'day':
+          key = date.toISOString().split('T')[0];
+          break;
+        case 'week':
+          const weekNumber = Math.ceil(date.getDate() / 7);
+          key = `${date.getFullYear()}-W${weekNumber}`;
+          break;
+        case 'month':
+          key = `${date.getFullYear()}-${date.getMonth() + 1}`;
+          break;
+        case 'year':
+          key = `${date.getFullYear()}`;
+          break;
+        case 'category':
+          key = point.category || '未分类';
+          break;
+        case 'theme':
+          key = point.theme || '未分类';
+          break;
+        case 'user':
+          key = point.userId || '匿名用户';
+          break;
+        default:
+          key = date.toISOString().split('T')[0];
+      }
+
+      // 聚合数据
+      if (!groupedData[key]) {
+        groupedData[key] = 0;
+      }
+      groupedData[key] += point.value;
+    });
+
+    // 转换为DataPoint数组
+    return Object.entries(groupedData).map(([key, value]) => ({
+      timestamp: new Date(key).getTime() || now,
+      value,
+      label: key,
+    }));
+  }
+
+  // 获取数据统计
+  getMetricsStats(data: DataPoint[]): DataStats {
+    if (data.length === 0) {
+      return {
+        total: 0,
+        average: 0,
+        growth: 0,
+        peak: 0,
+        trough: 0,
+        trend: 'stable'
+      };
+    }
+
+    const values = data.map(point => point.value);
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const average = total / data.length;
+    const peak = Math.max(...values);
+    const trough = Math.min(...values);
+
+    // 计算增长率
+    const firstHalf = values.slice(0, Math.floor(values.length / 2));
+    const secondHalf = values.slice(Math.floor(values.length / 2));
+    const firstHalfAvg = firstHalf.reduce((sum, value) => sum + value, 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, value) => sum + value, 0) / secondHalf.length;
+    const growth = firstHalfAvg === 0 ? 0 : ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100;
+
+    // 确定趋势
+    let trend: 'up' | 'down' | 'stable';
+    if (growth > 5) trend = 'up';
+    else if (growth < -5) trend = 'down';
+    else trend = 'stable';
+
+    return {
+      total,
+      average,
+      growth,
+      peak,
+      trough,
+      trend
+    };
+  }
+
+  // 获取作品表现数据
+  getWorksPerformance(limit: number = 10): WorkPerformance[] {
+    // 模拟作品表现数据
+    const mockWorks: WorkPerformance[] = [
+      {
+        workId: '1',
+        title: '国潮IP设计',
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=chinese%20trend%20IP%20design',
+        category: '国潮设计',
+        metrics: {
+          likes: 1234,
+          views: 12345,
+          comments: 456,
+          shares: 789,
+          engagementRate: 0.23
+        },
+        trend: 'up',
+        ranking: 1
+      },
+      {
+        workId: '2',
+        title: '非遗传承插画',
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=intangible%20heritage%20illustration',
+        category: '非遗传承',
+        metrics: {
+          likes: 987,
+          views: 8765,
+          comments: 345,
+          shares: 654,
+          engagementRate: 0.19
+        },
+        trend: 'up',
+        ranking: 2
+      },
+      {
+        workId: '3',
+        title: '老字号品牌升级',
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=time-honored%20brand%20upgrade',
+        category: '老字号品牌',
+        metrics: {
+          likes: 876,
+          views: 7654,
+          comments: 234,
+          shares: 543,
+          engagementRate: 0.17
+        },
+        trend: 'stable',
+        ranking: 3
+      },
+      {
+        workId: '4',
+        title: '京剧主题IP设计',
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=peking%20opera%20IP%20design',
+        category: 'IP设计',
+        metrics: {
+          likes: 765,
+          views: 6543,
+          comments: 123,
+          shares: 432,
+          engagementRate: 0.15
+        },
+        trend: 'down',
+        ranking: 4
+      },
+      {
+        workId: '5',
+        title: '天津文化插画',
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=tianjin%20cultural%20illustration',
+        category: '插画设计',
+        metrics: {
+          likes: 654,
+          views: 5432,
+          comments: 111,
+          shares: 321,
+          engagementRate: 0.13
+        },
+        trend: 'up',
+        ranking: 5
+      }
+    ];
+
+    return mockWorks.slice(0, limit);
+  }
+
+  // 获取用户活动数据
+  getUserActivity(limit: number = 10): UserActivity[] {
+    // 模拟用户活动数据
+    const mockUsers: UserActivity[] = [
+      {
+        userId: '1',
+        username: '创意设计师A',
+        avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=creative%20designer%20avatar',
+        metrics: {
+          worksCreated: 25,
+          likesReceived: 1234,
+          viewsReceived: 12345,
+          commentsReceived: 456,
+          commentsMade: 789,
+          sharesMade: 432
+        },
+        engagementScore: 95,
+        ranking: 1
+      },
+      {
+        userId: '2',
+        username: '插画师B',
+        avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=illustrator%20avatar',
+        metrics: {
+          worksCreated: 20,
+          likesReceived: 987,
+          viewsReceived: 8765,
+          commentsReceived: 345,
+          commentsMade: 654,
+          sharesMade: 321
+        },
+        engagementScore: 88,
+        ranking: 2
+      },
+      {
+        userId: '3',
+        username: 'IP设计师C',
+        avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=IP%20designer%20avatar',
+        metrics: {
+          worksCreated: 15,
+          likesReceived: 876,
+          viewsReceived: 7654,
+          commentsReceived: 234,
+          commentsMade: 543,
+          sharesMade: 210
+        },
+        engagementScore: 82,
+        ranking: 3
+      },
+      {
+        userId: '4',
+        username: '非遗传承者D',
+        avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=intangible%20heritage%20inheritor%20avatar',
+        metrics: {
+          worksCreated: 10,
+          likesReceived: 765,
+          viewsReceived: 6543,
+          commentsReceived: 123,
+          commentsMade: 432,
+          sharesMade: 109
+        },
+        engagementScore: 75,
+        ranking: 4
+      },
+      {
+        userId: '5',
+        username: '品牌设计师E',
+        avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=brand%20designer%20avatar',
+        metrics: {
+          worksCreated: 8,
+          likesReceived: 654,
+          viewsReceived: 5432,
+          commentsReceived: 111,
+          commentsMade: 321,
+          sharesMade: 98
+        },
+        engagementScore: 70,
+        ranking: 5
+      }
+    ];
+
+    return mockUsers.slice(0, limit);
+  }
+
+  // 获取主题趋势数据
+  getThemeTrends(limit: number = 10): ThemeTrend[] {
+    // 模拟主题趋势数据
+    const mockThemes: ThemeTrend[] = [
+      {
+        theme: '中国红',
+        category: '配色',
+        popularity: 98,
+        growth: 15,
+        relatedTags: ['红色', '传统色', '喜庆'],
+        worksCount: 1234,
+        ranking: 1
+      },
+      {
+        theme: '青花瓷',
+        category: '纹样',
+        popularity: 95,
+        growth: 12,
+        relatedTags: ['蓝色', '陶瓷', '传统纹样'],
+        worksCount: 1123,
+        ranking: 2
+      },
+      {
+        theme: '京剧',
+        category: '文化元素',
+        popularity: 92,
+        growth: 8,
+        relatedTags: ['戏曲', '脸谱', '传统艺术'],
+        worksCount: 1012,
+        ranking: 3
+      },
+      {
+        theme: '回纹',
+        category: '纹样',
+        popularity: 88,
+        growth: 5,
+        relatedTags: ['几何', '传统纹样', '装饰'],
+        worksCount: 901,
+        ranking: 4
+      },
+      {
+        theme: '泥人张',
+        category: '非遗',
+        popularity: 85,
+        growth: 18,
+        relatedTags: ['泥塑', '天津', '传统工艺'],
+        worksCount: 790,
+        ranking: 5
+      },
+      {
+        theme: '海河',
+        category: '地域文化',
+        popularity: 82,
+        growth: 10,
+        relatedTags: ['天津', '河流', '地域特色'],
+        worksCount: 679,
+        ranking: 6
+      },
+      {
+        theme: '同仁堂',
+        category: '老字号',
+        popularity: 79,
+        growth: 6,
+        relatedTags: ['中药', '健康', '传统医药'],
+        worksCount: 568,
+        ranking: 7
+      }
+    ];
+
+    return mockThemes.slice(0, limit);
+  }
+
+  // 导出数据分析报告
+  exportAnalyticsReport(params: AnalyticsQueryParams): Blob {
+    const data = this.getMetricsData(params);
+    const stats = this.getMetricsStats(data);
+
+    // 创建报告内容
+    const reportContent = {
+      title: '数据分析报告',
+      generatedAt: new Date().toISOString(),
+      parameters: params,
+      data,
+      stats,
+      summary: `
+        本次报告基于${params.timeRange}时间范围内的${params.metric}数据，按${params.groupBy}分组分析。
+        总数据量：${stats.total}
+        平均值：${stats.average.toFixed(2)}
+        增长率：${stats.growth.toFixed(2)}%
+        峰值：${stats.peak}
+        谷值：${stats.trough}
+        趋势：${stats.trend === 'up' ? '上升' : stats.trend === 'down' ? '下降' : '稳定'}
+      `
+    };
+
+    // 创建JSON Blob
+    return new Blob([JSON.stringify(reportContent, null, 2)], {
+      type: 'application/json'
+    });
+  }
 }
 
-/**
- * 导出数据分析为CSV
- */
-export function exportAnalyticsToCSV(analytics: CreatorAnalytics): string {
-  // 作品按类型统计
-  const typeCSV = ['作品类型,数量'];
-  Object.entries(analytics.worksByType).forEach(([type, count]) => {
-    typeCSV.push(`${type},${count}`);
-  });
-  
-  // 月度作品统计
-  const monthlyWorksCSV = ['月份,作品数量'];
-  analytics.worksByMonth.forEach(item => {
-    monthlyWorksCSV.push(`${item.month},${item.count}`);
-  });
-  
-  // 月度互动统计
-  const monthlyEngagementCSV = ['月份,点赞数,浏览量,分享数,评论数'];
-  analytics.monthlyEngagement.forEach(item => {
-    monthlyEngagementCSV.push(`${item.month},${item.likes},${item.views},${item.shares},${item.comments}`);
-  });
-  
-  // 热门作品
-  const topWorksCSV = ['作品ID,标题,类型,点赞数,浏览量,分享数,评论数,总互动量'];
-  analytics.topWorks.forEach(item => {
-    topWorksCSV.push(`${item.id},${item.title},${item.type},${item.likes},${item.views},${item.shares},${item.comments},${item.engagement}`);
-  });
-  
-  // 合并所有CSV数据
-  const csvContent = [
-    '创作者数据分析报告',
-    '',
-    '作品统计',
-    `总作品数: ${analytics.totalWorks}`,
-    `平均每作品点赞: ${analytics.avgLikesPerWork.toFixed(1)}`,
-    `平均每作品浏览: ${analytics.avgViewsPerWork.toFixed(1)}`,
-    `平均每作品分享: ${analytics.avgSharesPerWork.toFixed(1)}`,
-    `平均每作品评论: ${analytics.avgCommentsPerWork.toFixed(1)}`,
-    '',
-    '作品增长趋势',
-    `作品增长率: ${analytics.growthRate.works.toFixed(1)}%`,
-    `点赞增长率: ${analytics.growthRate.likes.toFixed(1)}%`,
-    `浏览增长率: ${analytics.growthRate.views.toFixed(1)}%`,
-    '',
-    '作品类型分布',
-    ...typeCSV,
-    '',
-    '月度作品数量',
-    ...monthlyWorksCSV,
-    '',
-    '月度互动数据',
-    ...monthlyEngagementCSV,
-    '',
-    '热门作品',
-    ...topWorksCSV
-  ].join('\n');
-  
-  return csvContent;
-}
-
-/**
- * 保存数据分析到本地存储
- */
-export function saveAnalytics(analytics: CreatorAnalytics): void {
-  localStorage.setItem(ANALYTICS_KEY, JSON.stringify(analytics));
-}
-
-/**
- * 从本地存储获取数据分析
- */
-export function loadAnalytics(): CreatorAnalytics | null {
-  const raw = localStorage.getItem(ANALYTICS_KEY);
-  return raw ? JSON.parse(raw) : null;
-}
-
-// 导出服务对象
-export default {
-  getCreatorAnalytics,
-  getWorkAnalytics,
-  exportAnalyticsToCSV,
-  saveAnalytics,
-  loadAnalytics
-};
+// 导出单例实例
+const analyticsService = new AnalyticsService();
+export default analyticsService;

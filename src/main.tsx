@@ -12,6 +12,11 @@ import "./index.css";
 import ErrorBoundary from './components/ErrorBoundary';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { ThemeProvider } from './hooks/useTheme';
+// 性能监控
+import { initPerformanceMonitor } from './utils/performanceMonitor';
+
+// 初始化性能监控
+initPerformanceMonitor();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

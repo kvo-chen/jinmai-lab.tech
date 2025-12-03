@@ -3,7 +3,7 @@
  */
 
 // 用户行为类型
-export type UserActionType = 'view' | 'like' | 'comment' | 'share' | 'save' | 'submit' | 'participate' | 'download' | 'click' | 'search';
+export type UserActionType = 'view' | 'like' | 'comment' | 'share' | 'save' | 'submit' | 'participate' | 'download' | 'click' | 'search' | 'dislike' | 'hide' | 'feedback';
 
 // 用户行为接口
 export interface UserAction {
@@ -40,10 +40,48 @@ export interface RecommendedItem {
   metadata?: Record<string, any>;
 }
 
+// 推荐策略类型
+export type RecommendationStrategy = 'content' | 'collaborative' | 'hybrid' | 'trending' | 'similar' | 'diverse';
+
+// 推荐选项接口
+export interface RecommendationOptions {
+  strategy?: RecommendationStrategy;
+  limit?: number;
+  includeDiverse?: boolean;
+  recentDays?: number; // 只考虑最近N天的行为
+  diversityThreshold?: number; // 多样性阈值
+  userId?: string; // 可选的用户ID，用于个性化推荐
+}
+
+// 推荐反馈类型
+export type RecommendationFeedbackType = 'like' | 'dislike' | 'hide' | 'report';
+
+// 推荐反馈接口
+export interface RecommendationFeedback {
+  id: string;
+  userId: string;
+  itemId: string;
+  itemType: RecommendedItem['type'];
+  feedbackType: RecommendationFeedbackType;
+  timestamp: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+}
+
+// 协同过滤用户相似度接口
+export interface UserSimilarity {
+  userId: string;
+  similarUsers: Array<{ userId: string; similarity: number }>;
+  timestamp: string;
+}
+
 // 常量定义
 const USER_ACTIONS_KEY = 'jmzf_user_actions';
 const USER_PREFERENCES_KEY = 'jmzf_user_preferences';
 const RECOMMENDATIONS_KEY = 'jmzf_recommendations';
+const USER_SIMILARITIES_KEY = 'jmzf_user_similarities';
+const RECOMMENDATION_FEEDBACK_KEY = 'jmzf_recommendation_feedback';
+const DIVERSITY_CACHE_KEY = 'jmzf_recommendation_diversity';
 
 // 行为权重配置
 const ACTION_WEIGHTS: Record<UserActionType, number> = {
@@ -56,7 +94,29 @@ const ACTION_WEIGHTS: Record<UserActionType, number> = {
   participate: 15,
   download: 6,
   click: 2,
-  search: 3
+  search: 3,
+  dislike: -10,  // 负向权重
+  hide: -5,      // 负向权重
+  feedback: 4    // 反馈权重
+};
+
+// 推荐策略权重配置
+const STRATEGY_WEIGHTS: Record<RecommendationStrategy, number> = {
+  content: 0.4,
+  collaborative: 0.3,
+  trending: 0.2,
+  similar: 0.1,
+  hybrid: 1.0,     // 混合策略权重（用于归一化）
+  diverse: 0.15    // 多样性权重
+};
+
+// 多样性配置
+const DIVERSITY_SETTINGS = {
+  maxItemsPerCategory: 0.3, // 每个分类最多占30%
+  maxItemsPerTheme: 0.25,    // 每个主题最多占25%
+  minItemTypes: 2,           // 至少包含2种类型
+  recencyWeight: 0.15,       // 新鲜度权重
+  diversityScoreWeight: 0.1  // 多样性分数权重
 };
 
 /**
@@ -236,14 +296,10 @@ export function updateUserPreferences(userId: string): UserPreference {
 }
 
 /**
- * 生成推荐内容
+ * 生成基于内容的推荐
  */
-export function generateRecommendations(userId: string, limit: number = 20): RecommendedItem[] {
+export function generateContentBasedRecommendations(userId: string, limit: number = 20): RecommendedItem[] {
   const preference = getUserPreferences(userId) || initializeUserPreferences(userId);
-  const actions = getUserActions().filter(action => action.userId === userId);
-  
-  // 这里实现一个简单的基于内容的推荐算法
-  // 在实际应用中，这应该是一个更复杂的机器学习模型
   
   // 1. 获取所有可能的推荐项（这里我们从localStorage中获取）
   const posts = JSON.parse(localStorage.getItem('jmzf_posts') || '[]');
@@ -293,6 +349,12 @@ export function generateRecommendations(userId: string, limit: number = 20): Rec
     // 根据互动数据调整分数
     score += (post.likes * 0.01) + (post.views * 0.001) + (post.shares * 0.02);
     
+    // 新鲜度权重
+    if (post.createdAt) {
+      const daysOld = (Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      score += Math.max(0, 1 - daysOld / 30) * DIVERSITY_SETTINGS.recencyWeight;
+    }
+    
     // 只添加分数大于0的推荐项
     if (score > 0) {
       recommendedItems.push({
@@ -341,6 +403,12 @@ export function generateRecommendations(userId: string, limit: number = 20): Rec
     // 根据参与度调整分数
     score += (challenge.participants * 0.02) + (challenge.submissionCount * 0.03);
     
+    // 新鲜度权重
+    if (challenge.startDate) {
+      const daysToStart = (new Date(challenge.startDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      score += Math.max(0, 1 - Math.abs(daysToStart) / 30) * DIVERSITY_SETTINGS.recencyWeight;
+    }
+    
     // 只添加分数大于0的推荐项
     if (score > 0) {
       recommendedItems.push({
@@ -379,6 +447,12 @@ export function generateRecommendations(userId: string, limit: number = 20): Rec
     // 根据使用数据调整分数
     score += (template.usageCount || 0) * 0.02;
     
+    // 新鲜度权重
+    if (template.createdAt) {
+      const daysOld = (Date.now() - new Date(template.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      score += Math.max(0, 1 - daysOld / 90) * DIVERSITY_SETTINGS.recencyWeight;
+    }
+    
     // 只添加分数大于0的推荐项
     if (score > 0) {
       recommendedItems.push({
@@ -393,18 +467,102 @@ export function generateRecommendations(userId: string, limit: number = 20): Rec
     }
   });
   
-  // 3. 按分数排序并返回前N项
+  // 按分数排序并返回前N项
   return recommendedItems
     .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+    .slice(0, limit * 2); // 返回更多项以支持后续的多样性优化
+}
+
+/**
+ * 生成推荐内容
+ */
+export function generateRecommendations(userId: string, options: RecommendationOptions = {}): RecommendedItem[] {
+  const { 
+    strategy = 'hybrid', 
+    limit = 20, 
+    includeDiverse = true,
+    recentDays = 30
+  } = options;
+  
+  // 根据不同策略生成推荐
+  let recommendations: RecommendedItem[] = [];
+  
+  if (strategy === 'content' || strategy === 'hybrid') {
+    // 基于内容的推荐
+    const contentRecs = generateContentBasedRecommendations(userId, limit * 2);
+    recommendations = [...recommendations, ...contentRecs.map(item => ({ 
+      ...item, 
+      score: item.score * STRATEGY_WEIGHTS.content 
+    }))];
+  }
+  
+  if (strategy === 'collaborative' || strategy === 'hybrid') {
+    // 基于协同过滤的推荐
+    const collaborativeRecs = generateCollaborativeRecommendations(userId, limit * 2);
+    recommendations = [...recommendations, ...collaborativeRecs.map(item => ({ 
+      ...item, 
+      score: item.score * STRATEGY_WEIGHTS.collaborative 
+    }))];
+  }
+  
+  if (strategy === 'trending' || strategy === 'hybrid') {
+    // 热门内容推荐
+    const trendingRecs = getTrendingContent(limit * 2);
+    recommendations = [...recommendations, ...trendingRecs.map(item => ({ 
+      ...item, 
+      score: item.score * STRATEGY_WEIGHTS.trending 
+    }))];
+  }
+  
+  // 如果是混合策略，合并分数
+  if (strategy === 'hybrid') {
+    // 按itemId和type分组，合并分数
+    const merged: Record<string, RecommendedItem> = {};
+    
+    recommendations.forEach(item => {
+      const key = `${item.type}_${item.id}`;
+      if (merged[key]) {
+        // 合并分数和理由
+        merged[key].score += item.score;
+        if (item.reason && !merged[key].reason?.includes(item.reason)) {
+          merged[key].reason = merged[key].reason 
+            ? `${merged[key].reason}，${item.reason}` 
+            : item.reason;
+        }
+      } else {
+        merged[key] = { ...item };
+      }
+    });
+    
+    recommendations = Object.values(merged);
+  }
+  
+  // 应用多样性优化
+  if (includeDiverse) {
+    recommendations = optimizeRecommendationDiversity(recommendations, limit);
+  } else {
+    // 按分数排序并返回前N项
+    recommendations = recommendations
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
+  
+  return recommendations;
 }
 
 /**
  * 获取推荐内容
  */
-export function getRecommendations(userId: string, limit: number = 20): RecommendedItem[] {
+export function getRecommendations(userId: string, options: number | RecommendationOptions = 20): RecommendedItem[] {
+  // 处理重载参数
+  const opts: RecommendationOptions = typeof options === 'number' 
+    ? { limit: options } 
+    : options;
+  
+  const { limit = 20, strategy = 'hybrid' } = opts;
+  
   // 尝试从缓存中获取推荐
-  const cacheKey = `${RECOMMENDATIONS_KEY}_${userId}_${limit}`;
+  const cacheKey = `${RECOMMENDATIONS_KEY}_${userId}_${strategy}_${limit}_${opts.includeDiverse ? 'diverse' : 'normal'}`;
   const cached = localStorage.getItem(cacheKey);
   
   if (cached) {
@@ -416,7 +574,7 @@ export function getRecommendations(userId: string, limit: number = 20): Recommen
   }
   
   // 生成新的推荐
-  const recommendations = generateRecommendations(userId, limit);
+  const recommendations = generateRecommendations(userId, opts);
   
   // 缓存推荐结果
   localStorage.setItem(cacheKey, JSON.stringify({
@@ -442,6 +600,274 @@ export function recordRecommendationClick(userId: string, item: RecommendedItem)
   
   // 更新推荐分数（可选）
   // 这里可以实现一个反馈机制，根据用户的点击行为调整推荐算法
+}
+
+/**
+ * 记录推荐反馈
+ */
+export function recordRecommendationFeedback(userId: string, feedback: Omit<RecommendationFeedback, 'id' | 'timestamp' | 'userId'>): RecommendationFeedback {
+  const newFeedback: RecommendationFeedback = {
+    id: `feedback-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    userId,
+    ...feedback
+  };
+  
+  // 保存反馈
+  const allFeedback = JSON.parse(localStorage.getItem(RECOMMENDATION_FEEDBACK_KEY) || '[]');
+  allFeedback.push(newFeedback);
+  localStorage.setItem(RECOMMENDATION_FEEDBACK_KEY, JSON.stringify(allFeedback));
+  
+  // 记录相应的用户行为
+  recordUserAction({
+    userId,
+    itemId: feedback.itemId,
+    itemType: feedback.itemType,
+    actionType: feedback.feedbackType === 'like' ? 'like' : feedback.feedbackType === 'dislike' ? 'dislike' : 'hide',
+    value: feedback.feedbackType === 'like' ? 5 : feedback.feedbackType === 'dislike' ? -10 : -5
+  });
+  
+  return newFeedback;
+}
+
+/**
+ * 计算用户相似度（协同过滤）
+ */
+export function calculateUserSimilarities(targetUserId: string): UserSimilarity {
+  const allActions = getUserActions();
+  const targetUserActions = allActions.filter(action => action.userId === targetUserId);
+  
+  if (targetUserActions.length === 0) {
+    return {
+      userId: targetUserId,
+      similarUsers: [],
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  // 获取所有用户ID
+  const userIds = Array.from(new Set(allActions.map(action => action.userId)));
+  
+  // 计算用户之间的相似度
+  const similarities: Array<{ userId: string; similarity: number }> = [];
+  
+  userIds.forEach(userId => {
+    if (userId === targetUserId) return;
+    
+    const otherUserActions = allActions.filter(action => action.userId === userId);
+    
+    // 计算共同行为
+    const targetItemIds = new Set(targetUserActions.map(action => `${action.itemType}_${action.itemId}`));
+    const otherItemIds = new Set(otherUserActions.map(action => `${action.itemType}_${action.itemId}`));
+    
+    // 计算交集
+    const intersection = new Set([...targetItemIds].filter(x => otherItemIds.has(x)));
+    
+    // 计算并集
+    const union = new Set([...targetItemIds, ...otherItemIds]);
+    
+    // 计算Jaccard相似度
+    const similarity = union.size > 0 ? intersection.size / union.size : 0;
+    
+    if (similarity > 0) {
+      similarities.push({ userId, similarity });
+    }
+  });
+  
+  // 按相似度排序
+  similarities.sort((a, b) => b.similarity - a.similarity);
+  
+  const result = {
+    userId: targetUserId,
+    similarUsers: similarities.slice(0, 10), // 只保存前10个最相似的用户
+    timestamp: new Date().toISOString()
+  };
+  
+  // 保存相似度结果
+  const allSimilarities = JSON.parse(localStorage.getItem(USER_SIMILARITIES_KEY) || '[]');
+  const existingIndex = allSimilarities.findIndex((sim: UserSimilarity) => sim.userId === targetUserId);
+  
+  if (existingIndex !== -1) {
+    allSimilarities[existingIndex] = result;
+  } else {
+    allSimilarities.push(result);
+  }
+  
+  localStorage.setItem(USER_SIMILARITIES_KEY, JSON.stringify(allSimilarities));
+  
+  return result;
+}
+
+/**
+ * 获取用户相似度
+ */
+export function getUserSimilarities(userId: string): UserSimilarity | undefined {
+  const allSimilarities = JSON.parse(localStorage.getItem(USER_SIMILARITIES_KEY) || '[]');
+  const similarity = allSimilarities.find((sim: UserSimilarity) => sim.userId === userId);
+  
+  if (similarity) {
+    // 检查是否过期（24小时）
+    if (Date.now() - new Date(similarity.timestamp).getTime() < 86400000) {
+      return similarity;
+    }
+  }
+  
+  // 重新计算
+  return calculateUserSimilarities(userId);
+}
+
+/**
+ * 基于协同过滤的推荐
+ */
+export function generateCollaborativeRecommendations(userId: string, limit: number = 10): RecommendedItem[] {
+  const similarities = getUserSimilarities(userId);
+  
+  if (!similarities || similarities.similarUsers.length === 0) {
+    return [];
+  }
+  
+  // 获取相似用户的行为
+  const allActions = getUserActions();
+  const recommendedItems: Record<string, { item: any; type: RecommendedItem['type']; score: number }> = {};
+  
+  similarities.similarUsers.forEach(({ userId: similarUserId, similarity }) => {
+    const similarUserActions = allActions.filter(
+      action => action.userId === similarUserId && 
+      (action.actionType === 'like' || action.actionType === 'save' || action.actionType === 'share' || action.actionType === 'download')
+    );
+    
+    similarUserActions.forEach(action => {
+      const itemKey = `${action.itemType}_${action.itemId}`;
+      const weight = ACTION_WEIGHTS[action.actionType] * similarity;
+      
+      // 获取实际的项目数据
+      let item: any;
+      let type: RecommendedItem['type'];
+      
+      if (action.itemType === 'post') {
+        const posts = JSON.parse(localStorage.getItem('jmzf_posts') || '[]');
+        item = posts.find((p: any) => p.id === action.itemId);
+        type = 'post';
+      } else if (action.itemType === 'challenge') {
+        const challenges = JSON.parse(localStorage.getItem('jmzf_challenges') || '[]');
+        item = challenges.find((c: any) => c.id === action.itemId);
+        type = 'challenge';
+      } else if (action.itemType === 'template') {
+        const templates = JSON.parse(localStorage.getItem('jmzf_templates') || '[]');
+        item = templates.find((t: any) => t.id === action.itemId);
+        type = 'template';
+      } else {
+        return; // 跳过用户、标签等类型
+      }
+      
+      if (item) {
+        if (recommendedItems[itemKey]) {
+          recommendedItems[itemKey].score += weight;
+        } else {
+          recommendedItems[itemKey] = { item, type, score: weight };
+        }
+      }
+    });
+  });
+  
+  // 转换为RecommendedItem数组
+  return Object.values(recommendedItems)
+    .map(({ item, type, score }) => ({
+      id: item.id,
+      type,
+      title: type === 'post' ? item.title : type === 'challenge' ? item.title : item.name,
+      thumbnail: type === 'post' ? item.thumbnail : type === 'challenge' ? item.featuredImage : item.preview,
+      score,
+      reason: '相似用户喜欢',
+      metadata: item
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
+/**
+ * 计算推荐多样性分数
+ */
+export function calculateDiversityScore(items: RecommendedItem[]): number {
+  if (items.length === 0) return 0;
+  
+  // 统计各维度分布
+  const typeCount: Record<string, number> = {};
+  const categoryCount: Record<string, number> = {};
+  const themeCount: Record<string, number> = {};
+  
+  items.forEach(item => {
+    // 类型统计
+    typeCount[item.type] = (typeCount[item.type] || 0) + 1;
+    
+    // 分类统计
+    if (item.metadata?.category) {
+      categoryCount[item.metadata.category] = (categoryCount[item.metadata.category] || 0) + 1;
+    }
+    
+    // 主题统计
+    if (item.metadata?.theme) {
+      themeCount[item.metadata.theme] = (themeCount[item.metadata.theme] || 0) + 1;
+    }
+  });
+  
+  // 计算多样性分数
+  const typeDiversity = Object.keys(typeCount).length / 3; // 最大3种类型
+  const categoryDiversity = 1 - Object.values(categoryCount).reduce((max, count) => Math.max(max, count / items.length), 0);
+  const themeDiversity = 1 - Object.values(themeCount).reduce((max, count) => Math.max(max, count / items.length), 0);
+  
+  // 综合多样性分数
+  return (typeDiversity * 0.4 + categoryDiversity * 0.3 + themeDiversity * 0.3);
+}
+
+/**
+ * 优化推荐多样性
+ */
+export function optimizeRecommendationDiversity(items: RecommendedItem[], limit: number = 20): RecommendedItem[] {
+  if (items.length <= limit) return items;
+  
+  // 按分数排序
+  const sortedItems = [...items].sort((a, b) => b.score - a.score);
+  
+  // 多样性优化
+  const optimized: RecommendedItem[] = [];
+  const typeCounts: Record<string, number> = {};
+  const categoryCounts: Record<string, number> = {};
+  const themeCounts: Record<string, number> = {};
+  
+  for (const item of sortedItems) {
+    if (optimized.length >= limit) break;
+    
+    // 检查类型限制
+    const typeCount = typeCounts[item.type] || 0;
+    if (typeCount >= Math.ceil(limit * 0.5)) continue; // 每种类型最多占50%
+    
+    // 检查分类限制
+    const category = item.metadata?.category;
+    const categoryCount = category ? (categoryCounts[category] || 0) : 0;
+    if (category && categoryCount >= Math.ceil(limit * DIVERSITY_SETTINGS.maxItemsPerCategory)) continue;
+    
+    // 检查主题限制
+    const theme = item.metadata?.theme;
+    const themeCount = theme ? (themeCounts[theme] || 0) : 0;
+    if (theme && themeCount >= Math.ceil(limit * DIVERSITY_SETTINGS.maxItemsPerTheme)) continue;
+    
+    // 添加到结果
+    optimized.push(item);
+    
+    // 更新计数
+    typeCounts[item.type] = typeCount + 1;
+    if (category) categoryCounts[category] = categoryCount + 1;
+    if (theme) themeCounts[theme] = themeCount + 1;
+  }
+  
+  // 如果结果不足，补充剩余的项目
+  if (optimized.length < limit) {
+    const remaining = sortedItems.filter(item => !optimized.some(optimizedItem => optimizedItem.id === item.id));
+    optimized.push(...remaining.slice(0, limit - optimized.length));
+  }
+  
+  return optimized;
 }
 
 /**
@@ -605,8 +1031,13 @@ export default {
   generateRecommendations,
   getRecommendations,
   recordRecommendationClick,
+  recordRecommendationFeedback,
   getTrendingContent,
   getSimilarContent,
+  calculateUserSimilarities,
+  getUserSimilarities,
+  calculateDiversityScore,
+  optimizeRecommendationDiversity,
   clearUserActions,
   resetUserPreferences
 };

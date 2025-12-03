@@ -113,6 +113,9 @@ class BlindBoxService {
 
   // 盲盒开启历史
   private openingHistory: BlindBoxOpeningResult[] = [];
+  
+  // 用户收藏的盲盒内容
+  private userCollections: Map<string, Set<string>> = new Map(); // userId -> Set<contentId>
 
   // 获取所有盲盒
   getAllBlindBoxes(): BlindBox[] {
@@ -207,6 +210,45 @@ class BlindBoxService {
       }
     });
     return userContents;
+  }
+  
+  // 切换用户对某个盲盒内容的收藏状态
+  toggleCollection(userId: string, contentId: string): boolean {
+    if (!this.userCollections.has(userId)) {
+      this.userCollections.set(userId, new Set());
+    }
+    
+    const userCollection = this.userCollections.get(userId)!;
+    
+    if (userCollection.has(contentId)) {
+      userCollection.delete(contentId);
+      return false; // 取消收藏
+    } else {
+      userCollection.add(contentId);
+      return true; // 收藏成功
+    }
+  }
+  
+  // 检查某个盲盒内容是否被用户收藏
+  isContentCollected(userId: string, contentId: string): boolean {
+    const userCollection = this.userCollections.get(userId);
+    return userCollection ? userCollection.has(contentId) : false;
+  }
+  
+  // 获取用户收藏的所有盲盒内容
+  getUserCollections(userId: string): BlindBoxContent[] {
+    const userCollection = this.userCollections.get(userId);
+    if (!userCollection || userCollection.size === 0) {
+      return [];
+    }
+    
+    return this.blindBoxContents.filter(content => userCollection!.has(content.id));
+  }
+  
+  // 获取用户收藏的盲盒内容数量
+  getCollectionCount(userId: string): number {
+    const userCollection = this.userCollections.get(userId);
+    return userCollection ? userCollection.size : 0;
   }
 }
 

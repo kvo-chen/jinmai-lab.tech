@@ -1,246 +1,454 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import { toast } from 'sonner';
+import llmService from '../services/llmService';
 
-// 知识条目类型定义
-interface KnowledgeItem {
+interface CulturalKnowledge {
   id: string;
   title: string;
-  description: string;
+  content: string;
   category: string;
   tags: string[];
-  content: string;
-  coverImage: string;
+  viewCount: number;
+  likes: number;
+  createdAt: string;
 }
 
-// 模拟数据
-const knowledgeItems: KnowledgeItem[] = [
-  {
-    id: '1',
-    title: '天津杨柳青年画',
-    description: '天津杨柳青年画是中国著名的民间木版年画之一，起源于明代崇祯年间，具有鲜明的地方特色和艺术风格。',
-    category: '民间艺术',
-    tags: ['年画', '民间艺术', '天津特色'],
-    content: '天津杨柳青年画是中国著名的民间木版年画之一，起源于明代崇祯年间，具有鲜明的地方特色和艺术风格。杨柳青年画以其精湛的工艺、丰富的题材和生动的形象而闻名于世，是中国民间艺术的瑰宝。',
-    coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop'
-  },
-  {
-    id: '2',
-    title: '泥人张彩塑',
-    description: '泥人张彩塑是天津的传统民间艺术，以其栩栩如生的形象和精湛的技艺而闻名。',
-    category: '民间艺术',
-    tags: ['彩塑', '民间艺术', '天津特色'],
-    content: '泥人张彩塑是天津的传统民间艺术，以其栩栩如生的形象和精湛的技艺而闻名。泥人张彩塑的历史可以追溯到清代道光年间，至今已有近200年的历史。',
-    coverImage: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=400&h=300&fit=crop'
-  },
-  {
-    id: '3',
-    title: '天津狗不理包子',
-    description: '狗不理包子是天津的传统名吃，以其皮薄馅大、鲜香可口而闻名。',
-    category: '传统美食',
-    tags: ['美食', '天津特色', '传统小吃'],
-    content: '狗不理包子是天津的传统名吃，以其皮薄馅大、鲜香可口而闻名。狗不理包子的历史可以追溯到清代咸丰年间，至今已有160多年的历史。',
-    coverImage: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop'
-  },
-  {
-    id: '4',
-    title: '天津相声',
-    description: '天津是相声的发源地之一，天津相声以其幽默风趣、贴近生活而深受观众喜爱。',
-    category: '传统曲艺',
-    tags: ['相声', '曲艺', '天津特色'],
-    content: '天津是相声的发源地之一，天津相声以其幽默风趣、贴近生活而深受观众喜爱。天津相声的历史可以追溯到清代末年，至今已有100多年的历史。',
-    coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=300&fit=crop'
-  },
-  {
-    id: '5',
-    title: '天津古文化街',
-    description: '天津古文化街是天津的著名旅游景点，以其浓厚的历史文化氛围和传统建筑而闻名。',
-    category: '历史遗迹',
-    tags: ['旅游', '历史遗迹', '天津特色'],
-    content: '天津古文化街是天津的著名旅游景点，以其浓厚的历史文化氛围和传统建筑而闻名。古文化街位于天津市南开区东北角东门外，海河西岸，是一条以天后宫为中心，集旅游观光、购物、餐饮于一体的商业步行街。',
-    coverImage: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400&h=300&fit=crop'
-  },
-  {
-    id: '6',
-    title: '天津大沽口炮台',
-    description: '天津大沽口炮台是中国近代史上的重要历史遗迹，见证了中国人民反抗外国侵略的英勇斗争。',
-    category: '历史遗迹',
-    tags: ['历史遗迹', '爱国主义教育', '天津特色'],
-    content: '天津大沽口炮台是中国近代史上的重要历史遗迹，见证了中国人民反抗外国侵略的英勇斗争。大沽口炮台位于天津市滨海新区，是明清时期的海防要塞，也是第二次鸦片战争和八国联军侵华战争的重要战场。',
-    coverImage: 'https://images.unsplash.com/photo-1568702840618-4d2604190349?w=400&h=300&fit=crop'
-  }
-];
+interface CulturalKnowledgeBaseProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
 
-const CulturalKnowledgeBase: React.FC = () => {
+export default function CulturalKnowledgeBase({ isOpen = true, onClose }: CulturalKnowledgeBaseProps) {
   const { isDark } = useTheme();
+  const [knowledgeList, setKnowledgeList] = useState<CulturalKnowledge[]>([]);
+  const [selectedKnowledge, setSelectedKnowledge] = useState<CulturalKnowledge | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [showDetail, setShowDetail] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [isSearching, setIsSearching] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
+  const [answer, setAnswer] = useState('');
+  const [showAnswer, setShowAnswer] = useState(false);
 
-  // 分类列表
-  const categories = ['all', '民间艺术', '传统美食', '传统曲艺', '历史遗迹'];
+  // 模拟文化知识库数据
+  useEffect(() => {
+    const mockKnowledge: CulturalKnowledge[] = [
+      {
+        id: '1',
+        title: '天津杨柳青年画',
+        content: '天津杨柳青年画是中国著名的民间木版年画之一，始于明代崇祯年间，盛于清代，以色彩艳丽、线条细腻、构图饱满著称。',
+        category: '传统艺术',
+        tags: ['天津文化', '年画', '传统艺术'],
+        viewCount: 1245,
+        likes: 342,
+        createdAt: '2024-10-15'
+      },
+      {
+        id: '2',
+        title: '京剧的起源与发展',
+        content: '京剧起源于清朝乾隆年间，是中国的国剧，融合了徽剧、汉剧等多种戏曲艺术，以唱、念、做、打为主要表演形式。',
+        category: '传统艺术',
+        tags: ['京剧', '传统艺术', '戏曲'],
+        viewCount: 2134,
+        likes: 567,
+        createdAt: '2024-10-20'
+      },
+      {
+        id: '3',
+        title: '中国传统色彩文化',
+        content: '中国传统色彩文化历史悠久，包括五色系统（青、赤、黄、白、黑）等，色彩在传统建筑、服饰、绘画中有着重要的象征意义。',
+        category: '传统文化',
+        tags: ['色彩文化', '传统文化'],
+        viewCount: 1876,
+        likes: 432,
+        createdAt: '2024-10-25'
+      },
+      {
+        id: '4',
+        title: '天津相声艺术',
+        content: '天津是中国相声的发源地之一，相声艺术在天津有着深厚的群众基础，产生了许多著名的相声演员和作品。',
+        category: '传统艺术',
+        tags: ['天津文化', '相声', '传统艺术'],
+        viewCount: 1567,
+        likes: 389,
+        createdAt: '2024-11-01'
+      },
+      {
+        id: '5',
+        title: '中国传统建筑之美',
+        content: '中国传统建筑以木结构为主，注重天人合一的理念，包括宫殿、园林、寺庙等多种类型，体现了中国传统的哲学思想和审美观念。',
+        category: '传统文化',
+        tags: ['传统建筑', '传统文化', '建筑'],
+        viewCount: 2345,
+        likes: 678,
+        createdAt: '2024-11-05'
+      }
+    ];
+    setKnowledgeList(mockKnowledge);
+  }, []);
 
-  // 过滤知识条目
-  const filteredItems = knowledgeItems.filter(item => {
+  // 获取所有分类
+  const categories = ['all', ...new Set(knowledgeList.map(item => item.category))];
+
+  // 过滤文化知识
+  const filteredKnowledge = knowledgeList.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        item.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+                         item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // 打开详情
-  const openDetail = (item: KnowledgeItem) => {
-    setSelectedItem(item);
-    setShowDetail(true);
+  // 提问AI
+  const askAI = async () => {
+    if (!question.trim()) {
+      toast.warning('请输入问题');
+      return;
+    }
+
+    setIsGeneratingAnswer(true);
+    setShowAnswer(false);
+
+    try {
+      const aiQuestion = `请回答关于文化知识的问题：${question}`;
+      const response = await llmService.generateResponse(aiQuestion);
+      setAnswer(response);
+      setShowAnswer(true);
+    } catch (error) {
+      toast.error('AI回答失败，请稍后重试');
+      console.error('AI回答失败:', error);
+    } finally {
+      setIsGeneratingAnswer(false);
+    }
+  };
+
+  // 查看知识详情
+  const viewKnowledgeDetails = (knowledge: CulturalKnowledge) => {
+    setSelectedKnowledge(knowledge);
+    setShowDetails(true);
   };
 
   return (
-    <div className={`min-h-screen p-4 ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">天津文化知识库</h1>
-
-        {/* 搜索和分类 */}
-        <div className="mb-6 flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="搜索知识库..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}
-            />
-          </div>
-          <div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className={`px-4 py-2 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'all' ? '全部分类' : category}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* 知识条目列表 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map(item => (
+    <AnimatePresence>
+      {isOpen && (
+        <div className={`${isOpen ? 'block' : 'hidden'}`}>
+          {/* 模态框模式 */}
+          {onClose && (
             <motion.div
-              key={item.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`rounded-lg overflow-hidden shadow-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-              onClick={() => openDetail(item)}
+              className="fixed inset-0 z-[1000] flex items-center justify-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <div className="h-48 overflow-hidden">
-                <img
-                  src={item.coverImage}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                />
-              </div>
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xl font-semibold">{item.title}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    {item.category}
-                  </span>
-                </div>
-                <p className="text-sm opacity-70 mb-3">{item.description}</p>
-                <div className="flex flex-wrap gap-2">
-                  {item.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className={`px-2 py-1 rounded-full text-xs ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
             </motion.div>
-          ))}
-        </div>
+          )}
 
-        {/* 无结果提示 */}
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 className="text-lg font-medium mb-2">暂无相关知识</h3>
-            <p className="opacity-70">请尝试调整搜索条件或分类</p>
-          </div>
-        )}
-
-        {/* 详情模态框 */}
-        {showDetail && selectedItem && (
           <motion.div
+            className={`${onClose ? 'relative w-full max-w-5xl max-h-[90vh] overflow-y-auto' : 'w-full'}`}
+            initial={{ x: onClose ? '100%' : 0, opacity: onClose ? 0 : 1 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: onClose ? '100%' : 0, opacity: onClose ? 0 : 1 }}
+            transition={{ duration: 0.5 }}
+            style={{ borderLeft: onClose ? '1px solid' : 'none' }}
+          >
+            {/* 组件头部 */}
+            <div className={`p-6 border-b ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">文化知识库</h2>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                    探索和学习中国传统文化知识
+                  </p>
+                </div>
+                {onClose && (
+                  <button
+                    onClick={onClose}
+                    className={`p-2 rounded-full ${isDark ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+                    aria-label="关闭"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 搜索和分类 */}
+            <div className={`p-6 border-b ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* 搜索框 */}
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="搜索文化知识..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={`w-full p-3 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-100 border-gray-300 text-black'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  <i className="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"></i>
+                </div>
+
+                {/* 分类过滤 */}
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className={`px-4 py-3 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-100 border-gray-300 text-black'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>
+                      {category === 'all' ? '全部分类' : category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 文化知识列表 */}
+            <div className={`p-6 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold">文化知识</h3>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  共 {filteredKnowledge.length} 条知识
+                </span>
+              </div>
+
+              {/* 文化知识卡片列表 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredKnowledge.length === 0 ? (
+                  <div className="col-span-full flex flex-col items-center justify-center h-64 text-center">
+                    <i className="fas fa-search text-4xl text-gray-400 mb-2"></i>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      没有找到匹配的文化知识
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilterCategory('all');
+                      }}
+                      className={`mt-4 px-4 py-2 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}
+                    >
+                      清除筛选
+                    </button>
+                  </div>
+                ) : (
+                  filteredKnowledge.map((knowledge) => (
+                    <motion.div
+                      key={knowledge.id}
+                      className={`p-5 rounded-xl shadow-lg ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} hover:shadow-xl transition-shadow`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.random() * 0.2 }}
+                      whileHover={{ y: -5 }}
+                    >
+                      {/* 知识卡片头部 */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mb-2 ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                            {knowledge.category}
+                          </span>
+                          <h4 className="text-lg font-bold mb-1">{knowledge.title}</h4>
+                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} line-clamp-2`}>
+                            {knowledge.content}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 知识卡片标签 */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {knowledge.tags.map((tag, index) => (
+                          <span key={index} className={`px-2 py-1 rounded-full text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* 知识卡片底部 */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-1">
+                            <i className="fas fa-eye text-gray-400"></i>
+                            <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {knowledge.viewCount}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <i className="fas fa-heart text-red-500"></i>
+                            <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {knowledge.likes}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <i className="fas fa-calendar text-gray-400"></i>
+                            <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {knowledge.createdAt}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => viewKnowledgeDetails(knowledge)}
+                          className={`px-4 py-1 rounded-lg text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}
+                        >
+                          查看详情
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+
+              {/* 知识问答区域 */}
+              <div className={`mt-10 p-6 rounded-xl ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} shadow-lg`}>
+                <h3 className="text-xl font-bold mb-4">文化知识问答</h3>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
+                  有关于文化知识的问题？可以向AI提问
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <textarea
+                        placeholder="请输入你的文化知识问题..."
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        rows={3}
+                        className={`w-full p-3 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-black'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <button
+                      onClick={askAI}
+                      disabled={isGeneratingAnswer || !question.trim()}
+                      className={`px-6 py-2 rounded-lg ${isGeneratingAnswer || !question.trim() ? (isDark ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-gray-300 cursor-not-allowed text-gray-500') : (isDark ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white')} transition-colors flex items-center gap-2`}
+                    >
+                      {isGeneratingAnswer ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin"></i>
+                          <span>生成中...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-question-circle"></i>
+                          <span>提问AI</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* AI回答显示 */}
+                  <AnimatePresence>
+                    {showAnswer && (
+                      <motion.div
+                        className={`p-4 rounded-lg ${isDark ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-gray-600 text-white' : 'bg-gray-500 text-white'}`}>
+                            AI
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="font-medium mb-2">AI回答</h5>
+                            <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'} whitespace-pre-wrap`}>
+                              {answer}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* 知识详情弹窗 */}
+      <AnimatePresence>
+        {showDetails && selectedKnowledge && (
+          <motion.div
+            className="fixed inset-0 z-[1001] flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => setShowDetail(false)}
           >
+            <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowDetails(false)} />
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className={`max-w-3xl w-full rounded-lg overflow-hidden shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+              className={`relative w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-xl shadow-2xl ${isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'}`}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="h-64 overflow-hidden">
-                <img
-                  src={selectedItem.coverImage}
-                  alt={selectedItem.title}
-                  className="w-full h-full object-cover"
-                />
+              {/* 详情弹窗头部 */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold">知识详情</h3>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  className={`p-2 rounded-full ${isDark ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+                  aria-label="关闭"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
               </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{selectedItem.title}</h2>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                      {selectedItem.category}
+
+              {/* 详情内容 */}
+              <div className="space-y-6">
+                {/* 基本信息 */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-lg font-bold">{selectedKnowledge.title}</h4>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                      {selectedKnowledge.category}
                     </span>
                   </div>
+                  
+                  <div className="mb-4">
+                    <h5 className="font-medium mb-2">内容</h5>
+                    <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} whitespace-pre-wrap`}>
+                      {selectedKnowledge.content}
+                    </p>
+                  </div>
+                  
+                  {/* 知识信息标签 */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">浏览量</div>
+                      <div className="font-medium">{selectedKnowledge.viewCount}</div>
+                    </div>
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">点赞数</div>
+                      <div className="font-medium text-red-500">{selectedKnowledge.likes}</div>
+                    </div>
+                    <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">发布时间</div>
+                      <div className="font-medium">{selectedKnowledge.createdAt}</div>
+                    </div>
+                  </div>
+                  
+                  {/* 标签 */}
+                  <div className="mb-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">标签</div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedKnowledge.tags.map((tag, index) => (
+                        <span key={index} className={`px-3 py-1 rounded-full text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 操作按钮 */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t dark:border-gray-800">
                   <button
-                    onClick={() => setShowDetail(false)}
-                    className={`p-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
-                    aria-label="关闭"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedItem.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className={`px-2 py-1 rounded-full text-xs ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">描述</h3>
-                  <p className="opacity-80">{selectedItem.description}</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">详细内容</h3>
-                  <p className="opacity-80 whitespace-pre-line">{selectedItem.content}</p>
-                </div>
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={() => setShowDetail(false)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
+                    onClick={() => setShowDetails(false)}
+                    className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}
                   >
                     关闭
                   </button>
@@ -249,9 +457,7 @@ const CulturalKnowledgeBase: React.FC = () => {
             </motion.div>
           </motion.div>
         )}
-      </div>
-    </div>
+      </AnimatePresence>
+    </AnimatePresence>
   );
-};
-
-export default CulturalKnowledgeBase;
+}

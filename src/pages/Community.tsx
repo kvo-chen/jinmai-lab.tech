@@ -1,14 +1,21 @@
-import { useEffect, useMemo, useState, useContext } from 'react'
+import { useEffect, useMemo, useState, useContext, lazy, Suspense } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { TianjinImage } from '@/components/TianjinStyleComponents'
 import SidebarLayout from '@/components/SidebarLayout'
 import GradientHero from '@/components/GradientHero'
-import CommunityChat from '@/components/CommunityChat'
-import CommunityManagement from '@/components/CommunityManagement'
-import { CommunityDiscussion } from '@/components/DiscussionSection'
-import ScheduledPost from '@/components/ScheduledPost'
-import VirtualList from '@/components/VirtualList'
+// 使用React.lazy实现子组件的延迟加载
+const CommunityChat = lazy(() => import('@/components/CommunityChat'))
+const CommunityManagement = lazy(() => import('@/components/CommunityManagement'))
+// 对于有命名导出的组件，需要使用正确的动态导入语法
+const CommunityDiscussion = lazy(() => import('@/components/DiscussionSection').then(module => ({
+  default: module.CommunityDiscussion
+})))
+const DiscussionSection = lazy(() => import('@/components/DiscussionSection').then(module => ({
+  default: module.DiscussionSection
+})))
+const ScheduledPost = lazy(() => import('@/components/ScheduledPost'))
+const VirtualList = lazy(() => import('@/components/VirtualList'))
 import { useTheme } from '@/hooks/useTheme'
 import postsApi, { Post } from '@/services/postService'
 import { toast } from 'sonner'
@@ -1311,7 +1318,9 @@ export default function Community() {
               <div className="rounded-xl overflow-hidden shadow-md">
                 <VirtualList
                   items={displayRecommended}
-                  renderItem={(c: Community, index: number) => (
+                  renderItem={(item, index: number) => {
+                    const c = item as Community;
+                    return (
                     <div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg`}>
                       <div className="relative">
                         <TianjinImage src={c.cover} alt={c.name} className="w-full object-cover transition-transform duration-500 hover:scale-105" ratio="landscape" />
@@ -1336,7 +1345,8 @@ export default function Community() {
                         </div>
                       </div>
                     </div>
-                  )}
+                    );
+                  }}
                   columns={3} // 根据屏幕尺寸动态调整列数（组件内部会自动响应式处理）
                   isDark={isDark}
                 />

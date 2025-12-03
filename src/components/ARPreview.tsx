@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF, PerspectiveCamera, useProgress } from '@react-three/drei';
+import { OrbitControls, useGLTF, PerspectiveCamera, useProgress, Environment, CameraControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 // AR预览配置类型
@@ -14,7 +14,14 @@ export interface ARPreviewConfig {
   rotation?: { x: number; y: number; z: number };
   position?: { x: number; y: number; z: number };
   type: '3d' | '2d';
+  animations?: boolean;
 }
+
+// 环境预设类型
+type EnvironmentPreset = 'studio' | 'forest' | 'city' | 'night' | 'custom';
+
+// 动画状态类型
+type AnimationState = 'playing' | 'paused' | 'stopped';
 
 // 加载进度组件
 const LoadingProgress: React.FC = () => {
@@ -43,14 +50,40 @@ const ModelPreview: React.FC<{
   rotation: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
   onLoaded?: () => void;
-}> = ({ url, scale, rotation, position, onLoaded }) => {
-  const { scene } = useGLTF(url);
+  animationState?: AnimationState;
+}> = ({ url, scale, rotation, position, onLoaded, animationState }) => {
+  const { scene, animations } = useGLTF(url);
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   
-  React.useEffect(() => {
+  // 初始化动画混合器
+  useEffect(() => {
+    if (scene && animations && animations.length > 0) {
+      mixerRef.current = new THREE.AnimationMixer(scene);
+      
+      // 播放所有动画
+      animations.forEach((clip) => {
+        mixerRef.current?.clipAction(clip).play();
+      });
+    }
+    
     if (onLoaded) {
       onLoaded();
     }
-  }, [onLoaded]);
+    
+    return () => {
+      // 移除动画混合器的引用，让垃圾回收处理
+      mixerRef.current = null;
+    };
+  }, [scene, animations, onLoaded]);
+  
+  // 更新动画
+  useFrame((state, delta) => {
+    if (mixerRef.current) {
+      if (animationState === 'playing') {
+        mixerRef.current.update(delta);
+      }
+    }
+  });
   
   return (
     <primitive
@@ -112,8 +145,13 @@ const ARPreview: React.FC<{
   const [hitPosition, setHitPosition] = useState<{ x: number; y: number; z: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('perspective');
   const [cameraRef, setCameraRef] = useState<THREE.PerspectiveCamera | null>(null);
+  const [environmentPreset, setEnvironmentPreset] = useState<EnvironmentPreset>('studio');
+  const [animationState, setAnimationState] = useState<AnimationState>('playing');
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const arContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<any>(null);
+  const modelRef = useRef<THREE.Object3D | null>(null);
 
   // 加载资源
   useEffect(() => {
@@ -131,6 +169,42 @@ const ARPreview: React.FC<{
 
     loadResources();
   }, [config]);
+  
+  // 自动旋转模型
+  useFrame((state, delta) => {
+    if (autoRotate && modelRef.current) {
+      modelRef.current.rotation.y += delta * 0.5;
+    }
+  });
+  
+  // 切换动画状态
+  const toggleAnimation = () => {
+    if (animationState === 'playing') {
+      setAnimationState('paused');
+      toast.info('动画已暂停');
+    } else {
+      setAnimationState('playing');
+      toast.info('动画已播放');
+    }
+  };
+  
+  // 切换自动旋转
+  const toggleAutoRotate = () => {
+    setAutoRotate(!autoRotate);
+    toast.info(autoRotate ? '自动旋转已关闭' : '自动旋转已开启');
+  };
+  
+  // 切换统计信息显示
+  const toggleStats = () => {
+    setShowStats(!showStats);
+    toast.info(showStats ? '统计信息已关闭' : '统计信息已开启');
+  };
+  
+  // 切换环境预设
+  const changeEnvironment = (preset: EnvironmentPreset) => {
+    setEnvironmentPreset(preset);
+    toast.info(`环境已切换到${preset}`);
+  };
 
   // 切换AR模式
   const toggleARMode = () => {
@@ -276,6 +350,15 @@ const ARPreview: React.FC<{
                 {/* 坐标系辅助线 */}
                 <axesHelper args={[2]} />
                 
+                {/* 环境预设 */}
+                <Environment
+                  preset={environmentPreset === 'studio' ? 'studio' : 
+                         environmentPreset === 'forest' ? 'forest' :
+                         environmentPreset === 'city' ? 'city' :
+                         environmentPreset === 'night' ? 'night' : 'studio'}
+                  background
+                />
+                
                 {config.type === '3d' && config.modelUrl ? (
                   <>
                     <ModelPreview
@@ -284,6 +367,7 @@ const ARPreview: React.FC<{
                       rotation={rotation}
                       position={position}
                       onLoaded={() => setIsLoading(false)}
+                      animationState={animationState}
                     />
                     {/* 模型中心点指示器 */}
                     <mesh position={[position.x, position.y, position.z]}>
@@ -349,8 +433,14 @@ const ARPreview: React.FC<{
                 <ambientLight intensity={0.5} />
                 <directionalLight position={[5, 5, 5]} intensity={1} />
                 
-                {/* 坐标系辅助线 */}
-                <axesHelper args={[2]} />
+                {/* 环境预设 */}
+                <Environment
+                  preset={environmentPreset === 'studio' ? 'studio' : 
+                         environmentPreset === 'forest' ? 'forest' :
+                         environmentPreset === 'city' ? 'city' :
+                         environmentPreset === 'night' ? 'night' : 'studio'}
+                  background
+                />
                 
                 {/* 模型放置指示器 */}
                 {isARMode && !modelPlaced && (
@@ -372,6 +462,7 @@ const ARPreview: React.FC<{
                       rotation={rotation}
                       position={position}
                       onLoaded={() => setIsLoading(false)}
+                      animationState={animationState}
                     />
                     {/* 模型中心点指示器 */}
                     <mesh position={[position.x, position.y, position.z]}>
@@ -516,6 +607,65 @@ const ARPreview: React.FC<{
           </button>
         </div>
         
+        {/* 动画和旋转控制 */}
+        <div className="grid grid-cols-4 gap-4 mb-4">
+          <button
+            onClick={toggleAnimation}
+            className={`py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm ${animationState === 'playing' 
+              ? 'bg-red-600 text-white' 
+              : isDark 
+                ? 'bg-gray-700 hover:bg-gray-600' 
+                : 'bg-gray-100 hover:bg-gray-200'}`}
+          >
+            <i className={`fas fa-${animationState === 'playing' ? 'pause' : 'play'}`}></i>
+            {animationState === 'playing' ? '暂停' : '播放'}
+          </button>
+          
+          <button
+            onClick={toggleAutoRotate}
+            className={`py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm ${autoRotate 
+              ? 'bg-red-600 text-white' 
+              : isDark 
+                ? 'bg-gray-700 hover:bg-gray-600' 
+                : 'bg-gray-100 hover:bg-gray-200'}`}
+          >
+            <i className="fas fa-sync-alt"></i>
+            自动旋转
+          </button>
+          
+          <button
+            onClick={toggleStats}
+            className={`py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm ${showStats 
+              ? 'bg-red-600 text-white' 
+              : isDark 
+                ? 'bg-gray-700 hover:bg-gray-600' 
+                : 'bg-gray-100 hover:bg-gray-200'}`}
+          >
+            <i className="fas fa-chart-bar"></i>
+            统计信息
+          </button>
+        </div>
+        
+        {/* 环境预设选择 */}
+        <div className="mb-4">
+          <div className="text-sm font-medium mb-2">环境预设</div>
+          <div className="flex gap-2 flex-wrap">
+            {(['studio', 'forest', 'city', 'night'] as EnvironmentPreset[]).map((preset) => (
+              <button
+                key={preset}
+                onClick={() => changeEnvironment(preset)}
+                className={`px-3 py-1 rounded-full text-xs transition-all ${environmentPreset === preset 
+                  ? 'bg-red-600 text-white' 
+                  : isDark 
+                    ? 'bg-gray-700 hover:bg-gray-600' 
+                    : 'bg-gray-100 hover:bg-gray-200'}`}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
+        
         {/* 视图模式切换（仅在非AR模式下显示） */}
         {!isARMode && (
           <div className="mb-4">
@@ -605,6 +755,7 @@ const ARPreview: React.FC<{
                     <li>右键拖拽平移视图</li>
                     <li>切换不同视图模式查看模型</li>
                     <li>点击拍照按钮保存模型截图</li>
+                    <li>使用环境预设改变模型显示效果</li>
                   </>
                 )}
               </ul>

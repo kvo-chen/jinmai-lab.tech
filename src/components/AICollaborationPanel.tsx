@@ -23,7 +23,43 @@ export default function AICollaborationPanel({ isOpen, onClose, onContentGenerat
   const [showNewSessionModal, setShowNewSessionModal] = useState(false)
   const [isEditingSessionName, setIsEditingSessionName] = useState(false)
   const [editingSessionName, setEditingSessionName] = useState('')
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [showExportOptions, setShowExportOptions] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  
+  // 对话模板
+  const conversationTemplates = [
+    {
+      id: 'creative-writing',
+      name: '创意写作',
+      description: '帮助你完善创意写作内容',
+      prompt: '我需要写一篇关于[主题]的创意内容，请帮我完善这个创意。'
+    },
+    {
+      id: 'design-concept',
+      name: '设计概念',
+      description: '帮助你细化设计概念',
+      prompt: '我有一个设计概念：[概念描述]，请帮我细化这个概念，包括设计原则、色彩方案和实现思路。'
+    },
+    {
+      id: 'story-development',
+      name: '故事发展',
+      description: '帮助你发展故事情节',
+      prompt: '我正在写一个故事，主题是[主题]，请帮我扩展故事情节，包括角色、冲突和高潮。'
+    },
+    {
+      id: 'problem-solving',
+      name: '问题解决',
+      description: '帮助你解决创意过程中的问题',
+      prompt: '我在创作过程中遇到了一个问题：[问题描述]，请帮我分析并提供解决方案。'
+    },
+    {
+      id: 'marketing-idea',
+      name: '营销创意',
+      description: '帮助你生成营销创意',
+      prompt: '我需要为[产品/服务]生成营销创意，请帮我想出几个创新的营销方案。'
+    }
+  ]
 
   // 加载会话列表
   useEffect(() => {
@@ -155,6 +191,51 @@ export default function AICollaborationPanel({ isOpen, onClose, onContentGenerat
       setSessions(updatedSessions)
     }
     toast.success('对话历史已清除')
+  }
+  
+  // 使用对话模板
+  const useTemplate = (template: any) => {
+    setInput(template.prompt)
+    setShowTemplates(false)
+  }
+  
+  // 导出会话
+  const exportSession = (format: 'text' | 'json' | 'markdown') => {
+    if (!currentSession) return
+    
+    let content = ''
+    let filename = `${currentSession.name}.${format}`
+    
+    switch (format) {
+      case 'text':
+        content = currentSession.messages.map(msg => {
+          return `${msg.role === 'user' ? '我' : 'AI'}: ${msg.content}`
+        }).join('\n\n')
+        break
+      case 'json':
+        content = JSON.stringify(currentSession, null, 2)
+        break
+      case 'markdown':
+        content = `# ${currentSession.name}\n\n`
+        content += currentSession.messages.map(msg => {
+          return `## ${msg.role === 'user' ? '我' : 'AI'}\n\n${msg.content}`
+        }).join('\n\n')
+        break
+    }
+    
+    // 创建下载链接
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success(`会话已导出为 ${format} 格式`)
+    setShowExportOptions(false)
   }
 
   // 格式化时间
@@ -315,8 +396,28 @@ export default function AICollaborationPanel({ isOpen, onClose, onContentGenerat
                           <i className="fas fa-pen"></i>
                         </button>
                       </h3>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatTime(Date.now())}
+                      <div className="flex items-center gap-2">
+                        {/* 使用模板按钮 */}
+                        <button
+                          onClick={() => setShowTemplates(!showTemplates)}
+                          className={`p-1.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                          aria-label="使用模板"
+                        >
+                          <i className="fas fa-file-alt"></i>
+                        </button>
+                        
+                        {/* 导出会话按钮 */}
+                        <button
+                          onClick={() => setShowExportOptions(!showExportOptions)}
+                          className={`p-1.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                          aria-label="导出会话"
+                        >
+                          <i className="fas fa-download"></i>
+                        </button>
+                        
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatTime(Date.now())}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -324,12 +425,126 @@ export default function AICollaborationPanel({ isOpen, onClose, onContentGenerat
                 
                 {/* 消息列表 */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* 对话模板弹窗 */}
+                  <AnimatePresence>
+                    {showTemplates && (
+                      <motion.div
+                        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowTemplates(false)}
+                      >
+                        <motion.div
+                          className={`p-5 rounded-xl shadow-2xl ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-black'} max-w-md w-full`}
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.9, opacity: 0 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <h3 className="text-lg font-bold mb-3">选择对话模板</h3>
+                          <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {conversationTemplates.map(template => (
+                              <div
+                                key={template.id}
+                                className={`p-3 rounded-lg border ${isDark ? 'border-gray-700 hover:border-blue-500' : 'border-gray-200 hover:border-blue-500'} cursor-pointer transition-colors`}
+                                onClick={() => useTemplate(template)}
+                              >
+                                <h4 className="font-medium">{template.name}</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{template.description}</p>
+                                <p className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                                  {template.prompt}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              onClick={() => setShowTemplates(false)}
+                              className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-black'}`}
+                            >
+                              取消
+                            </button>
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  {/* 导出选项弹窗 */}
+                  <AnimatePresence>
+                    {showExportOptions && (
+                      <motion.div
+                        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-20"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowExportOptions(false)}
+                      >
+                        <motion.div
+                          className={`p-5 rounded-xl shadow-2xl ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-black'} max-w-md w-full`}
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.9, opacity: 0 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <h3 className="text-lg font-bold mb-3">导出会话</h3>
+                          <div className="space-y-3">
+                            <button
+                              onClick={() => exportSession('text')}
+                              className={`w-full p-3 rounded-lg transition-colors ${isDark ? 'bg-blue-900/30 hover:bg-blue-900/50 text-white' : 'bg-blue-100 hover:bg-blue-200 text-black'}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>纯文本格式 (.txt)</span>
+                                <i className="fas fa-file-alt"></i>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => exportSession('markdown')}
+                              className={`w-full p-3 rounded-lg transition-colors ${isDark ? 'bg-blue-900/30 hover:bg-blue-900/50 text-white' : 'bg-blue-100 hover:bg-blue-200 text-black'}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>Markdown格式 (.md)</span>
+                                <i className="fab fa-markdown"></i>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => exportSession('json')}
+                              className={`w-full p-3 rounded-lg transition-colors ${isDark ? 'bg-blue-900/30 hover:bg-blue-900/50 text-white' : 'bg-blue-100 hover:bg-blue-200 text-black'}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>JSON格式 (.json)</span>
+                                <i className="fas fa-code"></i>
+                              </div>
+                            </button>
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              onClick={() => setShowExportOptions(false)}
+                              className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-black'}`}
+                            >
+                              取消
+                            </button>
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  {/* 消息内容 */}
                   {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                       <i className="fas fa-comments text-4xl text-gray-400 mb-2"></i>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                         开始与 AI 对话，完善你的创意
                       </p>
+                      <button
+                        onClick={() => setShowTemplates(true)}
+                        className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-blue-900/30 hover:bg-blue-900/50 text-white' : 'bg-blue-100 hover:bg-blue-200 text-black'}`}
+                      >
+                        <i className="fas fa-file-alt mr-2"></i>
+                        使用对话模板
+                      </button>
                     </div>
                   ) : (
                     messages.map((message, index) => (

@@ -94,7 +94,17 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
         ...adminStore, 
         [id]: [currentEmail] 
       });
+      onMemberStoreChange({ 
+        ...memberStore, 
+        [id]: [currentEmail] 
+      });
     }
+    
+    // 设置默认隐私设置
+    onPrivacyStoreChange({ 
+      ...privacyStore, 
+      [id]: 'public' 
+    });
     
     // 重置表单
     setNewCommunityName('');
@@ -103,6 +113,108 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
     
     onCommunityTabChange('user');
     toast.success('已创建社群');
+  };
+
+  // 删除社群
+  const deleteCommunity = (communityId: string) => {
+    const confirmDelete = window.confirm('确定要删除这个社群吗？此操作不可恢复。');
+    if (!confirmDelete) return;
+    
+    // 更新状态
+    onUserCommunitiesChange(userCommunities.filter(c => c.id !== communityId));
+    onJoinedCommunitiesChange(joinedCommunities.filter(id => id !== communityId));
+    
+    // 删除相关存储
+    const updatedAdminStore = { ...adminStore };
+    const updatedMemberStore = { ...memberStore };
+    const updatedAnnounceStore = { ...announceStore };
+    const updatedPrivacyStore = { ...privacyStore };
+    
+    delete updatedAdminStore[communityId];
+    delete updatedMemberStore[communityId];
+    delete updatedAnnounceStore[communityId];
+    delete updatedPrivacyStore[communityId];
+    
+    onAdminStoreChange(updatedAdminStore);
+    onMemberStoreChange(updatedMemberStore);
+    onAnnounceStoreChange(updatedAnnounceStore);
+    onPrivacyStoreChange(updatedPrivacyStore);
+    
+    toast.success('社群已删除');
+  };
+
+  // 编辑社群信息
+  const updateCommunity = (communityId: string, name: string, description: string, tags: string[]) => {
+    if (!name.trim()) { toast.warning('社群名称不能为空'); return; }
+    if (!description.trim()) { toast.warning('社群简介不能为空'); return; }
+    
+    onUserCommunitiesChange(userCommunities.map(c => {
+      if (c.id !== communityId) return c;
+      return { ...c, name: name.trim(), description: description.trim(), tags };
+    }));
+    
+    toast.success('社群信息已更新');
+  };
+
+  // 邀请成员加入社群
+  const inviteMember = (communityId: string, email: string) => {
+    if (!email.trim()) { toast.warning('请输入邮箱地址'); return; }
+    
+    const updatedMemberStore = {
+      ...memberStore,
+      [communityId]: [...(memberStore[communityId] || []), email.trim()]
+    };
+    
+    onMemberStoreChange(updatedMemberStore);
+    
+    // 更新社群成员数量
+    onUserCommunitiesChange(userCommunities.map(c => {
+      if (c.id !== communityId) return c;
+      return { ...c, members: (memberStore[communityId] || []).length + 1 };
+    }));
+    
+    toast.success('邀请已发送');
+    setNewMemberEmail('');
+  };
+
+  // 移除社群成员
+  const removeMember = (communityId: string, email: string) => {
+    const updatedMemberStore = {
+      ...memberStore,
+      [communityId]: (memberStore[communityId] || []).filter(m => m !== email)
+    };
+    
+    onMemberStoreChange(updatedMemberStore);
+    
+    // 更新社群成员数量
+    onUserCommunitiesChange(userCommunities.map(c => {
+      if (c.id !== communityId) return c;
+      return { ...c, members: (updatedMemberStore[communityId] || []).length };
+    }));
+    
+    toast.success('成员已移除');
+  };
+
+  // 升级成员为管理员
+  const promoteToAdmin = (communityId: string, email: string) => {
+    const updatedAdminStore = {
+      ...adminStore,
+      [communityId]: [...(adminStore[communityId] || []), email]
+    };
+    
+    onAdminStoreChange(updatedAdminStore);
+    toast.success('成员已升级为管理员');
+  };
+
+  // 降级管理员为普通成员
+  const demoteFromAdmin = (communityId: string, email: string) => {
+    const updatedAdminStore = {
+      ...adminStore,
+      [communityId]: (adminStore[communityId] || []).filter(a => a !== email)
+    };
+    
+    onAdminStoreChange(updatedAdminStore);
+    toast.success('管理员已降级为普通成员');
   };
 
   // 开始编辑社群

@@ -17,9 +17,11 @@ export default function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProp
   // 中文注释：新手引导的步骤配置（标题、副文案、主按钮动作）
   const steps: Array<{ title: string; desc: string; action?: () => void; primaryText?: string }>
     = [
-      { title: '欢迎加入 AI 共创平台', desc: '我们将用 3 步带你快速上手平台核心玩法' },
+      { title: '欢迎加入 AI 共创平台', desc: '我们将用 5 步带你快速上手平台核心玩法' },
       { title: '探索灵感', desc: '在“作品探索”页浏览精选作品与主题合集', action: () => navigate('/explore'), primaryText: '去探索' },
+      { title: '选择AI模型', desc: '在“设置”中选择适合你创作风格的AI模型，支持模型比较', action: () => navigate('/settings'), primaryText: '去设置' },
       { title: '开始创作', desc: '在“创作中心”使用 AI 工具生成你的作品', action: () => navigate('/create'), primaryText: '去创作' },
+      { title: 'AI协作模式', desc: '使用AI协作面板与AI进行多轮对话，完善你的创意', action: () => navigate('/lab'), primaryText: '去体验' },
       { title: '参与社群', desc: '加入你感兴趣的社群，获取反馈与成长', action: () => navigate('/community'), primaryText: '进社群' },
     ]
 

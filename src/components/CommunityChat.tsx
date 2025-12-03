@@ -96,7 +96,9 @@ const CommunityChat: React.FC<CommunityChatProps> = ({
         id: replyingTo.id!, 
         user: replyingTo.user, 
         text: replyingTo.text 
-      } : undefined
+      } : undefined,
+      reactions: {},
+      editable: true // 允许编辑自己的消息
     };
 
     const updatedMessages = {
@@ -109,6 +111,90 @@ const CommunityChat: React.FC<CommunityChatProps> = ({
     toast.success('已发送到该社群');
     setNewMessage('');
     setReplyingTo(null);
+  };
+
+  // 编辑消息
+  const editMessage = (communityId: string, messageId: string, newText: string) => {
+    const updatedMessages = {
+      ...communityMessages,
+      [communityId]: (communityMessages[communityId] || []).map(msg => {
+        if (msg.id !== messageId) return msg;
+        return { ...msg, text: newText, edited: true };
+      })
+    };
+
+    onCommunityMessagesChange(updatedMessages);
+    localStorage.setItem('jmzf_community_messages', JSON.stringify(updatedMessages));
+    toast.success('消息已编辑');
+  };
+
+  // 删除消息
+  const deleteMessage = (communityId: string, messageId: string) => {
+    const updatedMessages = {
+      ...communityMessages,
+      [communityId]: (communityMessages[communityId] || []).filter(msg => msg.id !== messageId)
+    };
+
+    onCommunityMessagesChange(updatedMessages);
+    localStorage.setItem('jmzf_community_messages', JSON.stringify(updatedMessages));
+    toast.success('消息已删除');
+  };
+
+  // 转发消息
+  const forwardMessage = (communityId: string, message: ChatMessage) => {
+    const user = mockCreators.find(c => c.online) || mockCreators[0];
+    const forwardedMessage: ChatMessage = {
+      id: `cm-${Date.now()}`,
+      user: user.name,
+      text: `转发：${message.text}`,
+      avatar: user.avatar,
+      createdAt: Date.now(),
+      forwardedFrom: { user: message.user, text: message.text },
+      reactions: {}
+    };
+
+    const updatedMessages = {
+      ...communityMessages,
+      [communityId]: [forwardedMessage, ...(communityMessages[communityId] || [])]
+    };
+
+    onCommunityMessagesChange(updatedMessages);
+    localStorage.setItem('jmzf_community_messages', JSON.stringify(updatedMessages));
+    toast.success('消息已转发');
+  };
+
+  // 引用回复
+  const quoteReply = (message: ChatMessage) => {
+    setReplyingTo(message);
+  };
+
+  // 复制消息
+  const copyMessage = (message: ChatMessage) => {
+    navigator.clipboard.writeText(message.text);
+    toast.success('消息已复制到剪贴板');
+  };
+
+  // 固定消息
+  const togglePinMessage = (communityId: string, messageId: string) => {
+    // 先获取当前消息
+    const message = (communityMessages[communityId] || []).find(m => m.id === messageId);
+    if (!message) return;
+    
+    const updatedMessages = {
+      ...communityMessages,
+      [communityId]: (communityMessages[communityId] || []).map(msg => {
+        if (msg.id !== messageId) return msg;
+        return { ...msg, pinned: !msg.pinned };
+      }).sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      })
+    };
+
+    onCommunityMessagesChange(updatedMessages);
+    localStorage.setItem('jmzf_community_messages', JSON.stringify(updatedMessages));
+    toast.success(message.pinned ? '消息已取消固定' : '消息已固定');
   };
 
   // 添加表情反应

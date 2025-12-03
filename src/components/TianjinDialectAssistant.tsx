@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from '@/hooks/useTheme';
 import dialectService from '../services/dialectService';
+import SpeechInput from './SpeechInput';
 
 const TianjinDialectAssistant: React.FC = () => {
+  const { isDark } = useTheme();
   const [inputText, setInputText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [activeTab, setActiveTab] = useState<'translate' | 'convert' | 'phrases'>('translate');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // 翻译方言为普通话
   const handleTranslate = () => {
@@ -42,16 +46,33 @@ const TianjinDialectAssistant: React.FC = () => {
       setIsSpeaking(false);
     }
   };
+  
+  // 复制文本到剪贴板
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      })
+      .catch(err => {
+        console.error('复制失败:', err);
+      });
+  };
+  
+  // 处理语音输入
+  const handleSpeechInput = (text: string) => {
+    setInputText(prev => prev + text);
+  };
 
   // 获取常用短语
   const commonPhrases = dialectService.getCommonPhrases();
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">天津方言助手</h2>
+    <div className={`${isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-800'} rounded-lg shadow-lg p-6 border`}>
+      <h2 className="text-2xl font-bold mb-6">天津方言助手</h2>
       
       {/* 标签切换 */}
-      <div className="flex border-b border-gray-200 mb-6">
+      <div className={`flex border-b ${isDark ? 'border-gray-800' : 'border-gray-200'} mb-6`}>
         {[
           { id: 'translate', label: '方言翻译' },
           { id: 'convert', label: '普通话转方言' },
@@ -60,7 +81,7 @@ const TianjinDialectAssistant: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`py-2 px-4 font-medium text-sm transition-colors duration-200 ${activeTab === tab.id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`py-2 px-4 font-medium text-sm transition-colors duration-200 ${activeTab === tab.id ? 'border-b-2 border-blue-600 text-blue-600' : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700')}`}
           >
             {tab.label}
           </button>
@@ -71,16 +92,22 @@ const TianjinDialectAssistant: React.FC = () => {
       {activeTab === 'translate' && (
         <div className="space-y-4">
           <div>
-            <label htmlFor="dialectInput" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="dialectInput" className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               天津方言输入
             </label>
-            <textarea
-              id="dialectInput"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="请输入天津方言，例如：'介似嘛？倍儿哏儿！'"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
-            />
+            <div className="relative">
+              <textarea
+                id="dialectInput"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="请输入天津方言，例如：'介似嘛？倍儿哏儿！'"
+                className={`w-full px-4 py-2 border ${isDark ? 'border-gray-700 bg-gray-800 text-white' : 'border-gray-300 bg-white text-gray-800'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32`}
+              />
+              {/* 语音输入按钮 */}
+              <div className="absolute right-3 bottom-3">
+                <SpeechInput onTextRecognized={handleSpeechInput} language="zh-CN" />
+              </div>
+            </div>
           </div>
           
           <motion.button
@@ -95,10 +122,24 @@ const TianjinDialectAssistant: React.FC = () => {
           
           {translatedText && (
             <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-2 text-gray-800">翻译结果</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-700">{translatedText}</p>
-                <div className="mt-2 flex justify-end">
+              <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>翻译结果</h3>
+              <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'} rounded-lg p-4`}>
+                <div className="flex justify-between items-start mb-2">
+                  <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>{translatedText}</p>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleCopy(translatedText)}
+                    className={`${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {copySuccess ? (
+                      <span className="text-sm text-green-500">已复制</span>
+                    ) : (
+                      <i className="fas fa-copy"></i>
+                    )}
+                  </motion.button>
+                </div>
+                <div className="flex justify-end gap-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -106,10 +147,20 @@ const TianjinDialectAssistant: React.FC = () => {
                     disabled={isSpeaking}
                     className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zM4 9a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9z" />
-                    </svg>
+                    <i className="fas fa-volume-up mr-1"></i>
                     播放普通话
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setInputText(translatedText);
+                      setTranslatedText('');
+                    }}
+                    className="text-purple-600 hover:text-purple-800 font-medium text-sm flex items-center gap-1"
+                  >
+                    <i className="fas fa-exchange-alt mr-1"></i>
+                    反向翻译
                   </motion.button>
                 </div>
               </div>
@@ -122,16 +173,22 @@ const TianjinDialectAssistant: React.FC = () => {
       {activeTab === 'convert' && (
         <div className="space-y-4">
           <div>
-            <label htmlFor="mandarinInput" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="mandarinInput" className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               普通话输入
             </label>
-            <textarea
-              id="mandarinInput"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="请输入普通话，例如：'这个东西真有趣！'"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
-            />
+            <div className="relative">
+              <textarea
+                id="mandarinInput"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="请输入普通话，例如：'这个东西真有趣！'"
+                className={`w-full px-4 py-2 border ${isDark ? 'border-gray-700 bg-gray-800 text-white' : 'border-gray-300 bg-white text-gray-800'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32`}
+              />
+              {/* 语音输入按钮 */}
+              <div className="absolute right-3 bottom-3">
+                <SpeechInput onTextRecognized={handleSpeechInput} language="zh-CN" />
+              </div>
+            </div>
           </div>
           
           <motion.button
@@ -146,10 +203,24 @@ const TianjinDialectAssistant: React.FC = () => {
           
           {translatedText && (
             <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-2 text-gray-800">转换结果</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-700">{translatedText}</p>
-                <div className="mt-2 flex justify-end">
+              <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>转换结果</h3>
+              <div className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'} rounded-lg p-4`}>
+                <div className="flex justify-between items-start mb-2">
+                  <p className={isDark ? 'text-gray-300' : 'text-gray-700'}>{translatedText}</p>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleCopy(translatedText)}
+                    className={`${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {copySuccess ? (
+                      <span className="text-sm text-green-500">已复制</span>
+                    ) : (
+                      <i className="fas fa-copy"></i>
+                    )}
+                  </motion.button>
+                </div>
+                <div className="flex justify-end gap-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -157,10 +228,20 @@ const TianjinDialectAssistant: React.FC = () => {
                     disabled={isSpeaking}
                     className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zM4 9a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9z" />
-                    </svg>
+                    <i className="fas fa-volume-up mr-1"></i>
                     播放天津方言
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setInputText(translatedText);
+                      setTranslatedText('');
+                    }}
+                    className="text-purple-600 hover:text-purple-800 font-medium text-sm flex items-center gap-1"
+                  >
+                    <i className="fas fa-exchange-alt mr-1"></i>
+                    反向转换
                   </motion.button>
                 </div>
               </div>
@@ -172,7 +253,7 @@ const TianjinDialectAssistant: React.FC = () => {
       {/* 常用短语功能 */}
       {activeTab === 'phrases' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800">天津方言常用短语</h3>
+          <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>天津方言常用短语</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {commonPhrases.map((phrase, index) => (
               <motion.div
@@ -180,12 +261,26 @@ const TianjinDialectAssistant: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-gray-50 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                className={`${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'} rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-gray-800 font-medium mb-1">{phrase.phrase}</p>
-                    <p className="text-sm text-gray-600">{phrase.meaning}</p>
+                    <div className="flex justify-between items-center mb-1">
+                      <p className={`${isDark ? 'text-gray-300' : 'text-gray-800'} font-medium`}>{phrase.phrase}</p>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleCopy(phrase.phrase)}
+                        className={`ml-2 ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        {copySuccess ? (
+                          <i className="fas fa-check text-green-500"></i>
+                        ) : (
+                          <i className="fas fa-copy"></i>
+                        )}
+                      </motion.button>
+                    </div>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{phrase.meaning}</p>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -194,9 +289,7 @@ const TianjinDialectAssistant: React.FC = () => {
                     disabled={isSpeaking}
                     className="text-blue-600 hover:text-blue-800"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zM4 9a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9z" />
-                    </svg>
+                    <i className="fas fa-volume-up text-xl"></i>
                   </motion.button>
                 </div>
               </motion.div>

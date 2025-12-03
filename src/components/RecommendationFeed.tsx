@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import recommendationService, { RecommendedItem } from '../services/recommendationService';
+import recommendationService, { RecommendedItem, RecommendationFeedbackType } from '../services/recommendationService';
 
 interface RecommendationFeedProps {
   userId: string;
@@ -20,6 +20,7 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
   const [recommendations, setRecommendations] = useState<RecommendedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'posts' | 'challenges' | 'templates'>('all');
+  const [feedbackStatus, setFeedbackStatus] = useState<Record<string, RecommendationFeedbackType>>({});
 
   // 加载推荐内容
   useEffect(() => {
@@ -48,6 +49,29 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
     // 调用外部点击处理函数
     if (onItemClick) {
       onItemClick(item);
+    }
+  };
+
+  // 处理推荐反馈
+  const handleFeedback = (e: React.MouseEvent, item: RecommendedItem, feedbackType: RecommendationFeedbackType) => {
+    e.stopPropagation(); // 阻止触发item点击
+    
+    // 记录反馈
+    recommendationService.recordRecommendationFeedback(userId, {
+      itemId: item.id,
+      itemType: item.type,
+      feedbackType
+    });
+    
+    // 更新反馈状态
+    setFeedbackStatus(prev => ({
+      ...prev,
+      [item.id]: feedbackType
+    }));
+    
+    // 如果是隐藏，从列表中移除
+    if (feedbackType === 'hide') {
+      setRecommendations(prev => prev.filter(i => i.id !== item.id));
     }
   };
 
@@ -168,6 +192,45 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
                       )}
                     </div>
                   )}
+                </div>
+                
+                {/* 推荐反馈按钮 */}
+                <div className="flex gap-2 mt-2">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => handleFeedback(e, item, 'like')}
+                    className={`p-1.5 rounded-full text-xs transition-colors duration-200 ${feedbackStatus[item.id] === 'like' ? 'text-red-500 bg-red-100' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                    title="喜欢"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                    </svg>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => handleFeedback(e, item, 'dislike')}
+                    className={`p-1.5 rounded-full text-xs transition-colors duration-200 ${feedbackStatus[item.id] === 'dislike' ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}
+                    title="不喜欢"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.828 5.172a4 4 0 010 5.656L10 17.657l-6.828-6.829a4 4 0 015.656-5.656L10 6.343l1.172-1.171a4 4 0 015.656 0z" clipRule="evenodd" />
+                    </svg>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => handleFeedback(e, item, 'hide')}
+                    className={`p-1.5 rounded-full text-xs transition-colors duration-200 text-gray-400 hover:text-gray-600 hover:bg-gray-100`}
+                    title="隐藏"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </motion.button>
                 </div>
               </div>
             </motion.div>

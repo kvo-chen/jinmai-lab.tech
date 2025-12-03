@@ -1,16 +1,17 @@
-import { useState, useContext, useEffect, useMemo } from 'react'
+import { useState, useContext, useEffect, useMemo, useCallback, memo } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
 import { AuthContext } from '@/contexts/authContext'
 import { toast } from 'sonner'
 import { markPrefetched, isPrefetched } from '@/services/prefetch'
+import { throttle } from '@/utils/performance'
 import clsx from 'clsx'
 
 interface MobileLayoutProps {
   children: React.ReactNode
 }
 
-export default function MobileLayout({ children }: MobileLayoutProps) {
+const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps) {
   const { theme = 'light', isDark = false, toggleTheme = () => {} } = useTheme()
   const { isAuthenticated, user, logout } = useContext(AuthContext)
   const location = useLocation()
@@ -23,20 +24,34 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
+  
+  // 使用 useMemo 优化主题相关的样式计算
+  const themeStyles = useMemo(() => {
+    return {
+      background: isDark ? 'bg-gray-900 text-white' : theme === 'pink' ? 'bg-pink-50 text-pink-900' : 'bg-gray-50 text-gray-900',
+      logoBackground: isDark ? 'bg-blue-500' : theme === 'pink' ? 'bg-pink-500' : 'bg-orange-500',
+      logoText: isDark ? '津' : theme === 'pink' ? '智' : '坊',
+      gradient: isDark ? 'from-blue-400 to-purple-500' : theme === 'pink' ? 'from-pink-500 to-rose-500' : 'from-red-500 to-orange-500'
+    }
+  }, [theme, isDark])
 
-  useEffect(() => {
-    // 滚动监听
-    const handleScroll = () => {
+  // 使用节流优化滚动事件处理
+  const handleScroll = useCallback(
+    throttle(() => {
       setIsScrolled(window.scrollY > 100)
       // 计算滚动进度
       const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight
       const progress = scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0
       setScrollProgress(progress)
-    }
+    }, 100), // 100ms 内最多执行一次
+    []
+  )
 
-    window.addEventListener('scroll', handleScroll)
+  useEffect(() => {
+    // 滚动监听
+    window.addEventListener('scroll', handleScroll, { passive: true }) // 添加 passive 选项优化滚动性能
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [handleScroll])
 
   // 页面切换时隐藏搜索框
   useEffect(() => {
@@ -44,7 +59,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
   }, [location.pathname])
 
   // 处理语音搜索
-  const handleVoiceSearch = () => {
+  const handleVoiceSearch = useCallback(() => {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       toast.error('您的浏览器不支持语音搜索功能')
       return
@@ -82,10 +97,10 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
     }
 
     recognition.start()
-  }
+  }, [])
 
   // 处理搜索
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     if (!search.trim()) {
       toast.warning('请输入搜索关键词')
@@ -95,29 +110,25 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
     navigate(`/explore?search=${encodedSearch}`)
     setSearch('')
     setShowSearch(false)
-  }
+  }, [search, navigate])
 
   // 预取路由
-  const prefetchRoute = (path: string) => {
+  const prefetchRoute = useCallback((path: string) => {
     if (path === location.pathname || isPrefetched(path)) return
     markPrefetched(path)
-  }
+  }, [location.pathname])
 
   return (
     <div className={clsx(
       'min-h-screen flex flex-col',
-      isDark ? 'bg-gray-900 text-white' : 
-      theme === 'pink' ? 'bg-pink-50 text-pink-900' : 
-      'bg-gray-50 text-gray-900'
+      themeStyles.background
     )}>
       {/* 滚动进度指示器 */}
       <div className="fixed top-0 left-0 right-0 h-1 z-50 pointer-events-none">
         <div 
           className={clsx(
             'h-full transition-all duration-100 ease-out rounded-full',
-            isDark ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 
-            theme === 'pink' ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 
-            'bg-gradient-to-r from-orange-500 to-red-500'
+            `bg-gradient-to-r ${themeStyles.gradient}`
           )}
           style={{ width: `${scrollProgress}%` }}
         />
@@ -207,11 +218,9 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
               >
                 <div className={clsx(
                   'w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold',
-                  isDark ? 'bg-blue-500' : 
-                  theme === 'pink' ? 'bg-pink-500' : 
-                  'bg-orange-500'
+                  themeStyles.logoBackground
                 )}>
-                  {isDark ? '津' : theme === 'pink' ? '智' : '坊'}
+                  {themeStyles.logoText}
                 </div>
                 <span className="text-xl font-bold">津脉智坊</span>
               </NavLink>
@@ -557,4 +566,6 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
       </nav>
     </div>
   )
-}
+})
+
+export default MobileLayout

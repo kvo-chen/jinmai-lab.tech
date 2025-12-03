@@ -1,5 +1,8 @@
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { Suspense, lazy, useState, useEffect } from 'react'
+import { smartPrefetch } from './services/prefetch';
+
+// 路由组件惰性加载
 const Home = lazy(() => import("@/pages/Home"));
 const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
@@ -27,10 +30,9 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const UserCollection = lazy(() => import("@/pages/UserCollection"));
 const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
-import PrivateRoute from "@/components/PrivateRoute";
-import AdminRoute from "@/components/AdminRoute";
 const CulturalKnowledge = lazy(() => import("@/pages/CulturalKnowledge"));
 const Tianjin = lazy(() => import("@/pages/Tianjin"));
+const CulturalEvents = lazy(() => import("@/pages/CulturalEvents"));
 const DailyCheckin = lazy(() => import("@/components/DailyCheckin"));
 const CreativeMatchmaking = lazy(() => import("@/components/CreativeMatchmaking"));
 const IPIncubationCenter = lazy(() => import("@/components/IPIncubationCenter"));
@@ -39,10 +41,17 @@ const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
 const Drafts = lazy(() => import("@/pages/Drafts"));
 const Lab = lazy(() => import("@/pages/Lab"));
 const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
+
+// 布局组件
 import SidebarLayout from '@/components/SidebarLayout';
 import MobileLayout from '@/components/MobileLayout';
 
+// 路由守卫组件
+import PrivateRoute from '@/components/PrivateRoute';
+import AdminRoute from '@/components/AdminRoute';
+
 export default function App() {
+  const location = useLocation();
   // 添加响应式布局状态
   const [isMobile, setIsMobile] = useState(false);
   
@@ -61,6 +70,57 @@ export default function App() {
     // 清理事件监听
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
+
+  // 智能预取 - 基于当前路由预测并预加载可能访问的路由
+  useEffect(() => {
+    // 预加载函数，动态导入指定路由的组件
+    const preloadRoute = (path: string) => {
+      switch (path) {
+        case '/home':
+        case '/':
+          import('@/pages/Home');
+          break;
+        case '/explore':
+          import('@/pages/Explore');
+          break;
+        case '/explore/example':
+          import('@/pages/WorkDetail');
+          break;
+        case '/create':
+          import('@/pages/Create');
+          break;
+        case '/community':
+          import('@/pages/Community');
+          break;
+        case '/community/example':
+          import('@/pages/Community');
+          break;
+        case '/dashboard':
+          import('@/pages/Dashboard');
+          break;
+        case '/settings':
+          import('@/pages/Settings');
+          break;
+        case '/collection':
+          import('@/pages/UserCollection');
+          break;
+        case '/analytics':
+          import('@/pages/Analytics');
+          break;
+        case '/drafts':
+          import('@/pages/Drafts');
+          break;
+        case '/neo':
+          import('@/pages/Neo');
+          break;
+        default:
+          break;
+      }
+    };
+
+    // 调用智能预取函数
+    smartPrefetch(location.pathname, preloadRoute);
+  }, [location.pathname]);
 
   // 右侧内容组件
   const RightContent = () => (
@@ -132,8 +192,25 @@ export default function App() {
     );
   };
 
+  // 全局加载骨架屏
+  const GlobalLoadingSkeleton = () => (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex justify-center mb-8">
+          <div className="w-20 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <Suspense fallback={<div className="p-4">加载中...</div>}>
+    <Suspense fallback={<GlobalLoadingSkeleton />}>
       <Routes>
         {/* 不需要布局的页面 */}
         <Route path="/login" element={<Login />} />
@@ -199,6 +276,10 @@ export default function App() {
           <Route 
             path="/tianjin" 
             element={<Tianjin />} 
+          />
+          <Route 
+            path="/events" 
+            element={<CulturalEvents />} 
           />
           
           <Route 

@@ -224,17 +224,17 @@ export default function Home() {
   // 预取函数：提前加载常用页面的代码分片
   const prefetchExplore = () => {
     if (!isPrefetched('Explore')) {
-      import('@/pages/Explore').then(() => markPrefetched('Explore', 120000)).catch(() => {});
+      import('@/pages/Explore').then(() => markPrefetched('Explore', { ttlMs: 120000 })).catch(() => {});
     }
   };
   const prefetchTools = () => {
     if (!isPrefetched('Tools')) {
-      import('@/pages/Tools').then(() => markPrefetched('Tools', 120000)).catch(() => {});
+      import('@/pages/Tools').then(() => markPrefetched('Tools', { ttlMs: 120000 })).catch(() => {});
     }
   };
   const prefetchNeo = () => {
     if (!isPrefetched('Neo')) {
-      import('@/pages/Neo').then(() => markPrefetched('Neo', 120000)).catch(() => {});
+      import('@/pages/Neo').then(() => markPrefetched('Neo', { ttlMs: 120000 })).catch(() => {});
     }
   };
   

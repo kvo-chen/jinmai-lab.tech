@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 // 资讯类型定义
@@ -15,6 +14,51 @@ interface NewsItem {
   views: number;
 }
 
+// 新闻卡片组件 - 使用React.memo优化
+const NewsCard = memo(({ news, isDark, navigate }: { news: NewsItem; isDark: boolean; navigate: (path: string) => void }) => {
+  return (
+    <div
+      key={news.id}
+      className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-2xl cursor-pointer group hover:-translate-y-1`}
+      onClick={() => navigate(`/news/${news.id}`)}
+    >
+      <div className="relative overflow-hidden rounded-t-xl">
+        <img
+          src={news.image}
+          alt={news.title}
+          className="w-full h-36 sm:h-40 object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
+        {/* 渐变遮罩 */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      </div>
+      <div className="p-4 sm:p-5">
+        <div className="flex justify-between items-center mb-2 sm:mb-3">
+          <span className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}>
+            {news.category}
+          </span>
+          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
+            {news.date}
+          </span>
+        </div>
+        <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 line-clamp-2 transition-colors duration-300 group-hover:text-red-500">{news.title}</h3>
+        <p className={`text-sm mb-3 sm:mb-4 line-clamp-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          {news.description}
+        </p>
+        <div className="flex justify-between items-center text-xs sm:text-sm pt-2 sm:pt-3 border-t border-gray-700/30">
+          <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
+            {news.source}
+          </span>
+          <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'} flex items-center font-medium`}>
+            <i className="far fa-eye mr-1"></i>
+            {news.views.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function CulturalNews() {
   const { isDark } = useTheme();
   const navigate = useNavigate();
@@ -24,11 +68,9 @@ export default function CulturalNews() {
   const [visibleItems, setVisibleItems] = useState(12);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
-  // 模拟数据加载
+  // 移除人为加载延迟，直接设置为加载完成
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    setIsLoading(false);
   }, []);
   
   // 资讯分类
@@ -417,25 +459,28 @@ export default function CulturalNews() {
     }
   ];
   
-  // 过滤资讯
-  const filteredNews = activeCategory === 'all' 
-    ? newsItems 
-    : newsItems.filter(item => item.category === activeCategory);
+  // 过滤资讯 - 使用useMemo缓存
+  const filteredNews = useMemo(() => {
+    return activeCategory === 'all' 
+      ? newsItems 
+      : newsItems.filter(item => item.category === activeCategory);
+  }, [activeCategory, newsItems]);
   
-  // 当前显示的资讯
-  const currentNews = filteredNews.slice(0, visibleItems);
+  // 当前显示的资讯 - 使用useMemo缓存
+  const currentNews = useMemo(() => {
+    return filteredNews.slice(0, visibleItems);
+  }, [filteredNews, visibleItems]);
   
   // 是否还有更多数据
   const hasMore = visibleItems < filteredNews.length;
   
-  // 加载更多数据
+  // 加载更多数据 - 移除人为延迟
   const loadMore = () => {
     if (hasMore && !isLoadingMore) {
       setIsLoadingMore(true);
-      setTimeout(() => {
-        setVisibleItems(prev => Math.min(prev + 8, filteredNews.length));
-        setIsLoadingMore(false);
-      }, 800);
+      // 直接更新，移除人为延迟
+      setVisibleItems(prev => Math.min(prev + 8, filteredNews.length));
+      setIsLoadingMore(false);
     }
   };
   
@@ -482,7 +527,7 @@ export default function CulturalNews() {
           </div>
         ) : (
           categories.map(category => (
-            <motion.button
+            <button
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
               className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${activeCategory === category.id
@@ -490,11 +535,9 @@ export default function CulturalNews() {
                   : isDark
                   ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 hover:shadow-md'
                   : 'bg-white hover:bg-gray-200 text-gray-700 hover:shadow-md'}`}
-              whileHover={{ scale: activeCategory === category.id ? 1.05 : 1.05 }}
-              whileTap={{ scale: 0.98 }}
             >
               {category.name}
-            </motion.button>
+            </button>
           ))
         )}
       </div>
@@ -503,12 +546,9 @@ export default function CulturalNews() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(8)].map((_, index) => (
-            <motion.div 
+            <div 
               key={index} 
               className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl overflow-hidden shadow-md transition-all duration-300`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
             >
               <div className="w-full h-36 sm:h-40 bg-gray-700 rounded-t-xl animate-pulse"></div>
               <div className="p-4 sm:p-5">
@@ -521,60 +561,14 @@ export default function CulturalNews() {
                   <div className="h-3 bg-gray-700 rounded w-1/4 animate-pulse"></div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {currentNews.map(news => (
-              <motion.div
-                key={news.id}
-                className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-2xl cursor-pointer group`}
-                whileHover={{ y: -5 }}
-                onClick={() => navigate(`/news/${news.id}`)}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="relative overflow-hidden rounded-t-xl">
-                  <motion.img
-                    src={news.image}
-                    alt={news.title}
-                    className="w-full h-36 sm:h-40 object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  {/* 渐变遮罩 */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </div>
-                <div className="p-4 sm:p-5">
-                  <div className="flex justify-between items-center mb-2 sm:mb-3">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}>
-                      {news.category}
-                    </span>
-                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
-                      {news.date}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 line-clamp-2 transition-colors duration-300 group-hover:text-red-500">{news.title}</h3>
-                  <p className={`text-sm mb-3 sm:mb-4 line-clamp-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {news.description}
-                  </p>
-                  <div className="flex justify-between items-center text-xs sm:text-sm pt-2 sm:pt-3 border-t border-gray-700/30">
-                    <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>
-                      {news.source}
-                    </span>
-                    <motion.span 
-                      className={`${isDark ? 'text-gray-400' : 'text-gray-500'} flex items-center font-medium`}
-                      whileHover={{ x: 5 }}
-                    >
-                      <i className="far fa-eye mr-1"></i>
-                      {news.views.toLocaleString()}
-                    </motion.span>
-                  </div>
-                </div>
-              </motion.div>
+              <NewsCard key={news.id} news={news} isDark={isDark} navigate={navigate} />
             ))}
           </div>
           
@@ -589,16 +583,14 @@ export default function CulturalNews() {
                   <span className="ml-2 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}">加载中...</span>
                 </div>
               ) : (
-                <motion.button
+                <button
                   onClick={loadMore}
                   className={`px-8 py-3.5 rounded-full text-sm font-medium transition-all ${isDark
                       ? 'bg-gray-800 hover:bg-gray-700 text-white'
                       : 'bg-white hover:bg-gray-200 text-gray-800'} shadow-md hover:shadow-xl`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   加载更多资讯
-                </motion.button>
+                </button>
               )}
             </div>
           )}
