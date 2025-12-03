@@ -256,39 +256,6 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
     setEditDraft(null);
   };
 
-  // 删除社群
-  const deleteCommunity = (communityId: string) => {
-    if (!isAdmin(communityId)) {
-      toast.warning('仅管理员可删除社群');
-      return;
-    }
-    
-    const updatedUserCommunities = userCommunities.filter(c => c.id !== communityId);
-    const updatedJoinedCommunities = joinedCommunities.filter(id => id !== communityId);
-    
-    // 更新状态
-    onUserCommunitiesChange(updatedUserCommunities);
-    onJoinedCommunitiesChange(updatedJoinedCommunities);
-    
-    // 清理相关数据
-    const updatedAdminStore = { ...adminStore };
-    const updatedMemberStore = { ...memberStore };
-    const updatedAnnounceStore = { ...announceStore };
-    const updatedPrivacyStore = { ...privacyStore };
-    
-    delete updatedAdminStore[communityId];
-    delete updatedMemberStore[communityId];
-    delete updatedAnnounceStore[communityId];
-    delete updatedPrivacyStore[communityId];
-    
-    onAdminStoreChange(updatedAdminStore);
-    onMemberStoreChange(updatedMemberStore);
-    onAnnounceStoreChange(updatedAnnounceStore);
-    onPrivacyStoreChange(updatedPrivacyStore);
-    
-    toast.success('已删除社群');
-  };
-
   // 打开管理面板
   const openManage = (communityId: string) => {
     setManageCommunityId(communityId);
@@ -329,7 +296,7 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
   };
 
   // 移除成员
-  const removeMember = (email: string) => {
+  const removeMemberFromManaged = (email: string) => {
     if (!manageCommunityId) return;
     if (!isAdmin(manageCommunityId)) {
       toast.warning('仅管理员可移除成员');
@@ -575,7 +542,7 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
                             {adminStore[manageCommunityId]?.includes(email) ? '移除管理员' : '设为管理员'}
                           </button>
                           <button 
-                            onClick={() => removeMember(email)} 
+                            onClick={() => removeMemberFromManaged(email)} 
                             className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-red-600 text-white' : 'bg-red-500 text-white'}`}
                           >
                             移除
