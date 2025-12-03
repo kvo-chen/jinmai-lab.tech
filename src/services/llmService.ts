@@ -1113,9 +1113,14 @@ class LLMService {
   }
 
   private async callWenxin(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_WENXIN_API_KEY) || '';
+    const storedKey = localStorage.getItem('WENXIN_API_KEY') || '';
+    const key = storedKey || envKey;
     const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
-    if (!apiBase) throw new Error('Missing API base for Wenxin');
-    const url = `${apiBase}/api/qianfan/chat/completions`;
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing Wenxin API key');
+    const base = this.modelConfig.wenxin_base_url || 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions';
+    const url = useProxy ? `${apiBase}/api/qianfan/chat/completions` : base;
     
     const requestFn = async () => {
       // 构建消息内容，支持多模态输入
@@ -1158,9 +1163,20 @@ class LLMService {
         stop: this.modelConfig.stop
       };
       
-      const res = await fetch(url, { 
+      // 构建URL和请求头
+      let requestUrl = url;
+      const headers: any = { 'Content-Type': 'application/json' };
+      
+      if (!useProxy) {
+        // 直连模式：添加API密钥到URL参数
+        const urlObj = new URL(requestUrl);
+        urlObj.searchParams.append('access_token', key);
+        requestUrl = urlObj.toString();
+      }
+      
+      const res = await fetch(requestUrl, { 
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
+        headers, 
         body: JSON.stringify(payload), 
         signal: options?.signal 
       });
@@ -1170,7 +1186,7 @@ class LLMService {
         const errorText = JSON.stringify(data) || await res.text();
         
         // 检测配额用完错误
-        if (res.status === 429 || data.error === 'QUOTA_EXCEEDED') {
+        if (res.status === 429 || data.error === 'QUOTA_EXCEEDED' || errorText.includes('QUOTA_EXCEEDED')) {
           throw new Error('QUOTA_EXCEEDED: 百度千帆API免费额度已用完');
         }
         
@@ -1178,7 +1194,7 @@ class LLMService {
       }
       
       const data = await res.json();
-      const raw = data?.data || {};
+      const raw = useProxy ? (data?.data || {}) : data;
       const content = raw?.result || raw?.choices?.[0]?.message?.content || '';
       return content || '文心一言未返回内容';
     };
@@ -1187,9 +1203,15 @@ class LLMService {
   }
 
   private async callQwen(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_QWEN_API_KEY) || '';
+    const storedKey = localStorage.getItem('QWEN_API_KEY') || '';
+    const key = storedKey || envKey;
     const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
-    if (!apiBase) throw new Error('Missing API base for Qwen');
-    const url = `${apiBase}/api/dashscope/chat/completions`;
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing Qwen API key');
+    const base = this.modelConfig.qwen_base_url || 'https://dashscope.aliyuncs.com/api/v1';
+    const url = useProxy ? `${apiBase}/api/dashscope/chat/completions` : (base + '/chat/completions');
+    const effectiveStream = useProxy ? false : (this.modelConfig.stream === true);
     
     const requestFn = async () => {
       // 构建消息内容，支持多模态输入
@@ -1231,10 +1253,13 @@ class LLMService {
         frequency_penalty: this.modelConfig.frequency_penalty,
         stop: this.modelConfig.stop
       };
+      if (effectiveStream) payload.stream = true;
       
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (!useProxy) headers['Authorization'] = `Bearer ${key}`;
       const res = await fetch(url, { 
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
+        headers, 
         body: JSON.stringify(payload), 
         signal: options?.signal 
       });
@@ -1244,19 +1269,54 @@ class LLMService {
         throw new Error(`Qwen API error: ${res.status} ${errorText}`);
       }
       
-      const data = await res.json();
-      const raw = data?.data || {};
-      const content = raw?.choices?.[0]?.message?.content || raw?.output_text || '';
-      return content || '通义千问未返回内容';
+      if (effectiveStream && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const json = t.slice(5).trim();
+            if (json === '[DONE]') continue;
+            try {
+              const obj = JSON.parse(json);
+              const delta = obj?.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                full += delta;
+                if (options?.onDelta) options.onDelta(full);
+              }
+            } catch (e) {
+              console.error('Failed to parse Qwen stream chunk:', e);
+            }
+          }
+        }
+        return full || '通义千问未返回内容';
+      } else {
+        const data = await res.json();
+        const raw = useProxy ? (data?.data || {}) : data;
+        const content = raw?.choices?.[0]?.message?.content || raw?.output_text || '';
+        return content || '通义千问未返回内容';
+      }
     };
     
     return this.callApiWithRetry('qwen', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);
   }
 
   private async callDoubao(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_DOBAO_API_KEY) || '';
+    const storedKey = localStorage.getItem('DOUBAO_API_KEY') || '';
+    const key = storedKey || envKey;
     const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
-    if (!apiBase) throw new Error('Missing API base for Doubao');
-    const url = `${apiBase}/api/doubao/chat/completions`;
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing Doubao API key');
+    const base = this.modelConfig.doubao_base_url || 'https://api.doubao.com/v1';
+    const url = useProxy ? `${apiBase}/api/doubao/chat/completions` : (base + '/chat/completions');
+    const effectiveStream = useProxy ? false : (this.modelConfig.stream === true);
     
     const requestFn = async () => {
       // 构建消息内容，支持多模态输入
@@ -1298,10 +1358,13 @@ class LLMService {
         frequency_penalty: this.modelConfig.frequency_penalty,
         stop: this.modelConfig.stop
       };
+      if (effectiveStream) payload.stream = true;
       
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (!useProxy) headers['Authorization'] = `Bearer ${key}`;
       const res = await fetch(url, { 
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
+        headers, 
         body: JSON.stringify(payload), 
         signal: options?.signal 
       });
@@ -1311,10 +1374,39 @@ class LLMService {
         throw new Error(`Doubao API error: ${res.status} ${errorText}`);
       }
       
-      const data = await res.json();
-      const raw = data?.data || {};
-      const content = raw?.choices?.[0]?.message?.content || '';
-      return content || '豆包未返回内容';
+      if (effectiveStream && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const json = t.slice(5).trim();
+            if (json === '[DONE]') continue;
+            try {
+              const obj = JSON.parse(json);
+              const delta = obj?.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                full += delta;
+                if (options?.onDelta) options.onDelta(full);
+              }
+            } catch (e) {
+              console.error('Failed to parse Doubao stream chunk:', e);
+            }
+          }
+        }
+        return full || '豆包未返回内容';
+      } else {
+        const data = await res.json();
+        const raw = useProxy ? (data?.data || {}) : data;
+        const content = raw?.choices?.[0]?.message?.content || '';
+        return content || '豆包未返回内容';
+      }
     };
     
     return this.callApiWithRetry('doubao', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);

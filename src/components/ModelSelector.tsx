@@ -361,46 +361,46 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
           </div>
 
           {selectedModel.id === 'kimi' && (
-            <div className="mb-6 hidden" ref={configRef}>
-              <h4 className="font-medium mb-2">Kimi（月之暗面）API 密钥</h4>
-              <input
-                type="password"
-                value={kimiKey}
-                onChange={(e) => setKimiKey(e.target.value)}
-                placeholder="输入以 sk- 开头的密钥"
-                className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                disabled={isLoading}
-              />
-              <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥仅保存在本地浏览器，用于本机直连或代理调用。</p>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Base URL（区域）</label>
-                  <select
-                    value={kimiBase}
-                    onChange={(e) => setKimiBase(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="https://api.moonshot.cn/v1">中国区</option>
-                    <option value="https://api.moonshot.ai/v1">全球区</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">模型规格（上下文长度）</label>
-                  <select
-                    value={kimiVariant}
-                    onChange={(e) => setKimiVariant(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="moonshot-v1-8k">moonshot-v1-8k</option>
-                    <option value="moonshot-v1-32k">moonshot-v1-32k</option>
-                    <option value="moonshot-v1-128k">moonshot-v1-128k</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
+    <div className="mb-6" ref={configRef}>
+      <h4 className="font-medium mb-2">Kimi（月之暗面）API 密钥</h4>
+      <input
+        type="password"
+        value={kimiKey}
+        onChange={(e) => setKimiKey(e.target.value)}
+        placeholder="输入以 sk- 开头的密钥"
+        className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+        disabled={isLoading}
+      />
+      <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥仅保存在本地浏览器，用于本机直连或代理调用。</p>
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label className="text-sm font-medium mb-1 block">Base URL（区域）</label>
+          <select
+            value={kimiBase}
+            onChange={(e) => setKimiBase(e.target.value)}
+            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+            disabled={isLoading}
+          >
+            <option value="https://api.moonshot.cn/v1">中国区</option>
+            <option value="https://api.moonshot.ai/v1">全球区</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">模型规格（上下文长度）</label>
+          <select
+            value={kimiVariant}
+            onChange={(e) => setKimiVariant(e.target.value)}
+            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+            disabled={isLoading}
+          >
+            <option value="moonshot-v1-8k">moonshot-v1-8k</option>
+            <option value="moonshot-v1-32k">moonshot-v1-32k</option>
+            <option value="moonshot-v1-128k">moonshot-v1-128k</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  )}
 
           {selectedModel.id === 'deepseek' && (
             <div className="mb-6" ref={configRef}>
