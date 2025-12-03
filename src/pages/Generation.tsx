@@ -9,6 +9,7 @@ import errorService from '@/services/errorService'
 import voiceService from '@/services/voiceService'
 import llmService from '@/services/llmService'
 import SidebarLayout from '@/components/SidebarLayout'
+import { TianjinImage } from '@/components/TianjinStyleComponents'
 // 中文注释：将页面包裹在统一的侧边栏布局组件中，获得顶部导航与搜索
 
 export default function Generation() {
@@ -115,9 +116,9 @@ export default function Generation() {
         errorService.logError(resp.error || 'SERVER_ERROR', { scope: 'generation', prompt })
         toast.error('生成失败，已回退为占位图')
         setVariants([
-          { script: '占位方案A', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20A', video: '方案A视频占位' },
-          { script: '占位方案B', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20B', video: '方案B视频占位' },
-          { script: '占位方案C', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20C', video: '方案C视频占位' }
+          { script: '占位方案A', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20A', video: '方案A视频占位' },
+          { script: '占位方案B', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20B', video: '方案B视频占位' },
+          { script: '占位方案C', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20C', video: '方案C视频占位' }
         ])
         setLoading(false)
         return
@@ -127,9 +128,9 @@ export default function Generation() {
       if (!items.length) {
         toast.info('接口无返回内容，已提供占位图')
         setVariants([
-          { script: '占位方案A', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20A', video: '方案A视频占位' },
-          { script: '占位方案B', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20B', video: '方案B视频占位' },
-          { script: '占位方案C', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20C', video: '方案C视频占位' }
+          { script: '占位方案A', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20A', video: '方案A视频占位' },
+          { script: '占位方案B', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20B', video: '方案B视频占位' },
+          { script: '占位方案C', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20C', video: '方案C视频占位' }
         ])
         setLoading(false)
         return
@@ -148,9 +149,9 @@ export default function Generation() {
       errorService.logError(e instanceof Error ? e : 'SERVER_ERROR', { scope: 'generation', prompt })
       toast.error('生成异常，已回退为占位图')
       setVariants([
-        { script: '占位方案A', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20A', video: '方案A视频占位' },
-        { script: '占位方案B', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20B', video: '方案B视频占位' },
-        { script: '占位方案C', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20design%20C', video: '方案C视频占位' }
+        { script: '占位方案A', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20A', video: '方案A视频占位' },
+        { script: '占位方案B', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20B', video: '方案B视频占位' },
+        { script: '占位方案C', image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20C', video: '方案C视频占位' }
       ])
     } finally {
       setLoading(false)
@@ -432,7 +433,7 @@ export default function Generation() {
         <div ref={variantsRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {variants.map((v, i) => (
             <div key={i} className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-4`}>
-              <img src={v.image} alt="variant" className="w-full h-40 object-cover rounded-lg mb-3" loading="lazy" decoding="async" />
+              <TianjinImage src={v.image} alt="variant" className="w-full h-40 object-cover rounded-lg mb-3" ratio="landscape" />
               <div className="text-sm mb-2">{v.script}</div>
               <div className="flex gap-2 mb-2">
                 <motion.button whileHover={{ scale: 1.03 }} onClick={() => speakScript(i)} className="bg-green-600 text-white px-3 py-1 rounded-md">朗读脚本</motion.button>

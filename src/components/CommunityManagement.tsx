@@ -74,7 +74,7 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
     if (!desc) { toast.warning('请输入社群简介'); return; }
     
     const id = `uc-${Date.now()}`;
-    const cover = 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=User%20community%20banner%20minimal%20style';
+    const cover = 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=User%20community%20banner%20minimal%20style';
     
     const newCommunity: Community = { 
       id, 

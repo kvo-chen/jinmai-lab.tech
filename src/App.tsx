@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { Suspense, lazy, useState, useEffect } from 'react'
 const Home = lazy(() => import("@/pages/Home"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -26,10 +26,11 @@ const Neo = lazy(() => import("@/pages/Neo"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const UserCollection = lazy(() => import("@/pages/UserCollection"));
+const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
 import PrivateRoute from "@/components/PrivateRoute";
 import AdminRoute from "@/components/AdminRoute";
 const CulturalKnowledge = lazy(() => import("@/pages/CulturalKnowledge"));
-const TianjinCreativeActivities = lazy(() => import('@/components/TianjinCreativeActivities'))
+const Tianjin = lazy(() => import("@/pages/Tianjin"));
 const DailyCheckin = lazy(() => import("@/components/DailyCheckin"));
 const CreativeMatchmaking = lazy(() => import("@/components/CreativeMatchmaking"));
 const IPIncubationCenter = lazy(() => import("@/components/IPIncubationCenter"));
@@ -38,6 +39,7 @@ const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
 const Drafts = lazy(() => import("@/pages/Drafts"));
 const Lab = lazy(() => import("@/pages/Lab"));
 const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
+const NewsDetail = lazy(() => import("@/pages/NewsDetail"));
 import SidebarLayout from '@/components/SidebarLayout';
 import MobileLayout from '@/components/MobileLayout';
 
@@ -104,13 +106,29 @@ export default function App() {
     </aside>
   );
 
+  // 带有页面切换动画的组件
+  const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
+    const location = useLocation();
+    return (
+      <div key={location.pathname} className="animate-page-transition">
+        {children}
+      </div>
+    );
+  };
+
   // 布局组件包装器
   const LayoutWrapper = () => {
     return isMobile ? (
-      <MobileLayout><Outlet /></MobileLayout>
+      <MobileLayout>
+        <AnimatedPage>
+          <Outlet />
+        </AnimatedPage>
+      </MobileLayout>
     ) : (
       <SidebarLayout>
-        <Outlet />
+        <AnimatedPage>
+          <Outlet />
+        </AnimatedPage>
       </SidebarLayout>
     );
   };
@@ -132,6 +150,7 @@ export default function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/help" element={<Help />} />
           <Route path="/neo" element={<Neo />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/lab" element={<PrivateRoute component={Lab} />} />
           <Route path="/wizard" element={<PrivateRoute component={Wizard} />} />
           <Route path="/brand" element={<PrivateRoute component={BrandGuide} />} />
@@ -178,17 +197,23 @@ export default function App() {
             path="/knowledge" 
             element={<PrivateRoute component={CulturalKnowledge} />} 
           />
+          <Route 
+            path="/tianjin" 
+            element={<Tianjin />} 
+          />
           
           <Route 
             path="/knowledge/:type/:id" 
             element={<PrivateRoute component={CulturalKnowledge} />} 
           />
           
-          {/* 天津特色专区路由 */}
+          {/* 文化资讯详情页 */}
           <Route 
-            path="/tianjin" 
-            element={<PrivateRoute component={TianjinCreativeActivities} />} 
+            path="/news/:id" 
+            element={<NewsDetail />} 
           />
+          
+          
           
           {/* 创新功能路由 */}
           <Route 

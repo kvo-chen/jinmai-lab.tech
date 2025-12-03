@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface CreatorProfileProps {
   creatorData: {
@@ -39,6 +40,7 @@ interface CreatorProfileProps {
 
 const CreatorProfile: React.FC<CreatorProfileProps> = ({ creatorData, isDark }) => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   
   const handleClaimReward = (rewardId: number) => {
     toast.success('奖励领取成功！');
@@ -46,6 +48,10 @@ const CreatorProfile: React.FC<CreatorProfileProps> = ({ creatorData, isDark }) 
   
   const handleViewDetails = (taskId: number) => {
     toast.info('查看任务详情');
+  };
+  
+  const handleViewMoreCommercialOpportunities = () => {
+    navigate('/creative-matchmaking');
   };
   
   return (
@@ -201,10 +207,14 @@ const CreatorProfile: React.FC<CreatorProfileProps> = ({ creatorData, isDark }) 
                 </div>
               ))}
             </div>
-            <button className="w-full mt-3 py-1.5 rounded-lg text-sm border transition-colors hover:bg-opacity-10" style={{
-              borderColor: isDark ? '#4B5563' : '#E5E7EB',
-              color: isDark ? '#E5E7EB' : '#4B5563'
-            }}>
+            <button 
+              onClick={handleViewMoreCommercialOpportunities}
+              className="w-full mt-3 py-1.5 rounded-lg text-sm border transition-colors hover:bg-opacity-10"
+              style={{
+                borderColor: isDark ? '#4B5563' : '#E5E7EB',
+                color: isDark ? '#E5E7EB' : '#4B5563'
+              }}
+            >
               查看更多商业化机会
             </button>
           </div>

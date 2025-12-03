@@ -77,7 +77,7 @@ export default function CrossDeviceSync() {
           type: '插画',
           device: '我的MacBook',
           syncedAt: '今天 14:30',
-          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Synced%20content%20example%201'
+          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Synced%20content%20example%201'
         },
         {
           id: 2,
@@ -85,7 +85,7 @@ export default function CrossDeviceSync() {
           type: '纹样',
           device: '我的iPad',
           syncedAt: '今天 12:45',
-          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Synced%20content%20example%202'
+          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Synced%20content%20example%202'
         },
         {
           id: 3,
@@ -93,7 +93,7 @@ export default function CrossDeviceSync() {
           type: '品牌设计',
           device: '我的iPhone',
           syncedAt: '今天 14:15',
-          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Synced%20content%20example%203'
+          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Synced%20content%20example%203'
         }
       ]);
 

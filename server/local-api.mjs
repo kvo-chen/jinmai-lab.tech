@@ -5,21 +5,159 @@ import bcrypt from 'bcryptjs'
 import { generateToken, verifyToken } from './jwt.mjs'
 import { userDB, favoriteDB, videoTaskDB, getDBStatus } from './database.mjs'
 
-// 中文注释：端口支持环境变量覆盖，避免与前端端口冲突
-const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3001
+// Load .env.local for local development (non-production)
+try {
+  // 使用简单的路径，直接使用当前目录下的.env.local
+  const envPath = './.env.local';
+
+  
+  if (fs.existsSync(envPath)) {
+
+    const content = fs.readFileSync(envPath, 'utf-8');
+    const lines = content.split(/\r?\n/);
+    
+    for (const line of lines) {
+      // 跳过注释和空行
+      if (line.trim().startsWith('#') || line.trim() === '') {
+        continue;
+      }
+      
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (!m) {
+
+        continue;
+      }
+      
+      const k = m[1];
+      let v = m[2];
+      
+      // 移除引号
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith('\'') && v.endsWith('\''))) {
+        v = v.slice(1, -1);
+      }
+      
+      // 始终以 .env.local 内容为准进行覆盖，确保密钥更新生效
+      process.env[k] = v;
+
+    }
+    
+    // 将前端变量映射到服务端使用的变量（无条件覆盖，避免旧值残留）
+
+    
+    // Kimi
+    if (process.env.VITE_KIMI_API_KEY) {
+      process.env.KIMI_API_KEY = process.env.VITE_KIMI_API_KEY;
+
+    }
+    if (process.env.VITE_KIMI_BASE_URL) {
+      process.env.KIMI_BASE_URL = process.env.VITE_KIMI_BASE_URL;
+
+    }
+    
+    // DeepSeek
+    if (process.env.VITE_DEEPSEEK_API_KEY) {
+      process.env.DEEPSEEK_API_KEY = process.env.VITE_DEEPSEEK_API_KEY;
+
+    }
+    if (process.env.VITE_DEEPSEEK_BASE_URL) {
+      process.env.DEEPSEEK_BASE_URL = process.env.VITE_DEEPSEEK_BASE_URL;
+
+    }
+    
+    // Doubao
+    if (process.env.VITE_DOBAO_API_KEY) {
+      process.env.DOUBAO_API_KEY = process.env.VITE_DOBAO_API_KEY;
+
+    }
+    if (process.env.VITE_DOUBAO_BASE_URL) {
+      process.env.DOUBAO_BASE_URL = process.env.VITE_DOUBAO_BASE_URL;
+
+    }
+    
+    // Qwen (DashScope)
+    if (process.env.VITE_QWEN_API_KEY) {
+      process.env.DASHSCOPE_API_KEY = process.env.VITE_QWEN_API_KEY;
+
+    }
+    
+    // Wenxin (Qianfan)
+    if (process.env.VITE_WENXIN_API_KEY) {
+      process.env.QIANFAN_AUTH = process.env.VITE_WENXIN_API_KEY;
+
+    }
+    
+    // ChatGPT
+    if (process.env.VITE_CHATGPT_API_KEY) {
+      process.env.CHATGPT_API_KEY = process.env.VITE_CHATGPT_API_KEY;
+
+    }
+    
+    // Gemini
+    if (process.env.VITE_GEMINI_API_KEY) {
+      process.env.GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
+
+    }
+    
+    // Gork
+    if (process.env.VITE_GORK_API_KEY) {
+      process.env.GORK_API_KEY = process.env.VITE_GORK_API_KEY;
+
+    }
+    
+    // Zhipu
+    if (process.env.VITE_ZHIPU_API_KEY) {
+      process.env.ZHIPU_API_KEY = process.env.VITE_ZHIPU_API_KEY;
+
+    }
+  }
+} catch (error) {
+  console.error('Failed to load .env.local:', error);
+}
+
+// 端口配置
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3006
+
+// Volcengine TTS config (server-side only)
+const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''
+const VOLC_TTS_ACCESS_TOKEN = process.env.VOLC_TTS_ACCESS_TOKEN || ''
+const VOLC_TTS_SECRET_KEY = process.env.VOLC_TTS_SECRET_KEY || ''
+const VOLC_TTS_ENDPOINT = process.env.VOLC_TTS_ENDPOINT || ''
+
+// ChatGPT config
+const CHATGPT_BASE_URL = process.env.CHATGPT_BASE_URL || 'https://api.openai.com/v1'
+const CHATGPT_API_KEY = process.env.CHATGPT_API_KEY || ''
+const CHATGPT_MODEL_ID = process.env.CHATGPT_MODEL_ID || 'gpt-4o'
+
+// Gemini config
+const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1'
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ''
+const GEMINI_MODEL_ID = process.env.GEMINI_MODEL_ID || 'gemini-1.5-flash'
+
+// Gork config
+const GORK_BASE_URL = process.env.GORK_BASE_URL || 'https://api.x.ai/v1'
+const GORK_API_KEY = process.env.GORK_API_KEY || ''
+const GORK_MODEL_ID = process.env.GORK_MODEL_ID || 'grok-beta'
+
+// Zhipu config
+const ZHIPU_BASE_URL = process.env.ZHIPU_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4'
+const ZHIPU_API_KEY = process.env.ZHIPU_API_KEY || ''
+const ZHIPU_MODEL_ID = process.env.ZHIPU_MODEL_ID || 'glm-4-plus'
+
+// 豆包模型基础配置
 const BASE_URL = process.env.DOUBAO_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
 const API_KEY = process.env.DOUBAO_API_KEY || ''
-const MODEL_ID = process.env.DOUBAO_MODEL_ID || 'doubao-seedance-1-0-pro-250528';
+const MODEL_ID = process.env.DOUBAO_MODEL_ID || 'doubao-seedance-1-0-pro-250528'
 const ORIGIN = process.env.CORS_ALLOW_ORIGIN || '*'
 const MOCK = process.env.DOUBAO_MOCK === '1'
-
-
 
 // Kimi (Moonshot) config
 const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1'
 const KIMI_API_KEY = process.env.KIMI_API_KEY || ''
+
+// DeepSeek config
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || ''
+
 // DashScope (Aliyun Qwen) config
 const DASHSCOPE_BASE_URL = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || ''
@@ -32,59 +170,6 @@ const QIANFAN_AUTH = process.env.QIANFAN_AUTH || ''
 const QIANFAN_ACCESS_TOKEN = process.env.QIANFAN_ACCESS_TOKEN || ''
 const QIANFAN_AK = process.env.QIANFAN_AK || process.env.BAIDU_AK || ''
 const QIANFAN_SK = process.env.QIANFAN_SK || process.env.BAIDU_SK || ''
-
-// Load .env.local for local development (non-production)
-try {
-  const rawPath = new URL('../.env.local', import.meta.url).pathname
-  const envPath = decodeURIComponent(rawPath)
-  const cwdPath = `${process.cwd()}/.env.local`
-  const finalPath = fs.existsSync(envPath) ? envPath : (fs.existsSync(cwdPath) ? cwdPath : '')
-  if (finalPath) {
-    const content = fs.readFileSync(finalPath, 'utf-8')
-    const lines = content.split(/\r?\n/)
-    for (const line of lines) {
-      const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-      if (!m) continue
-      const k = m[1]
-      const v = m[2]
-      // 始终以 .env.local 内容为准进行覆盖，确保密钥更新生效
-      process.env[k] = v
-    }
-    // 将前端变量映射到服务端使用的变量（无条件覆盖，避免旧值残留）
-    if (process.env.VITE_KIMI_API_KEY) {
-      process.env.KIMI_API_KEY = process.env.VITE_KIMI_API_KEY
-    }
-    if (process.env.VITE_KIMI_BASE_URL) {
-      process.env.KIMI_BASE_URL = process.env.VITE_KIMI_BASE_URL
-    }
-    if (process.env.VITE_DEEPSEEK_API_KEY) {
-      process.env.DEEPSEEK_API_KEY = process.env.VITE_DEEPSEEK_API_KEY
-    }
-    if (process.env.VITE_KIMI_BASE_URL) {
-      process.env.KIMI_BASE_URL = process.env.VITE_KIMI_BASE_URL
-    }
-    // 映射 Doubao 相关变量，便于前端配置生效
-    if (process.env.VITE_DOUBAO_API_KEY) {
-      process.env.DOUBAO_API_KEY = process.env.VITE_DOUBAO_API_KEY
-    }
-    if (process.env.VITE_DOUBAO_BASE_URL) {
-      process.env.DOUBAO_BASE_URL = process.env.VITE_DOUBAO_BASE_URL
-    }
-    // 映射 DeepSeek 相关变量，支持前端环境变量
-    if (process.env.VITE_DEEPSEEK_API_KEY) {
-      process.env.DEEPSEEK_API_KEY = process.env.VITE_DEEPSEEK_API_KEY
-    }
-    if (process.env.VITE_DEEPSEEK_BASE_URL) {
-      process.env.DEEPSEEK_BASE_URL = process.env.VITE_DEEPSEEK_BASE_URL
-    }
-  }
-} catch {}
-
-// Volcengine TTS config (server-side only)
-const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''
-const VOLC_TTS_ACCESS_TOKEN = process.env.VOLC_TTS_ACCESS_TOKEN || ''
-const VOLC_TTS_SECRET_KEY = process.env.VOLC_TTS_SECRET_KEY || ''
-const VOLC_TTS_ENDPOINT = process.env.VOLC_TTS_ENDPOINT || ''
 
 // Qianfan auth cache
 let __qf_token = (process.env.QIANFAN_ACCESS_TOKEN || '')
@@ -185,26 +270,141 @@ async function dashscopeFetch(path, method, body) {
   return { status: resp.status, ok: resp.ok, data }
 }
 
+async function chatgptFetch(path, method, body) {
+  const base = process.env.CHATGPT_BASE_URL || CHATGPT_BASE_URL
+  const key = process.env.CHATGPT_API_KEY || CHATGPT_API_KEY
+
+  try {
+    // 添加超时设置，避免长时间等待
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+    
+    const resp = await fetch(`${base}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+    
+    clearTimeout(timeoutId);
+    
+    const contentType = resp.headers.get('content-type') || ''
+    const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
+
+    return { status: resp.status, ok: resp.ok, data }
+  } catch (error) {
+    console.error(`[chatgptFetch] Error: ${error.message}`)
+    // 处理不同类型的错误
+    const errorMessage = error.name === 'AbortError' ? 'Request timed out' : error.message;
+    return { status: 500, ok: false, data: { error: errorMessage } }
+  }
+}
+
+async function geminiFetch(path, method, body) {
+  const base = process.env.GEMINI_BASE_URL || GEMINI_BASE_URL
+  const key = process.env.GEMINI_API_KEY || GEMINI_API_KEY
+  // Gemini API requires API key in query string
+  const url = new URL(`${base}${path}`)
+  url.searchParams.append('key', key)
+
+  try {
+    const resp = await fetch(url.toString(), {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    const contentType = resp.headers.get('content-type') || ''
+    const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
+
+    return { status: resp.status, ok: resp.ok, data }
+  } catch (error) {
+    console.error(`[geminiFetch] Error: ${error.message}`)
+    return { status: 500, ok: false, data: { error: error.message } }
+  }
+}
+
+async function gorkFetch(path, method, body) {
+  const base = process.env.GORK_BASE_URL || GORK_BASE_URL
+  const key = process.env.GORK_API_KEY || GORK_API_KEY
+
+  try {
+    const resp = await fetch(`${base}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    const contentType = resp.headers.get('content-type') || ''
+    const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
+
+    return { status: resp.status, ok: resp.ok, data }
+  } catch (error) {
+    console.error(`[gorkFetch] Error: ${error.message}`)
+    return { status: 500, ok: false, data: { error: error.message } }
+  }
+}
+
+async function zhipuFetch(path, method, body) {
+  const base = process.env.ZHIPU_BASE_URL || ZHIPU_BASE_URL
+  const key = process.env.ZHIPU_API_KEY || ZHIPU_API_KEY
+  const resp = await fetch(`${base}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const contentType = resp.headers.get('content-type') || ''
+  const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
+  return { status: resp.status, ok: resp.ok, data }
+}
+
 async function qianfanAuthHeader() {
-  const override = process.env.QIANFAN_AUTH || QIANFAN_AUTH
-  if (override && override.startsWith('bce-v3')) return override
+  // 百度千帆API密钥支持多种格式
+  // 1. QIANFAN_ACCESS_TOKEN: 直接使用的token
+  // 2. QIANFAN_AK/QIANFAN_SK: 用于获取token的密钥对
+  // 3. QIANFAN_AUTH: 支持bce-v3格式的密钥
+  
+  // 优先使用ACCESS_TOKEN
   const preset = process.env.QIANFAN_ACCESS_TOKEN || QIANFAN_ACCESS_TOKEN
-  const now = Math.floor(Date.now() / 1000)
   if (preset) return `Bearer ${preset}`
+  
+  // 检查缓存的token
+  const now = Math.floor(Date.now() / 1000)
   if (__qf_token && __qf_token_expire > now + 60) return `Bearer ${__qf_token}`
+  
+  // 尝试使用AK/SK获取新token
   const ak = process.env.QIANFAN_AK || QIANFAN_AK
   const sk = process.env.QIANFAN_SK || QIANFAN_SK
-  if (!ak || !sk) return ''
-  const url = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${encodeURIComponent(ak)}&client_secret=${encodeURIComponent(sk)}`
-  const resp = await fetch(url, { method: 'GET' })
-  const data = await resp.json()
-  const token = data?.access_token || ''
-  const expiresIn = Number(data?.expires_in || 0)
-  if (token) {
-    __qf_token = token
-    __qf_token_expire = now + (expiresIn || 0)
-    return `Bearer ${token}`
+  if (ak && sk) {
+    try {
+      const url = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${encodeURIComponent(ak)}&client_secret=${encodeURIComponent(sk)}`
+      const resp = await fetch(url, { method: 'GET' })
+      const data = await resp.json()
+      const token = data?.access_token || ''
+      const expiresIn = Number(data?.expires_in || 0)
+      if (token) {
+        __qf_token = token
+        __qf_token_expire = now + (expiresIn || 0)
+        return `Bearer ${token}`
+      }
+    } catch (error) {
+      console.error('Failed to get qianfan token:', error)
+    }
   }
+  
+  // 最后尝试使用bce-v3格式的密钥
+  const override = process.env.QIANFAN_AUTH || QIANFAN_AUTH
+  if (override) return override
+  
   return ''
 }
 
@@ -523,6 +723,74 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // ChatGPT chat completions proxy
+    if (req.method === 'POST' && path === '/api/chatgpt/chat/completions') {
+      const keyPresent = (process.env.CHATGPT_API_KEY || CHATGPT_API_KEY)
+      if (!keyPresent) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+      const b = await readBody(req)
+      const payload = {
+        model: b.model || CHATGPT_MODEL_ID,
+        messages: b.messages,
+        max_tokens: b.max_tokens,
+        temperature: b.temperature,
+        top_p: b.top_p,
+        stream: b.stream,
+      }
+      const r = await chatgptFetch('/chat/completions', 'POST', payload)
+      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.type) || 'SERVER_ERROR', data: r.data }); return }
+      sendJson(res, 200, { ok: true, data: r.data })
+      return
+    }
+
+    // Gemini chat completions proxy
+    if (req.method === 'POST' && path === '/api/gemini/generateContent') {
+      const keyPresent = (process.env.GEMINI_API_KEY || GEMINI_API_KEY)
+      if (!keyPresent) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+      const b = await readBody(req)
+      const r = await geminiFetch(`/models/${b.model || GEMINI_MODEL_ID}/generateContent`, 'POST', b)
+      if (!r.ok) { sendJson(res, r.status, { error: 'SERVER_ERROR', data: r.data }); return }
+      sendJson(res, 200, { ok: true, data: r.data })
+      return
+    }
+
+    // Gork chat completions proxy
+    if (req.method === 'POST' && path === '/api/gork/chat/completions') {
+      const keyPresent = (process.env.GORK_API_KEY || GORK_API_KEY)
+      if (!keyPresent) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+      const b = await readBody(req)
+      const payload = {
+        model: b.model || GORK_MODEL_ID,
+        messages: b.messages,
+        max_tokens: b.max_tokens,
+        temperature: b.temperature,
+        top_p: b.top_p,
+        stream: b.stream,
+      }
+      const r = await gorkFetch('/chat/completions', 'POST', payload)
+      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.type) || 'SERVER_ERROR', data: r.data }); return }
+      sendJson(res, 200, { ok: true, data: r.data })
+      return
+    }
+
+    // Zhipu chat completions proxy
+    if (req.method === 'POST' && path === '/api/zhipu/chat/completions') {
+      const keyPresent = (process.env.ZHIPU_API_KEY || ZHIPU_API_KEY)
+      if (!keyPresent) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+      const b = await readBody(req)
+      const payload = {
+        model: b.model || ZHIPU_MODEL_ID,
+        messages: b.messages,
+        max_tokens: b.max_tokens,
+        temperature: b.temperature,
+        top_p: b.top_p,
+        stream: b.stream,
+      }
+      const r = await zhipuFetch('/chat/completions', 'POST', payload)
+      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.type) || 'SERVER_ERROR', data: r.data }); return }
+      sendJson(res, 200, { ok: true, data: r.data })
+      return
+    }
+
     if (req.method === 'POST' && path === '/api/doubao/videos/tasks') {
       const key = process.env.DOUBAO_API_KEY || API_KEY
       if (MOCK || !key) {
@@ -729,7 +997,12 @@ const server = http.createServer(async (req, res) => {
           configured: !!(process.env.QIANFAN_AUTH || QIANFAN_AUTH || process.env.QIANFAN_ACCESS_TOKEN || QIANFAN_ACCESS_TOKEN || process.env.QIANFAN_AK || QIANFAN_AK),
           base: (process.env.QIANFAN_BASE_URL || QIANFAN_BASE_URL),
           token_cached: !!__qf_token
-        }
+        },
+        // 添加新模型
+        chatgpt: { configured: !!(process.env.CHATGPT_API_KEY || CHATGPT_API_KEY), base: (process.env.CHATGPT_BASE_URL || CHATGPT_BASE_URL), model: (process.env.CHATGPT_MODEL_ID || CHATGPT_MODEL_ID) },
+        gemini: { configured: !!(process.env.GEMINI_API_KEY || GEMINI_API_KEY), base: (process.env.GEMINI_BASE_URL || GEMINI_BASE_URL), model: (process.env.GEMINI_MODEL_ID || GEMINI_MODEL_ID) },
+        gork: { configured: !!(process.env.GORK_API_KEY || GORK_API_KEY), base: (process.env.GORK_BASE_URL || GORK_BASE_URL), model: (process.env.GORK_MODEL_ID || GORK_MODEL_ID) },
+        zhipu: { configured: !!(process.env.ZHIPU_API_KEY || ZHIPU_API_KEY), base: (process.env.ZHIPU_BASE_URL || ZHIPU_BASE_URL), model: (process.env.ZHIPU_MODEL_ID || ZHIPU_MODEL_ID) }
       }
       sendJson(res, 200, { ok: true, status })
       return
@@ -1042,5 +1315,5 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`Local API server listening on http://localhost:${PORT}`)
+
 })

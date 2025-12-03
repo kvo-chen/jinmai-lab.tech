@@ -41,7 +41,7 @@ export default function CreativeMatchmaking() {
         {
           id: 1,
           name: '创意总监小李',
-          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaoli',
+          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaoli',
           level: '资深创作者',
           style: ['现代国潮', '插画设计', '品牌设计'],
           matchScore: 92,
@@ -52,7 +52,7 @@ export default function CreativeMatchmaking() {
         {
           id: 2,
           name: '插画师小陈',
-          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaochen',
+          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaochen',
           level: '资深创作者',
           style: ['传统插画', '水墨风格', '人物设计'],
           matchScore: 88,
@@ -63,7 +63,7 @@ export default function CreativeMatchmaking() {
         {
           id: 3,
           name: '品牌设计师老王',
-          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20laowang',
+          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20laowang',
           level: '大师级创作者',
           style: ['品牌设计', '包装设计', '视觉识别'],
           matchScore: 85,
@@ -74,7 +74,7 @@ export default function CreativeMatchmaking() {
         {
           id: 4,
           name: '数字艺术家小张',
-          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaozhang',
+          avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaozhang',
           level: '新锐创作者',
           style: ['数字艺术', '3D建模', '互动媒体'],
           matchScore: 82,
@@ -367,7 +367,7 @@ export default function CreativeMatchmaking() {
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="aspect-square rounded-lg overflow-hidden bg-gray-200">
                       <img 
-                  src={`https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Creative%20work%20example%20${i}`}
+                  src={`https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Creative%20work%20example%20${i}`}
                         alt={`作品 ${i}`} 
                         className="w-full h-full object-cover"
                       />

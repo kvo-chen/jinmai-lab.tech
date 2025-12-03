@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           id: `quick-${provider}-${Date.now()}`,
           username: provider === 'wechat' ? '微信用户' : provider === 'phone' ? '手机号用户' : '第三方用户',
           email: `${provider}-${Date.now()}@example.com`,
-          avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar",
+          avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar",
           tags: ['国潮爱好者'],
         };
         setIsAuthenticated(true);

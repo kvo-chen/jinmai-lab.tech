@@ -201,12 +201,12 @@ export default function Home() {
   
   // 推荐作品
   const gallery = [
-    { id: 1, title: '桂发祥麻花包装焕新', category: '老字号品牌', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guifaxiang%20mahua%20modern%20packaging%20design%2C%20cultural%20red%20and%20gold%2C%20studio%20lighting%2C%20high%20detail&image_size=landscape_4_3', likes: 256 },
-    { id: 2, title: '狗不理联名海报', category: '视觉设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Goubuli%20steamed%20buns%20brand%20poster%20design', likes: 198 },
-    { id: 3, title: '耳朵眼炸糕IP形象', category: 'IP设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Erduoyan%20fried%20cake%20brand%20mascot%20illustration%2C%20cute%20IP%2C%20flat%20style%2C%20high%20detail&image_size=landscape_4_3', likes: 312 },
-    { id: 4, title: '果仁张秋季礼盒', category: '包装设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guorenzhang%20candied%20chestnut%20autumn%20gift%20box%2C%20packaging%20design%2C%20warm%20tone%2C%20high%20detail&image_size=landscape_4_3', likes: 224 },
-    { id: 5, title: '杨柳青年画主题插画', category: '插画', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Yangliuqing%20New%20Year%20Painting%20theme%20modern%20illustration', likes: 341 },
-    { id: 6, title: '泥人张彩塑联名周边', category: '文创', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Nirenzhang%20clay%20sculpture%20collaboration%20merch%20design', likes: 187 }
+    { id: 1, title: '桂发祥麻花包装焕新', category: '老字号品牌', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guifaxiang%20mahua%20modern%20packaging%20design%2C%20cultural%20red%20and%20gold%2C%20studio%20lighting%2C%20high%20detail&image_size=1920x1080', likes: 256 },
+    { id: 2, title: '狗不理联名海报', category: '视觉设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Goubuli%20steamed%20buns%20brand%20poster%20design', likes: 198 },
+    { id: 3, title: '耳朵眼炸糕IP形象', category: 'IP设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Erduoyan%20fried%20cake%20brand%20mascot%20illustration%2C%20cute%20IP%2C%20flat%20style%2C%20high%20detail&image_size=1920x1080', likes: 312 },
+    { id: 4, title: '果仁张秋季礼盒', category: '包装设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guorenzhang%20candied%20chestnut%20autumn%20gift%20box%2C%20packaging%20design%2C%20warm%20tone%2C%20high%20detail&image_size=1920x1080', likes: 224 },
+    { id: 5, title: '杨柳青年画主题插画', category: '插画', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Yangliuqing%20New%20Year%20Painting%20theme%20modern%20illustration', likes: 341 },
+    { id: 6, title: '泥人张彩塑联名周边', category: '文创', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Nirenzhang%20clay%20sculpture%20collaboration%20merch%20design', likes: 187 }
   ];
   
 
@@ -359,9 +359,9 @@ export default function Home() {
       )}
       
       {/* 首页主标题区域 */}
-      <div className="max-w-7xl mx-auto mb-8">
+      <div className="max-w-7xl mx-auto mt-12 mb-8">
         {/* 首页主标题：采用渐变文字与阴影效果，提升视觉吸引力 */}
-        <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4 bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent text-center drop-shadow-md">
+        <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4 bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent text-center drop-shadow-md animate-gradient-text">
           创作者，您好
         </h1>
         {/* 首页副标题：提升可读性，限制最大宽度，并根据主题切换不同灰度 */}
@@ -477,10 +477,10 @@ export default function Home() {
       </div>
       
       {/* 推荐问题区域 */}
-      <div className="max-w-7xl mx-auto mb-10 animate-slide-up">
+      <div className="max-w-7xl mx-auto mb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {recommended.map((r, idx) => (
-            <div key={idx} className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 ring-1 ring-gray-700 hover:bg-gray-750' : 'bg-white ring-1 ring-gray-200 hover:bg-gray-50'} flex items-center justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}>
+            <div key={idx} className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 ring-1 ring-gray-700 hover:bg-gray-750' : 'bg-white ring-1 ring-gray-200 hover:bg-gray-50'} flex items-center justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-slide-up-${idx + 1}`}>
               <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm md:text-base`}>{r}</span>
               <button onClick={() => handleRecommendedClick(r)} className="text-primary text-sm md:text-base px-2 py-1 rounded hover:bg-primary/10 transition-all duration-300">查看</button>
             </div>
@@ -536,16 +536,16 @@ export default function Home() {
       )}
       
       {/* 为你推荐作品区域 */}
-      <div className="max-w-7xl mx-auto mb-6 animate-slide-up">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-7xl mx-auto mb-6">
+        <div className="flex items-center justify-between mb-6 animate-slide-up">
           <h2 className="text-xl font-bold text-primary">为你推荐</h2>
           <button onMouseEnter={prefetchExplore} onFocus={prefetchExplore} onClick={handleExplore} className="text-sm text-primary hover:text-primary/80 transition-colors duration-200">去作品集</button>
         </div>
         <div ref={galleryRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-24">
-          {gallery.map(item => (
+          {gallery.map((item, idx) => (
             <div 
               key={item.id} 
-              className={`rounded-2xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${isDark ? 'bg-gray-800 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-white ring-1 ring-gray-200 hover:ring-primary/50'} cursor-pointer`}
+              className={`rounded-2xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${isDark ? 'bg-gray-800 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-white ring-1 ring-gray-200 hover:ring-primary/50'} cursor-pointer animate-slide-up-${idx + 1}`}
               role="button"
               tabIndex={0}
               onClick={() => {
@@ -582,9 +582,9 @@ export default function Home() {
       {/* 天津特色区域 */}
       <div 
         ref={tianjinRef}
-        className="container mx-auto w-full relative z-10 mb-12 scroll-mt-24 animate-slide-up"
+        className="container mx-auto w-full relative z-10 mb-12 scroll-mt-24"
       >
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 animate-slide-up">
           <h3 className="text-xl font-bold flex items-center text-primary">
             <i className="fas fa-landmark text-primary mr-2"></i>
             天津特色专区
@@ -599,7 +599,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
          <div
-           className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700 hover:border-primary/50' : 'border-gray-200 hover:border-primary'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer`}
+           className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700 hover:border-primary/50' : 'border-gray-200 hover:border-primary'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer animate-slide-up-1`}
            onClick={() => navigate('/tianjin')}
            role="button"
            tabIndex={0}
@@ -626,7 +626,7 @@ export default function Home() {
            </div>
          </div>
          <div
-           className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700 hover:border-primary/50' : 'border-gray-200 hover:border-primary'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer`}
+           className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700 hover:border-primary/50' : 'border-gray-200 hover:border-primary'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer animate-slide-up-2`}
            onClick={() => navigate('/tianjin/activities')}
            role="button"
            tabIndex={0}
@@ -653,7 +653,7 @@ export default function Home() {
            </div>
          </div>
          <div
-           className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700 hover:border-primary/50' : 'border-gray-200 hover:border-primary'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer`}
+           className={`rounded-xl overflow-hidden shadow-md border ${isDark ? 'border-gray-700 hover:border-primary/50' : 'border-gray-200 hover:border-primary'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer animate-slide-up-3`}
            onClick={() => navigate('/create')}
            role="button"
            tabIndex={0}

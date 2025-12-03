@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import { TianjinImage } from '@/components/TianjinStyleComponents';
 
 // 作品类型定义
 interface PortfolioItem {
@@ -178,10 +179,11 @@ const PortfolioGallery: React.FC = () => {
             >
               <div className="relative">
                 <div className="h-48 overflow-hidden">
-                  <img
+                  <TianjinImage
                     src={item.images[0]}
                     alt={item.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                    ratio="landscape"
                   />
                 </div>
                 {item.isFeatured && (
@@ -205,10 +207,12 @@ const PortfolioGallery: React.FC = () => {
                 </div>
                 <p className="text-sm opacity-70 mb-3 line-clamp-2">{item.description}</p>
                 <div className="flex items-center gap-2 mb-3">
-                  <img
+                  <TianjinImage
                     src={item.author.avatar}
                     alt={item.author.name}
                     className="w-8 h-8 rounded-full object-cover"
+                    ratio="square"
+                    rounded="full"
                   />
                   <span className="text-sm font-medium">{item.author.name}</span>
                 </div>
@@ -259,10 +263,11 @@ const PortfolioGallery: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="h-96 overflow-hidden">
-                <img
+                <TianjinImage
                   src={selectedItem.images[0]}
                   alt={selectedItem.title}
                   className="w-full h-full object-cover"
+                  ratio="landscape"
                 />
               </div>
               <div className="p-6">
@@ -291,10 +296,12 @@ const PortfolioGallery: React.FC = () => {
                   </button>
                 </div>
                 <div className="flex items-center gap-2 mb-4">
-                  <img
+                  <TianjinImage
                     src={selectedItem.author.avatar}
                     alt={selectedItem.author.name}
                     className="w-10 h-10 rounded-full object-cover"
+                    ratio="square"
+                    rounded="full"
                   />
                   <div>
                     <span className="font-medium">{selectedItem.author.name}</span>
@@ -320,10 +327,11 @@ const PortfolioGallery: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     {selectedItem.images.map((image, index) => (
                       <div key={index} className="rounded-lg overflow-hidden">
-                        <img
+                        <TianjinImage
                           src={image}
                           alt={`${selectedItem.title} 图片 ${index + 1}`}
                           className="w-full h-48 object-cover"
+                          ratio="landscape"
                         />
                       </div>
                     ))}

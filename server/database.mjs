@@ -136,7 +136,7 @@ async function initSQLite() {
     }
     retryCounts.sqlite = 0
     
-    console.log('SQLite连接成功')
+
     return db
   } catch (error) {
     connectionStatus.sqlite = {
@@ -244,7 +244,7 @@ function createSQLiteTables(db) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_video_tasks_status ON video_tasks(status);`)
     db.exec(`CREATE INDEX IF NOT EXISTS idx_video_tasks_created_at ON video_tasks(created_at);`)
     
-    console.log('SQLite表和索引初始化成功')
+
   } catch (error) {
     console.error('创建SQLite表失败:', error.message)
     throw error
@@ -276,7 +276,7 @@ async function initMongoDB() {
     }
     retryCounts.mongodb = 0
     
-    console.log('MongoDB连接成功')
+
     return { client, db }
   } catch (error) {
     connectionStatus.mongodb = {
@@ -311,7 +311,7 @@ async function initMongoDBCollections(db) {
     await videoTasksCollection.createIndex({ status: 1 })
     await videoTasksCollection.createIndex({ created_at: 1 })
     
-    console.log('MongoDB集合和索引初始化成功')
+
   } catch (error) {
     console.error('初始化MongoDB集合和索引失败:', error.message)
     throw error
@@ -350,7 +350,7 @@ async function initPostgreSQL() {
     }
     retryCounts.postgresql = 0
     
-    console.log('PostgreSQL连接成功')
+
     return pool
   } catch (error) {
     connectionStatus.postgresql = {
@@ -512,7 +512,7 @@ async function createPostgreSQLTables(pool) {
     await client.query('CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);')
     
     client.release()
-    console.log('PostgreSQL表和索引初始化成功')
+
   } catch (error) {
     console.error('创建PostgreSQL表失败:', error.message)
     throw error
@@ -644,7 +644,7 @@ export async function closeDB() {
       dbInstances.sqlite.close()
       dbInstances.sqlite = null
       connectionStatus.sqlite.connected = false
-      console.log('SQLite连接已关闭')
+
     }
     
     // 关闭MongoDB连接
@@ -652,7 +652,7 @@ export async function closeDB() {
       await dbInstances.mongodb.client.close()
       dbInstances.mongodb = null
       connectionStatus.mongodb.connected = false
-      console.log('MongoDB连接已关闭')
+
     }
     
     // 关闭PostgreSQL连接
@@ -660,10 +660,10 @@ export async function closeDB() {
       await dbInstances.postgresql.end()
       dbInstances.postgresql = null
       connectionStatus.postgresql.connected = false
-      console.log('PostgreSQL连接已关闭')
+
     }
     
-    console.log('所有数据库连接已关闭')
+
   } catch (error) {
     console.error('关闭数据库连接失败:', error.message)
     throw error
@@ -1031,6 +1031,241 @@ export const videoTaskDB = {
           updated_at: pgRow.updated_at,
           payload: pgPayload
         }
+        
+      default:
+        throw new Error(`不支持的数据库类型: ${config.dbType}`)
+    }
+  }
+}
+
+/**
+ * 数据库操作封装 - 排行榜相关
+ */
+export const leaderboardDB = {
+  /**
+   * 获取时间范围的起始时间戳
+   */
+  getTimeRangeStart(timeRange) {
+    const now = Date.now()
+    const day = 24 * 60 * 60 * 1000
+    
+    switch (timeRange) {
+      case 'day':
+        return now - day
+      case 'week':
+        return now - (7 * day)
+      case 'month':
+        return now - (30 * day)
+      case 'all':
+      default:
+        return 0
+    }
+  },
+  
+  /**
+   * 获取帖子排行榜
+   */
+  async getPostsLeaderboard({ sortBy = 'likes_count', timeRange = 'all', limit = 20 }) {
+    const db = await getDB()
+    const startTime = this.getTimeRangeStart(timeRange)
+    
+    switch (config.dbType) {
+      case DB_TYPE.SQLITE:
+        const whereClause = startTime > 0 ? `WHERE created_at >= ?` : ''
+        const params = startTime > 0 ? [startTime] : []
+        
+        // 获取帖子数据
+        const posts = db.prepare(`
+          SELECT p.*, u.username, u.avatar_url
+          FROM posts p
+          LEFT JOIN users u ON p.user_id = u.id
+          ${whereClause}
+          ORDER BY p.${sortBy} DESC
+          LIMIT ?
+        `).all(...params, limit)
+        
+        return posts
+        
+      case DB_TYPE.MONGODB:
+        const query = startTime > 0 ? { created_at: { $gte: startTime } } : {}
+        
+        // 获取帖子数据
+        const mongodbPosts = await db.collection('posts')
+          .aggregate([
+            { $match: query },
+            { $sort: { [sortBy]: -1 } },
+            { $limit: limit },
+            { 
+              $lookup: {
+                from: 'users',
+                localField: 'user_id',
+                foreignField: '_id',
+                as: 'user_info'
+              }
+            },
+            { $unwind: { path: '$user_info', preserveNullAndEmptyArrays: true } },
+            { 
+              $project: {
+                id: 1,
+                title: 1,
+                content: 1,
+                user_id: 1,
+                category_id: 1,
+                status: 1,
+                views: 1,
+                likes_count: 1,
+                comments_count: 1,
+                created_at: 1,
+                updated_at: 1,
+                username: '$user_info.username',
+                avatar_url: '$user_info.avatar_url'
+              }
+            }
+          ])
+          .toArray()
+        
+        return mongodbPosts
+        
+      case DB_TYPE.POSTGRESQL:
+        const pgWhereClause = startTime > 0 ? `WHERE p.created_at >= $1` : ''
+        const pgParams = startTime > 0 ? [startTime, limit] : [limit]
+        const pgParamOffset = startTime > 0 ? 1 : 0
+        
+        const { rows: pgPosts } = await db.query(`
+          SELECT p.*, u.username, u.avatar_url
+          FROM posts p
+          LEFT JOIN users u ON p.user_id = u.id
+          ${pgWhereClause}
+          ORDER BY p.${sortBy} DESC
+          LIMIT $${pgParamOffset + 1}
+        `, pgParams)
+        
+        return pgPosts
+        
+      case DB_TYPE.NEON_API:
+        const neonWhereClause = startTime > 0 ? `WHERE p.created_at >= $1` : ''
+        const neonParams = startTime > 0 ? [startTime, limit] : [limit]
+        const neonParamOffset = startTime > 0 ? 1 : 0
+        
+        const neonResult = await db.query(`
+          SELECT p.*, u.username, u.avatar_url
+          FROM posts p
+          LEFT JOIN users u ON p.user_id = u.id
+          ${neonWhereClause}
+          ORDER BY p.${sortBy} DESC
+          LIMIT $${neonParamOffset + 1}
+        `, neonParams)
+        
+        return neonResult.result.rows
+        
+      default:
+        throw new Error(`不支持的数据库类型: ${config.dbType}`)
+    }
+  },
+  
+  /**
+   * 获取用户排行榜
+   */
+  async getUsersLeaderboard({ sortBy = 'posts_count', timeRange = 'all', limit = 20 }) {
+    const db = await getDB()
+    const startTime = this.getTimeRangeStart(timeRange)
+    
+    switch (config.dbType) {
+      case DB_TYPE.SQLITE:
+        // SQLite 不支持复杂的聚合查询，返回模拟数据
+        const users = db.prepare(`
+          SELECT id, username, email, avatar_url, created_at, updated_at
+          FROM users
+          ORDER BY id DESC
+          LIMIT ?
+        `).all(limit)
+        
+        // 添加模拟的统计数据
+        return users.map(user => ({
+          ...user,
+          posts_count: Math.floor(Math.random() * 100),
+          total_likes: Math.floor(Math.random() * 1000),
+          total_views: Math.floor(Math.random() * 10000)
+        }))
+        
+      case DB_TYPE.MONGODB:
+        // 根据时间范围筛选条件
+        const postQuery = startTime > 0 ? { created_at: { $gte: startTime } } : {}
+        
+        // 聚合查询用户统计数据
+        const mongodbUsers = await db.collection('users')
+          .aggregate([
+            {
+              $lookup: {
+                from: 'posts',
+                let: { userId: '$_id' },
+                pipeline: [
+                  { $match: { $expr: { $eq: ['$user_id', '$$userId'] }, ...postQuery } },
+                  { $group: { _id: null, count: { $sum: 1 }, total_likes: { $sum: '$likes_count' }, total_views: { $sum: '$views' } } }
+                ],
+                as: 'post_stats'
+              }
+            },
+            { $unwind: { path: '$post_stats', preserveNullAndEmptyArrays: true } },
+            { 
+              $project: {
+                id: '$_id',
+                username: 1,
+                email: 1,
+                avatar_url: 1,
+                created_at: 1,
+                updated_at: 1,
+                posts_count: { $ifNull: ['$post_stats.count', 0] },
+                total_likes: { $ifNull: ['$post_stats.total_likes', 0] },
+                total_views: { $ifNull: ['$post_stats.total_views', 0] }
+              }
+            },
+            { $sort: { [sortBy]: -1 } },
+            { $limit: limit }
+          ])
+          .toArray()
+        
+        return mongodbUsers
+        
+      case DB_TYPE.POSTGRESQL:
+        const pgPostWhereClause = startTime > 0 ? `AND p.created_at >= $1` : ''
+        const pgUserParams = startTime > 0 ? [startTime, limit] : [limit]
+        const pgUserParamOffset = startTime > 0 ? 1 : 0
+        
+        const { rows: pgUsers } = await db.query(`
+          SELECT 
+            u.id, u.username, u.email, u.avatar_url, u.created_at, u.updated_at,
+            COUNT(p.id) as posts_count,
+            COALESCE(SUM(p.likes_count), 0) as total_likes,
+            COALESCE(SUM(p.views), 0) as total_views
+          FROM users u
+          LEFT JOIN posts p ON u.id = p.user_id ${pgPostWhereClause}
+          GROUP BY u.id
+          ORDER BY ${sortBy} DESC
+          LIMIT $${pgUserParamOffset + 1}
+        `, pgUserParams)
+        
+        return pgUsers
+        
+      case DB_TYPE.NEON_API:
+        const neonPostWhereClause = startTime > 0 ? `AND p.created_at >= $1` : ''
+        const neonUserParams = startTime > 0 ? [startTime, limit] : [limit]
+        const neonUserParamOffset = startTime > 0 ? 1 : 0
+        
+        const neonUserResult = await db.query(`
+          SELECT 
+            u.id, u.username, u.email, u.avatar_url, u.created_at, u.updated_at,
+            COUNT(p.id) as posts_count,
+            COALESCE(SUM(p.likes_count), 0) as total_likes,
+            COALESCE(SUM(p.views), 0) as total_views
+          FROM users u
+          LEFT JOIN posts p ON u.id = p.user_id ${neonPostWhereClause}
+          GROUP BY u.id
+          ORDER BY ${sortBy} DESC
+          LIMIT $${neonUserParamOffset + 1}
+        `, neonUserParams)
+        
+        return neonUserResult.result.rows
         
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)

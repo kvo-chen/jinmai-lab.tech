@@ -33,7 +33,7 @@ export default function Wizard() {
     const title = `${state.brandName || '作品'} - 生成变体`
     // 中文注释：确保缩略图不为空，优先使用变体图片或上传图片，否则用标题生成占位图
     const baseThumb = state.variants?.[0]?.image || state.imageUrl || ''
-    const thumb = baseThumb || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(title)}&image_size=square`
+    const thumb = baseThumb || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(title)}&image_size=1024x1024`
     const p = postService.addPost({
       title,
       thumbnail: thumb,
@@ -121,7 +121,7 @@ export default function Wizard() {
             <div className="mt-4">
               {(() => {
                 const brand = BRANDS.find(b => b.id === state.brandId || b.name === (state.brandName || ''))
-                const src = brand?.image || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(`Tianjin ${state.brandName || 'brand'} product shot, cultural style`)}&image_size=landscape_16_9`
+                const src = brand?.image || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(`Tianjin ${state.brandName || 'brand'} product shot, cultural style`)}&image_size=1920x1080`
                 return <TianjinImage src={src} alt="brand" ratio="landscape" rounded="lg" />
               })()}
             </div>
@@ -242,9 +242,9 @@ export default function Wizard() {
                   <button onClick={async () => { if (!aiText.trim()) { toast.warning('请先生成文案'); return } try { const r = await voiceService.synthesize(aiText, { format: 'mp3' }); setTtsUrl(r.audioUrl) } catch (e: any) { toast.error(e?.message || '朗读失败') } }} className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm" disabled={!aiText.trim()}>朗读</button>
                   <button onClick={async () => { if (!aiText.trim()) { toast.warning('无可复制内容'); return } try { await navigator.clipboard.writeText(aiText); toast.success('已复制到剪贴板') } catch {} }} className={`${isDark ? 'bg-gray-600 text-white' : 'bg-white text-gray-700'} px-3 py-1.5 rounded-lg ring-1 ${isDark ? 'ring-gray-500 hover:bg-gray-500' : 'ring-gray-200 hover:bg-gray-50'} text-sm`}>复制</button>
                   <button onClick={() => { const base = `${(state.inputText || '').trim()} ${(aiText || '').trim()}`.trim() || 'Tianjin cultural design'; setState({ variants: [
-                    { script: '方案A', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant A')}&image_size=square`, video: '视频占位A' },
-                    { script: '方案B', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant B')}&image_size=square`, video: '视频占位B' },
-                    { script: '方案C', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant C')}&image_size=square`, video: '视频占位C' },
+                    { script: '方案A', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant A')}&image_size=1024x1024`, video: '视频占位A' },
+                    { script: '方案B', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant B')}&image_size=1024x1024`, video: '视频占位B' },
+                    { script: '方案C', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant C')}&image_size=1024x1024`, video: '视频占位C' },
                   ] }); setStep(3) }} className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm">一键生成并进入下一步</button>
                 </div>
               </div>
@@ -275,7 +275,7 @@ export default function Wizard() {
               {(() => {
                 const brand = (state.brandName || '').trim() || '品牌'
                 const prompt = `${brand} ${(state.inputText || '').trim()}`.trim() || brand
-                const sizeMap: Record<string, string> = { landscape: 'landscape_4_3', square: 'square', portrait: 'portrait_3_4' }
+                const sizeMap: Record<string, string> = { landscape: '1920x1080', square: '1024x1024', portrait: '1080x1920' }
                 const src = `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=${sizeMap[previewRatio]}`
                 // 中文注释：使用相对容器，实现覆盖叠层信息标注
                 return (
@@ -399,9 +399,9 @@ export default function Wizard() {
             <button onClick={() => {
               const base = `${(state.inputText || '').trim()} ${(aiText || '').trim()}`.trim() || 'Tianjin cultural design'
               setState({ variants: [
-                { script: '方案A', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant A')}&image_size=square`, video: '视频占位A' },
-                { script: '方案B', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant B')}&image_size=square`, video: '视频占位B' },
-                { script: '方案C', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant C')}&image_size=square`, video: '视频占位C' },
+                { script: '方案A', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant A')}&image_size=1024x1024`, video: '视频占位A' },
+                { script: '方案B', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant B')}&image_size=1024x1024`, video: '视频占位B' },
+                { script: '方案C', image: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant C')}&image_size=1024x1024`, video: '视频占位C' },
               ] })
             }} className="bg-red-600 text-white px-4 py-2 rounded-lg">生成</button>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">

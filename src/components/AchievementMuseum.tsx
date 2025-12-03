@@ -42,7 +42,7 @@ export default function AchievementMuseum() {
           id: 1,
           name: '国潮插画系列',
           description: '结合传统中国元素与现代设计风格的插画作品',
-          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Achievement%20exhibit%20example%201%203D%20model',
+          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Achievement%20exhibit%20example%201%203D%20model',
           year: 2025,
           category: '插画设计'
         },
@@ -50,7 +50,7 @@ export default function AchievementMuseum() {
           id: 2,
           name: '传统纹样创新',
           description: '基于传统纹样进行创新设计的图案集合',
-          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Achievement%20exhibit%20example%202%203D%20model',
+          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Achievement%20exhibit%20example%202%203D%20model',
           year: 2025,
           category: '纹样设计'
         },
@@ -58,7 +58,7 @@ export default function AchievementMuseum() {
           id: 3,
           name: '老字号品牌焕新',
           description: '为老字号品牌设计的现代化视觉识别系统',
-          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Achievement%20exhibit%20example%203%203D%20model',
+          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Achievement%20exhibit%20example%203%203D%20model',
           year: 2025,
           category: '品牌设计'
         }

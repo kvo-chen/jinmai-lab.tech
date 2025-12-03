@@ -72,7 +72,7 @@ class CulturalPuzzleService {
         explanation: '杨柳青年画以色彩鲜艳、构图饱满、题材丰富、寓意吉祥为主要特点，是中国传统民间木版年画的代表之一。',
         difficulty: 'easy',
         tags: ['天津', '杨柳青', '年画', '传统艺术'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20New%20Year%20Painting%20traditional%20Chinese%20art'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Yangliuqing%20New%20Year%20Painting%20traditional%20Chinese%20art'
       },
       {
         id: `puzzle-${this.nextPuzzleId++}`,
@@ -91,7 +91,7 @@ class CulturalPuzzleService {
         explanation: '泥人张彩塑主要使用黏土制作，经过塑造、晾干、烧制、彩绘等多道工序完成，具有造型生动、色彩丰富的特点。',
         difficulty: 'easy',
         tags: ['天津', '泥人张', '彩塑', '传统艺术'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Nirenzhang%20clay%20sculpture%20traditional%20Chinese%20art'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Nirenzhang%20clay%20sculpture%20traditional%20Chinese%20art'
       },
       {
         id: `puzzle-${this.nextPuzzleId++}`,
@@ -110,7 +110,7 @@ class CulturalPuzzleService {
         explanation: '在京剧中，红色脸谱通常代表忠勇正义的人物形象，如关羽、赵匡胤等。',
         difficulty: 'medium',
         tags: ['京剧', '脸谱', '传统戏曲', '文化符号'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Beijing%20Opera%20face%20paint%20red%20color%20traditional%20Chinese%20art'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Beijing%20Opera%20face%20paint%20red%20color%20traditional%20Chinese%20art'
       },
       {
         id: `puzzle-${this.nextPuzzleId++}`,
@@ -129,7 +129,7 @@ class CulturalPuzzleService {
         explanation: '天青色是中国传统色彩之一，源自宋代汝窑青瓷的釉色，代表着清新、典雅的审美意境。',
         difficulty: 'medium',
         tags: ['传统色彩', '中国文化', '美学'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20Chinese%20color%20sky%20blue%20aesthetic'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20color%20sky%20blue%20aesthetic'
       },
       {
         id: `puzzle-${this.nextPuzzleId++}`,
@@ -148,7 +148,7 @@ class CulturalPuzzleService {
         explanation: '中国传统云纹以流畅的曲线为主要特征，象征着吉祥如意、高升和祥瑞，常用于传统建筑、服饰、陶瓷等领域。',
         difficulty: 'medium',
         tags: ['传统纹样', '云纹', '中国文化', '装饰艺术'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20Chinese%20cloud%20pattern%20decorative%20art'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20cloud%20pattern%20decorative%20art'
       },
       {
         id: `puzzle-${this.nextPuzzleId++}`,
@@ -167,7 +167,7 @@ class CulturalPuzzleService {
         explanation: '楷书是中国书法的主要字体之一，以结构严谨、笔画规整、端庄秀丽为主要特点，适合正式场合使用。',
         difficulty: 'hard',
         tags: ['书法', '楷书', '传统艺术', '文化遗产'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20calligraphy%20regular%20script%20art'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20calligraphy%20regular%20script%20art'
       }
     ];
   }
@@ -182,7 +182,7 @@ class CulturalPuzzleService {
         puzzles: [this.puzzles[0], this.puzzles[1]],
         reward: '解锁杨柳青年画素材包',
         culturalTheme: '天津地方文化',
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20cultural%20heritage%20tourism'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20cultural%20heritage%20tourism'
       },
       {
         id: `level-${this.nextLevelId++}`,
@@ -192,7 +192,7 @@ class CulturalPuzzleService {
         unlockCondition: { type: 'level', value: 1 },
         reward: '解锁传统色彩配色方案',
         culturalTheme: '传统艺术',
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20traditional%20art%20collection'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20traditional%20art%20collection'
       },
       {
         id: `level-${this.nextLevelId++}`,
@@ -202,7 +202,7 @@ class CulturalPuzzleService {
         unlockCondition: { type: 'level', value: 2 },
         reward: '解锁传统纹样素材包',
         culturalTheme: '文化符号',
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20cultural%20symbols%20mystery'
+        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20cultural%20symbols%20mystery'
       }
     ];
   }

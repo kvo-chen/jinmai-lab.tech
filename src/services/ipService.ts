@@ -61,7 +61,7 @@ class IPService {
       commercialValue: 5000,
       createdAt: '2025-11-01',
       updatedAt: '2025-11-02',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=IP%20asset%20example%201'
+      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=IP%20asset%20example%201'
     },
     {
       id: 'ip-002',
@@ -79,7 +79,7 @@ class IPService {
       commercialValue: 8000,
       createdAt: '2025-10-25',
       updatedAt: '2025-10-30',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=IP%20asset%20example%202'
+      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=IP%20asset%20example%202'
     }
   ];
 
@@ -88,7 +88,7 @@ class IPService {
     {
       id: 'partnership-001',
       brandName: '桂发祥',
-      brandLogo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Brand%20logo%20example%201',
+      brandLogo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Brand%20logo%20example%201',
       description: '为桂发祥设计国潮风格包装',
       reward: '¥15,000',
       status: 'negotiating',

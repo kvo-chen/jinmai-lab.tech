@@ -60,7 +60,7 @@ export default function TianjinCreativeActivities() {
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState<'activities' | 'templates' | 'offline' | 'brands'>('activities');
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = false; // 直接设置为false，移除模拟加载
   const tabListRef = useRef<HTMLDivElement | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -84,18 +84,6 @@ export default function TianjinCreativeActivities() {
   const brandSentinelRef = useRef<HTMLDivElement | null>(null); // 中文注释：品牌区无限滚动哨兵引用
   const [brandPage, setBrandPage] = useState<number>(1); // 中文注释：品牌区当前分页
   const brandPageSize = 36; // 中文注释：品牌区每页数量
-  
-  // 模拟数据加载
-  useEffect(() => {
-    if (isPrefetched('tianjin')) {
-      setIsLoading(false);
-      return;
-    }
-    const t = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(t);
-  }, []);
 
   useEffect(() => {
     const updateTabScrollState = () => {
@@ -134,7 +122,7 @@ export default function TianjinCreativeActivities() {
   }, [activeTab]);
   
   // 模拟活动数据
-  const activities: Activity[] = [
+  const activities: Activity[] = useMemo(() => [
     {
       id: 1,
       title: '津沽文化节创意设计大赛',
@@ -574,7 +562,7 @@ export default function TianjinCreativeActivities() {
       participants: 128,
       status: 'upcoming'
     }
-  ];
+  ], []);
 
   const [joinedActivities, setJoinedActivities] = useState<number[]>([]);
 
@@ -593,7 +581,7 @@ export default function TianjinCreativeActivities() {
   };
   
   // 模拟模板数据
-  const templates: Template[] = [
+  const templates: Template[] = useMemo(() => [
     {
       id: 1,
       name: '津沽文化节主题模板',
@@ -771,10 +759,10 @@ export default function TianjinCreativeActivities() {
       category: '城市休闲',
       usageCount: 174
     }
-  ];
+  ], []);
   
   // 模拟线下体验数据
-  const offlineExperiences: OfflineExperience[] = [
+  const offlineExperiences: OfflineExperience[] = useMemo(() => [
     {
       id: 1,
       name: '杨柳青古镇年画体验',
@@ -1088,10 +1076,10 @@ export default function TianjinCreativeActivities() {
       rating: 4.7,
       reviewCount: 120
     }
-  ];
+  ], []);
   
   // 模拟老字号品牌数据
-  const traditionalBrands: TraditionalBrand[] = [
+  const traditionalBrands: TraditionalBrand[] = useMemo(() => [
     {
       id: 1,
       name: '桂发祥',
@@ -1205,7 +1193,7 @@ export default function TianjinCreativeActivities() {
       collaborationTools: 2,
       popularity: 79
     }
-  ];
+  ], []);
 
   // 中文注释：扩充品牌数据（从 lib BRANDS 兼容映射）
   const extraBrands: TraditionalBrand[] = useMemo(() => BRANDS.map((b, i) => ({
@@ -1230,18 +1218,31 @@ export default function TianjinCreativeActivities() {
   };
   
   const searchLower = search.trim().toLowerCase();
-  const filteredActivities = searchLower
-    ? activities.filter((a) => [a.title, a.description].some((s) => s.toLowerCase().includes(searchLower)))
-    : activities;
-  const filteredTemplates = searchLower
-    ? templates.filter((t) => [t.name, t.description, t.category].some((s) => s.toLowerCase().includes(searchLower)))
-    : templates;
-  const filteredExperiences = searchLower
-    ? offlineExperiences.filter((e) => [e.name, e.description, e.location].some((s) => s.toLowerCase().includes(searchLower)))
-    : offlineExperiences;
-  const filteredBrands = searchLower
-    ? allBrands.filter((b) => [b.name, b.description, b.establishedYear].some((s) => s.toLowerCase().includes(searchLower)))
-    : allBrands;
+  
+  // 使用useMemo缓存过滤结果，减少不必要的重复计算
+  const filteredActivities = useMemo(() => {
+    return searchLower
+      ? activities.filter((a) => [a.title, a.description].some((s) => s.toLowerCase().includes(searchLower)))
+      : activities;
+  }, [searchLower, activities]);
+  
+  const filteredTemplates = useMemo(() => {
+    return searchLower
+      ? templates.filter((t) => [t.name, t.description, t.category].some((s) => s.toLowerCase().includes(searchLower)))
+      : templates;
+  }, [searchLower, templates]);
+  
+  const filteredExperiences = useMemo(() => {
+    return searchLower
+      ? offlineExperiences.filter((e) => [e.name, e.description, e.location].some((s) => s.toLowerCase().includes(searchLower)))
+      : offlineExperiences;
+  }, [searchLower, offlineExperiences]);
+  
+  const filteredBrands = useMemo(() => {
+    return searchLower
+      ? allBrands.filter((b) => [b.name, b.description, b.establishedYear].some((s) => s.toLowerCase().includes(searchLower)))
+      : allBrands;
+  }, [searchLower, allBrands]);
   const pagedBrands = useMemo(() => filteredBrands.slice(0, brandPage * brandPageSize), [filteredBrands, brandPage, brandPageSize]);
 
   // 中文注释：进入“老字号联名”或搜索变化时重置分页
@@ -1318,44 +1319,20 @@ export default function TianjinCreativeActivities() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md flex-1`}
+      className={`p-6 rounded-xl ${isDark ? 'bg-gray-800/50 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-100'} shadow-lg flex-1`}
     >
-      <div className="mb-6 flex items-center justify-between">
-        <h3 className="text-xl font-bold flex items-center">
-          <i className="fas fa-calendar-alt text-red-600 mr-2"></i>
-          津味共创活动
-        </h3>
-        <div className={`w-full sm:w-72 md:w-80 lg:w-96 rounded-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} px-3 py-2 flex items-center`}>
-          <i className={`fas fa-search ${isDark ? 'text-gray-400' : 'text-gray-500'} mr-2`}></i>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索活动、模板、体验或品牌"
-            className={`flex-1 outline-none ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="ml-2 px-2 py-1 text-sm rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
-            >
-              清除
-            </button>
-          )}
-        </div>
-      </div>
-      
       {/* 标签页切换 */}
       <div className="relative mb-6">
         <div
           className={`pointer-events-none absolute left-0 top-0 bottom-0 w-8 ${
-            isDark ? 'bg-gradient-to-r from-gray-800 to-transparent' : 'bg-gradient-to-r from-white to-transparent'
-          } ${atStart ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+            isDark ? 'bg-gradient-to-r from-gray-800/50 to-transparent' : 'bg-gradient-to-r from-white/80 to-transparent'
+          } ${atStart ? 'opacity-0' : 'opacity-100'} transition-all duration-300`}
         ></div>
         <div
           role="tablist"
           aria-label="津味共创活动类别"
           ref={tabListRef}
-          className="flex space-x-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-1"
+          className="flex space-x-2 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-2"
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'ArrowRight') scrollTabs('right');
@@ -1368,40 +1345,42 @@ export default function TianjinCreativeActivities() {
             { id: 'offline', name: '线下体验' },
             { id: 'brands', name: '老字号联名' }
           ].map((tab) => (
-            <button
+            <motion.button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'activities' | 'templates' | 'offline' | 'brands')}
               role="tab"
               aria-selected={activeTab === tab.id}
               title={tab.name}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 ${
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 ${
                 activeTab === tab.id 
-                  ? 'bg-red-600 text-white shadow-md' 
+                  ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg scale-105' 
                   : isDark 
-                    ? 'bg-gray-700 hover:bg-gray-600' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-gray-700/80 hover:bg-gray-700/100 hover:text-red-400' 
+                    : 'bg-gray-100 hover:bg-gray-200 hover:text-red-600'
               } ${isDark ? 'focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800' : 'focus-visible:ring-offset-2 focus-visible:ring-offset-white'}`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
             >
               {tab.name}
-            </button>
+            </motion.button>
           ))}
         </div>
         <div
           className={`pointer-events-none absolute right-0 top-0 bottom-0 w-8 ${
-            isDark ? 'bg-gradient-to-l from-gray-800 to-transparent' : 'bg-gradient-to-l from-white to-transparent'
-          } ${!hasOverflow || atEnd ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+            isDark ? 'bg-gradient-to-l from-gray-800/50 to-transparent' : 'bg-gradient-to-l from-white/80 to-transparent'
+          } ${!hasOverflow || atEnd ? 'opacity-0' : 'opacity-100'} transition-all duration-300`}
         ></div>
         <button
           aria-label="向左滚动类别"
           onClick={() => scrollTabs('left')}
-          className={`absolute left-0 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} shadow-sm ${!hasOverflow || atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity`}
+          className={`absolute left-0 top-1/2 -translate-y-1/2 px-3 py-2 rounded-full ${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-white text-gray-900 hover:bg-gray-100'} shadow-md border ${isDark ? 'border-gray-600' : 'border-gray-200'} ${!hasOverflow || atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 ${isDark ? 'focus:ring-offset-gray-800' : 'focus:ring-offset-white'}`}
         >
           <i className="fas fa-chevron-left"></i>
         </button>
         <button
           aria-label="向右滚动类别"
           onClick={() => scrollTabs('right')}
-          className={`absolute right-0 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'} shadow-sm ${!hasOverflow || atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity`}
+          className={`absolute right-0 top-1/2 -translate-y-1/2 px-3 py-2 rounded-full ${isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-white text-gray-900 hover:bg-gray-100'} shadow-md border ${isDark ? 'border-gray-600' : 'border-gray-200'} ${!hasOverflow || atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 ${isDark ? 'focus:ring-offset-gray-800' : 'focus:ring-offset-white'}`}
         >
           <i className="fas fa-chevron-right"></i>
         </button>
@@ -1424,6 +1403,7 @@ export default function TianjinCreativeActivities() {
                   alt={activity.title} 
                   className="w-full h-48 object-cover cursor-pointer"
                   onClick={() => openActivityDetail(activity)}
+                  loading="lazy"
                 />
                 <div className="absolute top-3 left-3">
                   <span className={`text-xs px-2 py-1 rounded-full ${
@@ -1495,6 +1475,7 @@ export default function TianjinCreativeActivities() {
                 src={template.thumbnail} 
                 alt={template.name} 
                 className="w-full h-40 object-cover cursor-pointer"
+                loading="lazy"
                 onClick={() => openTemplateDetail(template)}
               />
               <div className={`p-3 ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
@@ -1689,7 +1670,7 @@ export default function TianjinCreativeActivities() {
               </div>
               <div className="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <img src={selectedActivity.image} alt={selectedActivity.title} className="w-full h-56 object-cover rounded-xl" />
+                  <img src={selectedActivity.image} alt={selectedActivity.title} className="w-full h-56 object-cover rounded-xl" loading="lazy" />
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <span className={`px-2 py-1 rounded ${selectedActivity.status === 'active' ? 'bg-green-600 text-white' : selectedActivity.status === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'}`}>{selectedActivity.status === 'active' ? '进行中' : selectedActivity.status === 'upcoming' ? '即将开始' : '已结束'}</span>
                     <span className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} px-2 py-1 rounded`}>参与 {selectedActivity.participants}</span>
@@ -1774,7 +1755,7 @@ export default function TianjinCreativeActivities() {
               </div>
               <div className="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <img src={selectedTemplate.thumbnail} alt={selectedTemplate.name} className="w-full h-56 object-cover rounded-xl" />
+                  <img src={selectedTemplate.thumbnail} alt={selectedTemplate.name} className="w-full h-56 object-cover rounded-xl" loading="lazy" />
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <span className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} px-2 py-1 rounded`}>{selectedTemplate.category}</span>
                     <span className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} px-2 py-1 rounded`}>使用 {selectedTemplate.usageCount}</span>
@@ -1821,7 +1802,7 @@ export default function TianjinCreativeActivities() {
               </div>
               <div className="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <img src={selectedExperience.image} alt={selectedExperience.name} className="w-full h-56 object-cover rounded-xl" />
+                  <img src={selectedExperience.image} alt={selectedExperience.name} className="w-full h-56 object-cover rounded-xl" loading="lazy" />
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <span className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} px-2 py-1 rounded`}>评分 {selectedExperience.rating}</span>
                     <span className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} px-2 py-1 rounded`}>点评 {selectedExperience.reviewCount}</span>
@@ -1875,7 +1856,7 @@ export default function TianjinCreativeActivities() {
               <div className="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <div className="w-full h-56 bg-white rounded-xl flex items-center justify-center p-6">
-                    <img src={selectedBrand.logo} alt={selectedBrand.name} className="max-h-full object-contain" />
+                    <img src={selectedBrand.logo} alt={selectedBrand.name} className="max-h-full object-contain" loading="lazy" />
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <span className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'} px-2 py-1 rounded`}>创立 {selectedBrand.establishedYear}</span>

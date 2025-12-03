@@ -79,7 +79,7 @@ class TaskService {
         updatedAt: Date.now(),
         isOfficial: true,
         tags: ['每日任务', '创作'],
-        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Daily%20creative%20task%2C%20inspiring%20design%2C%20colorful%2C%20high%20detail'
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Daily%20creative%20task%2C%20inspiring%20design%2C%20colorful%2C%20high%20detail'
       },
       {
         id: 'official-weekly-1',
@@ -102,7 +102,7 @@ class TaskService {
         updatedAt: Date.now(),
         isOfficial: true,
         tags: ['每周任务', '分享'],
-        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Weekly%20sharing%20task%2C%20social%20media%20sharing%2C%20modern%20design%2C%20high%20detail'
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Weekly%20sharing%20task%2C%20social%20media%20sharing%2C%20modern%20design%2C%20high%20detail'
       },
       {
         id: 'official-monthly-1',
@@ -126,7 +126,7 @@ class TaskService {
         updatedAt: Date.now(),
         isOfficial: true,
         tags: ['月度任务', '创作挑战'],
-        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Monthly%20creative%20challenge%2C%20trophy%20and%20awards%2C%20premium%20design%2C%20high%20detail'
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Monthly%20creative%20challenge%2C%20trophy%20and%20awards%2C%20premium%20design%2C%20high%20detail'
       },
       {
         id: 'official-event-1',
@@ -150,7 +150,7 @@ class TaskService {
         updatedAt: Date.now(),
         isOfficial: true,
         tags: ['活动任务', '天津文化'],
-        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20cultural%20creative%20competition%2C%20traditional%20Chinese%20elements%2C%20modern%20design%2C%20high%20detail'
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Tianjin%20cultural%20creative%20competition%2C%20traditional%20Chinese%20elements%2C%20modern%20design%2C%20high%20detail'
       },
       {
         id: 'official-achievement-1',
@@ -173,7 +173,7 @@ class TaskService {
         updatedAt: Date.now(),
         isOfficial: true,
         tags: ['成就任务', '新手'],
-        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Creative%20beginner%20achievement%2C%20colorful%20badge%2C%20modern%20design%2C%20high%20detail'
+        thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Creative%20beginner%20achievement%2C%20colorful%20badge%2C%20modern%20design%2C%20high%20detail'
       }
     ];
 

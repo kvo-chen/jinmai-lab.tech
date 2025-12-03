@@ -59,6 +59,22 @@ export interface PerformanceRecord {
   timestamp: number;
 }
 
+// 模型角色类型定义
+export interface ModelRole {
+  id: string;
+  name: string;
+  description: string;
+  system_prompt: string;
+  temperature: number;
+  top_p: number;
+  presence_penalty: number;
+  frequency_penalty: number;
+  is_default: boolean;
+  created_at: number;
+  updated_at: number;
+  tags?: string[];
+}
+
 // 模型配置类型定义
 export interface ModelConfig {
   temperature: number;
@@ -87,6 +103,18 @@ export interface ModelConfig {
   // 新增通义千问模型配置
   qwen_model: string;
   qwen_base_url: string;
+  // 新增ChatGPT模型配置
+  chatgpt_model: string;
+  chatgpt_base_url: string;
+  // 新增Gemini模型配置
+  gemini_model: string;
+  gemini_base_url: string;
+  // 新增Gork模型配置
+  gork_model: string;
+  gork_base_url: string;
+  // 新增智谱模型配置
+  zhipu_model: string;
+  zhipu_base_url: string;
   // 新增对话相关配置
   enable_memory: boolean;
   memory_window: number;
@@ -97,6 +125,8 @@ export interface ModelConfig {
   // 新增安全配置
   enable_safety_check: boolean;
   safety_level: 'low' | 'medium' | 'high';
+  // 新增角色配置
+  current_role_id?: string;
 }
 
 // 可用的模型列表
@@ -135,6 +165,108 @@ export const AVAILABLE_MODELS: LLMModel[] = [
     description: 'Kimi（Moonshot AI），擅长中文长文创作与协作',
     strengths: ['中文对话', '长上下文写作', '检索增强'],
     isDefault: true
+  },
+  {
+    id: 'chatgpt',
+    name: 'ChatGPT',
+    description: 'OpenAI旗下的通用AI模型，擅长多种任务',
+    strengths: ['通用任务', '创意写作', '代码生成'],
+    isDefault: false
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    description: 'Google旗下的多模态AI模型，擅长图像和文本理解',
+    strengths: ['多模态理解', '图像分析', '创意生成'],
+    isDefault: false
+  },
+  {
+    id: 'gork',
+    name: 'Gork',
+    description: 'XAI旗下的AI模型，擅长生成和推理',
+    strengths: ['推理能力', '创意生成', '长文本处理'],
+    isDefault: false
+  },
+  {
+    id: 'zhipu',
+    name: '智谱',
+    description: '智谱AI旗下的大语言模型，擅长中文处理和多模态',
+    strengths: ['中文处理', '多模态生成', '知识问答'],
+    isDefault: false
+  }
+];
+
+// 默认角色列表
+export const DEFAULT_ROLES: ModelRole[] = [
+  {
+    id: 'default',
+    name: '默认助手',
+    description: '帮助创作者进行设计构思与文化融合的助手',
+    system_prompt: '你是一个帮助创作者进行设计构思与文化融合的助手。',
+    temperature: 0.7,
+    top_p: 0.9,
+    presence_penalty: 0,
+    frequency_penalty: 0,
+    is_default: true,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    tags: ['默认', '创意']
+  },
+  {
+    id: 'designer',
+    name: '设计专家',
+    description: '专注于设计领域的专家，提供专业的设计建议和创意',
+    system_prompt: '你是一位资深的设计专家，专注于视觉设计、UI/UX设计和创意设计。请提供专业、详细的设计建议和创意构思。',
+    temperature: 0.8,
+    top_p: 0.95,
+    presence_penalty: 0.1,
+    frequency_penalty: 0.1,
+    is_default: false,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    tags: ['设计', '创意']
+  },
+  {
+    id: 'coder',
+    name: '代码助手',
+    description: '帮助编写和优化代码的助手',
+    system_prompt: '你是一位资深的软件开发工程师，擅长多种编程语言和技术栈。请提供准确、高效的代码解决方案和优化建议。',
+    temperature: 0.3,
+    top_p: 0.8,
+    presence_penalty: 0,
+    frequency_penalty: 0,
+    is_default: false,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    tags: ['编程', '技术']
+  },
+  {
+    id: 'writer',
+    name: '文案专家',
+    description: '专注于文案创作的专家，提供吸引人的文案建议',
+    system_prompt: '你是一位资深的文案专家，擅长创作各种类型的文案，包括广告文案、营销文案、社交媒体文案等。请提供吸引人、有创意的文案内容。',
+    temperature: 0.9,
+    top_p: 0.95,
+    presence_penalty: 0.2,
+    frequency_penalty: 0.1,
+    is_default: false,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    tags: ['文案', '创作']
+  },
+  {
+    id: 'teacher',
+    name: '教育导师',
+    description: '提供详细解释和指导的教育导师',
+    system_prompt: '你是一位耐心、详细的教育导师，擅长将复杂的概念简单化，帮助学习者理解各种知识。请提供清晰、详细的解释和指导。',
+    temperature: 0.6,
+    top_p: 0.85,
+    presence_penalty: 0,
+    frequency_penalty: 0,
+    is_default: false,
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    tags: ['教育', '学习']
   }
 ];
 
@@ -166,6 +298,18 @@ export const DEFAULT_CONFIG: ModelConfig = {
   // 新增通义千问模型配置默认值
   qwen_model: 'qwen-plus',
   qwen_base_url: 'https://dashscope.aliyuncs.com/api/v1',
+  // 新增ChatGPT模型配置默认值
+  chatgpt_model: 'gpt-4o',
+  chatgpt_base_url: 'https://api.openai.com/v1',
+  // 新增Gemini模型配置默认值
+  gemini_model: 'gemini-1.5-flash',
+  gemini_base_url: 'https://generativelanguage.googleapis.com/v1',
+  // 新增Gork模型配置默认值
+  gork_model: 'grok-beta',
+  gork_base_url: 'https://api.x.ai/v1',
+  // 新增智谱模型配置默认值
+  zhipu_model: 'glm-4-plus',
+  zhipu_base_url: 'https://open.bigmodel.cn/api/paas/v4',
   // 新增对话相关配置默认值
   enable_memory: true,
   memory_window: 20,
@@ -175,7 +319,9 @@ export const DEFAULT_CONFIG: ModelConfig = {
   image_resolution: '1024x1024',
   // 新增安全配置默认值
   enable_safety_check: true,
-  safety_level: 'medium'
+  safety_level: 'medium',
+  // 新增角色配置默认值
+  current_role_id: 'default'
 };
 
 /**
@@ -191,6 +337,9 @@ class LLMService {
   private performanceData: Record<string, ModelPerformance> = {};
   private performanceRecords: PerformanceRecord[] = [];
   private maxPerformanceRecords = 1000; // 最多保存1000条性能记录
+  // 角色管理相关属性
+  private roles: ModelRole[] = [...DEFAULT_ROLES];
+  private currentRole: ModelRole = DEFAULT_ROLES.find(r => r.is_default) || DEFAULT_ROLES[0];
 
   /**
    * 设置当前使用的模型
@@ -398,9 +547,87 @@ class LLMService {
   }
 
   /**
+   * 初始化角色系统
+   */
+  private initializeRoles(): void {
+    try {
+      const savedRoles = localStorage.getItem('LLM_ROLES');
+      if (savedRoles) {
+        const parsedRoles = JSON.parse(savedRoles);
+        // 合并默认角色和保存的角色，避免丢失默认角色
+        const roleMap = new Map<string, ModelRole>();
+        
+        // 先添加默认角色
+        DEFAULT_ROLES.forEach(role => {
+          roleMap.set(role.id, role);
+        });
+        
+        // 再添加保存的角色，覆盖同名默认角色
+        parsedRoles.forEach((role: ModelRole) => {
+          roleMap.set(role.id, role);
+        });
+        
+        this.roles = Array.from(roleMap.values());
+      }
+      
+      const savedCurrentRoleId = localStorage.getItem('LLM_CURRENT_ROLE_ID');
+      if (savedCurrentRoleId) {
+        const role = this.roles.find(r => r.id === savedCurrentRoleId);
+        if (role) {
+          this.currentRole = role;
+          this.applyRoleToConfig(role);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize roles:', error);
+      // 初始化失败，使用默认角色
+      this.roles = [...DEFAULT_ROLES];
+      this.currentRole = DEFAULT_ROLES.find(r => r.is_default) || DEFAULT_ROLES[0];
+      this.applyRoleToConfig(this.currentRole);
+    }
+  }
+  
+  /**
+   * 将角色配置应用到模型配置
+   */
+  private applyRoleToConfig(role: ModelRole): void {
+    this.modelConfig = {
+      ...this.modelConfig,
+      system_prompt: role.system_prompt,
+      temperature: role.temperature,
+      top_p: role.top_p,
+      presence_penalty: role.presence_penalty,
+      frequency_penalty: role.frequency_penalty,
+      current_role_id: role.id
+    };
+    
+    // 保存更新后的配置
+    try {
+      localStorage.setItem('LLM_CONFIG', JSON.stringify(this.modelConfig));
+    } catch (error) {
+      console.error('Failed to save config with role:', error);
+    }
+  }
+  
+  /**
+   * 保存角色到localStorage
+   */
+  private saveRoles(): void {
+    try {
+      localStorage.setItem('LLM_ROLES', JSON.stringify(this.roles));
+      localStorage.setItem('LLM_CURRENT_ROLE_ID', this.currentRole.id);
+    } catch (error) {
+      console.error('Failed to save roles:', error);
+    }
+  }
+  
+  /**
    * 初始化会话系统
    */
   private initializeSessions(): void {
+    // 先初始化角色系统
+    this.initializeRoles();
+    
     try {
       const savedSessions = localStorage.getItem('LLM_CONVERSATION_SESSIONS');
       if (savedSessions) {
@@ -617,7 +844,209 @@ class LLMService {
     
     return newSession;
   }
+  
+  /**
+   * 获取所有角色
+   */
+  getRoles(): ModelRole[] {
+    return [...this.roles];
+  }
+  
+  /**
+   * 获取当前角色
+   */
+  getCurrentRole(): ModelRole {
+    return { ...this.currentRole };
+  }
+  
+  /**
+   * 设置当前角色
+   * @param roleId 角色ID
+   */
+  setCurrentRole(roleId: string): void {
+    const role = this.roles.find(r => r.id === roleId);
+    if (role) {
+      this.currentRole = role;
+      this.applyRoleToConfig(role);
+      this.saveRoles();
+      
+      // 触发角色切换事件
+      this.emitRoleChangeEvent(roleId);
+    }
+  }
+  
+  /**
+   * 触发角色切换事件
+   */
+  private emitRoleChangeEvent(roleId: string): void {
+    // 创建自定义事件
+    const event = new CustomEvent('llm-role-changed', {
+      detail: {
+        roleId,
+        timestamp: Date.now()
+      }
+    });
+    
+    // 派发事件
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(event);
+    }
+  }
+  
+  /**
+   * 创建新角色
+   * @param roleData 角色数据
+   */
+  createRole(roleData: Omit<ModelRole, 'id' | 'created_at' | 'updated_at'>): ModelRole {
+    const newRole: ModelRole = {
+      ...roleData,
+      id: `role_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      created_at: Date.now(),
+      updated_at: Date.now()
+    };
+    
+    this.roles.push(newRole);
+    this.saveRoles();
+    
+    return newRole;
+  }
+  
+  /**
+   * 更新角色
+   * @param roleId 角色ID
+   * @param roleData 角色数据
+   */
+  updateRole(roleId: string, roleData: Partial<ModelRole>): ModelRole | null {
+    const index = this.roles.findIndex(r => r.id === roleId);
+    if (index !== -1) {
+      const updatedRole: ModelRole = {
+        ...this.roles[index],
+        ...roleData,
+        updated_at: Date.now()
+      };
+      
+      this.roles[index] = updatedRole;
+      this.saveRoles();
+      
+      // 如果更新的是当前角色，应用新配置
+      if (roleId === this.currentRole.id) {
+        this.currentRole = updatedRole;
+        this.applyRoleToConfig(updatedRole);
+      }
+      
+      return updatedRole;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * 删除角色
+   * @param roleId 角色ID
+   */
+  deleteRole(roleId: string): boolean {
+    // 不能删除默认角色
+    const role = this.roles.find(r => r.id === roleId);
+    if (role && role.is_default) {
+      return false;
+    }
+    
+    const index = this.roles.findIndex(r => r.id === roleId);
+    if (index !== -1) {
+      this.roles.splice(index, 1);
+      this.saveRoles();
+      
+      // 如果删除的是当前角色，切换到默认角色
+      if (roleId === this.currentRole.id) {
+        const defaultRole = this.roles.find(r => r.is_default) || this.roles[0];
+        this.setCurrentRole(defaultRole.id);
+      }
+      
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * 获取指定角色
+   * @param roleId 角色ID
+   */
+  getRole(roleId: string): ModelRole | undefined {
+    return this.roles.find(r => r.id === roleId);
+  }
 
+  /**
+   * 向多个模型并行发送请求
+   * 支持文本和图像输入（多模态）
+   */
+  async generateResponsesFromMultipleModels(
+    prompt: string,
+    modelIds: string[],
+    options?: {
+      onModelResponse?: (modelId: string, response: string, success: boolean, error?: string) => void;
+      signal?: AbortSignal;
+      images?: string[]; // 支持多图像输入
+    }
+  ): Promise<Record<string, { response: string; success: boolean; error?: string }>> {
+    const results: Record<string, { response: string; success: boolean; error?: string }> = {};
+    const modelPromises: Promise<void>[] = [];
+    
+    // 为每个模型创建一个请求函数
+    for (const modelId of modelIds) {
+      const modelPromise = this.generateResponseForModel(
+        prompt,
+        modelId,
+        options?.images,
+        options?.signal
+      ).then(
+        (response) => {
+          results[modelId] = { response, success: true };
+          options?.onModelResponse?.(modelId, response, true);
+        },
+        (error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          results[modelId] = { response: '', success: false, error: errorMessage };
+          options?.onModelResponse?.(modelId, '', false, errorMessage);
+        }
+      );
+      
+      modelPromises.push(modelPromise);
+    }
+    
+    // 等待所有请求完成
+    await Promise.allSettled(modelPromises);
+    
+    return results;
+  }
+  
+  /**
+   * 向单个模型发送请求（内部方法）
+   * 支持文本和图像输入（多模态）
+   */
+  private async generateResponseForModel(
+    prompt: string,
+    modelId: string,
+    images?: string[],
+    signal?: AbortSignal
+  ): Promise<string> {
+    // 保存当前模型和配置
+    const originalModel = this.currentModel;
+    const originalConfig = { ...this.modelConfig };
+    
+    try {
+      // 切换到目标模型
+      this.setCurrentModel(modelId, true);
+      
+      // 调用生成方法
+      return await this.generateResponse(prompt, { images, signal });
+    } finally {
+      // 恢复原始模型和配置
+      this.currentModel = originalModel;
+      this.modelConfig = originalConfig;
+    }
+  }
+  
   /**
    * 向模型发送请求
    * 支持文本和图像输入（多模态）
@@ -718,6 +1147,30 @@ class LLMService {
           .catch(handleError);
         return;
       }
+      if (this.currentModel.id === 'chatgpt') {
+        this.callChatGPT(prompt, requestOptions)
+          .then(handleSuccess)
+          .catch(handleError);
+        return;
+      }
+      if (this.currentModel.id === 'gemini') {
+        this.callGemini(prompt, requestOptions)
+          .then(handleSuccess)
+          .catch(handleError);
+        return;
+      }
+      if (this.currentModel.id === 'gork') {
+        this.callGork(prompt, requestOptions)
+          .then(handleSuccess)
+          .catch(handleError);
+        return;
+      }
+      if (this.currentModel.id === 'zhipu') {
+        this.callZhipu(prompt, requestOptions)
+          .then(handleSuccess)
+          .catch(handleError);
+        return;
+      }
 
       setTimeout(() => {
         clearTimeout(timeoutId);
@@ -751,17 +1204,39 @@ class LLMService {
    * 获取模型调用失败时的回退响应
    */
   private getFallbackResponse(modelId: string, errorMessage: string): string {
+    const isNetworkError = errorMessage.includes('fetch failed') || errorMessage.includes('Request timed out') || errorMessage.includes('network');
+    
     switch (modelId) {
       case 'kimi':
         return 'Kimi接口不可用或未配置密钥，返回模拟响应。';
       case 'deepseek':
         return 'DeepSeek接口不可用或未配置密钥，返回模拟响应。';
       case 'wenxinyiyan':
-        return '文心一言接口鉴权失败或未配置密钥，请在 .env.local 设置 QIANFAN_ACCESS_TOKEN（或 QIANFAN_AK/QIANFAN_SK）后重试。';
+        if (errorMessage.includes('invalid_iam_token')) {
+          return '文心一言接口鉴权失败，请确保 .env.local 中设置了正确的 QIANFAN_ACCESS_TOKEN（或 QIANFAN_AK/QIANFAN_SK）。注意：bce-v3 格式的密钥不适用于 chat 接口。';
+        }
+        return '文心一言接口不可用或未配置密钥，请检查API配置后重试。';
       case 'doubao':
         return '豆包接口不可用或未配置密钥，请检查API配置后重试。';
       case 'qwen':
         return '通义千问接口不可用或未配置密钥，请在 .env.local 设置 DASHSCOPE_API_KEY 后重试。';
+      case 'chatgpt':
+        if (isNetworkError) {
+          return 'ChatGPT接口网络连接失败，可能是国内访问限制导致。请检查网络设置或尝试使用其他模型。';
+        }
+        return 'ChatGPT接口不可用或未配置密钥，请检查API配置后重试。';
+      case 'gemini':
+        if (isNetworkError) {
+          return 'Gemini接口网络连接失败，可能是国内访问限制导致。请检查网络设置或尝试使用其他模型。';
+        }
+        return 'Gemini接口不可用或未配置密钥，请检查API配置后重试。';
+      case 'gork':
+        if (isNetworkError) {
+          return 'Gork接口网络连接失败，可能是国内访问限制导致。请检查网络设置或尝试使用其他模型。';
+        }
+        return 'Gork接口不可用或未配置密钥，请检查API配置后重试。';
+      case 'zhipu':
+        return '智谱接口不可用或未配置密钥，请检查API配置后重试。';
       default:
         return `模型调用失败: ${errorMessage}`;
     }
@@ -791,6 +1266,10 @@ class LLMService {
             deepseek: !!st?.deepseek?.configured,
             qwen: !!st?.qwen?.configured,
             wenxinyiyan: !!st?.wenxin?.configured,
+            chatgpt: !!st?.chatgpt?.configured,
+            gemini: !!st?.gemini?.configured,
+            gork: !!st?.gork?.configured,
+            zhipu: !!st?.zhipu?.configured,
           }
           healthCheckSuccess = true
         }
@@ -808,6 +1287,10 @@ class LLMService {
         doubao: !!(localStorage.getItem('DOUBAO_API_KEY') || ''),
         qwen: !!(localStorage.getItem('QWEN_API_KEY') || ''),
         wenxinyiyan: !!(localStorage.getItem('WENXIN_API_KEY') || ''),
+        chatgpt: !!(localStorage.getItem('CHATGPT_API_KEY') || ''),
+        gemini: !!(localStorage.getItem('GEMINI_API_KEY') || ''),
+        gork: !!(localStorage.getItem('GORK_API_KEY') || ''),
+        zhipu: !!(localStorage.getItem('ZHIPU_API_KEY') || ''),
       }
     }
     
@@ -818,10 +1301,17 @@ class LLMService {
       configured.wenxinyiyan = false;
     }
     
+    // 检查通义千问是否被标记为配额用完
+    const isQwenQuotaExceeded = localStorage.getItem('QWEN_QUOTA_EXCEEDED') === 'true';
+    if (isQwenQuotaExceeded) {
+      // 如果配额用完，标记为不可用
+      configured.qwen = false;
+    }
+    
     // 构建模型优先级列表
     const modelPriorityOrder = [
       ...preferred.filter(id => AVAILABLE_MODELS.some(m => m.id === id)), // 过滤掉无效的首选模型
-      'kimi', 'deepseek', 'doubao', 'qwen', 'wenxinyiyan' // 默认优先级
+      'kimi', 'deepseek', 'doubao', 'qwen', 'wenxinyiyan', 'chatgpt', 'gemini', 'zhipu', 'gork' // 默认优先级
     ]
     
     // 去重优先级列表
@@ -1410,6 +1900,404 @@ class LLMService {
     };
     
     return this.callApiWithRetry('doubao', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);
+  }
+
+  private async callChatGPT(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_CHATGPT_API_KEY) || '';
+    const storedKey = localStorage.getItem('CHATGPT_API_KEY') || '';
+    const key = storedKey || envKey;
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing ChatGPT API key');
+    const base = this.modelConfig.chatgpt_base_url || 'https://api.openai.com/v1';
+    const url = useProxy ? `${apiBase}/api/chatgpt/chat/completions` : (base + '/chat/completions');
+    const effectiveStream = useProxy ? false : (this.modelConfig.stream === true);
+    
+    const requestFn = async () => {
+      // 构建消息内容，支持多模态输入
+      const messages: any[] = [
+        { role: 'system', content: this.modelConfig.system_prompt }
+      ];
+      
+      // 处理图像输入
+      if (options?.images && options?.images.length > 0 && this.modelConfig.enable_multimodal) {
+        // 多模态消息格式
+        const messageContent: any[] = [
+          { type: 'text', text: prompt }
+        ];
+        
+        // 添加图像内容
+        for (const imageUrl of options.images) {
+          messageContent.push({
+            type: 'image_url',
+            image_url: {
+              url: imageUrl,
+              detail: this.modelConfig.image_resolution === '2048x2048' ? 'high' : 'auto'
+            }
+          });
+        }
+        
+        messages.push({ role: 'user', content: messageContent });
+      } else {
+        // 纯文本消息格式
+        messages.push({ role: 'user', content: prompt });
+      }
+      
+      const payload: any = {
+        model: this.modelConfig.chatgpt_model || 'gpt-4o',
+        messages,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+        presence_penalty: this.modelConfig.presence_penalty,
+        frequency_penalty: this.modelConfig.frequency_penalty,
+        stop: this.modelConfig.stop
+      };
+      if (effectiveStream) payload.stream = true;
+      
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (!useProxy) headers['Authorization'] = `Bearer ${key}`;
+      const res = await fetch(url, { 
+        method: 'POST', 
+        headers, 
+        body: JSON.stringify(payload), 
+        signal: options?.signal 
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`ChatGPT API error: ${res.status} ${errorText}`);
+      }
+      
+      if (effectiveStream && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const json = t.slice(5).trim();
+            if (json === '[DONE]') continue;
+            try {
+              const obj = JSON.parse(json);
+              const delta = obj?.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                full += delta;
+                if (options?.onDelta) options.onDelta(full);
+              }
+            } catch (e) {
+              console.error('Failed to parse ChatGPT stream chunk:', e);
+            }
+          }
+        }
+        return full || 'ChatGPT未返回内容';
+      } else {
+        const data = await res.json();
+        const raw = useProxy ? (data?.data || {}) : data;
+        const content = raw?.choices?.[0]?.message?.content || '';
+        return content || 'ChatGPT未返回内容';
+      }
+    };
+    
+    return this.callApiWithRetry('chatgpt', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);
+  }
+
+  private async callGemini(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY) || '';
+    const storedKey = localStorage.getItem('GEMINI_API_KEY') || '';
+    const key = storedKey || envKey;
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing Gemini API key');
+    const base = this.modelConfig.gemini_base_url || 'https://generativelanguage.googleapis.com/v1';
+    const url = useProxy ? `${apiBase}/api/gemini/generateContent` : (base + `/models/${this.modelConfig.gemini_model || 'gemini-1.5-flash'}/generateContent`);
+    
+    const requestFn = async () => {
+      // 构建消息内容，支持多模态输入
+      const messageContent: any[] = [
+        { 
+          role: 'user', 
+          parts: [
+            { text: this.modelConfig.system_prompt + '\n\n' + prompt }
+          ]
+        }
+      ];
+      
+      // 处理图像输入
+      if (options?.images && options?.images.length > 0 && this.modelConfig.enable_multimodal) {
+        // 添加图像内容
+        for (const imageUrl of options.images) {
+          messageContent[messageContent.length - 1].parts.push({
+            image_url: {
+              url: imageUrl
+            }
+          });
+        }
+      }
+      
+      const payload: any = {
+        contents: messageContent,
+        generationConfig: {
+          temperature: this.modelConfig.temperature,
+          topP: this.modelConfig.top_p,
+          maxOutputTokens: this.modelConfig.max_tokens,
+          stopSequences: this.modelConfig.stop
+        },
+        safetySettings: [
+          {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          }
+        ]
+      };
+      
+      // 构建URL和请求头
+      let requestUrl = url;
+      const headers: any = { 'Content-Type': 'application/json' };
+      
+      if (!useProxy) {
+        // 直连模式：添加API密钥到URL参数
+        const urlObj = new URL(requestUrl);
+        urlObj.searchParams.append('key', key);
+        requestUrl = urlObj.toString();
+      }
+      
+      const res = await fetch(requestUrl, { 
+        method: 'POST', 
+        headers, 
+        body: JSON.stringify(payload), 
+        signal: options?.signal 
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Gemini API error: ${res.status} ${errorText}`);
+      }
+      
+      const data = await res.json();
+      const raw = useProxy ? (data?.data || {}) : data;
+      let content = '';
+      
+      if (raw?.candidates && raw.candidates.length > 0) {
+        for (const candidate of raw.candidates) {
+          if (candidate.content && candidate.content.parts) {
+            for (const part of candidate.content.parts) {
+              if (part.text) {
+                content += part.text;
+              }
+            }
+          }
+        }
+      }
+      
+      return content || 'Gemini未返回内容';
+    };
+    
+    return this.callApiWithRetry('gemini', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);
+  }
+
+  private async callGork(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_GORK_API_KEY) || '';
+    const storedKey = localStorage.getItem('GORK_API_KEY') || '';
+    const key = storedKey || envKey;
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing Gork API key');
+    const base = this.modelConfig.gork_base_url || 'https://api.x.ai/v1';
+    const url = useProxy ? `${apiBase}/api/gork/chat/completions` : (base + '/chat/completions');
+    const effectiveStream = useProxy ? false : (this.modelConfig.stream === true);
+    
+    const requestFn = async () => {
+      // 构建消息内容
+      const messages: any[] = [
+        { role: 'system', content: this.modelConfig.system_prompt },
+        { role: 'user', content: prompt }
+      ];
+      
+      const payload: any = {
+        model: this.modelConfig.gork_model || 'grok-beta',
+        messages,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+        presence_penalty: this.modelConfig.presence_penalty,
+        frequency_penalty: this.modelConfig.frequency_penalty,
+        stop: this.modelConfig.stop
+      };
+      if (effectiveStream) payload.stream = true;
+      
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (!useProxy) headers['Authorization'] = `Bearer ${key}`;
+      const res = await fetch(url, { 
+        method: 'POST', 
+        headers, 
+        body: JSON.stringify(payload), 
+        signal: options?.signal 
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Gork API error: ${res.status} ${errorText}`);
+      }
+      
+      if (effectiveStream && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const json = t.slice(5).trim();
+            if (json === '[DONE]') continue;
+            try {
+              const obj = JSON.parse(json);
+              const delta = obj?.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                full += delta;
+                if (options?.onDelta) options.onDelta(full);
+              }
+            } catch (e) {
+              console.error('Failed to parse Gork stream chunk:', e);
+            }
+          }
+        }
+        return full || 'Gork未返回内容';
+      } else {
+        const data = await res.json();
+        const raw = useProxy ? (data?.data || {}) : data;
+        const content = raw?.choices?.[0]?.message?.content || '';
+        return content || 'Gork未返回内容';
+      }
+    };
+    
+    return this.callApiWithRetry('gork', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);
+  }
+
+  private async callZhipu(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_ZHIPU_API_KEY) || '';
+    const storedKey = localStorage.getItem('ZHIPU_API_KEY') || '';
+    const key = storedKey || envKey;
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+    const useProxy = !!apiBase;
+    if (!useProxy && !key) throw new Error('Missing Zhipu API key');
+    const base = this.modelConfig.zhipu_base_url || 'https://open.bigmodel.cn/api/paas/v4';
+    const url = useProxy ? `${apiBase}/api/zhipu/chat/completions` : (base + '/chat/completions');
+    const effectiveStream = useProxy ? false : (this.modelConfig.stream === true);
+    
+    const requestFn = async () => {
+      // 构建消息内容，支持多模态输入
+      const messages: any[] = [
+        { role: 'system', content: this.modelConfig.system_prompt }
+      ];
+      
+      // 处理图像输入
+      if (options?.images && options?.images.length > 0 && this.modelConfig.enable_multimodal) {
+        // 多模态消息格式
+        const messageContent: any[] = [
+          { type: 'text', text: prompt }
+        ];
+        
+        // 添加图像内容
+        for (const imageUrl of options.images) {
+          messageContent.push({
+            type: 'image_url',
+            image_url: {
+              url: imageUrl,
+              detail: this.modelConfig.image_resolution === '2048x2048' ? 'high' : 'auto'
+            }
+          });
+        }
+        
+        messages.push({ role: 'user', content: messageContent });
+      } else {
+        // 纯文本消息格式
+        messages.push({ role: 'user', content: prompt });
+      }
+      
+      const payload: any = {
+        model: this.modelConfig.zhipu_model || 'glm-4-plus',
+        messages,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+        presence_penalty: this.modelConfig.presence_penalty,
+        frequency_penalty: this.modelConfig.frequency_penalty,
+        stop: this.modelConfig.stop
+      };
+      if (effectiveStream) payload.stream = true;
+      
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (!useProxy) headers['Authorization'] = `Bearer ${key}`;
+      const res = await fetch(url, { 
+        method: 'POST', 
+        headers, 
+        body: JSON.stringify(payload), 
+        signal: options?.signal 
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Zhipu API error: ${res.status} ${errorText}`);
+      }
+      
+      if (effectiveStream && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let full = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const json = t.slice(5).trim();
+            if (json === '[DONE]') continue;
+            try {
+              const obj = JSON.parse(json);
+              const delta = obj?.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                full += delta;
+                if (options?.onDelta) options.onDelta(full);
+              }
+            } catch (e) {
+              console.error('Failed to parse Zhipu stream chunk:', e);
+            }
+          }
+        }
+        return full || '智谱未返回内容';
+      } else {
+        const data = await res.json();
+        const raw = useProxy ? (data?.data || {}) : data;
+        const content = raw?.choices?.[0]?.message?.content || '';
+        return content || '智谱未返回内容';
+      }
+    };
+    
+    return this.callApiWithRetry('zhipu', requestFn, this.modelConfig.retry, this.modelConfig.backoff_ms);
   }
 
   /**

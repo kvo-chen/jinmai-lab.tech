@@ -30,7 +30,7 @@ const recentSubmissions = [
     id: 1,
     title: '国潮插画设计',
     creator: '设计师小明',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20traditional%20cultural%20illustration%20design',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20traditional%20cultural%20illustration%20design',
     submitTime: '2025-11-11 09:25',
     status: '待审核',
   },
@@ -38,7 +38,7 @@ const recentSubmissions = [
     id: 2,
     title: '老字号包装设计',
     creator: '创意总监小李',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20Chinese%20brand%20packaging%20design',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20brand%20packaging%20design',
     submitTime: '2025-11-11 08:40',
     status: '待审核',
   },
@@ -46,7 +46,7 @@ const recentSubmissions = [
     id: 3,
     title: '传统纹样AI创作',
     creator: '数字艺术家小张',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=AI%20generated%20traditional%20Chinese%20patterns',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=AI%20generated%20traditional%20Chinese%20patterns',
     submitTime: '2025-11-11 07:15',
     status: '待审核',
   },
@@ -57,7 +57,7 @@ const commercialApplications = [
     id: 1,
     title: '国潮新风尚',
     creator: '设计师小明',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Modern%20Chinese%20style%20fashion%20design',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Modern%20Chinese%20style%20fashion%20design',
     brand: '老字号品牌A',
     status: '洽谈中',
     applyTime: '2025-11-10',
@@ -66,7 +66,7 @@ const commercialApplications = [
     id: 2,
     title: '传统纹样创新',
     creator: '创意总监小李',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20Chinese%20patterns%20with%20modern%20twist',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20patterns%20with%20modern%20twist',
     brand: '老字号品牌B',
     status: '已采纳',
     applyTime: '2025-11-09',
@@ -75,7 +75,7 @@ const commercialApplications = [
     id: 3,
     title: '老字号品牌焕新',
     creator: '品牌设计师老王',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20brand%20modernization%20design',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20brand%20modernization%20design',
     brand: '老字号品牌C',
     status: '已拒绝',
     applyTime: '2025-11-08',
@@ -257,7 +257,7 @@ export default function Admin() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
           <div className="flex items-center">
             <img 
-              src={user?.avatar || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Admin%20avatar'} 
+              src={user?.avatar || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Admin%20avatar'} 
               alt={user?.username || '管理员'} 
               className="h-10 w-10 rounded-full mr-3"
             />
@@ -802,7 +802,7 @@ export default function Admin() {
                         <td className="px-4 py-3 text-sm">
                           <div className="flex items-center">
                             <img 
-                              src={user.avatar_url || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20${user.username}`} 
+                              src={user.avatar_url || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20${user.username}`} 
                               alt={user.username} 
                               className="w-8 h-8 rounded-full mr-3" 
                             />
@@ -1023,19 +1023,19 @@ export default function Admin() {
                     id: 1, 
                     title: '节日主题活动', 
                     description: '快速创建春节、中秋等节日主题活动',
-                    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20New%20Year%20event%20template%20design'
+                    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Chinese%20New%20Year%20event%20template%20design'
                   },
                   { 
                     id: 2, 
                     title: '品牌联名活动', 
                     description: '为老字号品牌定制联名创作活动',
-                    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Brand%20collaboration%20event%20template'
+                    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Brand%20collaboration%20event%20template'
                   },
                   { 
                     id: 3, 
                     title: '文化元素专项', 
                     description: '围绕特定文化元素开展创作征集',
-                    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Traditional%20Chinese%20elements%20design%20template'
+                    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Traditional%20Chinese%20elements%20design%20template'
                   },
                 ].map((template) => (
                   <div key={template.id} className={`rounded-xl overflow-hidden border ${
@@ -1134,11 +1134,11 @@ export default function Admin() {
                 </thead>
                 <tbody className="divide-y divide-gray-700">
                   {[
-                    { id: 1, name: '设计师小明', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaoming', level: 'master', works: 45, likes: 1245, adopted: 12, status: 'active' },
-                    { id: 2, name: '创意总监小李', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaoli', level: 'advanced', works: 32, likes: 876, adopted: 8, status: 'active' },
-                    { id: 3, name: '品牌设计师老王', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20laowang', level: 'beginner', works: 12, likes: 342, adopted: 2, status: 'active' },
-                    { id: 4, name: '插画师小陈', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaochen', level: 'master', works: 56, likes: 1890, adopted: 15, status: 'active' },
-                    { id: 5, name: '数字艺术家小张', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20xiaozhang', level: 'advanced', works: 28, likes: 765, adopted: 7, status: 'inactive' },
+                    { id: 1, name: '设计师小明', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaoming', level: 'master', works: 45, likes: 1245, adopted: 12, status: 'active' },
+                    { id: 2, name: '创意总监小李', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaoli', level: 'advanced', works: 32, likes: 876, adopted: 8, status: 'active' },
+                    { id: 3, name: '品牌设计师老王', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20laowang', level: 'beginner', works: 12, likes: 342, adopted: 2, status: 'active' },
+                    { id: 4, name: '插画师小陈', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaochen', level: 'master', works: 56, likes: 1890, adopted: 15, status: 'active' },
+                    { id: 5, name: '数字艺术家小张', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20xiaozhang', level: 'advanced', works: 28, likes: 765, adopted: 7, status: 'inactive' },
                   ].map((creator) => (
                     <tr key={creator.id} className="hover:bg-gray-700/50">
                       <td className="px-4 py-3 text-sm">

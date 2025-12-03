@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
-import llmService, { AVAILABLE_MODELS, LLMModel, ModelConfig } from '../services/llmService';
+import llmService, { AVAILABLE_MODELS, LLMModel, ModelConfig, ModelRole } from '../services/llmService';
 
 interface ModelSelectorProps {
   isOpen: boolean;
@@ -16,6 +16,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 角色管理相关状态
+  const [roles, setRoles] = useState<ModelRole[]>([]);
+  const [selectedRole, setSelectedRole] = useState<ModelRole>(llmService.getCurrentRole());
+  const [showRoleManager, setShowRoleManager] = useState(false);
+  const roleConfigRef = useRef<HTMLDivElement>(null);
+  // 多模型选择相关状态
+  const [isMultiModelMode, setIsMultiModelMode] = useState(false);
+  const [selectedModels, setSelectedModels] = useState<string[]>([llmService.getCurrentModel().id]);
   const [kimiKey, setKimiKey] = useState<string>(() => {
     const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_KIMI_API_KEY) || '';
     const stored = localStorage.getItem('KIMI_API_KEY') || '';
@@ -58,14 +66,97 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
   const [qwenBase, setQwenBase] = useState<string>('https://dashscope.aliyuncs.com/api/v1');
   const [qwenVariant, setQwenVariant] = useState<string>('qwen-plus');
   
+  // ChatGPT模型配置
+  const [chatgptKey, setChatgptKey] = useState<string>(() => {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_CHATGPT_API_KEY) || '';
+    const stored = localStorage.getItem('CHATGPT_API_KEY') || '';
+    return stored || envKey;
+  });
+  const [chatgptBase, setChatgptBase] = useState<string>('https://api.openai.com/v1');
+  const [chatgptVariant, setChatgptVariant] = useState<string>('gpt-4o');
+  
+  // Gemini模型配置
+  const [geminiKey, setGeminiKey] = useState<string>(() => {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY) || '';
+    const stored = localStorage.getItem('GEMINI_API_KEY') || '';
+    return stored || envKey;
+  });
+  const [geminiBase, setGeminiBase] = useState<string>('https://generativelanguage.googleapis.com/v1');
+  const [geminiVariant, setGeminiVariant] = useState<string>('gemini-1.5-flash');
+  
+  // Gork模型配置
+  const [gorkKey, setGorkKey] = useState<string>(() => {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_GORK_API_KEY) || '';
+    const stored = localStorage.getItem('GORK_API_KEY') || '';
+    return stored || envKey;
+  });
+  const [gorkBase, setGorkBase] = useState<string>('https://api.x.ai/v1');
+  const [gorkVariant, setGorkVariant] = useState<string>('grok-beta');
+  
+  // 智谱模型配置
+  const [zhipuKey, setZhipuKey] = useState<string>(() => {
+    const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_ZHIPU_API_KEY) || '';
+    const stored = localStorage.getItem('ZHIPU_API_KEY') || '';
+    return stored || envKey;
+  });
+  const [zhipuBase, setZhipuBase] = useState<string>('https://open.bigmodel.cn/api/paas/v4');
+  const [zhipuVariant, setZhipuVariant] = useState<string>('glm-4-plus');
+  
   const configRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedModel(llmService.getCurrentModel());
+      const currentModel = llmService.getCurrentModel();
+      setSelectedModel(currentModel);
       setModelConfig(llmService.getConfig());
+      // 获取角色列表
+      const rolesList = llmService.getRoles();
+      setRoles(rolesList);
+      // 获取当前角色
+      setSelectedRole(llmService.getCurrentRole());
+      // 初始化多模型选择
+      setSelectedModels([currentModel.id]);
     }
   }, [isOpen]);
+  
+  // 处理多模型选择切换
+  const handleMultiModelToggle = () => {
+    setIsMultiModelMode(!isMultiModelMode);
+    // 如果退出多模型模式，确保至少选择一个模型
+    if (isMultiModelMode) {
+      if (selectedModels.length === 0) {
+        setSelectedModels([llmService.getCurrentModel().id]);
+      }
+    }
+  };
+  
+  // 处理多模型选择
+  const handleMultiModelSelect = (modelId: string) => {
+    setSelectedModels(prev => {
+      if (prev.includes(modelId)) {
+        // 取消选择
+        const newSelection = prev.filter(id => id !== modelId);
+        // 确保至少选择一个模型
+        return newSelection.length > 0 ? newSelection : [modelId];
+      } else {
+        // 添加选择
+        return [...prev, modelId];
+      }
+    });
+  };
+  
+  // 处理角色变更
+  const handleRoleChange = (roleId: string) => {
+    const role = roles.find(r => r.id === roleId);
+    if (role) {
+      setSelectedRole(role);
+      setTimeout(() => {
+        if (roleConfigRef.current) {
+          roleConfigRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  };
 
   const handleModelChange = (modelId: string) => {
     const model = AVAILABLE_MODELS.find(m => m.id === modelId);
@@ -106,16 +197,24 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
     switch (modelId) {
       case 'kimi':
       case 'deepseek':
+      case 'qwen':
+      case 'chatgpt':
         return key.startsWith('sk-');
       case 'doubao':
         // 豆包密钥格式：通常是字母数字组合
         return /^[a-zA-Z0-9-_]+$/.test(key);
       case 'wenxinyiyan':
-        // 文心一言密钥格式：通常是字母数字组合
-        return /^[a-zA-Z0-9-_]+$/.test(key);
-      case 'qwen':
-        // 通义千问密钥格式：通常是sk-开头
-        return key.startsWith('sk-');
+        // 文心一言密钥格式：通常是字母数字组合，包含斜杠和等号
+        return /^[a-zA-Z0-9-_/.=]+$/.test(key);
+      case 'gemini':
+        // Gemini密钥格式：通常是AIzaSy开头
+        return key.startsWith('AIzaSy');
+      case 'gork':
+        // Gork密钥格式：通常是xai-开头
+        return key.startsWith('xai-');
+      case 'zhipu':
+        // 智谱密钥格式：通常是字母数字组合，包含点号
+        return /^[a-zA-Z0-9-_.]+$/.test(key);
       default:
         return true;
     }
@@ -214,6 +313,54 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
             saveApiKey('QWEN_API_KEY', '');
           }
           setModelConfig(prev => ({ ...prev, qwen_base_url: qwenBase, qwen_model: qwenVariant }));
+        } else if (selectedModel.id === 'chatgpt') {
+          if (chatgptKey) {
+            if (!validateApiKey('chatgpt', chatgptKey)) {
+              keyValid = false;
+              errorMessage = 'ChatGPT 密钥格式不正确，应为 sk- 开头';
+            } else {
+              saveApiKey('CHATGPT_API_KEY', chatgptKey);
+            }
+          } else {
+            saveApiKey('CHATGPT_API_KEY', '');
+          }
+          setModelConfig(prev => ({ ...prev, chatgpt_base_url: chatgptBase, chatgpt_model: chatgptVariant }));
+        } else if (selectedModel.id === 'gemini') {
+          if (geminiKey) {
+            if (!validateApiKey('gemini', geminiKey)) {
+              keyValid = false;
+              errorMessage = 'Gemini 密钥格式不正确';
+            } else {
+              saveApiKey('GEMINI_API_KEY', geminiKey);
+            }
+          } else {
+            saveApiKey('GEMINI_API_KEY', '');
+          }
+          setModelConfig(prev => ({ ...prev, gemini_base_url: geminiBase, gemini_model: geminiVariant }));
+        } else if (selectedModel.id === 'gork') {
+          if (gorkKey) {
+            if (!validateApiKey('gork', gorkKey)) {
+              keyValid = false;
+              errorMessage = 'Gork 密钥格式不正确，应为 xai- 开头';
+            } else {
+              saveApiKey('GORK_API_KEY', gorkKey);
+            }
+          } else {
+            saveApiKey('GORK_API_KEY', '');
+          }
+          setModelConfig(prev => ({ ...prev, gork_base_url: gorkBase, gork_model: gorkVariant }));
+        } else if (selectedModel.id === 'zhipu') {
+          if (zhipuKey) {
+            if (!validateApiKey('zhipu', zhipuKey)) {
+              keyValid = false;
+              errorMessage = '智谱 密钥格式不正确';
+            } else {
+              saveApiKey('ZHIPU_API_KEY', zhipuKey);
+            }
+          } else {
+            saveApiKey('ZHIPU_API_KEY', '');
+          }
+          setModelConfig(prev => ({ ...prev, zhipu_base_url: zhipuBase, zhipu_model: zhipuVariant }));
         }
         
         if (!keyValid) {
@@ -223,8 +370,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
         }
         
         llmService.setCurrentModel(selectedModel.id);
+        llmService.setCurrentRole(selectedRole.id);
         llmService.updateConfig(modelConfig);
-        toast.success('模型设置已保存');
+        toast.success('模型和角色设置已保存');
         onClose();
         setIsLoading(false);
       }, 500);
@@ -296,285 +444,215 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
           
           {/* 模型列表 */}
           <div className="mb-6">
-            <h4 className="font-medium mb-4">选择大语言模型</h4>
-            <div role="radiogroup" aria-label="模型列表" className="space-y-3">
-              {AVAILABLE_MODELS.map((model, idx) => (
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="font-medium">选择大语言模型</h4>
+              <button
+                type="button"
+                onClick={handleMultiModelToggle}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  isMultiModelMode
+                    ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
+                }`}
+              >
+                {isMultiModelMode ? '单模型模式' : '多模型模式'}
+              </button>
+            </div>
+            
+            {isMultiModelMode ? (
+              // 多模型选择模式
+              <div aria-label="模型列表" className="space-y-3">
+                {AVAILABLE_MODELS.map((model) => (
+                  <motion.button
+                    key={model.id}
+                    type="button"
+                    aria-checked={selectedModels.includes(model.id)}
+                    tabIndex={0}
+                    className={`relative w-full text-left p-4 rounded-xl border transition-all ${
+                      selectedModels.includes(model.id)
+                        ? 'border-purple-600 bg-purple-100 dark:bg-purple-900/20 ring-2 ring-purple-500 shadow-md'
+                        : isDark
+                        ? 'border-gray-700 hover:border-gray-600'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    whileHover={{ y: -2 }}
+                    onClick={() => handleMultiModelSelect(model.id)}
+                    aria-label={`选择模型 ${model.name}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h5 className={`font-bold ${selectedModels.includes(model.id) ? 'text-purple-600' : ''}`}>{model.name}</h5>
+                        <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {model.description}
+                        </p>
+                      </div>
+                      <div className={`w-5 h-5 rounded border-2 transition-all ${
+                        selectedModels.includes(model.id)
+                          ? 'border-purple-600 bg-purple-600'
+                          : isDark
+                          ? 'border-gray-700 hover:border-gray-600'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        {selectedModels.includes(model.id) && (
+                          <i className="fas fa-check text-white text-xs flex items-center justify-center w-full h-full"></i>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {model.strengths.map((strength, index) => (
+                        <span
+                          key={index}
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            isDark ? 'bg-gray-700' : 'bg-gray-100'
+                          }`}
+                        >
+                          {strength}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.button>
+                ))}
+                <div className="mt-3 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+                  <i className="fas fa-info-circle mr-2"></i>
+                  已选择 {selectedModels.length} 个模型
+                </div>
+                <div className="flex items-center justify-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}">
+                  <i className="fas fa-chevron-down mr-2"></i>
+                  向下查看更多设置
+                </div>
+              </div>
+            ) : (
+              // 单模型选择模式
+              <div role="radiogroup" aria-label="模型列表" className="space-y-3">
+                {AVAILABLE_MODELS.map((model, idx) => (
+                  <motion.button
+                    key={model.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedModel.id === model.id}
+                    tabIndex={0}
+                    className={`relative w-full text-left p-4 rounded-xl border transition-all ${
+                      selectedModel.id === model.id
+                        ? 'border-red-600 bg-red-100 dark:bg-red-900/20 ring-2 ring-red-500 shadow-md'
+                        : isDark
+                        ? 'border-gray-700 hover:border-gray-600'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    whileHover={{ y: -2 }}
+                    onClick={() => handleModelChange(model.id)}
+                    onKeyDown={(e) => handleModelKeyDown(e, idx)}
+                    aria-label={`选择模型 ${model.name}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h5 className={`font-bold ${selectedModel.id === model.id ? 'text-red-600' : ''}`}>{model.name}</h5>
+                        <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {model.description}
+                        </p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 ${
+                        selectedModel.id === model.id
+                          ? 'border-red-600'
+                          : isDark
+                          ? 'border-gray-600'
+                          : 'border-gray-300'
+                      } flex items-center justify-center`}>
+                        {selectedModel.id === model.id && (
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {model.strengths.map((strength, index) => (
+                        <span
+                          key={index}
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            isDark ? 'bg-gray-700' : 'bg-gray-100'
+                          }`}
+                        >
+                          {strength}
+                        </span>
+                      ))}
+                    </div>
+                    {selectedModel.id === model.id && (
+                      <span className="absolute top-3 right-3 text-xs px-2 py-1 rounded-full bg-red-600 text-white">已选择</span>
+                    )}
+                  </motion.button>
+                ))}
+                <div className="mt-3 flex items-center justify-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}">
+                  <i className="fas fa-chevron-down mr-2"></i>
+                  向下查看更多设置
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 角色选择 */}
+          <div className="mb-6" ref={roleConfigRef}>
+            <h4 className="font-medium mb-4">选择角色</h4>
+            <div role="radiogroup" aria-label="角色列表" className="space-y-3">
+              {roles.map((role) => (
                 <motion.button
-                  key={model.id}
+                  key={role.id}
                   type="button"
                   role="radio"
-                  aria-checked={selectedModel.id === model.id}
+                  aria-checked={selectedRole.id === role.id}
                   tabIndex={0}
-                  className={`relative w-full text-left p-4 rounded-xl border transition-all ${
-                    selectedModel.id === model.id
-                      ? 'border-red-600 bg-red-100 dark:bg-red-900/20 ring-2 ring-red-500 shadow-md'
-                      : isDark
-                      ? 'border-gray-700 hover:border-gray-600'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`relative w-full text-left p-4 rounded-xl border transition-all ${selectedRole.id === role.id
+                    ? 'border-blue-600 bg-blue-100 dark:bg-blue-900/20 ring-2 ring-blue-500 shadow-md'
+                    : isDark
+                    ? 'border-gray-700 hover:border-gray-600'
+                    : 'border-gray-200 hover:border-gray-300'}`}
                   whileHover={{ y: -2 }}
-                  onClick={() => handleModelChange(model.id)}
-                  onKeyDown={(e) => handleModelKeyDown(e, idx)}
-                  aria-label={`选择模型 ${model.name}`}
+                  onClick={() => handleRoleChange(role.id)}
+                  aria-label={`选择角色 ${role.name}`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h5 className={`font-bold ${selectedModel.id === model.id ? 'text-red-600' : ''}`}>{model.name}</h5>
+                      <h5 className={`font-bold ${selectedRole.id === role.id ? 'text-blue-600' : ''}`}>{role.name}</h5>
                       <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {model.description}
+                        {role.description}
                       </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {role.tags?.map((tag, index) => (
+                          <span
+                            key={index}
+                            className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className={`w-5 h-5 rounded-full border-2 ${
-                      selectedModel.id === model.id
-                        ? 'border-red-600'
-                        : isDark
-                        ? 'border-gray-600'
-                        : 'border-gray-300'
-                    } flex items-center justify-center`}>
-                      {selectedModel.id === model.id && (
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className={`w-5 h-5 rounded-full border-2 ${selectedRole.id === role.id
+                      ? 'border-blue-600'
+                      : isDark
+                      ? 'border-gray-700 hover:border-gray-600'
+                      : 'border-gray-200 hover:border-gray-300'} flex items-center justify-center`}>
+                      {selectedRole.id === role.id && (
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                       )}
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {model.strengths.map((strength, index) => (
-                      <span
-                        key={index}
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          isDark ? 'bg-gray-700' : 'bg-gray-100'
-                        }`}
-                      >
-                        {strength}
-                      </span>
-                    ))}
-                  </div>
-                  {selectedModel.id === model.id && (
-                    <span className="absolute top-3 right-3 text-xs px-2 py-1 rounded-full bg-red-600 text-white">已选择</span>
+                  {selectedRole.id === role.id && (
+                    <span className="absolute top-3 right-3 text-xs px-2 py-1 rounded-full bg-blue-600 text-white">已选择</span>
                   )}
                 </motion.button>
               ))}
             </div>
-            <div className="mt-3 flex items-center justify-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}">
-              <i className="fas fa-chevron-down mr-2"></i>
-              向下查看更多设置
-            </div>
           </div>
-
-          {selectedModel.id === 'kimi' && (
-    <div className="mb-6" ref={configRef}>
-      <h4 className="font-medium mb-2">Kimi（月之暗面）API 密钥</h4>
-      <input
-        type="password"
-        value={kimiKey}
-        onChange={(e) => setKimiKey(e.target.value)}
-        placeholder="输入以 sk- 开头的密钥"
-        className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-        disabled={isLoading}
-      />
-      <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥仅保存在本地浏览器，用于本机直连或代理调用。</p>
-      <div className="grid grid-cols-2 gap-3 mt-3">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Base URL（区域）</label>
-          <select
-            value={kimiBase}
-            onChange={(e) => setKimiBase(e.target.value)}
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-            disabled={isLoading}
-          >
-            <option value="https://api.moonshot.cn/v1">中国区</option>
-            <option value="https://api.moonshot.ai/v1">全球区</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">模型规格（上下文长度）</label>
-          <select
-            value={kimiVariant}
-            onChange={(e) => setKimiVariant(e.target.value)}
-            className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-            disabled={isLoading}
-          >
-            <option value="moonshot-v1-8k">moonshot-v1-8k</option>
-            <option value="moonshot-v1-32k">moonshot-v1-32k</option>
-            <option value="moonshot-v1-128k">moonshot-v1-128k</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  )}
-
-          {selectedModel.id === 'deepseek' && (
-            <div className="mb-6" ref={configRef}>
-              <h4 className="font-medium mb-2">DeepSeek API 密钥</h4>
-              <input
-                type="password"
-                value={deepseekKey}
-                onChange={(e) => setDeepseekKey(e.target.value)}
-                placeholder="输入以 sk- 开头的密钥"
-                className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                disabled={isLoading}
-              />
-              <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥保存在本地，仅用于本机调用。</p>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Base URL</label>
-                  <select
-                    value={deepseekBase}
-                    onChange={(e) => setDeepseekBase(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="https://api.deepseek.com">https://api.deepseek.com</option>
-                    <option value="https://api.deepseek.com/v1">https://api.deepseek.com/v1</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">模型规格</label>
-                  <select
-                    value={deepseekVariant}
-                    onChange={(e) => setDeepseekVariant(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="deepseek-chat">deepseek-chat</option>
-                    <option value="deepseek-reasoner">deepseek-reasoner</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {selectedModel.id === 'doubao' && (
-            <div className="mb-6" ref={configRef}>
-              <h4 className="font-medium mb-2">豆包 API 密钥</h4>
-              <input
-                type="password"
-                value={doubaoKey}
-                onChange={(e) => setDoubaoKey(e.target.value)}
-                placeholder="输入豆包 API 密钥"
-                className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                disabled={isLoading}
-              />
-              <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥保存在本地，仅用于本机调用。</p>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Base URL</label>
-                  <select
-                    value={doubaoBase}
-                    onChange={(e) => setDoubaoBase(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="https://api.doubao.com/v1">https://api.doubao.com/v1</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">模型规格</label>
-                  <select
-                    value={doubaoVariant}
-                    onChange={(e) => setDoubaoVariant(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="doubao-pro-32k">doubao-pro-32k</option>
-                    <option value="doubao-pro">doubao-pro</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {selectedModel.id === 'wenxinyiyan' && (
-            <div className="mb-6" ref={configRef}>
-              <h4 className="font-medium mb-2">文心一言 API 密钥</h4>
-              <input
-                type="password"
-                value={wenxinKey}
-                onChange={(e) => setWenxinKey(e.target.value)}
-                placeholder="输入文心一言 API 密钥"
-                className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                disabled={isLoading}
-              />
-              <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥保存在本地，仅用于本机调用。</p>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Base URL</label>
-                  <select
-                    value={wenxinBase}
-                    onChange={(e) => setWenxinBase(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions">https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">模型规格</label>
-                  <select
-                    value={wenxinVariant}
-                    onChange={(e) => setWenxinVariant(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="ERNIE-Speed-8K">ERNIE-Speed-8K</option>
-                    <option value="ERNIE-4.0-8K">ERNIE-4.0-8K</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {selectedModel.id === 'qwen' && (
-            <div className="mb-6" ref={configRef}>
-              <h4 className="font-medium mb-2">通义千问 API 密钥</h4>
-              <input
-                type="password"
-                value={qwenKey}
-                onChange={(e) => setQwenKey(e.target.value)}
-                placeholder="输入通义千问 API 密钥"
-                className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                disabled={isLoading}
-              />
-              <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>密钥保存在本地，仅用于本机调用。</p>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Base URL</label>
-                  <select
-                    value={qwenBase}
-                    onChange={(e) => setQwenBase(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="https://dashscope.aliyuncs.com/api/v1">https://dashscope.aliyuncs.com/api/v1</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">模型规格</label>
-                  <select
-                    value={qwenVariant}
-                    onChange={(e) => setQwenVariant(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                    disabled={isLoading}
-                  >
-                    <option value="qwen-plus">qwen-plus</option>
-                    <option value="qwen-turbo">qwen-turbo</option>
-                    <option value="qwen-max">qwen-max</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* 高级设置 */}
           <div className="mb-6">
             <button
               onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-              className={`flex items-center justify-between w-full p-3 rounded-xl text-left ${
-                isDark ? 'bg-gray-700' : 'bg-gray-100'
-              }`}
+              className={`flex items-center justify-between w-full p-3 rounded-xl text-left transition-all ${isDark 
+                ? 'bg-gray-700 hover:bg-gray-600' 
+                : 'bg-gray-100 hover:bg-gray-200'}`}
               disabled={isLoading}
             >
               <span className="font-medium">高级设置</span>
-              <i className={`fas fa-chevron-${showAdvancedSettings ? 'up' : 'down'}`}></i>
+              <i className={`fas fa-chevron-${showAdvancedSettings ? 'up' : 'down'} transition-transform duration-300`}></i>
             </button>
 
             {showAdvancedSettings && (
@@ -997,20 +1075,47 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                 wenxin_model: 'ERNIE-Speed-8K',
                 wenxin_base_url: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
                 // 通义千问默认配置
-                qwen_model: 'qwen-plus',
-                qwen_base_url: 'https://dashscope.aliyuncs.com/api/v1'
+        qwen_model: 'qwen-plus',
+        qwen_base_url: 'https://dashscope.aliyuncs.com/api/v1',
+        // ChatGPT默认配置
+        chatgpt_model: 'gpt-4o',
+        chatgpt_base_url: 'https://api.openai.com/v1',
+        // Gemini默认配置
+        gemini_model: 'gemini-1.5-flash',
+        gemini_base_url: 'https://generativelanguage.googleapis.com/v1',
+        // Gork默认配置
+        gork_model: 'grok-beta',
+        gork_base_url: 'https://api.x.ai/v1',
+        // 智谱默认配置
+        zhipu_model: 'glm-4-plus',
+        zhipu_base_url: 'https://open.bigmodel.cn/api/paas/v4'
               });
               // 重置各模型的配置状态
               setKimiBase('https://api.moonshot.cn/v1');
               setKimiVariant('moonshot-v1-32k');
               setDeepseekBase('https://api.deepseek.com');
               setDeepseekVariant('deepseek-chat');
+              // 豆包默认配置
               setDoubaoBase('https://api.doubao.com/v1');
               setDoubaoVariant('doubao-pro-32k');
+              // 文心一言默认配置
               setWenxinBase('https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions');
               setWenxinVariant('ERNIE-Speed-8K');
+              // 通义千问默认配置
               setQwenBase('https://dashscope.aliyuncs.com/api/v1');
               setQwenVariant('qwen-plus');
+              // ChatGPT默认配置
+              setChatgptBase('https://api.openai.com/v1');
+              setChatgptVariant('gpt-4o');
+              // Gemini默认配置
+              setGeminiBase('https://generativelanguage.googleapis.com/v1');
+              setGeminiVariant('gemini-1.5-flash');
+              // Gork默认配置
+              setGorkBase('https://api.x.ai/v1');
+              setGorkVariant('grok-beta');
+              // 智谱默认配置
+              setZhipuBase('https://open.bigmodel.cn/api/paas/v4');
+              setZhipuVariant('glm-4-plus');
             }}
             className={`px-5 py-2.5 rounded-lg transition-colors ${
               isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'

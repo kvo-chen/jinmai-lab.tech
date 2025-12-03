@@ -14,6 +14,10 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // 表单验证状态
+  const [errors, setErrors] = useState({ email: '', password: '' });
+  // 输入框焦点状态
+  const [focused, setFocused] = useState({ email: false, password: false });
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -21,12 +25,43 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate])
   
+  // 实时表单验证
+  const validateEmail = (value: string) => {
+    if (!value) return '请输入邮箱';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return '请输入有效的邮箱地址';
+    return '';
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) return '请输入密码';
+    if (value.length < 6) return '密码长度不能少于6位';
+    return '';
+  };
+
+  // 处理输入变化
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    setErrors(prev => ({ ...prev, email: validateEmail(value) }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    setErrors(prev => ({ ...prev, password: validatePassword(value) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // 表单验证
-    if (!email || !password) {
-      toast.error('请输入邮箱和密码');
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+    
+    if (emailError || passwordError) {
+      setErrors({ email: emailError, password: passwordError });
+      toast.error('请检查输入信息');
       return;
     }
     
@@ -115,17 +150,24 @@ export default function Login() {
           variants={itemVariants}
         >
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-2">邮箱</label>
+            <div className="flex justify-between items-center mb-2">
+              <label htmlFor="email" className="block text-sm font-medium">邮箱</label>
+              {errors.email && (
+                <span className="text-xs text-red-500">{errors.email}</span>
+              )}
+            </div>
             <input
               type="email"
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
+              onFocus={() => setFocused(prev => ({ ...prev, email: true }))}
+              onBlur={() => setFocused(prev => ({ ...prev, email: false }))}
               className={cn(
-                "w-full px-4 py-3 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-red-500",
+                "w-full px-4 py-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors",
                 isDark 
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 border" 
-                  : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border"
+                  ? `bg-gray-700 border ${errors.email ? 'border-red-500' : focused.email ? 'border-red-500' : 'border-gray-600'} text-white placeholder-gray-400` 
+                  : `bg-gray-50 border ${errors.email ? 'border-red-500' : focused.email ? 'border-red-500' : 'border-gray-200'} text-gray-900 placeholder-gray-400`
               )}
               placeholder="请输入您的邮箱"
               autoComplete="email"
@@ -146,12 +188,14 @@ export default function Login() {
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
+              onFocus={() => setFocused(prev => ({ ...prev, password: true }))}
+              onBlur={() => setFocused(prev => ({ ...prev, password: false }))}
               className={cn(
-                "w-full px-4 py-3 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-red-500",
+                "w-full px-4 py-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors",
                 isDark 
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 border" 
-                  : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border"
+                  ? `bg-gray-700 border ${errors.password ? 'border-red-500' : focused.password ? 'border-red-500' : 'border-gray-600'} text-white placeholder-gray-400` 
+                  : `bg-gray-50 border ${errors.password ? 'border-red-500' : focused.password ? 'border-red-500' : 'border-gray-200'} text-gray-900 placeholder-gray-400`
               )}
               placeholder="请输入您的密码"
               autoComplete="current-password"
@@ -160,6 +204,9 @@ export default function Login() {
               enterKeyHint="done"
               required
             />
+            {errors.password && (
+              <span className="text-xs text-red-500 mt-1 block">{errors.password}</span>
+            )}
           </div>
           
           <motion.button

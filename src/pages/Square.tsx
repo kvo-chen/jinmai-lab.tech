@@ -1,5 +1,6 @@
 import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
+import { TianjinImage } from '@/components/TianjinStyleComponents'
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import postsApi, { Post } from '@/services/postService'
@@ -10,18 +11,18 @@ import apiClient from '@/lib/apiClient'
 
 // 中文注释：广场初始示例作品（可作为冷启动内容）
 const SEED: Post[] = [
-  { id: 'seed-1', title: '国潮插画设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Chinese%20traditional%20cultural%20illustration%20design&image_size=square', likes: 324, comments: [], date: '2025-11-01', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-2', title: '麻花赛博朋克', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Tianjin%20mahua%20cyberpunk&image_size=square', likes: 512, comments: [], date: '2025-11-02', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-3', title: '杨柳青年画海报', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Yangliuqing%20New%20Year%20poster%2C%20vibrant%20colors&image_size=square', likes: 338, comments: [], date: '2025-11-03', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-4', title: '桂发祥联名插画海报', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Guifaxiang%20collab%20illustration%20poster%2C%20oriental%20style&image_size=square', likes: 256, comments: [], date: '2025-11-03', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-5', title: '同仁堂品牌视觉年鉴', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Tongrentang%20brand%20yearbook%2C%20red%20and%20gold&image_size=square', likes: 264, comments: [], date: '2025-11-04', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-6', title: '京剧舞台视觉系统', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Peking%20opera%20stage%20visual%20system&image_size=square', likes: 231, comments: [], date: '2025-11-04', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-7', title: '景德镇文创器皿插画', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Jingdezhen%20cultural%20ware%20illustration%2C%20blue%20and%20white&image_size=square', likes: 242, comments: [], date: '2025-11-05', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-8', title: '海河导视与标识', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Haihe%20wayfinding%20and%20signage%2C%20blue%20accent&image_size=square', likes: 244, comments: [], date: '2025-11-05', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-9', title: '东方美学字体集', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Oriental%20aesthetic%20typeface%20specimen&image_size=square', likes: 382, comments: [], date: '2025-11-06', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-10', title: '狗不理联名海报', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Goubuli%20brand%20collab%20poster%2C%20bold%20graphics&image_size=square', likes: 198, comments: [], date: '2025-11-06', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-11', title: '耳朵眼品牌IP形象', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Erduoyan%20brand%20mascot%20illustration%2C%20cute&image_size=square', likes: 312, comments: [], date: '2025-11-07', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
-  { id: 'seed-12', title: '果仁张秋季礼盒', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Guorenzhang%20autumn%20gift%20box%20packaging&image_size=square', likes: 224, comments: [], date: '2025-11-07', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-1', title: '国潮插画设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Chinese%20traditional%20cultural%20illustration%20design&image_size=1024x1024', likes: 324, comments: [], date: '2025-11-01', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-2', title: '麻花赛博朋克', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Tianjin%20mahua%20cyberpunk&image_size=1024x1024', likes: 512, comments: [], date: '2025-11-02', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-3', title: '杨柳青年画海报', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Yangliuqing%20New%20Year%20poster%2C%20vibrant%20colors&image_size=1024x1024', likes: 338, comments: [], date: '2025-11-03', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-4', title: '桂发祥联名插画海报', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Guifaxiang%20collab%20illustration%20poster%2C%20oriental%20style&image_size=1024x1024', likes: 256, comments: [], date: '2025-11-03', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-5', title: '同仁堂品牌视觉年鉴', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Tongrentang%20brand%20yearbook%2C%20red%20and%20gold&image_size=1024x1024', likes: 264, comments: [], date: '2025-11-04', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-6', title: '京剧舞台视觉系统', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Peking%20opera%20stage%20visual%20system&image_size=1024x1024', likes: 231, comments: [], date: '2025-11-04', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-7', title: '景德镇文创器皿插画', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Jingdezhen%20cultural%20ware%20illustration%2C%20blue%20and%20white&image_size=1024x1024', likes: 242, comments: [], date: '2025-11-05', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-8', title: '海河导视与标识', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Haihe%20wayfinding%20and%20signage%2C%20blue%20accent&image_size=1024x1024', likes: 244, comments: [], date: '2025-11-05', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-9', title: '东方美学字体集', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Oriental%20aesthetic%20typeface%20specimen&image_size=1024x1024', likes: 382, comments: [], date: '2025-11-06', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-10', title: '狗不理联名海报', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Goubuli%20brand%20collab%20poster%2C%20bold%20graphics&image_size=1024x1024', likes: 198, comments: [], date: '2025-11-06', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-11', title: '耳朵眼品牌IP形象', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Erduoyan%20brand%20mascot%20illustration%2C%20cute&image_size=1024x1024', likes: 312, comments: [], date: '2025-11-07', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
+  { id: 'seed-12', title: '果仁张秋季礼盒', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Guorenzhang%20autumn%20gift%20box%20packaging&image_size=1024x1024', likes: 224, comments: [], date: '2025-11-07', category: 'design', tags: [], description: '', views: 0, shares: 0, isFeatured: false, isDraft: false, completionStatus: 'completed', creativeDirection: '', culturalElements: [], colorScheme: [], toolsUsed: [] },
 ]
 
 // 中文注释：从探索页导入的策展作品（转换为广场帖子结构；导入全部）
@@ -47,31 +48,14 @@ const EXPLORE_SEEDS: Post[] = mockWorks.map((w) => ({
 }))
 
 // 中文注释：扩展策展作品—为每个作品生成二期/三期衍生，增加广场总体数量
-// 中文注释：批量生成多期衍生作品（2~5期），标题带期数后缀，点赞数作轻微调整
+// 中文注释：批量生成多期衍生作品（2~3期），标题带期数后缀，点赞数作轻微调整
 const EXPANDED_EXPLORE_SEEDS: Post[] = [
   ...EXPLORE_SEEDS,
-  ...[2, 3, 4, 5].flatMap((phase) => 
+  ...[2, 3].flatMap((phase) => 
     mockWorks.map((w) => {
-      // 优化URL生成逻辑：使用不同的提示词而不是phase参数
-      const basePrompt = w.thumbnail.includes('prompt=') 
-        ? decodeURIComponent(new URL(w.thumbnail).searchParams.get('prompt') || '')
-        : w.title;
-      
-      // 为不同期数生成独特的提示词
-      const uniquePrompt = `${basePrompt} ${phase === 2 ? 'modern twist' : phase === 3 ? 'vintage style' : phase === 4 ? 'minimal design' : 'abstract interpretation'}`;
-      
-      // 重新构建URL，避免使用phase参数
-      let newThumbnail = '';
-      try {
-        const url = new URL(w.thumbnail);
-        url.searchParams.set('prompt', encodeURIComponent(uniquePrompt));
-        // 移除可能存在的phase参数
-        url.searchParams.delete('phase');
-        newThumbnail = url.toString();
-      } catch {
-        // 如果URL解析失败，使用原始URL但不添加phase参数
-        newThumbnail = w.thumbnail;
-      }
+      // 直接使用原始URL，避免重新构建导致的问题
+      // 这样可以确保使用已经生成好的图片，而不是重新请求生成
+      const newThumbnail = w.thumbnail;
       
       return {
         id: `ex${phase}-${w.id}`,
@@ -408,7 +392,7 @@ export default function Square() {
     const t = title.trim()
     const u = thumb.trim()
     if (!t) { alert('请输入标题'); return }
-    const cover = u || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(t)}&image_size=square`
+    const cover = u || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(t)}&image_size=1024x1024`
     postsApi.addPost({
       title: t,
       thumbnail: cover,
@@ -428,7 +412,7 @@ export default function Square() {
   const generateThumbFromTitle = () => {
     // 中文注释：根据标题自动生成封面URL
     const t = title.trim() || '创意封面'
-    const cover = `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(t)}&image_size=square`
+    const cover = `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(t)}&image_size=1024x1024`
     setThumb(cover)
   }
   const onThumbFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -444,7 +428,7 @@ export default function Square() {
     e.target.value = ''
   }
   // 中文注释：空缩略图兜底（避免img出现src=""）
-  const getFallbackThumb = (p: Post) => `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(p.title)}&image_size=square`
+  const getFallbackThumb = (p: Post) => `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(p.title)}&image_size=1024x1024`
   return (
 
       <main className="container mx-auto px-4 py-10">
@@ -665,7 +649,7 @@ export default function Square() {
           {thumb.trim() && (
             <div className="mt-3 flex items-center gap-3">
               <div className="text-xs opacity-70">封面预览：</div>
-              <img src={thumb} alt="封面预览" className="w-16 h-16 object-cover rounded" />
+              <TianjinImage src={thumb} alt="封面预览" ratio="square" rounded="md" className="w-16 h-16" />
             </div>
           )}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -688,7 +672,7 @@ export default function Square() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {viewList.map(p => (
             <motion.div key={p.id} whileHover={{ y: -5 }} className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-4`}>
-              <img onClick={() => setActive(p)} src={p.thumbnail || getFallbackThumb(p)} alt={p.title} className="w-full h-40 object-cover rounded-lg mb-3 cursor-pointer" loading="lazy" decoding="async" />
+              <TianjinImage onClick={() => setActive(p)} src={p.thumbnail || getFallbackThumb(p)} alt={p.title} className="w-full h-40 object-cover rounded-lg mb-3 cursor-pointer" ratio="landscape" />
               <div className="font-medium mb-2">{p.title}</div>
               <div className="flex items-center text-sm mb-3">
                 <span className="mr-3"><i className="far fa-thumbs-up mr-1"></i>{p.likes}</span>
@@ -732,7 +716,7 @@ export default function Square() {
                 <div className="font-bold text-lg">{active.title}</div>
                 <button onClick={() => { setActive(null); navigate('/square') }} className="px-3 py-1 rounded bg-gray-200">关闭</button>
               </div>
-              <img src={active.thumbnail} alt={active.title} className="w-full h-64 object-cover rounded-lg mb-4" />
+              <TianjinImage src={active.thumbnail} alt={active.title} className="w-full h-64 object-cover rounded-lg mb-4" ratio="landscape" />
               <div className="flex items-center gap-4 text-sm mb-2">
                 <span><i className="far fa-thumbs-up mr-1"></i>{active.likes}</span>
                 <span>{new Date(active.date).toLocaleString()}</span>

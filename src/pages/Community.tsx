@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useContext } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { TianjinImage } from '@/components/TianjinStyleComponents'
 import SidebarLayout from '@/components/SidebarLayout'
 import GradientHero from '@/components/GradientHero'
 import CommunityChat from '@/components/CommunityChat'
@@ -39,10 +40,10 @@ type Creator = {
   online: boolean;
 };
 const mockCreators: Creator[] = [
-  { name: '设计师小明', role: '视觉设计', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Designer%20avatar%20xiaoming%20high%20quality', online: true },
-  { name: '插画师小陈', role: '插画设计', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Illustrator%20avatar%20xiaochen%20flat%20style', online: true },
-  { name: '品牌设计师老王', role: '品牌策略', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Designer%20avatar%20laowang%20brand', online: false },
-  { name: '数字艺术家小张', role: '数字艺术', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Artist%20avatar%20xiaozhang%20digital', online: true },
+  { name: '设计师小明', role: '视觉设计', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Designer%20avatar%20xiaoming%20high%20quality', online: true },
+  { name: '插画师小陈', role: '插画设计', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Illustrator%20avatar%20xiaochen%20flat%20style', online: true },
+  { name: '品牌设计师老王', role: '品牌策略', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Designer%20avatar%20laowang%20brand', online: false },
+  { name: '数字艺术家小张', role: '数字艺术', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Artist%20avatar%20xiaozhang%20digital', online: true },
 ];
 
 // 中文注释：创作者徽章（用于在详情弹窗中展示）
@@ -76,7 +77,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-guochao',
     name: '国潮设计社群',
     description: '讨论国潮视觉、品牌联名与配色体系',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Guochao%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Guochao%20design%20community%20banner',
     tags: ['国潮', '联名', '品牌'],
     members: 1286,
   },
@@ -84,7 +85,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-heritage',
     name: '非遗数字化社群',
     description: '分享非遗数字化案例与教育传播',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Intangible%20heritage%20digital%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Intangible%20heritage%20digital%20community%20banner',
     tags: ['非遗', '教育', '海报'],
     members: 986,
   },
@@ -92,7 +93,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ip',
     name: 'IP联名与授权',
     description: '围绕IP设计与商业授权的合作讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=IP%20collaboration%20and%20licensing%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=IP%20collaboration%20and%20licensing%20community%20banner',
     tags: ['IP', '联名', '授权'],
     members: 742,
   },
@@ -101,7 +102,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-peking-opera',
     name: '京剧视觉社群',
     description: '京剧元素的现代视觉化与海报设计讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Peking%20opera%20visual%20community%20banner%2C%20bold%20graphics',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Peking%20opera%20visual%20community%20banner%2C%20bold%20graphics',
     tags: ['京剧', '戏曲', '海报'],
     members: 812,
   },
@@ -109,7 +110,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-jingdezhen',
     name: '景德镇陶瓷文创社群',
     description: '蓝白瓷与陶瓷文创的设计分享与交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Jingdezhen%20ceramics%20community%20banner%2C%20blue%20and%20white',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Jingdezhen%20ceramics%20community%20banner%2C%20blue%20and%20white',
     tags: ['景德镇', '陶瓷', '文创'],
     members: 654,
   },
@@ -117,7 +118,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-laozihao',
     name: '老字号品牌策略社群',
     description: '围绕老字号品牌现代化策略与视觉系统建设',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Time-honored%20brand%20strategy%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Time-honored%20brand%20strategy%20community%20banner',
     tags: ['老字号', '品牌', '策略'],
     members: 932,
   },
@@ -125,7 +126,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-college-club',
     name: '高校社团联名社群',
     description: '高校社团与品牌联名的企划与视觉讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=College%20club%20collaboration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=College%20club%20collaboration%20community%20banner',
     tags: ['高校', '社团', '联名'],
     members: 1014,
   },
@@ -133,7 +134,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-color-palette',
     name: '东方配色研究社群',
     description: '传统色体系与东方配色的应用研究',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Oriental%20color%20palette%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Oriental%20color%20palette%20community%20banner',
     tags: ['传统色', '配色', '指南'],
     members: 723,
   },
@@ -141,7 +142,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ip-ops',
     name: 'IP运营与授权社群',
     description: 'IP商业授权、联名运营与案例拆解',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=IP%20operations%20and%20licensing%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=IP%20operations%20and%20licensing%20community%20banner',
     tags: ['IP', '授权', '运营'],
     members: 845,
   },
@@ -149,7 +150,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-illustration',
     name: '插画手绘与线稿社群',
     description: '手绘插画、线稿风格与数字化处理交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Hand-drawn%20illustration%20community%20banner%2C%20flat%20style',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Hand-drawn%20illustration%20community%20banner%2C%20flat%20style',
     tags: ['插画', '手绘', '线稿'],
     members: 689,
   },
@@ -157,7 +158,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-craft-innovation',
     name: '工艺创新与再设计社群',
     description: '传统工艺现代创新与再设计实践分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Craft%20innovation%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Craft%20innovation%20community%20banner',
     tags: ['工艺', '创新', '再设计'],
     members: 571,
   },
@@ -165,7 +166,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-heritage-edu',
     name: '非遗教育传播社群',
     description: '非遗文化的教学传播与活动策划讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Intangible%20heritage%20education%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Intangible%20heritage%20education%20community%20banner',
     tags: ['非遗', '教育', '传播'],
     members: 800,
   },
@@ -174,7 +175,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-minimal-brand',
     name: '极简品牌视觉社群',
     description: '极简风格的品牌视觉系统与落地应用讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Minimalist%20brand%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Minimalist%20brand%20visual%20community%20banner',
     tags: ['极简', '品牌', '视觉'],
     members: 705,
   },
@@ -182,7 +183,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-retro-poster',
     name: '复古海报设计社群',
     description: '复古风格的海报设计、字体与排版研究',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Retro%20poster%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Retro%20poster%20design%20community%20banner',
     tags: ['复古', '海报', '字体'],
     members: 790,
   },
@@ -190,7 +191,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-cyberpunk',
     name: '赛博朋克视觉社群',
     description: '赛博朋克风格的霓虹视觉与未来题材创作',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Cyberpunk%20visual%20community%20banner%2C%20neon',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Cyberpunk%20visual%20community%20banner%2C%20neon',
     tags: ['赛博朋克', '霓虹', '未来'],
     members: 668,
   },
@@ -198,7 +199,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-lineart',
     name: '黑白线稿插画社群',
     description: '线稿风格的创作分享与数字化处理技巧',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Lineart%20black%20and%20white%20illustration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Lineart%20black%20and%20white%20illustration%20community%20banner',
     tags: ['线稿', '黑白', '插画'],
     members: 612,
   },
@@ -206,7 +207,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-pattern-lab',
     name: '传统纹样研究社群',
     description: '传统纹样的图案提取、延展与现代应用',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Traditional%20pattern%20research%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Traditional%20pattern%20research%20community%20banner',
     tags: ['纹样', '图案', '延展'],
     members: 874,
   },
@@ -214,7 +215,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-typeface',
     name: '字体设计与应用社群',
     description: '中文字体设计、版式排版与品牌应用案例',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20typeface%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Chinese%20typeface%20design%20community%20banner',
     tags: ['字体', '排版', '视觉'],
     members: 839,
   },
@@ -222,7 +223,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-merch',
     name: '国潮周边产品社群',
     description: '国潮礼品、周边开发与供应链协作交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Guochao%20merch%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Guochao%20merch%20community%20banner',
     tags: ['国潮', '周边', '礼品'],
     members: 921,
   },
@@ -230,7 +231,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-education-kv',
     name: '教育KV与信息图社群',
     description: '教育主题KV设计与信息图表现方法交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Education%20KV%20and%20infographic%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Education%20KV%20and%20infographic%20community%20banner',
     tags: ['教育', 'KV', '信息图'],
     members: 702,
   },
@@ -238,7 +239,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-oldbrand-campaign',
     name: '老字号联名企划社群',
     description: '老字号品牌的联名企划与商业合作讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Time-honored%20brand%20collaboration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Time-honored%20brand%20collaboration%20community%20banner',
     tags: ['老字号', '联名', '企划'],
     members: 965,
   },
@@ -246,7 +247,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ip-family',
     name: 'IP亲子活动社群',
     description: '亲子向IP活动的视觉与互动设计分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=IP%20family%20event%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=IP%20family%20event%20community%20banner',
     tags: ['IP', '亲子', '活动'],
     members: 731,
   },
@@ -254,7 +255,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-wayfinding',
     name: '导视系统与空间视觉社群',
     description: '空间导视系统、环境图形与人群动线设计',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Wayfinding%20system%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Wayfinding%20system%20community%20banner',
     tags: ['导视', '空间', '品牌'],
     members: 644,
   },
@@ -262,7 +263,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-packaging',
     name: '文创包装设计社群',
     description: '文创产品包装结构、材质与视觉系统交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Cultural%20product%20packaging%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Cultural%20product%20packaging%20design%20community%20banner',
     tags: ['包装', '文创', '纸品'],
     members: 858,
   },
@@ -270,7 +271,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-festival',
     name: '节日主题视觉社群',
     description: '节日活动KV与主题视觉的创意与执行',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Festival%20theme%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Festival%20theme%20visual%20community%20banner',
     tags: ['节日', 'KV', '海报'],
     members: 796,
   },
@@ -278,7 +279,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-color-chinese-red',
     name: '中国红品牌KV社群',
     description: '中国红主题的品牌KV与整套物料表现',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20red%20brand%20KV%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Chinese%20red%20brand%20KV%20community%20banner',
     tags: ['中国红', 'KV', '品牌'],
     members: 882,
   },
@@ -286,7 +287,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ip-campus',
     name: '校园社团IP联名社群',
     description: '校园社团IP与品牌的跨界联名合作交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Campus%20club%20IP%20collaboration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Campus%20club%20IP%20collaboration%20community%20banner',
     tags: ['校园', 'IP', '联名'],
     members: 1002,
   },
@@ -294,7 +295,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-bluewhite',
     name: '青花瓷图形再设计社群',
     description: '青花瓷元素的现代图形再设计与视觉化',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Blue%20and%20white%20porcelain%20graphic%20redesign%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Blue%20and%20white%20porcelain%20graphic%20redesign%20community%20banner',
     tags: ['青花瓷', '图形', '再设计'],
     members: 648,
   },
@@ -302,7 +303,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-heritage-process',
     name: '非遗技艺流程社群',
     description: '非遗技艺流程梳理、信息图与教学素材',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Intangible%20heritage%20process%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Intangible%20heritage%20process%20community%20banner',
     tags: ['非遗', '技艺', '流程'],
     members: 774,
   },
@@ -310,7 +311,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-illustration-street',
     name: '国潮街头插画社群',
     description: '街头风格的国潮插画创作与风格研究',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Guochao%20street%20illustration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Guochao%20street%20illustration%20community%20banner',
     tags: ['国潮', '插画', '街头'],
     members: 867,
   },
@@ -318,7 +319,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-graphic-system',
     name: '视觉系统与延展社群',
     description: '品牌视觉系统化设计与多场景延展规范',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Brand%20visual%20system%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Brand%20visual%20system%20community%20banner',
     tags: ['视觉系统', '延展', '规范'],
     members: 733,
   },
@@ -326,7 +327,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-colorsystem',
     name: '传统色与色彩系统社群',
     description: '传统色彩体系、配色方法与设计落地分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Traditional%20colors%20and%20palette%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Traditional%20colors%20and%20palette%20community%20banner',
     tags: ['传统色', '配色', '系统'],
     members: 711,
   },
@@ -334,7 +335,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ai-art',
     name: 'AI艺术生成社群',
     description: '分享AI生成艺术的提示词、风格与实战案例',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=AI%20art%20generation%20community%20banner%2C%20modern%20style',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=AI%20art%20generation%20community%20banner%2C%20modern%20style',
     tags: ['AI', '提示词', '艺术'],
     members: 978,
   },
@@ -342,7 +343,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-photography',
     name: '摄影与后期社群',
     description: '摄影构图、色彩校正与后期调色技巧交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Photography%20and%20post%20processing%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Photography%20and%20post%20processing%20community%20banner',
     tags: ['摄影', '后期', '调色'],
     members: 812,
   },
@@ -350,7 +351,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-3d-modeling',
     name: '3D建模与渲染社群',
     description: '3D建模、材质贴图与渲染表现方法讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=3D%20modeling%20and%20rendering%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=3D%20modeling%20and%20rendering%20community%20banner',
     tags: ['3D', '建模', '渲染'],
     members: 895,
   },
@@ -358,7 +359,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-game-art',
     name: '游戏美术社群',
     description: '游戏角色、场景与UI的美术风格与规范',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Game%20art%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Game%20art%20community%20banner',
     tags: ['游戏', '角色', '场景'],
     members: 936,
   },
@@ -366,7 +367,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-anime',
     name: '二次元插画社群',
     description: '动漫风插画的线稿、上色与风格化技巧',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Anime%20illustration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Anime%20illustration%20community%20banner',
     tags: ['二次元', '插画', '上色'],
     members: 884,
   },
@@ -374,7 +375,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-calligraphy',
     name: '书法与字形社群',
     description: '书法临摹、字形结构与现代化应用分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Calligraphy%20and%20letterform%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Calligraphy%20and%20letterform%20community%20banner',
     tags: ['书法', '字形', '应用'],
     members: 721,
   },
@@ -382,7 +383,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-streetwear',
     name: '潮流服饰视觉社群',
     description: '潮流服饰图形、面料工艺与视觉企划交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Streetwear%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Streetwear%20visual%20community%20banner',
     tags: ['潮流', '服饰', '企划'],
     members: 803,
   },
@@ -390,7 +391,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-travel-culture',
     name: '旅行地文化视觉社群',
     description: '地方文化IP、旅游海报与城市品牌研究',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Travel%20culture%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Travel%20culture%20visual%20community%20banner',
     tags: ['旅游', '城市', '文化'],
     members: 768,
   },
@@ -398,7 +399,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-folk-music',
     name: '国风音乐视觉社群',
     description: '国风音乐的封面、舞台视觉与周边设计',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Chinese%20folk%20music%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Chinese%20folk%20music%20visual%20community%20banner',
     tags: ['国风', '音乐', '视觉'],
     members: 746,
   },
@@ -406,7 +407,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-motion-graphics',
     name: '动效与视频包装社群',
     description: 'MG动效、片头包装与剪辑节奏方法交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Motion%20graphics%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Motion%20graphics%20community%20banner',
     tags: ['动效', '包装', '剪辑'],
     members: 829,
   },
@@ -414,7 +415,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ui-ux',
     name: 'UI/UX设计社群',
     description: '产品界面、交互策略与设计系统规范讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=UI%20UX%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=UI%20UX%20design%20community%20banner',
     tags: ['界面', '交互', '系统'],
     members: 914,
   },
@@ -422,7 +423,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-data-viz',
     name: '数据可视化社群',
     description: '信息图、可视化叙事与数据图形表达方法',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Data%20visualization%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Data%20visualization%20community%20banner',
     tags: ['信息图', '数据', '可视化'],
     members: 777,
   },
@@ -430,7 +431,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-arch-visual',
     name: '建筑与空间视觉社群',
     description: '建筑摄影、空间导视与环境图形设计交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Architectural%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Architectural%20visual%20community%20banner',
     tags: ['建筑', '空间', '导视'],
     members: 732,
   },
@@ -438,7 +439,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-product-design',
     name: '工业产品外观设计社群',
     description: '产品外观、结构细节与量产落地经验交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Industrial%20product%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Industrial%20product%20design%20community%20banner',
     tags: ['工业', '外观', '量产'],
     members: 756,
   },
@@ -446,7 +447,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-printmaking',
     name: '版画与手工印刷社群',
     description: '丝网印刷、油印木刻与手工印刷工艺交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Printmaking%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Printmaking%20community%20banner',
     tags: ['版画', '手工', '印刷'],
     members: 669,
   },
@@ -455,7 +456,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-ar-vr',
     name: 'AR/VR互动设计社群',
     description: '增强现实与虚拟现实的交互体验与视觉表达',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=AR%20VR%20interaction%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=AR%20VR%20interaction%20design%20community%20banner',
     tags: ['AR', 'VR', '交互'],
     members: 802,
   },
@@ -463,7 +464,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-metaverse',
     name: '元宇宙活动视觉社群',
     description: '虚拟活动与沉浸式场景的视觉企划与执行',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Metaverse%20event%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Metaverse%20event%20visual%20community%20banner',
     tags: ['元宇宙', '活动', '沉浸'],
     members: 735,
   },
@@ -471,7 +472,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-creative-coding',
     name: '创意编程与生成设计社群',
     description: 'p5.js、Processing与生成式图形的美学探索',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Creative%20coding%20and%20generative%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Creative%20coding%20and%20generative%20design%20community%20banner',
     tags: ['编程', '生成', '图形'],
     members: 889,
   },
@@ -479,7 +480,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-data-story',
     name: '数据叙事与信息架构社群',
     description: '数据故事、信息架构与可读性设计的实践方法',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Data%20storytelling%20and%20information%20architecture%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Data%20storytelling%20and%20information%20architecture%20community%20banner',
     tags: ['数据', '叙事', '信息架构'],
     members: 718,
   },
@@ -487,7 +488,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-product-photo',
     name: '产品摄影与布光社群',
     description: '电商产品摄影、布光与修图流程经验分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Product%20photography%20lighting%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Product%20photography%20lighting%20community%20banner',
     tags: ['摄影', '布光', '修图'],
     members: 786,
   },
@@ -495,7 +496,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-cosplay-design',
     name: 'Cosplay服饰与造型社群',
     description: '服饰打版、材质工艺与角色造型视觉表达',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Cosplay%20costume%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Cosplay%20costume%20design%20community%20banner',
     tags: ['Cosplay', '服饰', '造型'],
     members: 741,
   },
@@ -503,7 +504,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-exhibition',
     name: '博物馆与展陈设计社群',
     description: '展陈策展、展板信息与空间动线的视觉设计',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Museum%20exhibition%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Museum%20exhibition%20design%20community%20banner',
     tags: ['展陈', '策展', '空间'],
     members: 728,
   },
@@ -511,7 +512,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-children-book',
     name: '儿童绘本插画社群',
     description: '儿童向绘本的角色塑造与叙事图像表达',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Children%20book%20illustration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Children%20book%20illustration%20community%20banner',
     tags: ['绘本', '儿童', '插画'],
     members: 764,
   },
@@ -519,7 +520,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-indie-brand',
     name: '独立品牌孵化社群',
     description: '小众品牌定位、风格系统与启动物料实战',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Indie%20brand%20incubation%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Indie%20brand%20incubation%20community%20banner',
     tags: ['品牌', '定位', '物料'],
     members: 915,
   },
@@ -527,7 +528,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-tea-ceremony-brand',
     name: '茶文化与仪式品牌社群',
     description: '茶文化视觉、礼仪器具与仪式体验品牌设计',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tea%20culture%20brand%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Tea%20culture%20brand%20community%20banner',
     tags: ['茶文化', '品牌', '仪式'],
     members: 679,
   },
@@ -535,7 +536,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-festival-stage',
     name: '节庆舞台与灯光视觉社群',
     description: '舞台美术、灯光设计与活动视觉系统化落地',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Festival%20stage%20lighting%20visual%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Festival%20stage%20lighting%20visual%20community%20banner',
     tags: ['舞台', '灯光', '活动'],
     members: 801,
   },
@@ -543,7 +544,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-nft-collectibles',
     name: '数字藏品与NFT视觉社群',
     description: '数字藏品的视觉风格、发行策略与合规讨论',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=NFT%20digital%20collectibles%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=NFT%20digital%20collectibles%20community%20banner',
     tags: ['数字藏品', 'NFT', '合规'],
     members: 688,
   },
@@ -551,7 +552,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-retro-pixel',
     name: '像素复古艺术社群',
     description: '像素风图形创作与复古游戏视觉研究交流',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Retro%20pixel%20art%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Retro%20pixel%20art%20community%20banner',
     tags: ['像素', '复古', '游戏'],
     members: 744,
   },
@@ -559,7 +560,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-sci-fi-concept',
     name: '科幻概念设计社群',
     description: '硬核科幻风格的概念场景与载具设定分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Sci-fi%20concept%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Sci-fi%20concept%20design%20community%20banner',
     tags: ['科幻', '概念', '设定'],
     members: 873,
   },
@@ -567,7 +568,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-storyboard-comic',
     name: '漫画分镜与叙事社群',
     description: '镜头语言、节奏把控与叙事分镜的实战技巧',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Storyboard%20comic%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Storyboard%20comic%20community%20banner',
     tags: ['分镜', '叙事', '漫画'],
     members: 792,
   },
@@ -575,7 +576,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-motion-capture',
     name: '动作捕捉与角色表现社群',
     description: '动作捕捉流程、绑定与角色表现的技术美术',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Motion%20capture%20and%20character%20performance%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Motion%20capture%20and%20character%20performance%20community%20banner',
     tags: ['动捕', '绑定', '角色'],
     members: 709,
   },
@@ -583,7 +584,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-wearable-design',
     name: '可穿戴与交互设备设计社群',
     description: '智能穿戴产品的交互体验与外观风格探索',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Wearable%20device%20design%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Wearable%20device%20design%20community%20banner',
     tags: ['穿戴', '交互', '产品'],
     members: 737,
   },
@@ -591,7 +592,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-sustainable-packaging',
     name: '可持续包装与环保材质社群',
     description: '低碳包装结构、环保材质与循环设计方法',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Sustainable%20packaging%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Sustainable%20packaging%20community%20banner',
     tags: ['可持续', '环保', '包装'],
     members: 755,
   },
@@ -599,7 +600,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-hackathon',
     name: '创意黑客松与协作社群',
     description: '跨学科协作、快速原型与创意竞赛活动分享',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Hackathon%20creative%20collaboration%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Hackathon%20creative%20collaboration%20community%20banner',
     tags: ['协作', '原型', '竞赛'],
     members: 803,
   },
@@ -607,7 +608,7 @@ const recommendedCommunities: Community[] = [
     id: 'c-hand-lettering',
     name: '手写字与品牌字系社群',
     description: '手写字风格化、变体设计与品牌字系包装',
-    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Hand%20lettering%20brand%20typeface%20community%20banner',
+    cover: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Hand%20lettering%20brand%20typeface%20community%20banner',
     tags: ['手写字', '字系', '品牌'],
     members: 786,
   },
@@ -1094,7 +1095,7 @@ export default function Community() {
 
   const convertToSquarePost = (t: Thread) => {
     const title = t.title
-    const thumb = `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(title)}&image_size=square`
+    const thumb = `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(title)}&image_size=1024x1024`
     postsApi.addPost({
       title,
       thumbnail: thumb,
@@ -1126,7 +1127,7 @@ export default function Community() {
     if (!name) { toast.warning('请输入社群名称'); return }
     if (!desc) { toast.warning('请输入社群简介'); return }
     const id = `uc-${Date.now()}`
-    const cover = 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=User%20community%20banner%20minimal%20style'
+    const cover = 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=User%20community%20banner%20minimal%20style'
     const c: Community = { id, name, description: desc, cover, tags, members: 1 }
     setUserCommunities(prev => [c, ...prev])
     setJoinedCommunities(prev => [...prev, id])
@@ -1313,7 +1314,7 @@ export default function Community() {
                   renderItem={(c: Community, index: number) => (
                     <div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg`}>
                       <div className="relative">
-                        <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover transition-transform duration-500 hover:scale-105" loading="lazy" decoding="async" />
+                        <TianjinImage src={c.cover} alt={c.name} className="w-full object-cover transition-transform duration-500 hover:scale-105" ratio="landscape" />
                         <div className="absolute top-3 right-3">
                           <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-black/40 text-gray-200' : 'bg-white/70 text-gray-700'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`}>官方</span>
                         </div>
@@ -1376,7 +1377,7 @@ export default function Community() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {displayJoined.map(c => (
                     <div key={c.id} className={`${isDark ? 'bg-gray-800' : 'bg-white/80'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-indigo-200'} rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-4 hover:shadow-lg`}>
-                      <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover" loading="lazy" decoding="async" />
+                      <TianjinImage src={c.cover} alt={c.name} className="w-full object-cover" ratio="landscape" />
                       <div className="p-4">
                         <div className="font-medium mb-1 flex items-center gap-2">
                           {c.name}
@@ -1519,7 +1520,7 @@ export default function Community() {
             {mockCreators.map((c) => (
               <div key={c.name} className="flex items-center p-2 rounded-xl">
                 <div className="relative mr-3">
-                  <img src={c.avatar} alt={c.name} className="w-10 h-10 rounded-full ring-1 ring-gray-300 cursor-pointer" loading="lazy" decoding="async" onClick={() => openProfile(c)} />
+                  <TianjinImage src={c.avatar} alt={c.name} className="w-10 h-10 rounded-full ring-1 ring-gray-300 cursor-pointer" ratio="square" onClick={() => openProfile(c)} />
                   <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ${c.online ? 'bg-green-500' : 'bg-gray-400'} ring-2 ring-white`}></span>
                 </div>
                 <div className="flex-1">
@@ -1641,7 +1642,7 @@ export default function Community() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {filteredPosts.slice(0, 6).map(p => (
                 <motion.div key={p.id} whileHover={{ y: -5 }} className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-4`}>
-                  <img src={p.thumbnail || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(p.title)}&image_size=square`} alt={p.title} className="w-full h-40 object-cover rounded-lg mb-3" loading="lazy" decoding="async" />
+                  <TianjinImage src={p.thumbnail || `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(p.title)}&image_size=1024x1024`} alt={p.title} className="w-full h-40 object-cover rounded-lg mb-3" ratio="landscape" />
                   <div className="font-medium text-sm">{p.title}</div>
                   <div className="text-xs opacity-70">点赞 {p.likes} • 评论 {p.comments.length}</div>
                 </motion.div>
@@ -1675,7 +1676,7 @@ export default function Community() {
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-4">
-                  <img src={activeCreator.avatar} alt={activeCreator.name} className="w-12 h-12 rounded-full mr-3 ring-1 ring-gray-300" loading="lazy" decoding="async" />
+                  <TianjinImage src={activeCreator.avatar} alt={activeCreator.name} className="w-12 h-12 rounded-full mr-3 ring-1 ring-gray-300" ratio="square" />
                   <div>
                     <div className="font-medium">{activeCreator.name}</div>
                     <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{activeCreator.role}</div>
@@ -1721,7 +1722,7 @@ export default function Community() {
                 </button>
               </div>
               <div className="p-6 max-h-[70vh] overflow-y-auto">
-                <img src={activeCommunity.cover} alt={activeCommunity.name} className="w-full aspect-[4/3] object-cover rounded-xl" loading="lazy" decoding="async" />
+                <TianjinImage src={activeCommunity.cover} alt={activeCommunity.name} className="w-full object-cover rounded-xl" ratio="landscape" />
                 <div className="mt-4 flex items-start justify-between">
                   <div>
                     <div className="font-medium text-lg">{activeCommunity.name}</div>
@@ -1747,7 +1748,7 @@ export default function Community() {
                       .map((m, idx) => (
                         <div key={idx} className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} p-3 rounded-xl`}>
                           <div className="flex items-start">
-                            <img src={m.avatar} alt={m.user} className="w-8 h-8 rounded-full mr-3" loading="lazy" decoding="async" />
+                            <TianjinImage src={m.avatar} alt={m.user} className="w-8 h-8 rounded-full mr-3" ratio="square" />
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">

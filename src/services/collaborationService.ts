@@ -93,7 +93,7 @@ class CollaborationService {
       id: `user-${Math.floor(Math.random() * 1000)}`,
       username: email.split('@')[0],
       email,
-      avatar: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=User%20avatar%20${email.split('@')[0]}`,
+      avatar: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar%20${email.split('@')[0]}`,
       role,
       isOnline: true,
       joinedAt: new Date()

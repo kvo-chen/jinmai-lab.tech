@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { TianjinImage } from '@/components/TianjinStyleComponents';
 
 // IP孵化阶段类型定义
 interface IPStage {
@@ -66,7 +67,7 @@ export default function IPIncubationCenter() {
           brand: '桂发祥',
           reward: '¥15,000',
           status: 'open',
-          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20brand%20packaging%20design%20opportunity'
+          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20brand%20packaging%20design%20opportunity'
         },
         {
           id: 2,
@@ -75,7 +76,7 @@ export default function IPIncubationCenter() {
           brand: '杨柳青画社',
           reward: '¥20,000',
           status: 'open',
-          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Cultural%20creative%20product%20development'
+          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Cultural%20creative%20product%20development'
         },
         {
           id: 3,
@@ -84,7 +85,7 @@ export default function IPIncubationCenter() {
           brand: '数字艺术馆',
           reward: '分成模式',
           status: 'matched',
-          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Digital%20collectibles%20creation%20opportunity'
+          image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Digital%20collectibles%20creation%20opportunity'
         }
       ]);
 
@@ -93,7 +94,7 @@ export default function IPIncubationCenter() {
         {
           id: 1,
           name: '国潮插画系列',
-          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Copyrighted%20artwork%20example%201',
+          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Copyrighted%20artwork%20example%201',
           type: '插画',
           createdAt: '2025-11-01',
           status: '已存证',
@@ -102,7 +103,7 @@ export default function IPIncubationCenter() {
         {
           id: 2,
           name: '传统纹样创新',
-          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Copyrighted%20artwork%20example%202',
+          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Copyrighted%20artwork%20example%202',
           type: '纹样',
           createdAt: '2025-10-25',
           status: '已授权',
@@ -111,7 +112,7 @@ export default function IPIncubationCenter() {
         {
           id: 3,
           name: '老字号品牌视觉',
-          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Copyrighted%20artwork%20example%203',
+          thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Copyrighted%20artwork%20example%203',
           type: '品牌设计',
           createdAt: '2025-10-15',
           status: '已存证',
@@ -321,10 +322,11 @@ export default function IPIncubationCenter() {
                 whileHover={{ y: -5 }}
               >
                 <div className="relative">
-                  <img 
+                  <TianjinImage 
                     src={opportunity.image} 
                     alt={opportunity.name} 
                     className="w-full h-48 object-cover"
+                    ratio="landscape"
                   />
                   <div className="absolute top-3 left-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${
@@ -392,11 +394,12 @@ export default function IPIncubationCenter() {
                 }`}
                 whileHover={{ y: -5 }}
               >
-                <img 
-                  src={asset.thumbnail} 
-                  alt={asset.name} 
-                  className="w-full h-48 object-cover"
-                />
+                <TianjinImage 
+                    src={asset.thumbnail} 
+                    alt={asset.name} 
+                    className="w-full h-48 object-cover"
+                    ratio="landscape"
+                  />
                 
                 <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
                   <div className="flex justify-between items-start mb-2">

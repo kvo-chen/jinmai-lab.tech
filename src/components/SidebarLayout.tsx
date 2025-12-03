@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useContext } from 'react'
+import { TianjinImage } from '@/components/TianjinStyleComponents'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
 import { AuthContext } from '@/contexts/authContext'
@@ -11,7 +12,7 @@ interface SidebarLayoutProps {
 }
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
-  const { theme, isDark, toggleTheme } = useTheme()
+  const { theme = 'light', isDark = false, toggleTheme = () => {} } = useTheme()
   const { isAuthenticated, user, logout, updateUser } = useContext(AuthContext)
   const location = useLocation()
   const navigate = useNavigate()
@@ -173,7 +174,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         case '/square': import('@/pages/Square').then(() => markPrefetched('square', ttlMs)); break
         case '/community': import('@/pages/Community').then(() => markPrefetched('community', ttlMs)); break
         case '/knowledge': import('@/pages/CulturalKnowledge').then(() => markPrefetched('knowledge', ttlMs)); break
-        case '/tianjin': import('@/components/TianjinCreativeActivities').then(() => markPrefetched('tianjin', ttlMs)); break
+        case '/tianjin': break
         case '/brand': import('@/pages/BrandGuide').then(() => markPrefetched('brand', ttlMs)); break
         case '/about': import('@/pages/About').then(() => markPrefetched('about', ttlMs)); break
         case '/dashboard': import('@/pages/Dashboard').then(() => markPrefetched('dashboard', ttlMs)); break
@@ -262,12 +263,12 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
 
   // 中文注释：暗色主题下的导航项采用更柔和的文字与半透明悬停背景，提升高级质感
   const navItemClass = useMemo(() => (
-    `${isDark ? 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]' : 'text-gray-700 hover:bg-gray-50'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 active:scale-95`
+    `${isDark ? 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'} flex items-center px-3 py-2 rounded-lg transition-all duration-200`
   ), [isDark])
 
-  // 中文注释：暗色主题激活态使用更深的卡片底色与轻微阴影，强化层次
+  // 中文注释：主题激活态使用CSS变量，确保主题变化时样式同步更新
   const activeClass = useMemo(() => (
-    `${isDark ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] ring-1 ring-[var(--accent-red)] shadow-[var(--shadow-md)]' : 'bg-white text-gray-900 ring-1 ring-gray-200 shadow-sm'}`
+    `${isDark ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] ring-1 ring-[var(--accent-red)] shadow-[var(--shadow-md)]' : 'bg-gradient-to-r from-red-50 to-red-100 text-[var(--text-primary)] border-b-2 border-red-600 font-semibold shadow-sm relative overflow-hidden group active-nav-item'}`
   ), [isDark])
 
   const title = useMemo(() => {
@@ -392,6 +393,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           <NavLink to="/community?context=creator" title={collapsed ? '创作者社区' : undefined} onMouseEnter={() => prefetchRoute('/community')} className={() => `${navItemClass} mt-2 ${isCommunityActive('creator') ? activeClass : ''}`}> 
             <i className="fas fa-users mr-2"></i>
             {!collapsed && '创作者社区'}
+          </NavLink>
+          <NavLink to="/leaderboard" title={collapsed ? '排行榜' : undefined} onMouseEnter={() => prefetchRoute('/leaderboard')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+            <i className="fas fa-chart-line mr-2"></i>
+            {!collapsed && '排行榜'}
           </NavLink>
           <NavLink to="/knowledge" title={collapsed ? '文化知识库' : undefined} onMouseEnter={() => prefetchRoute('/knowledge')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-book mr-2"></i>
@@ -661,7 +666,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                     aria-expanded={showUserMenu}
                     onClick={() => setShowUserMenu(v => !v)}
                   >
-                    <img src={user?.avatar} alt={user?.username} className="h-8 w-8 rounded-full" loading="lazy" decoding="async" />
+                    <TianjinImage src={user?.avatar || ''} alt={user?.username || '用户头像'} className="h-8 w-8" ratio="square" rounded="full" />
                   </button>
                   {showUserMenu && (
                     <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'}`} role="menu" aria-label="用户菜单">

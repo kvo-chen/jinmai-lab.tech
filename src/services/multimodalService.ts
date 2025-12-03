@@ -268,7 +268,7 @@ export async function generateContent(type: ContentType, prompt: string, params?
       type,
       title: `${prompt.substring(0, 20)}...`,
       description: `AI生成的${type}内容`,
-      url: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=${encodeURIComponent(prompt)}`,
+      url: `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=${encodeURIComponent(prompt)}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       prompt,

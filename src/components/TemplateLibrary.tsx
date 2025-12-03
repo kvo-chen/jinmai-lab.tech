@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import { TianjinImage } from '@/components/TianjinStyleComponents';
 
 // 模板类型定义
 interface Template {
@@ -192,10 +193,11 @@ const TemplateLibrary: React.FC = () => {
             >
               <div className="relative">
                 <div className="h-48 overflow-hidden">
-                  <img
+                  <TianjinImage
                     src={template.thumbnail}
                     alt={template.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                    ratio="landscape"
                   />
                 </div>
                 {template.isPremium && (
@@ -261,10 +263,11 @@ const TemplateLibrary: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="h-80 overflow-hidden">
-                <img
+                <TianjinImage
                   src={selectedTemplate.previewImages[0]}
                   alt={selectedTemplate.title}
                   className="w-full h-full object-cover"
+                  ratio="landscape"
                 />
               </div>
               <div className="p-6">
@@ -317,10 +320,11 @@ const TemplateLibrary: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     {selectedTemplate.previewImages.map((image, index) => (
                       <div key={index} className="rounded-lg overflow-hidden">
-                        <img
+                        <TianjinImage
                           src={image}
                           alt={`${selectedTemplate.title} 预览图 ${index + 1}`}
                           className="w-full h-48 object-cover"
+                          ratio="landscape"
                         />
                       </div>
                     ))}
