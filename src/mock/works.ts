@@ -14,6 +14,8 @@ export type Work = {
   videoUrl?: string;
   // 中文注释：视频时长（可选，用于展示）
   duration?: string;
+  // 中文注释：图片标签（可选，用于展示图片来源）
+  imageTag?: string;
 };
 
 // 中文注释：本页专注作品探索，社区相关内容已迁移到创作者社区页面
@@ -30,6 +32,7 @@ export const mockWorks: Work[] = [
     category: '国潮设计',
     tags: ['国潮', '时尚', '现代'],
     featured: true,
+    imageTag: 'tos-cn-i-zaeny81f73/cn/1264912207986416/image/1764824870107_7f4j6eh935a0_png_1096x279',
   },
   {
     id: 2,

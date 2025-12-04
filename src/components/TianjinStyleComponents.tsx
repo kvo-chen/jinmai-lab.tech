@@ -526,6 +526,7 @@ export const TianjinImage: React.FC<{
   blurDataURL?: string;
   quality?: 'low' | 'medium' | 'high';
   loading?: 'eager' | 'lazy';
+  imageTag?: string;
 }> = ({
   src,
   alt,
@@ -541,6 +542,7 @@ export const TianjinImage: React.FC<{
   blurDataURL,
   quality = 'medium',
   loading = 'lazy',
+  imageTag,
 }) => {
   // 为useTheme解构添加默认值，防止返回undefined导致崩溃
   const { isDark = false } = useTheme() || {};
@@ -740,6 +742,18 @@ export const TianjinImage: React.FC<{
           } backdrop-blur-sm`}
         >
           {badge}
+        </span>
+      )}
+      
+      {/* 图片标签显示 */}
+      {imageTag && (
+        <span
+          className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded-full ${
+            isDark ? 'bg-gray-800/90 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-700'
+          } backdrop-blur-sm z-50`}
+          style={{ fontSize: '10px', fontWeight: 'bold' }}
+        >
+          {imageTag}
         </span>
       )}
     </div>

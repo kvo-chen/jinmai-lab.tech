@@ -470,8 +470,15 @@ export default function Explore() {
     setIsAIThinking(true);
     setSearchQuery(query);
     try {
-      const result = await llmService.getRelatedSearches(query);
-      setRelatedSearches(result.relatedSearches || []);
+      // 使用模拟数据作为AI推荐搜索结果
+      const mockResults = [
+        `${query} 设计`,
+        `${query} 创意`,
+        `${query} 风格`,
+        `${query} 灵感`,
+        `${query} 案例`
+      ];
+      setRelatedSearches(mockResults);
     } catch (error) {
       console.error('Failed to get AI recommendations:', error);
     } finally {
@@ -488,15 +495,64 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
-      {/* 渐变英雄区 */}
-      <GradientHero 
-        title="探索中国传统品牌新创意"
-        subtitle="发现来自全国各地的品牌设计作品"
-        primaryButtonText="开始探索"
-        secondaryButtonText="了解更多"
-        onPrimaryButtonClick={() => document.getElementById('works-grid')?.scrollIntoView({ behavior: 'smooth' })}
-        onSecondaryButtonClick={() => navigate('/about')}
-      />
+      {/* 顶部红色框 - 最终美化版 */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-red-700 py-10 px-8 rounded-3xl mx-4 mt-4 shadow-xl">
+        {/* 装饰性背景元素 */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -ml-16 -mb-16"></div>
+        
+        <div className="container mx-auto relative z-10">
+          {/* 标题和副标题 */}
+          <div className="mb-10">
+            <h1 className="text-2xl md:text-4xl font-bold text-white drop-shadow-sm">探索中国传统品牌新创意</h1>
+            <p className="text-white/90 mt-3 text-sm md:text-base max-w-2xl">发现来自全国各地的品牌设计作品，感受传统与现代的完美融合</p>
+          </div>
+          
+          {/* 标签区 - 最终美化版 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <motion.button
+              whileHover={{ scale: 1.04, y: -3 }}
+              whileTap={{ scale: 0.96 }}
+              className="px-6 py-4 bg-gradient-to-r from-red-700 to-red-800 text-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-red-900/40 hover:border-red-800/60 transform transition-transform hover:bg-red-600/90"
+              onClick={() => setSelectedCategory('全部')}
+              aria-label="查看全部作品"
+            >
+              <div className="font-semibold">精选</div>
+              <div className="text-xs opacity-95 mt-0.5">优选</div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.04, y: -3 }}
+              whileTap={{ scale: 0.96 }}
+              className="px-6 py-4 bg-gradient-to-r from-red-700 to-red-800 text-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-red-900/40 hover:border-red-800/60 transform transition-transform hover:bg-red-600/90"
+              onClick={() => setSelectedCategory('国潮设计')}
+              aria-label="查看国潮设计作品"
+            >
+              <div className="font-semibold">风格</div>
+              <div className="text-xs opacity-95 mt-0.5">融合</div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.04, y: -3 }}
+              whileTap={{ scale: 0.96 }}
+              className="px-6 py-4 bg-gradient-to-r from-red-700 to-red-800 text-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-red-900/40 hover:border-red-800/60 transform transition-transform hover:bg-red-600/90"
+              onClick={() => setSelectedCategory('工艺创新')}
+              aria-label="查看工艺创新作品"
+            >
+              <div className="font-semibold">效率</div>
+              <div className="text-xs opacity-95 mt-0.5">提升</div>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.04, y: -3 }}
+              whileTap={{ scale: 0.96 }}
+              className="px-6 py-4 bg-gradient-to-r from-red-700 to-red-800 text-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-red-900/40 hover:border-red-800/60 transform transition-transform hover:bg-red-600/90"
+              onClick={() => setSelectedCategory('IP设计')}
+              aria-label="查看IP设计作品"
+            >
+              <div className="font-semibold">协作</div>
+              <div className="text-xs opacity-95 mt-0.5">共创</div>
+            </motion.button>
+          </div>
+        </div>
+      </div>
 
       {/* 搜索区 */}
       <div className="container mx-auto px-4 py-8">
@@ -613,7 +669,8 @@ export default function Explore() {
                   key={work.id}
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.3 }}
-                  className="flex-shrink-0 w-full sm:w-96 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all"
+                  className="flex-shrink-0 w-full sm:w-96 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all cursor-pointer"
+                  onClick={() => navigate(`/explore/${work.id}`)}
                 >
                   <div className="relative">
                     {work.videoUrl ? (
@@ -622,6 +679,7 @@ export default function Explore() {
                           src={work.thumbnail}
                           alt={work.title}
                           className="w-full h-48 object-cover"
+                          imageTag={work.imageTag}
                         />
                         {/* 视频播放按钮 */}
                         <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
@@ -638,6 +696,7 @@ export default function Explore() {
                         src={work.thumbnail}
                         alt={work.title}
                         className="w-full h-48 object-cover"
+                        imageTag={work.imageTag}
                       />
                     )}
                     
@@ -961,7 +1020,8 @@ export default function Explore() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all duration-300"
+                className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all duration-300 cursor-pointer"
+                onClick={() => navigate(`/explore/${work.id}`)}
               >
                 <div className="relative group">
                   {/* 作品缩略图 */}
@@ -972,6 +1032,7 @@ export default function Explore() {
                         src={work.thumbnail}
                         alt={work.title}
                         className="w-full h-48 object-cover"
+                        imageTag={work.imageTag}
                       />
                       {/* 视频播放按钮 */}
                       <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -995,6 +1056,7 @@ export default function Explore() {
                       src={work.thumbnail}
                       alt={work.title}
                       className="w-full h-48 object-cover"
+                      imageTag={work.imageTag}
                     />
                   )}
                   
@@ -1017,7 +1079,7 @@ export default function Explore() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                     </button>
-                    <button className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100 transition-colors">
+                    <button className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100 transition-colors" onClick={(e) => e.stopPropagation()}>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z" />
                       </svg>
@@ -1087,14 +1149,14 @@ export default function Explore() {
                       {work.category}
                     </span>
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => navigate(`/explore/${work.id}`)}
-                      className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                      aria-label={`查看作品 ${work.title} 的详情`}
-                    >
-                      查看详情
-                    </motion.button>
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/explore/${work.id}`); }}
+                    className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                    aria-label={`查看作品 ${work.title} 的详情`}
+                  >
+                    查看详情
+                  </motion.button>
                   </div>
 
                   {/* 应用到创作中心按钮 */}

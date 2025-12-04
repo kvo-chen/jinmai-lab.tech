@@ -3,8 +3,8 @@ import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
 import { mockWorks } from '@/mock/works'
-// 使用React.lazy实现ARPreview组件的延迟加载
-const ARPreview = lazy(() => import('@/components/ARPreview'))
+// 改为直接导入，排除动态导入问题
+import ARPreview from '@/components/ARPreview'
 import postsApi from '@/services/postService'
 import exportService, { ExportOptions, ExportFormat } from '@/services/exportService'
 // 从ARPreview组件导入类型定义
@@ -214,22 +214,18 @@ export default function WorkDetail() {
           )}
         </motion.div>
         
-        {/* AR预览组件 - 使用Suspense支持延迟加载 */}
+        {/* AR预览组件 - 移除Suspense，直接渲染 */}
         {isARPreviewOpen && (
-          <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-            <div className="text-white text-xl">加载AR预览中...</div>
-          </div>}>
-            <ARPreview
-              config={{
-                imageUrl: work?.thumbnail || '',
-                type: '2d',
-                scale: 1.0,
-                rotation: { x: 0, y: 0, z: 0 },
-                position: { x: 0, y: 0, z: 0 }
-              }}
-              onClose={() => setIsARPreviewOpen(false)}
-            />
-          </Suspense>
+          <ARPreview
+            config={{
+              imageUrl: work?.thumbnail || '',
+              type: '2d',
+              scale: 1.0,
+              rotation: { x: 0, y: 0, z: 0 },
+              position: { x: 0, y: 0, z: 0 }
+            }}
+            onClose={() => setIsARPreviewOpen(false)}
+          />
         )}
 
         {/* 导出选项对话框 */}

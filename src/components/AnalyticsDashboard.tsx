@@ -78,6 +78,17 @@ const ChartCard: React.FC<{
   );
 };
 
+// 格式化数字，添加千分位分隔符
+const formatNumber = (num: number | string): string => {
+  const parsedNum = typeof num === 'string' ? parseFloat(num) : num;
+  return parsedNum.toLocaleString('zh-CN');
+};
+
+// 格式化百分比，保留1位小数
+const formatPercent = (num: number): string => {
+  return num.toFixed(1);
+};
+
 // 数据卡片组件
 const DataCard: React.FC<{
   title: string;
@@ -85,8 +96,17 @@ const DataCard: React.FC<{
   change?: number;
   icon?: React.ReactNode;
   color?: string;
-}> = ({ title, value, change, icon, color = COLORS.primary }) => {
+  isPercent?: boolean;
+  showTrend?: boolean;
+  warning?: boolean;
+}> = ({ title, value, change, icon, color = COLORS.primary, isPercent = false, showTrend = true, warning = false }) => {
   const { isDark } = useTheme();
+  
+  // 格式化显示值
+  const displayValue = isPercent 
+    ? `${formatPercent(typeof value === 'number' ? value : parseFloat(value as string))}%` 
+    : formatNumber(value);
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -96,10 +116,17 @@ const DataCard: React.FC<{
     >
       <div>
         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{title}</p>
-        <h4 className="text-2xl font-bold mt-1" style={{ color }}>{value}</h4>
-        {change !== undefined && (
-          <p className={`text-xs mt-1 flex items-center ${change > 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {change > 0 ? '↑' : '↓'} {Math.abs(change)}%
+        <div className="flex items-center gap-2 mt-1">
+          <h4 className="text-2xl font-bold" style={{ color }}>{displayValue}</h4>
+          {warning && (
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 p-1 rounded-full">
+              <i className="fas fa-exclamation-triangle text-sm"></i>
+            </div>
+          )}
+        </div>
+        {change !== undefined && showTrend && (
+          <p className={`text-xs mt-1 flex items-center ${change > 0 ? 'text-green-500' : change < 0 ? 'text-red-500' : 'text-gray-500'}`}>
+            {change > 0 ? '↑' : change < 0 ? '↓' : '→'} {formatPercent(Math.abs(change))}%
           </p>
         )}
       </div>
@@ -370,16 +397,19 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         />
         <DataCard 
           title="增长率" 
-          value={`${metricsStats.growth.toFixed(1)}%`} 
-          change={metricsStats.growth} 
+          value={metricsStats.growth} 
           icon={<i className="fas fa-arrow-trend-up" style={{ color: COLORS.success }}></i>}
-          color={metricsStats.growth > 0 ? COLORS.success : COLORS.danger}
+          color={metricsStats.growth > 0 ? COLORS.success : metricsStats.growth < 0 ? COLORS.danger : COLORS.info}
+          isPercent={true}
+          showTrend={false}
         />
         <DataCard 
           title="峰值" 
           value={metricsStats.peak} 
+          change={metricsStats.growth} 
           icon={<i className="fas fa-mountain" style={{ color: COLORS.warning }}></i>}
           color={COLORS.warning}
+          warning={metricsStats.peak > metricsStats.average * 3} // 当峰值超过平均值3倍时显示警告
         />
       </div>
 
