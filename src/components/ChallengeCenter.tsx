@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { TianjinImage } from './TianjinStyleComponents';
 
 interface Challenge {
   id: string;
@@ -291,10 +292,11 @@ export default function ChallengeCenter({ isOpen = true, onClose }: ChallengeCen
                       {/* 挑战卡片图片 */}
                       {challenge.imageUrl && (
                         <div className="relative overflow-hidden aspect-video">
-                          <img 
+                          <TianjinImage 
                             src={challenge.imageUrl} 
                             alt={challenge.title} 
                             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                            quality={80}
                           />
                           <div className="absolute top-3 left-3 flex flex-wrap gap-2">
                             <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${isDark ? 'bg-black/70 text-white' : 'bg-white/80 text-gray-800'}`}>
@@ -393,10 +395,11 @@ export default function ChallengeCenter({ isOpen = true, onClose }: ChallengeCen
               {/* 详情弹窗头部 - 图片区域 */}
               {selectedChallenge.imageUrl && (
                 <div className="relative overflow-hidden aspect-video">
-                  <img 
+                  <TianjinImage 
                     src={selectedChallenge.imageUrl} 
                     alt={selectedChallenge.title} 
                     className="w-full h-full object-cover"
+                    quality={80}
                   />
                   <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                     <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${isDark ? 'bg-black/70 text-white' : 'bg-white/80 text-gray-800'}`}>

@@ -227,7 +227,7 @@ const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ ref
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <h4 className="font-medium mb-4">最近错误记录（共 {errorStats.recent.length} 条）</h4>
+        <h4 className="font-medium mb-4">最近错误记录（共 {errorStats.total} 条）</h4>
         <div className={`overflow-x-auto rounded-xl border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
           <table className="min-w-full">
             <thead>

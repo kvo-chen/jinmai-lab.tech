@@ -96,7 +96,7 @@ class ErrorLogger {
     const stats = {
       total: this.errors.length,
       byType: {} as Record<string, number>,
-      recent: recentCount > 0 ? this.errors.slice(-recentCount) : []
+      recent: recentCount > 0 ? this.errors.slice(-recentCount).reverse() : []
     };
 
     // 按类型统计错误

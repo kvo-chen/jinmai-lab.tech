@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TianjinImage } from './TianjinStyleComponents';
 
 // 创作者类型定义
 interface Creator {
@@ -207,11 +208,17 @@ export default function CreativeMatchmaking() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="relative mr-4">
-                  <img 
-                    src={creator.avatar} 
-                    alt={creator.name} 
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
+                  <div className="w-12 h-12 rounded-full overflow-hidden">
+                    <TianjinImage 
+                      src={creator.avatar} 
+                      alt={creator.name} 
+                      ratio="square"
+                      fit="cover"
+                      className="w-full h-full"
+                      priority={false}
+                      quality="medium"
+                    />
+                  </div>
                   <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
                     creator.isOnline ? 'bg-green-500' : 'bg-gray-400'
                   }`}></span>
@@ -306,11 +313,17 @@ export default function CreativeMatchmaking() {
             <div className="p-6">
               <div className="flex flex-col md:flex-row items-center md:items-start mb-6">
                 <div className="relative mb-4 md:mb-0 md:mr-6">
-                  <img 
-                    src={selectedCreator.avatar} 
-                    alt={selectedCreator.name} 
-                    className="w-24 h-24 rounded-full object-cover"
-                  />
+                  <div className="w-24 h-24 rounded-full overflow-hidden">
+                    <TianjinImage 
+                      src={selectedCreator.avatar} 
+                      alt={selectedCreator.name} 
+                      ratio="square"
+                      fit="cover"
+                      className="w-full h-full"
+                      priority={false}
+                      quality="medium"
+                    />
+                  </div>
                   <span className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white ${
                     selectedCreator.isOnline ? 'bg-green-500' : 'bg-gray-400'
                   }`}></span>
@@ -366,10 +379,15 @@ export default function CreativeMatchmaking() {
                 <div className="grid grid-cols-3 gap-3">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="aspect-square rounded-lg overflow-hidden bg-gray-200">
-                      <img 
-                  src={`https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Creative%20work%20example%20${i}`}
+                      <TianjinImage 
+                        src={`https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Creative%20work%20example%20${i}`}
                         alt={`作品 ${i}`} 
-                        className="w-full h-full object-cover"
+                        ratio="square"
+                        fit="cover"
+                        rounded="lg"
+                        className="w-full h-full"
+                        priority={false}
+                        quality="medium"
                       />
                     </div>
                   ))}

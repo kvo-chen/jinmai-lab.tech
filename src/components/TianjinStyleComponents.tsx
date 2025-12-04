@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -507,6 +507,9 @@ export const FishAndPancakeAnimation: React.FC = () => {
   );
 };
 
+// 导入优化后的图片服务
+import imageService from '@/services/imageService';
+
 // 天津风格图片组件 - 修复了useTheme钩子的安全问题
 export const TianjinImage: React.FC<{
   src: string;
@@ -521,6 +524,8 @@ export const TianjinImage: React.FC<{
   sizes?: string;
   priority?: boolean;
   blurDataURL?: string;
+  quality?: 'low' | 'medium' | 'high';
+  loading?: 'eager' | 'lazy';
 }> = ({
   src,
   alt,
@@ -534,14 +539,19 @@ export const TianjinImage: React.FC<{
   sizes,
   priority = false,
   blurDataURL,
+  quality = 'medium',
+  loading = 'lazy',
 }) => {
   // 为useTheme解构添加默认值，防止返回undefined导致崩溃
   const { isDark = false } = useTheme() || {};
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentSrc, setCurrentSrc] = useState<string>(src);
+  const [placeholderSrc, setPlaceholderSrc] = useState<string>('');
   const reduceMotion = useReducedMotion();
   const maxRetries = 3;
+  const loadStartTimeRef = useRef<number>(0);
   
   useEffect(() => {
     if (!src) {
@@ -550,10 +560,20 @@ export const TianjinImage: React.FC<{
       setRetryCount(0);
       return;
     }
+    
+    // 生成高质量图片URL
+    const highQualityUrl = imageService.getResponsiveUrl(src, 'lg', quality === 'high' ? 90 : quality === 'medium' ? 80 : 70);
+    setCurrentSrc(highQualityUrl);
+    
+    // 生成低质量占位图URL
+    const lowQualityUrl = imageService.getLowQualityUrl(src);
+    setPlaceholderSrc(lowQualityUrl);
+    
+    // 重置状态
     setError(false);
     setLoaded(false);
     setRetryCount(0);
-  }, [src]);
+  }, [src, quality]);
   
   // 自动重试机制
   useEffect(() => {
@@ -562,11 +582,14 @@ export const TianjinImage: React.FC<{
         setRetryCount(prev => prev + 1);
         setError(false);
         setLoaded(false);
-      }, 1000 * (retryCount + 1)); // 指数退避策略
+        // 生成新的URL以避免浏览器缓存
+        const newUrl = `${currentSrc}?retry=${Date.now()}`;
+        setCurrentSrc(newUrl);
+      }, 500 * Math.pow(2, retryCount)); // 更快的指数退避策略
       
       return () => clearTimeout(retryTimer);
     }
-  }, [error, retryCount]);
+  }, [error, retryCount, currentSrc]);
   
   const ratioStyle =
     ratio === 'square'
@@ -587,25 +610,9 @@ export const TianjinImage: React.FC<{
     full: 'rounded-full',
   };
   
-  // 生成低质量占位图URL
-  const getLowQualityUrl = (url: string) => {
-    // 如果是本地开发环境或已知的图片服务，添加低质量参数
-    if (url.includes('trae-api-sg.mchost.guru')) {
-      try {
-        const urlObj = new URL(url);
-        urlObj.searchParams.set('quality', '20');
-        return urlObj.toString();
-      } catch {
-        return url;
-      }
-    }
-    return url;
-  };
-  
   // 生成备用图片URL
   const getFallbackUrl = () => {
-    const prompt = encodeURIComponent(`Beautiful ${alt} design, colorful, high quality`);
-    return `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${prompt}&image_size=square`;
+    return imageService.getFallbackUrl(alt);
   };
   
   // 手动重试函数
@@ -613,7 +620,32 @@ export const TianjinImage: React.FC<{
     setRetryCount(0);
     setError(false);
     setLoaded(false);
+    // 生成新的URL以避免浏览器缓存
+    const newUrl = `${currentSrc}?retry=${Date.now()}`;
+    setCurrentSrc(newUrl);
   };
+  
+  const handleLoad = () => {
+    const loadTime = Date.now() - loadStartTimeRef.current;
+    console.log(`Image loaded in ${loadTime}ms: ${src}`);
+    setLoaded(true);
+    // 更新图片状态到缓存
+    imageService.updateImageStatus(src, true);
+  };
+  
+  const handleError = () => {
+    console.error(`Failed to load image: ${src}`);
+    setError(true);
+    // 更新图片状态到缓存
+    imageService.updateImageStatus(src, false);
+  };
+  
+  // 高优先级图片立即预加载
+  useEffect(() => {
+    if (priority) {
+      imageService.preloadImage(currentSrc);
+    }
+  }, [currentSrc, priority]);
   
   return (
     <div
@@ -646,8 +678,12 @@ export const TianjinImage: React.FC<{
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                // 这里可以添加显示备用图片的逻辑
-                setLoaded(true);
+                // 显示备用图片
+                const fallbackUrl = getFallbackUrl();
+                setCurrentSrc(fallbackUrl);
+                setLoaded(false);
+                setError(false);
+                setRetryCount(0);
               }}
               className="ml-1 text-blue-500 hover:underline"
             >
@@ -658,13 +694,13 @@ export const TianjinImage: React.FC<{
       ) : (
         <>
           {/* 低质量占位图 - 渐进式加载 */}
-          {!loaded && (
+          {!loaded && placeholderSrc && (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
               <img
-                src={getLowQualityUrl(src)}
+                src={placeholderSrc}
                 alt={alt}
                 className={`w-full h-full object-${fit} blur-sm`}
-                loading={priority ? 'eager' : 'lazy'}
+                loading="eager"
                 decoding="async"
               />
             </div>
@@ -672,15 +708,15 @@ export const TianjinImage: React.FC<{
           
           {/* 主图片 - 优化动画 */}
           <motion.img
-            key={`${src}-${retryCount}`} // 强制重新渲染以实现重试
-            src={src}
+            key={`${currentSrc}-${retryCount}`} // 强制重新渲染以实现重试
+            src={currentSrc}
             alt={alt}
             className={`absolute inset-0 w-full h-full object-${fit}`}
-            loading={priority ? 'eager' : 'lazy'}
+            loading={loading}
             decoding="async"
             sizes={sizes}
-            onLoad={() => setLoaded(true)}
-            onError={() => setError(true)}
+            onLoad={handleLoad}
+            onError={handleError}
             initial={reduceMotion ? undefined : { opacity: 0, scale: 1.05 }}
             animate={reduceMotion ? undefined : { 
               opacity: loaded ? 1 : 0,
@@ -689,6 +725,9 @@ export const TianjinImage: React.FC<{
             transition={reduceMotion ? undefined : { 
               duration: 0.6,
               ease: "easeOut"
+            }}
+            onLoadStart={() => {
+              loadStartTimeRef.current = Date.now();
             }}
           />
         </>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import { TianjinImage } from './TianjinStyleComponents';
 
 // 天津非遗技艺类型定义
 interface IntangibleHeritage {
@@ -77,10 +78,14 @@ function DetailModal({
           {/* 左侧图片 */}
           {'thumbnail' in data || 'image' in data && (
             <div className="h-80 overflow-hidden">
-              <img
+              <TianjinImage
                 src={('thumbnail' in data ? data.thumbnail : data.image) as string}
                 alt={data.name}
-                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                ratio="landscape"
+                fit="cover"
+                className="w-full h-full transition-transform duration-500 hover:scale-105"
+                priority={false}
+                quality="medium"
                 loading="lazy"
               />
             </div>
@@ -183,10 +188,14 @@ function HeritageCard({ heritage, isDark, onOpenModal, isFavorite, toggleFavorit
       transition={{ duration: 0.2 }}
     >
       <div className="relative">
-        <img 
+        <TianjinImage 
           src={heritage.thumbnail} 
           alt={heritage.name} 
-          className="w-full h-48 object-cover transition-transform duration-500 hover:scale-105" 
+          ratio="landscape"
+          fit="cover"
+          className="w-full h-48 transition-transform duration-500 hover:scale-105" 
+          priority={false}
+          quality="medium"
           loading="lazy"
         />
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
@@ -231,10 +240,14 @@ function SymbolCard({ symbol, isDark, onOpenModal, isFavorite, toggleFavorite }:
       transition={{ duration: 0.2 }}
     >
       <div className="relative">
-        <img 
+        <TianjinImage 
           src={symbol.image} 
           alt={symbol.name} 
-          className="w-full h-40 object-cover transition-transform duration-500 hover:scale-105" 
+          ratio="landscape"
+          fit="cover"
+          className="w-full h-40 transition-transform duration-500 hover:scale-105" 
+          priority={false}
+          quality="medium"
           loading="lazy"
         />
         {/* 收藏按钮 */}

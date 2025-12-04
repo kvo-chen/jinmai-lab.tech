@@ -8,6 +8,7 @@ import { isPrefetched } from '@/services/prefetch'
 import { TianjinImage, TianjinButton } from '@/components/TianjinStyleComponents'
 import llmService from '@/services/llmService'
 import { BRANDS } from '@/lib/brands'
+import imageService from '@/services/imageService'
  
 
 type Work = {
@@ -3033,9 +3034,22 @@ export default function Explore() {
     }
     const t = setTimeout(() => {
       setIsLoading(false);
+      
+      // 图片预加载 - 提高页面加载速度
+      // 预加载精选作品图片
+      const featuredImageUrls = featuredWorks.map(work => work.thumbnail);
+      imageService.preloadImages(featuredImageUrls);
+      
+      // 预加载前20个作品图片
+      const initialWorksImageUrls = pagedWorks.slice(0, 20).map(work => work.thumbnail);
+      imageService.preloadImages(initialWorksImageUrls);
+      
+      // 预加载创作者头像
+      const avatarUrls = [...new Set([...featuredWorks, ...pagedWorks].map(work => work.creatorAvatar))];
+      imageService.preloadImages(avatarUrls);
     }, 800);
     return () => clearTimeout(t);
-  }, []);
+  }, [featuredWorks, pagedWorks]);
 
   useEffect(() => {
     const updateFeaturedScrollState = () => {
@@ -3987,12 +4001,14 @@ export default function Explore() {
                         </div>
                         
                         <div className="flex items-center mb-4">
-                          <img 
-                            src={work.creatorAvatar} 
-                            alt={work.creator} 
-                            className="w-6 h-6 rounded-full mr-2"
-                            loading="lazy" decoding="async"
-                          />
+                          <div className="w-6 h-6 rounded-full mr-2 overflow-hidden">
+                            <img 
+                              src={work.creatorAvatar} 
+                              alt={work.creator} 
+                              className="w-full h-full object-cover"
+                              loading="lazy" decoding="async"
+                            />
+                          </div>
                           <span className="text-sm opacity-80">{work.creator}</span>
                         </div>
                         
@@ -4119,12 +4135,14 @@ export default function Explore() {
                     </div>
                     
                     <div className="flex items-center mb-4">
-                      <img 
-                        src={work.creatorAvatar} 
-                        alt={work.creator} 
-                        className="w-6 h-6 rounded-full mr-2"
-                        loading="lazy" decoding="async"
-                      />
+                      <div className="w-6 h-6 rounded-full mr-2 overflow-hidden">
+                        <img 
+                          src={work.creatorAvatar} 
+                          alt={work.creator} 
+                          className="w-full h-full object-cover"
+                          loading="lazy" decoding="async"
+                        />
+                      </div>
                       <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         {work.creator}
                       </span>

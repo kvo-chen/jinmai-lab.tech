@@ -50,6 +50,9 @@ import MobileLayout from '@/components/MobileLayout';
 import PrivateRoute from '@/components/PrivateRoute';
 import AdminRoute from '@/components/AdminRoute';
 
+// 性能监控组件
+import PerformanceMonitor from '@/components/PerformanceMonitor';
+
 export default function App() {
   const location = useLocation();
   // 添加响应式布局状态
@@ -210,16 +213,18 @@ export default function App() {
   );
 
   return (
-    <Suspense fallback={<GlobalLoadingSkeleton />}>
-      <Routes>
-        {/* 不需要布局的页面 */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* 使用布局的页面 */}
-        <Route element={<LayoutWrapper />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
+    <div>
+      <PerformanceMonitor />
+      <Suspense fallback={<GlobalLoadingSkeleton />}>
+        <Routes>
+          {/* 不需要布局的页面 */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* 使用布局的页面 */}
+          <Route element={<LayoutWrapper />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
           <Route path="/explore/:id" element={<WorkDetail />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/about" element={<About />} />
@@ -336,5 +341,6 @@ export default function App() {
         </Route>
       </Routes>
     </Suspense>
-  );
+  </div>
+);
 }

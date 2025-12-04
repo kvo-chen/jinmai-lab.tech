@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
+import { TianjinImage } from './TianjinStyleComponents';
 
 // 资讯类型定义
 interface NewsItem {
@@ -23,10 +24,14 @@ const NewsCard = memo(({ news, isDark, navigate }: { news: NewsItem; isDark: boo
       onClick={() => navigate(`/news/${news.id}`)}
     >
       <div className="relative overflow-hidden rounded-t-xl">
-        <img
+        <TianjinImage
           src={news.image}
           alt={news.title}
-          className="w-full h-36 sm:h-40 object-cover transition-transform duration-500 group-hover:scale-105"
+          ratio="landscape"
+          fit="cover"
+          className="w-full h-36 sm:h-40 transition-transform duration-500 group-hover:scale-105"
+          priority={false}
+          quality="medium"
           loading="lazy"
         />
         {/* 渐变遮罩 */}

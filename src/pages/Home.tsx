@@ -609,12 +609,15 @@ export default function Home() {
              }
            }}
          >
-           <div className="relative aspect-video overflow-hidden">
-             <img
+           <div className="relative overflow-hidden">
+             <TianjinImage
                src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Tianjin%20cultural%20heritage%20museum%20interior%2C%20warm%20premium%20lighting%2C%20modern%20minimal%20design%2C%20high%20detail"
                alt="天津文化知识库封面"
-               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-               loading="lazy" decoding="async"
+               ratio="landscape"
+               fit="cover"
+               className="transition-transform duration-500 hover:scale-105"
+               priority={false}
+               quality="medium"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent transition-opacity duration-300 hover:opacity-80"></div>
            </div>
@@ -636,12 +639,15 @@ export default function Home() {
              }
            }}
          >
-           <div className="relative aspect-video overflow-hidden">
-             <img
+           <div className="relative overflow-hidden">
+             <TianjinImage
                src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Creative%20co-creation%20workshop%2C%20premium%20studio%20lighting%2C%20designers%20collaborating%2C%20sleek%20minimal%20aesthetic%2C%20high%20detail"
                alt="津味共创活动封面"
-               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-               loading="lazy" decoding="async"
+               ratio="landscape"
+               fit="cover"
+               className="transition-transform duration-500 hover:scale-105"
+               priority={false}
+               quality="medium"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent transition-opacity duration-300 hover:opacity-80"></div>
            </div>
@@ -663,12 +669,15 @@ export default function Home() {
              }
            }}
          >
-           <div className="relative aspect-video overflow-hidden">
-             <img
+           <div className="relative overflow-hidden">
+             <TianjinImage
                src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Futuristic%20AI%20interface%20with%20Chinese%20calligraphy%20elements%2C%20premium%20neon%20glow%2C%20dark%20sleek%20UI%2C%20high%20detail"
                alt="方言指令创作封面"
-               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-               loading="lazy" decoding="async"
+               ratio="landscape"
+               fit="cover"
+               className="transition-transform duration-500 hover:scale-105"
+               priority={false}
+               quality="medium"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent transition-opacity duration-300 hover:opacity-80"></div>
            </div>

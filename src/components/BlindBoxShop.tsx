@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import blindBoxService, { BlindBox, BlindBoxOpeningResult, BlindBoxContent } from '../services/blindBoxService';
+import { TianjinImage } from './TianjinStyleComponents';
 
 // 盲盒卡片组件
 const BlindBoxCard: React.FC<{
@@ -19,12 +20,13 @@ const BlindBoxCard: React.FC<{
       transition={{ duration: 0.3 }}
     >
       <div className="relative">
-        <img
+        <TianjinImage
           src={blindBox.image}
           alt={blindBox.name}
           className="w-full h-48 object-cover"
           loading="lazy"
           decoding="async"
+          quality={80}
         />
         <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-medium ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
           {blindBox.rarity === 'common' && '普通'}
@@ -117,10 +119,11 @@ const BlindBoxOpeningAnimation: React.FC<{
                 ease: "linear"
               }}
             />
-            <img
+            <TianjinImage
               src={result.content.image}
               alt={result.content.name}
               className="w-full h-full object-cover relative z-10"
+              quality={80}
             />
           </div>
           
@@ -242,12 +245,13 @@ const BlindBoxShop: React.FC = () => {
       transition={{ duration: 0.3 }}
     >
       <div className="relative">
-        <img
+        <TianjinImage
           src={content.image}
           alt={content.name}
           className="w-full h-40 object-cover"
           loading="lazy"
           decoding="async"
+          quality={80}
         />
         <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-medium ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
           {content.rarity === 'common' && '普通'}

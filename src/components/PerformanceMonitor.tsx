@@ -1,201 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import llmService, { ModelPerformance, PerformanceRecord, AVAILABLE_MODELS, LLMModel } from '../services/llmService';
+import { useState, useEffect } from 'react';
+import imageService from '../services/imageService';
 
+// 性能监控组件 - 显示图片加载统计信息
+// 仅在开发环境中显示
 const PerformanceMonitor: React.FC = () => {
-  const [performanceData, setPerformanceData] = useState<Record<string, ModelPerformance>>({});
-  const [performanceRecords, setPerformanceRecords] = useState<PerformanceRecord[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('all');
-  const [timeRange, setTimeRange] = useState<number>(60); // 分钟
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [stats, setStats] = useState(imageService.getPerformanceStats());
+  const [cacheStats, setCacheStats] = useState(imageService.getCacheStats());
+  const [isVisible, setIsVisible] = useState(false);
 
-  // 更新性能数据
-  const updatePerformanceData = () => {
-    const data = llmService.getPerformanceData() as Record<string, ModelPerformance>;
-    setPerformanceData(data);
-    
-    const records = llmService.getPerformanceRecords(selectedModel === 'all' ? undefined : selectedModel, 50);
-    setPerformanceRecords(records);
-  };
-
-  // 定期更新性能数据
+  // 定期更新统计信息
   useEffect(() => {
-    updatePerformanceData();
-    const interval = setInterval(updatePerformanceData, 5000); // 每5秒更新一次
+    const interval = setInterval(() => {
+      setStats(imageService.getPerformanceStats());
+      setCacheStats(imageService.getCacheStats());
+    }, 5000); // 每5秒更新一次
+
     return () => clearInterval(interval);
-  }, [selectedModel]);
+  }, []);
 
-  // 处理时间范围变化
-  const handleTimeRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTimeRange(parseInt(e.target.value));
-  };
-
-  // 处理模型选择变化
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedModel(e.target.value);
-  };
-
-  // 获取模型名称
-  const getModelName = (modelId: string) => {
-    const model = AVAILABLE_MODELS.find((t: LLMModel) => t.id === modelId);
-    return model ? model.name : modelId;
-  };
-
-  // 格式化时间
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString();
-  };
-
-  // 计算成功率
-  const calculateSuccessRate = (performance: ModelPerformance) => {
-    if (performance.requestCount === 0) return '0%';
-    return `${Math.round((performance.successCount / performance.requestCount) * 100)}%`;
-  };
-
-  // 格式化响应时间
-  const formatResponseTime = (time: number) => {
-    return `${Math.round(time)}ms`;
-  };
+  // 仅在开发环境中显示
+  if (process.env.NODE_ENV !== 'development') {
+    return null;
+  }
 
   return (
-    <div className="relative">
-      {/* 性能监控按钮 */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-        onClick={() => setIsOpen(!isOpen)}
+    <div className="fixed bottom-4 right-4 z-50">
+      {/* 切换按钮 */}
+      <button
+        onClick={() => setIsVisible(!isVisible)}
+        className="px-3 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+        title="查看图片性能统计"
       >
         <i className="fas fa-chart-line"></i>
-        性能监控
-      </motion.button>
+      </button>
 
-      {/* 性能监控面板 */}
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-4"
-        >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold">模型性能监控</h3>
+      {/* 统计信息面板 */}
+      {isVisible && (
+        <div className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 max-w-xs">
+          <h3 className="text-lg font-bold mb-3 text-gray-800 dark:text-white">图片性能统计</h3>
+          
+          {/* 核心指标 */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400">总请求数</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-white">{stats.totalRequests}</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400">缓存命中率</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-white">{cacheStats.hitRate}%</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400">加载成功率</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-white">{cacheStats.successRate}%</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 dark:text-gray-400">缓存大小</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-white">{cacheStats.size}/{cacheStats.maxSize}</p>
+            </div>
+          </div>
+
+          {/* 详细统计 */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">成功加载</span>
+              <span className="font-medium text-green-600 dark:text-green-400">{stats.loadSuccess}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">加载失败</span>
+              <span className="font-medium text-red-600 dark:text-red-400">{stats.loadFailed}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">缓存命中</span>
+              <span className="font-medium text-blue-600 dark:text-blue-400">{stats.cacheHits}</span>
+            </div>
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="mt-4 flex gap-2">
             <button
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              onClick={() => setIsOpen(false)}
+              onClick={() => imageService.resetStats()}
+              className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              title="重置统计信息"
             >
-              <i className="fas fa-times"></i>
+              重置统计
+            </button>
+            <button
+              onClick={() => imageService.clearCache()}
+              className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              title="清除图片缓存"
+            >
+              清除缓存
             </button>
           </div>
-
-          {/* 筛选选项 */}
-          <div className="flex flex-col gap-3 mb-4">
-            <div className="flex gap-2">
-              <label className="text-sm font-medium flex-1">
-                模型:
-                <select
-                  value={selectedModel}
-                  onChange={handleModelChange}
-                  className="ml-2 p-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white flex-1"
-                >
-                  <option value="all">所有模型</option>
-                  {Object.keys(performanceData).map(modelId => (
-                    <option key={modelId} value={modelId}>
-                      {modelId}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <label className="text-sm font-medium flex-1">
-                时间范围:
-                <select
-                  value={timeRange}
-                  onChange={handleTimeRangeChange}
-                  className="ml-2 p-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white flex-1"
-                >
-                  <option value={15}>15分钟</option>
-                  <option value={30}>30分钟</option>
-                  <option value={60}>1小时</option>
-                  <option value={120}>2小时</option>
-                  <option value={240}>4小时</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          {/* 性能概览 */}
-          <div className="mb-4">
-            <h4 className="text-sm font-medium mb-2">性能概览</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.keys(performanceData)
-                .filter(modelId => selectedModel === 'all' || modelId === selectedModel)
-                .map(modelId => {
-                  const performance = performanceData[modelId];
-                  return (
-                    <motion.div
-                      key={modelId}
-                      whileHover={{ scale: 1.02 }}
-                      className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
-                    >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-medium">{modelId}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${parseFloat(calculateSuccessRate(performance)) > 90 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
-                          {calculateSuccessRate(performance)} 成功率
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 text-sm">
-                        <div>
-                          <span className="text-gray-500 dark:text-gray-400">请求数:</span> {performance.requestCount}
-                        </div>
-                        <div>
-                          <span className="text-gray-500 dark:text-gray-400">平均响应:</span> {formatResponseTime(performance.averageResponseTime)}
-                        </div>
-                        <div>
-                          <span className="text-gray-500 dark:text-gray-400">成功:</span> {performance.successCount}
-                        </div>
-                        <div>
-                          <span className="text-gray-500 dark:text-gray-400">失败:</span> {performance.failureCount}
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* 最近请求记录 */}
-          <div>
-            <h4 className="text-sm font-medium mb-2">最近请求记录</h4>
-            <div className="max-h-48 overflow-y-auto">
-              {performanceRecords.map((record, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-2 mb-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-sm"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{record.modelId}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${record.success ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-                      {record.success ? '成功' : '失败'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-gray-500 dark:text-gray-400">时间:</span> {formatTime(record.timestamp)}
-                    <span className="text-gray-500 dark:text-gray-400">响应时间:</span> {formatResponseTime(record.responseTime)}
-                  </div>
-                  {record.error && (
-                    <div className="mt-1 text-xs text-red-600 dark:text-red-400">
-                      错误: {record.error}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { TianjinImage } from './TianjinStyleComponents';
 
 // 类型定义
 export type Community = {
@@ -424,7 +425,12 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
                   className={`${isDark ? 'bg-gray-800' : 'bg-white/80'} ring-1 ${isDark ? 'ring-gray-700' : 'ring-rose-200'} rounded-xl overflow-hidden shadow-sm`} 
                   whileHover={{ y: -4 }}
                 >
-                  <img src={c.cover} alt={c.name} className="w-full aspect-[4/3] object-cover" />
+                  <TianjinImage 
+                    src={c.cover} 
+                    alt={c.name} 
+                    className="w-full aspect-[4/3] object-cover" 
+                    quality={80}
+                  />
                   <div className="p-4">
                     <div className="font-medium mb-1 flex items-center gap-2">
                       <span className="truncate">{c.name}</span>

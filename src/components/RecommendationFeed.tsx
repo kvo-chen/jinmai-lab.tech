@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import recommendationService, { RecommendedItem, RecommendationFeedbackType } from '../services/recommendationService';
+import { TianjinImage } from './TianjinStyleComponents';
 
 interface RecommendationFeedProps {
   userId: string;
@@ -129,10 +130,15 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
               {/* 缩略图 */}
               {item.thumbnail && (
                 <div className="sm:w-32 sm:h-24 flex-shrink-0">
-                  <img
+                  <TianjinImage
                     src={item.thumbnail}
                     alt={item.title}
-                    className="w-full h-full object-cover rounded-lg"
+                    ratio="landscape"
+                    fit="cover"
+                    rounded="lg"
+                    className="w-full h-full"
+                    priority={false}
+                    quality="medium"
                   />
                 </div>
               )}

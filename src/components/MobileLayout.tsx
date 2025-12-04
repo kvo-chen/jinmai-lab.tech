@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { markPrefetched, isPrefetched } from '@/services/prefetch'
 import { throttle } from '@/utils/performance'
 import clsx from 'clsx'
+import { TianjinImage } from './TianjinStyleComponents'
 
 interface MobileLayoutProps {
   children: React.ReactNode
@@ -279,10 +280,11 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                       'border-gray-300'
                     )}>
                       {user?.avatar ? (
-                        <img
+                        <TianjinImage
                           src={user.avatar}
                           alt={user.username}
                           className="w-full h-full object-cover"
+                          quality={80}
                         />
                       ) : (
                         <div className={clsx(
