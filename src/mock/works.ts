@@ -854,4 +854,12 @@ export const mockWorks: Work[] = [
     id: 65,
     title: '海河·导视与标识合集',
     creator: '品牌设计师小导',
-    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image
+    creatorAvatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Designer%20avatar%20xiaoDaoNo2',
+    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Haihe%20wayfinding%20and%20signage%20set%2C%20blue%20accent%2C%20high%20detail&image_size=1920x1080',
+    likes: 244,
+    comments: 20,
+    views: 1022,
+    category: '品牌设计',
+    tags: ['海河', '导视', '标识'],
+    featured: false,
+  }]
