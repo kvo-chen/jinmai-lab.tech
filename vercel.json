@@ -27,11 +27,19 @@
       }
     },
     {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "dest": "/static/assets/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/index.html",
+      "dest": "/static/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html",
+      "dest": "/static/index.html",
       "status": 200
     }
   ],
