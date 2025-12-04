@@ -6,7 +6,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import postsApi, { Post } from '@/services/postService'
 
 import GradientHero from '@/components/GradientHero'
-import { mockWorks } from '@/pages/Explore'
+import { mockWorks } from '@/mock/works'
 import apiClient from '@/lib/apiClient'
 
 // 中文注释：广场初始示例作品（可作为冷启动内容）

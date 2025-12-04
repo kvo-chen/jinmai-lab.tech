@@ -9,29 +9,10 @@ import { TianjinImage, TianjinButton } from '@/components/TianjinStyleComponents
 import llmService from '@/services/llmService'
 import { BRANDS } from '@/lib/brands'
 import imageService from '@/services/imageService'
+import { Work, mockWorks } from '@/mock/works'
  
 
-type Work = {
-  id: number;
-  title: string;
-  creator: string;
-  creatorAvatar: string;
-  thumbnail: string;
-  likes: number;
-  comments: number;
-  views: number;
-  category: string;
-  tags: string[];
-  featured: boolean;
-  // 中文注释：可选视频地址（存在则视为视频作品）
-  videoUrl?: string;
-  // 中文注释：视频时长（可选，用于展示）
-  duration?: string;
-};
-
 // 中文注释：本页专注作品探索，社区相关内容已迁移到创作者社区页面
-
-const mockWorks: Work[] = [
   {
     id: 1,
     title: '国潮新风尚',
