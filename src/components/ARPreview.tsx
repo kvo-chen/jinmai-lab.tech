@@ -189,13 +189,13 @@ const ARPreview: React.FC<{
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+    <div className={`fixed inset-0 z-50 flex flex-col animate-scaleIn ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
       {/* 顶部导航栏 */}
-      <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-        <h2 className="text-xl font-bold">AR预览</h2>
+      <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-gray-800 bg-gray-900/80' : 'border-gray-200 bg-white/80'} backdrop-blur-md`}>
+        <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">AR预览</h2>
         <button
           onClick={onClose}
-          className={`p-2 rounded-full ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition-colors`}
+          className={`p-2 rounded-full ${isDark ? 'bg-gray-800 hover:bg-gray-700 hover:scale-110' : 'bg-gray-100 hover:bg-gray-200 hover:scale-110'} transition-all duration-300 ripple-button`}
           aria-label="关闭"
         >
           <i className="fas fa-times text-xl"></i>
@@ -203,13 +203,16 @@ const ARPreview: React.FC<{
       </div>
 
       {/* AR预览区域 */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden rounded-b-3xl">
         {/* 加载状态 */}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10">
-            <div className="text-center text-white">
-              <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600 mb-4"></div>
-              <p className="text-lg mb-2">正在加载AR资源...</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10 backdrop-blur-sm">
+            <div className="text-center text-white animate-scaleIn">
+              <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-t-transparent border-red-500 mb-4 shadow-lg shadow-red-500/20"></div>
+              <p className="text-lg mb-2 font-medium">正在加载AR资源...</p>
+              <div className="h-1 w-32 bg-gray-700 rounded-full overflow-hidden mt-4">
+                <div className="h-full bg-gradient-to-r from-red-500 to-purple-600 animate-pulse"></div>
+              </div>
             </div>
           </div>
         )}
@@ -217,7 +220,7 @@ const ARPreview: React.FC<{
         {/* 3D预览内容 */}
         <div className="w-full h-full">
           {!isLoading && (
-            <Canvas shadows>
+            <Canvas shadows className="rounded-b-3xl">
               {/* 基础相机和灯光 */}
               <PerspectiveCamera makeDefault position={[0, 0, 3]} />
               <ambientLight intensity={0.5} />
@@ -277,21 +280,21 @@ const ARPreview: React.FC<{
       </div>
 
       {/* 控制栏 */}
-      <div className={`p-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-        <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className={`p-6 border-t ${isDark ? 'border-gray-800 bg-gray-900/90' : 'border-gray-200 bg-white/90'} backdrop-blur-md rounded-b-3xl shadow-lg`}>
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <button
             onClick={() => {
               setIsARMode(!isARMode);
               // 测试AR模式切换
               console.log('AR mode toggled:', !isARMode);
             }}
-            className={`py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${isARMode 
-              ? 'bg-red-600 hover:bg-red-700 text-white' 
+            className={`py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-1 ripple-button ${isARMode 
+              ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg shadow-red-500/20' 
               : isDark 
-                ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                ? 'bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white' 
+                : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-900'}`}
           >
-            <i className={`fas fa-${isARMode ? 'eye-slash' : 'eye'}`}></i>
+            <i className={`fas fa-${isARMode ? 'eye-slash' : 'eye'} text-lg`}></i>
             {isARMode ? '退出AR' : '进入AR'}
           </button>
           
@@ -302,11 +305,11 @@ const ARPreview: React.FC<{
               setScale(config.scale || 1.0);
               toast.success('模型位置已重置');
             }}
-            className={`py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${isDark 
-              ? 'bg-gray-700 hover:bg-gray-600' 
-              : 'bg-gray-100 hover:bg-gray-200'}`}
+            className={`py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-1 ripple-button ${isDark 
+              ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white' 
+              : 'bg-gradient-to-r from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 text-purple-900'}`}
           >
-            <i className="fas fa-redo"></i>
+            <i className="fas fa-redo text-lg"></i>
             重置
           </button>
           
@@ -315,20 +318,20 @@ const ARPreview: React.FC<{
               // 简化拍照功能
               toast.success('AR照片已保存');
             }}
-            className={`py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${isDark 
-              ? 'bg-gray-700 hover:bg-gray-600' 
-              : 'bg-gray-100 hover:bg-gray-200'}`}
+            className={`py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-1 ripple-button ${isDark 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white' 
+              : 'bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-900'}`}
           >
-            <i className="fas fa-camera"></i>
+            <i className="fas fa-camera text-lg"></i>
             拍照
           </button>
         </div>
         
         {/* 缩放控制 */}
         <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium">缩放</label>
-            <span className="text-sm">{scale.toFixed(1)}x</span>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-medium text-gray-500">缩放</label>
+            <span className="text-sm font-bold bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">{scale.toFixed(1)}x</span>
           </div>
           <input
             type="range"
@@ -337,7 +340,12 @@ const ARPreview: React.FC<{
             step="0.1"
             value={scale}
             onChange={handleScaleChange}
-            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-red-600"
+            className="w-full h-3 bg-gradient-to-r from-gray-300 to-gray-200 rounded-full appearance-none cursor-pointer accent-red-500 hover:accent-red-600"
+            style={{
+              background: isDark ? 'linear-gradient(to right, #374151, #4b5563)' : 'linear-gradient(to right, #e5e7eb, #d1d5db)',
+              WebkitAppearance: 'none',
+              appearance: 'none'
+            }}
           />
         </div>
       </div>

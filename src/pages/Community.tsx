@@ -15,6 +15,7 @@ const DiscussionSection = lazy(() => import('@/components/DiscussionSection').th
 })))
 const ScheduledPost = lazy(() => import('@/components/ScheduledPost'))
 const VirtualList = lazy(() => import('@/components/VirtualList'))
+const CulturalMatchingGame = lazy(() => import('@/components/CulturalMatchingGame'))
 import { useTheme } from '@/hooks/useTheme'
 import postsApi, { Post } from '@/services/postService'
 import { toast } from 'sonner'
@@ -718,6 +719,8 @@ export default function Community() {
   const [communitySort, setCommunitySort] = useState<'members' | 'alphabet'>('members')
   const [communityOpen, setCommunityOpen] = useState(false)
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null)
+  // 游戏状态
+  const [gameOpen, setGameOpen] = useState(false)
 
   
 
@@ -1241,6 +1244,29 @@ export default function Community() {
             { label: '话题', value: '标签' },
           ]}
         />
+
+        {/* 游戏入口区域 */}
+        <motion.section
+          className={`mb-6 rounded-2xl shadow-md p-6 ${isDark ? 'bg-gray-800' : 'bg-gradient-to-r from-blue-50 to-purple-50'} border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold mb-2">🎮 文化元素连连看</h3>
+              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                通过匹配相同的文化元素卡片，了解中国传统文化和天津地方特色，赢取丰厚奖励！
+              </p>
+            </div>
+            <button
+              onClick={() => setGameOpen(true)}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} shadow-md hover:shadow-lg transform hover:-translate-y-0.5`}
+            >
+              <i className="fas fa-gamepad mr-2"></i> 开始游戏
+            </button>
+          </div>
+        </motion.section>
 
         {/* 中文注释：横向社群列表条（置于聊天模块上方，便于快速切换社群） */}
         {communityContext === 'cocreation' && communityTab === 'joined' && (
@@ -1796,8 +1822,16 @@ export default function Community() {
             </motion.div>
           </motion.div>
         )}
+
+        {/* 文化元素连连看游戏 */}
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>}>
+          <CulturalMatchingGame
+            isOpen={gameOpen}
+            onClose={() => setGameOpen(false)}
+          />
+        </Suspense>
       </main>
-  )
+    )
 }
 
 // 中文注释：社群讨论区（轻量消息）组件

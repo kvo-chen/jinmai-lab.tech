@@ -325,6 +325,11 @@ export const DEFAULT_CONFIG: ModelConfig = {
 };
 
 /**
+   * 连接状态类型定义
+   */
+export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+
+/**
  * LLM服务类
  */
 class LLMService {
@@ -340,6 +345,9 @@ class LLMService {
   // 角色管理相关属性
   private roles: ModelRole[] = [...DEFAULT_ROLES];
   private currentRole: ModelRole = DEFAULT_ROLES.find(r => r.is_default) || DEFAULT_ROLES[0];
+  // 连接状态相关属性
+  private connectionStatus: Record<string, ConnectionStatus> = {};
+  private connectionStatusListeners: Array<(modelId: string, status: ConnectionStatus, error?: string) => void> = [];
 
   /**
    * 设置当前使用的模型
@@ -975,6 +983,103 @@ class LLMService {
   getRole(roleId: string): ModelRole | undefined {
     return this.roles.find(r => r.id === roleId);
   }
+  
+  /**
+   * 设置模型连接状态
+   */
+  private setConnectionStatus(modelId: string, status: ConnectionStatus, error?: string): void {
+    this.connectionStatus[modelId] = status;
+    
+    // 触发状态变更事件
+    this.connectionStatusListeners.forEach(listener => {
+      try {
+        listener(modelId, status, error);
+      } catch (e) {
+        console.error('Error in connection status listener:', e);
+      }
+    });
+    
+    // 触发全局事件
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('llm-connection-status-changed', {
+        detail: {
+          modelId,
+          status,
+          error,
+          timestamp: Date.now()
+        }
+      }));
+    }
+  }
+  
+  /**
+   * 获取模型连接状态
+   */
+  getConnectionStatus(modelId?: string): ConnectionStatus | Record<string, ConnectionStatus> {
+    if (modelId) {
+      return this.connectionStatus[modelId] || 'disconnected';
+    }
+    return { ...this.connectionStatus };
+  }
+  
+  /**
+   * 添加连接状态监听器
+   */
+  addConnectionStatusListener(
+    listener: (modelId: string, status: ConnectionStatus, error?: string) => void
+  ): () => void {
+    this.connectionStatusListeners.push(listener);
+    
+    // 返回移除监听器的函数
+    return () => {
+      const index = this.connectionStatusListeners.indexOf(listener);
+      if (index !== -1) {
+        this.connectionStatusListeners.splice(index, 1);
+      }
+    };
+  }
+  
+  /**
+   * 检查模型连接状态
+   */
+  async checkConnectionStatus(modelId: string): Promise<ConnectionStatus> {
+    this.setConnectionStatus(modelId, 'connecting');
+    
+    try {
+      // 切换到目标模型
+      const originalModel = this.currentModel;
+      this.currentModel = AVAILABLE_MODELS.find(m => m.id === modelId) || this.currentModel;
+      
+      // 发送一个简单的测试请求
+      const testPrompt = 'ping';
+      await this.generateResponse(testPrompt, { 
+        signal: AbortSignal.timeout(5000) // 5秒超时
+      });
+      
+      // 恢复原始模型
+      this.currentModel = originalModel;
+      
+      this.setConnectionStatus(modelId, 'connected');
+      return 'connected';
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.setConnectionStatus(modelId, 'error', errorMessage);
+      return 'error';
+    }
+  }
+  
+  /**
+   * 检查所有模型的连接状态
+   */
+  async checkAllConnectionsStatus(): Promise<Record<string, ConnectionStatus>> {
+    const results: Record<string, ConnectionStatus> = {};
+    const promises = AVAILABLE_MODELS.map(async (model) => {
+      results[model.id] = await this.checkConnectionStatus(model.id);
+    });
+    
+    await Promise.allSettled(promises);
+    return results;
+  }
 
   /**
    * 向多个模型并行发送请求
@@ -1070,16 +1175,23 @@ class LLMService {
     // 记录请求开始时间
     const startTime = Date.now();
     const modelId = this.currentModel.id;
+    
+    // 设置连接状态为连接中
+    this.setConnectionStatus(modelId, 'connecting');
 
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         const error = new Error('模型响应超时');
+        this.setConnectionStatus(modelId, 'error', error.message);
         this.recordPerformance(modelId, startTime, false, error.message);
         reject(error);
       }, this.modelConfig.timeout);
 
       const handleSuccess = (response: string) => {
         clearTimeout(timeoutId);
+        // 设置连接状态为已连接
+        this.setConnectionStatus(modelId, 'connected');
+        
         const aiMessage: Message = { role: 'assistant', content: response, timestamp: Date.now() };
         this.addToHistory(aiMessage);
         this.recordPerformance(modelId, startTime, true);
@@ -1090,10 +1202,23 @@ class LLMService {
         clearTimeout(timeoutId);
         const errorMessage = typeof error === 'string' ? error : error.message;
         
+        // 设置连接状态为错误
+        this.setConnectionStatus(modelId, 'error', errorMessage);
+        
         // 检测百度千帆配额用完错误
         if (errorMessage.includes('QUOTA_EXCEEDED') && modelId === 'wenxinyiyan') {
           // 标记百度千帆配额用完，后续不再使用
           localStorage.setItem('QIANFAN_QUOTA_EXCEEDED', 'true');
+          // 自动切换到其他可用模型
+          this.ensureAvailableModel().catch(err => {
+            console.error('Failed to switch model after quota exceeded:', err);
+          });
+        }
+        
+        // 检测通义千问配额用完错误
+        if (errorMessage.includes('QUOTA_EXCEEDED') && modelId === 'qwen') {
+          // 标记通义千问配额用完，后续不再使用
+          localStorage.setItem('QWEN_QUOTA_EXCEEDED', 'true');
           // 自动切换到其他可用模型
           this.ensureAvailableModel().catch(err => {
             console.error('Failed to switch model after quota exceeded:', err);
@@ -1186,6 +1311,9 @@ class LLMService {
           response = this.generateWenxinResponse(prompt);
         }
         
+        // 设置连接状态为已连接（模拟响应）
+        this.setConnectionStatus(modelId, 'connected');
+        
         // 添加AI响应到历史
         const aiMessage: Message = {
           role: 'assistant',
@@ -1204,39 +1332,92 @@ class LLMService {
    * 获取模型调用失败时的回退响应
    */
   private getFallbackResponse(modelId: string, errorMessage: string): string {
-    const isNetworkError = errorMessage.includes('fetch failed') || errorMessage.includes('Request timed out') || errorMessage.includes('network');
+    // 详细的错误类型分析
+    const isNetworkError = errorMessage.includes('fetch failed') || errorMessage.includes('Request timed out') || errorMessage.includes('network') || errorMessage.includes('timeout') || errorMessage.includes('ECONNREFUSED');
+    const isAuthError = errorMessage.includes('invalid_iam_token') || errorMessage.includes('Invalid API key') || errorMessage.includes('authentication failed') || errorMessage.includes('Unauthorized');
+    const isQuotaExceeded = errorMessage.includes('QUOTA_EXCEEDED') || errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('429');
+    const isApiError = errorMessage.includes('API error') || errorMessage.includes('HTTP 5');
+    
+    // 统一的错误处理逻辑
+    const baseErrorMsg = `${this.currentModel.name}接口调用失败，`;
     
     switch (modelId) {
       case 'kimi':
-        return 'Kimi接口不可用或未配置密钥，返回模拟响应。';
-      case 'deepseek':
-        return 'DeepSeek接口不可用或未配置密钥，返回模拟响应。';
-      case 'wenxinyiyan':
-        if (errorMessage.includes('invalid_iam_token')) {
-          return '文心一言接口鉴权失败，请确保 .env.local 中设置了正确的 QIANFAN_ACCESS_TOKEN（或 QIANFAN_AK/QIANFAN_SK）。注意：bce-v3 格式的密钥不适用于 chat 接口。';
+        if (isNetworkError) {
+          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的Kimi API密钥。错误详情：${errorMessage}`;
+        } else if (isQuotaExceeded) {
+          return `${baseErrorMsg}API请求配额已用完，请检查账号配额或稍后重试。错误详情：${errorMessage}`;
         }
-        return '文心一言接口不可用或未配置密钥，请检查API配置后重试。';
+        return `${baseErrorMsg}返回模拟响应。错误详情：${errorMessage}`;
+      
+      case 'deepseek':
+        if (isNetworkError) {
+          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的DeepSeek API密钥。错误详情：${errorMessage}`;
+        }
+        return `${baseErrorMsg}返回模拟响应。错误详情：${errorMessage}`;
+      
+      case 'wenxinyiyan':
+        if (isAuthError) {
+          return `${baseErrorMsg}鉴权失败，请确保 .env.local 中设置了正确的 QIANFAN_ACCESS_TOKEN（或 QIANFAN_AK/QIANFAN_SK）。注意：bce-v3 格式的密钥不适用于 chat 接口。错误详情：${errorMessage}`;
+        } else if (isQuotaExceeded) {
+          return `${baseErrorMsg}百度千帆API免费额度已用完，请检查账号配额或购买付费套餐。错误详情：${errorMessage}`;
+        }
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       case 'doubao':
-        return '豆包接口不可用或未配置密钥，请检查API配置后重试。';
+        if (isNetworkError) {
+          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的豆包API密钥。错误详情：${errorMessage}`;
+        }
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       case 'qwen':
-        return '通义千问接口不可用或未配置密钥，请在 .env.local 设置 DASHSCOPE_API_KEY 后重试。';
+        if (isNetworkError) {
+          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请在 .env.local 设置 DASHSCOPE_API_KEY 后重试。错误详情：${errorMessage}`;
+        } else if (isQuotaExceeded) {
+          return `${baseErrorMsg}API请求配额已用完，请检查阿里云DashScope账号配额。错误详情：${errorMessage}`;
+        }
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       case 'chatgpt':
         if (isNetworkError) {
-          return 'ChatGPT接口网络连接失败，可能是国内访问限制导致。请检查网络设置或尝试使用其他模型。';
+          return `${baseErrorMsg}网络连接失败，可能是国内访问限制导致。请检查网络设置（如VPN）或尝试使用其他模型。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的OpenAI API密钥。错误详情：${errorMessage}`;
         }
-        return 'ChatGPT接口不可用或未配置密钥，请检查API配置后重试。';
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       case 'gemini':
         if (isNetworkError) {
-          return 'Gemini接口网络连接失败，可能是国内访问限制导致。请检查网络设置或尝试使用其他模型。';
+          return `${baseErrorMsg}网络连接失败，可能是国内访问限制导致。请检查网络设置（如VPN）或尝试使用其他模型。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的Google Gemini API密钥。错误详情：${errorMessage}`;
         }
-        return 'Gemini接口不可用或未配置密钥，请检查API配置后重试。';
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       case 'gork':
         if (isNetworkError) {
-          return 'Gork接口网络连接失败，可能是国内访问限制导致。请检查网络设置或尝试使用其他模型。';
+          return `${baseErrorMsg}网络连接失败，可能是国内访问限制导致。请检查网络设置（如VPN）或尝试使用其他模型。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的Gork API密钥。错误详情：${errorMessage}`;
         }
-        return 'Gork接口不可用或未配置密钥，请检查API配置后重试。';
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       case 'zhipu':
-        return '智谱接口不可用或未配置密钥，请检查API配置后重试。';
+        if (isNetworkError) {
+          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
+        } else if (isAuthError) {
+          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的智谱API密钥。错误详情：${errorMessage}`;
+        }
+        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
+      
       default:
         return `模型调用失败: ${errorMessage}`;
     }
@@ -1251,6 +1432,9 @@ class LLMService {
     const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || ''
     let configured: Record<string, boolean> = {}
     let healthCheckSuccess = false
+    
+    // 获取当前连接状态
+    const connectionStatus = this.getConnectionStatus() as Record<string, ConnectionStatus>;
     
     if (apiBase) {
       try {
@@ -1317,8 +1501,15 @@ class LLMService {
     // 去重优先级列表
     const uniquePriorityOrder = [...new Set(modelPriorityOrder)]
     
-    // 选择第一个可用的模型
-    const selectedModelId = uniquePriorityOrder.find(id => configured[id]) 
+    // 选择第一个可用且连接状态正常的模型
+    const selectedModelId = uniquePriorityOrder.find(id => {
+      // 检查模型是否已配置
+      if (!configured[id]) return false;
+      
+      // 检查连接状态：只允许connected或未知状态的模型
+      const status = connectionStatus[id];
+      return !status || status === 'connected';
+    }) 
       || (this.currentModel?.id || 'kimi') // 如果没有可用模型，使用当前模型或默认模型
     
     // 如果选择的模型与当前模型不同，切换模型
@@ -1326,11 +1517,16 @@ class LLMService {
       this.setCurrentModel(selectedModelId)
     }
     
+    // 检查并更新选定模型的连接状态
+    if (!connectionStatus[selectedModelId] || connectionStatus[selectedModelId] !== 'connected') {
+      await this.checkConnectionStatus(selectedModelId);
+    }
+    
     return selectedModelId
   }
 
   /**
-   * 通用API调用方法，实现指数退避重试策略
+   * 通用API调用方法，实现根据错误类型的智能重试策略
    */
   private async callApiWithRetry(
     modelId: string,
@@ -1340,6 +1536,22 @@ class LLMService {
   ): Promise<string> {
     let lastErr: any;
     let backoffMs = initialBackoffMs;
+    
+    // 按错误类型分类的重试配置
+    const retryConfig = {
+      // 网络相关错误：最多重试maxRetries次
+      network: { maxRetries, backoffFactor: 2 },
+      // 服务器错误：最多重试maxRetries次
+      server: { maxRetries, backoffFactor: 1.5 },
+      // 超时错误：最多重试maxRetries次
+      timeout: { maxRetries, backoffFactor: 2.5 },
+      // 认证错误：不重试
+      auth: { maxRetries: 0, backoffFactor: 1 },
+      // 配额超限：不重试
+      quota: { maxRetries: 0, backoffFactor: 1 },
+      // 其他错误：最多重试1次
+      other: { maxRetries: 1, backoffFactor: 1 }
+    };
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -1352,38 +1564,93 @@ class LLMService {
           break;
         }
         
-        // 分析错误类型，决定是否重试
+        // 分析错误类型
         const errorMessage = typeof e === 'string' ? e : (e as Error).message;
+        const errorType = this.getErrorType(errorMessage);
         
-        // 这些错误类型适合重试
-        const retryableErrors = [
-          'timeout',
-          'network',
-          '500',
-          '502',
-          '503',
-          '504',
-          'service unavailable',
-          'connection reset',
-          'request failed'
-        ];
+        // 获取对应错误类型的重试配置
+        const config = retryConfig[errorType];
         
-        const shouldRetry = retryableErrors.some(err => 
-          errorMessage.toLowerCase().includes(err)
-        );
-        
-        if (!shouldRetry) {
+        // 如果该错误类型不允许重试，直接抛出错误
+        if (config.maxRetries === 0) {
           break;
         }
         
-        // 指数退避，每次重试间隔增加
-        await new Promise(r => setTimeout(r, backoffMs));
-        // 指数退避因子为2，加上随机抖动
-        backoffMs = Math.min(backoffMs * 2 + Math.random() * 100, 5000); // 最大等待5秒
+        // 如果已达到该错误类型的最大重试次数，直接抛出错误
+        if (attempt >= config.maxRetries) {
+          break;
+        }
+        
+        // 根据错误类型调整退避时间
+        const backoffFactor = config.backoffFactor;
+        
+        // 指数退避，每次重试间隔增加，加上随机抖动
+        const jitter = Math.random() * 100;
+        const nextBackoff = Math.min(backoffMs * backoffFactor + jitter, 5000); // 最大等待5秒
+        
+        console.log(`API调用失败，正在重试... [${modelId}] 尝试${attempt + 1}/${maxRetries}，错误类型：${errorType}，等待${Math.round(nextBackoff)}ms`);
+        
+        await new Promise(r => setTimeout(r, nextBackoff));
+        
+        // 更新退避时间
+        backoffMs = nextBackoff;
       }
     }
     
     throw lastErr || new Error(`${modelId} API error`);
+  }
+  
+  /**
+   * 分析错误类型
+   */
+  private getErrorType(errorMessage: string): 'network' | 'server' | 'timeout' | 'auth' | 'quota' | 'other' {
+    const lowerMessage = errorMessage.toLowerCase();
+    
+    // 认证错误
+    if (lowerMessage.includes('invalid_iam_token') || 
+        lowerMessage.includes('invalid api key') || 
+        lowerMessage.includes('authentication failed') || 
+        lowerMessage.includes('unauthorized') ||
+        lowerMessage.includes('401')) {
+      return 'auth';
+    }
+    
+    // 配额超限
+    if (lowerMessage.includes('quota_exceeded') || 
+        lowerMessage.includes('quota') || 
+        lowerMessage.includes('limit') ||
+        lowerMessage.includes('429')) {
+      return 'quota';
+    }
+    
+    // 超时错误
+    if (lowerMessage.includes('timeout') || 
+        lowerMessage.includes('timed out')) {
+      return 'timeout';
+    }
+    
+    // 服务器错误
+    if (lowerMessage.includes('500') || 
+        lowerMessage.includes('502') || 
+        lowerMessage.includes('503') || 
+        lowerMessage.includes('504') ||
+        lowerMessage.includes('service unavailable') ||
+        lowerMessage.includes('internal server error')) {
+      return 'server';
+    }
+    
+    // 网络错误
+    if (lowerMessage.includes('network') || 
+        lowerMessage.includes('connection') || 
+        lowerMessage.includes('fetch failed') ||
+        lowerMessage.includes('econnrefused') ||
+        lowerMessage.includes('econnreset') ||
+        lowerMessage.includes('request failed')) {
+      return 'network';
+    }
+    
+    // 其他错误
+    return 'other';
   }
   
   private async callKimi(prompt: string, options?: { onDelta?: (chunk: string) => void; signal?: AbortSignal; images?: string[]; multimodalConfig?: any }): Promise<string> {

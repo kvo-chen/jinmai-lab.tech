@@ -70,36 +70,78 @@ export async function apiRequest<TResp, TBody = unknown>(
   const retries = options.retries ?? DEFAULT_RETRIES
 
   let attempt = 0
-  let fallbackTried = false
+  let fallbackAttempt = 0
+  let useFallback = false
+  
+  // 定义可重试的错误类型
+  const retryableErrors = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'TIMEOUT', 'NETWORK_ERROR', 'fetch failed']
+  
   while (attempt <= retries) {
     try {
-      const target = base && fallbackTried ? altUrl : url
+      // 构建请求URL：先尝试主URL，失败后尝试回退URL
+      const target = useFallback ? altUrl : url
       const fetchPromise = fetch(target, {
         method,
         headers,
         body: options.body ? JSON.stringify(options.body) : undefined,
       })
+      
       const res = await withTimeout(fetchPromise, timeoutMs)
       const contentType = res.headers.get('content-type') || ''
       const isJson = contentType.includes('application/json')
       const data = isJson ? await res.json() : (await res.text()) as any
+      
       if (!res.ok) {
         const message = (data && (data.message || data.error)) || `HTTP ${res.status}`
         return { ok: false, status: res.status, error: message }
       }
+      
       return { ok: true, status: res.status, data }
     } catch (err: any) {
-      if (base && !fallbackTried) {
-        fallbackTried = true
+      const errorMessage = err?.message || 'UNKNOWN_ERROR'
+      
+      // 检查是否是可重试的错误
+      const isRetryable = retryableErrors.some(errorType => 
+        errorMessage.includes(errorType)
+      )
+      
+      if (!isRetryable) {
+        return { ok: false, status: 0, error: errorMessage }
+      }
+      
+      // 尝试回退URL（如果可用且未尝试过）
+      if (base && !useFallback) {
+        useFallback = true
+        fallbackAttempt = 0
         continue
       }
-      attempt++
-      if (attempt > retries) {
-        return { ok: false, status: 0, error: err?.message || 'NETWORK_ERROR' }
+      
+      // 更新尝试计数
+      if (useFallback) {
+        fallbackAttempt++
+      } else {
+        attempt++
       }
-      await sleep(300)
+      
+      // 检查是否达到最大尝试次数
+      const maxAttemptsReached = useFallback 
+        ? fallbackAttempt > retries 
+        : attempt > retries
+      
+      if (maxAttemptsReached) {
+        return { 
+          ok: false, 
+          status: 0, 
+          error: `API请求失败，已尝试${retries + 1}次：${errorMessage}` 
+        }
+      }
+      
+      // 指数退避重试
+      const backoffTime = 300 * Math.pow(2, Math.min(attempt, 5))
+      await sleep(backoffTime)
     }
   }
+  
   return { ok: false, status: 0, error: 'UNKNOWN_ERROR' }
 }
 

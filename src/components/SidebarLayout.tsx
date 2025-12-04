@@ -16,7 +16,11 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const { isAuthenticated, user, logout, updateUser } = useContext(AuthContext)
   const location = useLocation()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    // 从localStorage读取保存的折叠状态
+    const saved = localStorage.getItem('sidebarCollapsed')
+    return saved ? JSON.parse(saved) : false
+  })
   const [width, setWidth] = useState<number>(() => {
     const saved = localStorage.getItem('sidebarWidth')
     // 中文注释：默认侧边栏更窄（180px），并将可拖拽的最小宽度下调到 180px
@@ -25,6 +29,11 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const dragging = useRef(false)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [search, setSearch] = useState('')
+  
+  // 保存折叠状态到localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(collapsed))
+  }, [collapsed])
   // 中文注释：搜索建议与最近搜索（用于提高搜索功能的使用率与转化）
   const suggestions = useMemo(() => (
     ['品牌设计', '国潮设计', '老字号品牌', 'IP设计', '插画设计', '工艺创新', '非遗传承', '共创向导']
@@ -263,13 +272,15 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   }, [])
 
   // 中文注释：暗色主题下的导航项采用更柔和的文字与半透明悬停背景，提升高级质感
+  // 统一导航项高度和内边距，避免激活时布局变化
   const navItemClass = useMemo(() => (
     `${isDark ? 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'} flex items-center px-3 py-2 rounded-lg transition-all duration-200`
   ), [isDark])
 
   // 中文注释：主题激活态使用CSS变量，确保主题变化时样式同步更新
+  // 优化激活状态样式，确保不影响整体布局
   const activeClass = useMemo(() => (
-    `${isDark ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] ring-1 ring-[var(--accent-red)] shadow-[var(--shadow-md)]' : 'bg-gradient-to-r from-red-50 to-red-100 text-[var(--text-primary)] border-b-2 border-red-600 font-semibold shadow-sm relative overflow-hidden group active-nav-item'}`
+    `${isDark ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] ring-1 ring-[var(--accent-red)] shadow-[var(--shadow-md)]' : 'bg-gradient-to-r from-red-50 to-red-100 text-[var(--text-primary)] border-b-2 border-red-600 font-semibold shadow-sm relative overflow-hidden group active-nav-item'} border-t border-transparent`
   ), [isDark])
 
   const title = useMemo(() => {
@@ -324,7 +335,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       {/* 仅在桌面端显示侧边栏 */}
       <aside 
         className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
-        style={{ width: collapsed ? 72 : width }}
+        style={{ width: collapsed ? 72 : width, transition: 'width 0.2s ease-in-out' }}
       >
         <div className={`px-4 py-3 flex items-center justify-between rounded-lg transition-colors group ${isDark ? 'hover:bg-gray-800/60' : theme === 'pink' ? 'hover:bg-pink-50' : 'hover:bg-gray-50'}`}>
           <div className="flex items-center space-x-2">
@@ -436,10 +447,16 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           />
         )}
       </aside>
-      {/* 中文注释：当用户点击右侧内容区域时，自动收起左侧导航栏，减少视觉占用、聚焦内容 */}
+      {/* 中文注释：恢复点击自动收起功能，但优化实现方式避免跳动 */}
       <div 
         className="flex-1 min-w-0 md:pb-0 pt-0 flex flex-col overflow-y-auto"
-        onClick={() => { if (!collapsed) setCollapsed(true) }}
+        onClick={(e) => {
+          // 确保点击的不是内部的可交互元素
+          const target = e.target as HTMLElement;
+          if (!collapsed && !target.closest('button, input, a, [role="menu"], [role="dialog"]')) {
+            setCollapsed(true);
+          }
+        }}
       >
         {/* 中文注释：暗色头部采用半透明背景与毛玻璃，弱化硬边 */}
         <header className={`sticky top-0 z-40 ${isDark ? 'bg-[#0b0e13]/80 backdrop-blur-sm' : theme === 'pink' ? 'bg-white/80 backdrop-blur-sm' : 'bg-white'} border-b ${isDark ? 'border-gray-800' : theme === 'pink' ? 'border-pink-200' : 'border-gray-200'} px-4 py-3`}> 

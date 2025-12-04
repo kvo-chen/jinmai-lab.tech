@@ -21,6 +21,23 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
   const [feedbackType, setFeedbackType] = useState('功能异常');
   const [screenshots, setScreenshots] = useState<File[]>([]);
   const [includeLogs, setIncludeLogs] = useState(true);
+  const [contactError, setContactError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  
+  // 生成表单控件基础样式
+  const getFormControlStyles = (hasError = false) => {
+    const baseStyles = `w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-300`;
+    const darkStyles = `bg-gray-700 border-gray-600 text-white placeholder-gray-400 border hover:border-gray-500 focus:border-gray-500`;
+    const lightStyles = `bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border hover:border-gray-300 focus:border-gray-300`;
+    const errorStyles = hasError ? ` border-red-500 focus:ring-red-500` : '';
+    
+    return `${baseStyles} ${isDark ? darkStyles : lightStyles}${errorStyles}`;
+  };
+  
+  // 生成标签样式
+  const getLabelStyles = () => {
+    return `block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+  };
   
   // 处理直接传递的 Error 对象
   useEffect(() => {
@@ -41,13 +58,28 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
   const handleSubmit = async () => {
     if (isSubmitting) return;
     
+    // 验证联系方式格式
+    if (!validateContactInfo(contactInfo)) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       // 模拟API调用延迟
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast.success('问题反馈已提交，感谢您的帮助！');
+      // 提交成功后显示更丰富的反馈
+      toast.success(
+        <div className="flex items-center gap-2">
+          <i className="fas fa-check-circle text-green-500 text-lg"></i>
+          <div>
+            <div className="font-medium">提交成功！</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">感谢您的反馈，我们会尽快处理</div>
+          </div>
+        </div>,
+        { duration: 3000 }
+      );
       
       // 清空表单
       setDescription('');
@@ -55,9 +87,23 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
       setFeedbackType('功能异常');
       setScreenshots([]);
       setIncludeLogs(true);
-      onClose();
+      setContactError('');
+      setDragActive(false);
+      
+      // 延迟关闭弹窗，让用户有时间看到成功提示
+      setTimeout(() => {
+        onClose();
+      }, 500);
     } catch (error) {
-      toast.error('提交失败，请稍后再试');
+      toast.error(
+        <div className="flex items-center gap-2">
+          <i className="fas fa-times-circle text-red-500 text-lg"></i>
+          <div>
+            <div className="font-medium">提交失败</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">请稍后再试</div>
+          </div>
+        </div>
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -71,13 +117,69 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
     return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
   };
 
+  // 验证联系方式格式（邮箱或手机号）
+  const validateContactInfo = (value: string) => {
+    if (!value) {
+      setContactError('');
+      return true;
+    }
+    
+    // 邮箱正则
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // 手机号正则（支持国内手机号）
+    const phoneRegex = /^1[3-9]\d{9}$/;
+    
+    if (emailRegex.test(value) || phoneRegex.test(value)) {
+      setContactError('');
+      return true;
+    } else {
+      setContactError('请输入有效的邮箱或手机号');
+      return false;
+    }
+  };
+
+  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setContactInfo(value);
+    validateContactInfo(value);
+  };
+
+  // 拖拽事件处理
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  // 处理文件拖拽上传
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const imageFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      if (imageFiles.length > 0) {
+        setScreenshots(prev => [...prev, ...imageFiles]);
+      }
+    }
+  };
+
+  // 处理文件选择上传
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       setScreenshots(prev => [...prev, ...Array.from(files)]);
     }
+    // 重置输入，允许重新选择相同的文件
+    e.target.value = '';
   };
 
+  // 移除截图
   const removeScreenshot = (index: number) => {
     setScreenshots(prev => prev.filter((_, i) => i !== index));
   };
@@ -205,19 +307,14 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
           <div className="space-y-5">
             {/* 反馈类型 */}
             <div>
-              <label htmlFor="feedbackType" className="block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }">反馈类型</label>
+              <label htmlFor="feedbackType" className={getLabelStyles()}>反馈类型</label>
               <select
                 id="feedbackType"
                 value={feedbackType}
                 onChange={(e) => setFeedbackType(e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 border hover:border-gray-500' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border hover:border-gray-300'
-                }`}
+                className={getFormControlStyles()}
                 tabIndex={0}
+                aria-label="反馈类型"
               >
                 <option value="功能异常">功能异常</option>
                 <option value="界面问题">界面问题</option>
@@ -229,53 +326,51 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
 
             {/* 问题描述 */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }">问题描述 <span className="text-red-500">*</span></label>
+              <label htmlFor="description" className={getLabelStyles()}>问题描述 <span className="text-red-500">*</span></label>
               <textarea
                 id="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => setDescription(e.target.value.slice(0, 500))}
                 placeholder="请详细描述您遇到的问题，以便我们更好地解决..."
-                className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none h-36 transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 border hover:border-gray-500' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border hover:border-gray-300'
-                } ${!description.trim() && description.length > 0 ? 'border-red-500' : ''}`}
+                className={`${getFormControlStyles(!description.trim() && description.length > 0)} resize-none h-36`}
                 required
                 tabIndex={0}
                 aria-required="true"
+                maxLength={500}
+                aria-describedby="description-count"
               ></textarea>
-              {!description.trim() && description.length > 0 && (
-                <p className="text-xs text-red-500 mt-1">请输入问题描述</p>
-              )}
+              <div className="flex justify-between items-center mt-1">
+                {!description.trim() && description.length > 0 && (
+                  <p className="text-xs text-red-500">请输入问题描述</p>
+                )}
+                <p id="description-count" className={`text-xs ${description.length > 400 ? 'text-yellow-500' : description.length === 500 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {description.length}/500
+                </p>
+              </div>
             </div>
             
             {/* 联系方式 */}
             <div>
-              <label htmlFor="contactInfo" className="block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }">联系方式 (可选)</label>
+              <label htmlFor="contactInfo" className={getLabelStyles()}>联系方式 (可选)</label>
               <input
                 id="contactInfo"
                 type="text"
                 value={contactInfo}
-                onChange={(e) => setContactInfo(e.target.value)}
+                onChange={handleContactChange}
                 placeholder="请留下您的邮箱或手机号，方便我们联系您"
-                className={`w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 border hover:border-gray-500' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border hover:border-gray-300'
-                }`}
+                className={getFormControlStyles(!!contactError)}
                 tabIndex={0}
+                aria-label="联系方式"
+                aria-describedby={contactError ? 'contact-error' : undefined}
               />
+              {contactError && (
+                <p id="contact-error" className="text-xs text-red-500 mt-1">{contactError}</p>
+              )}
             </div>
 
             {/* 截图上传 */}
             <div>
-              <label className="block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }">截图上传 (可选)</label>
+              <label className={getLabelStyles()}>截图上传 (可选)</label>
               <div className="space-y-3">
                 {/* 已上传截图 */}
                 {screenshots.length > 0 && (
@@ -311,16 +406,22 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
                 {/* 上传按钮 */}
                 <label 
                   htmlFor="screenshotUpload"
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg cursor-pointer transition-all duration-300 border-2 border-dashed ${
                     isDark 
-                      ? 'border-gray-600 hover:border-red-500 hover:bg-gray-700/50' 
-                      : 'border-gray-200 hover:border-red-500 hover:bg-gray-50'
+                      ? `border-gray-600 hover:border-red-500 hover:bg-gray-700/50 ${dragActive ? 'border-red-500 bg-gray-700/50' : ''}` 
+                      : `border-gray-200 hover:border-red-500 hover:bg-gray-50 ${dragActive ? 'border-red-500 bg-gray-100/80' : ''}`
                   }`}
                 >
                   <i className="fas fa-cloud-upload-alt text-gray-500 dark:text-gray-400"></i>
-                  <span className="text-sm ${
+                  <span className={`text-sm ${
                     isDark ? 'text-gray-300' : 'text-gray-600'
-                  }">点击上传截图或拖拽文件到此处</span>
+                  }`}>
+                    {dragActive ? '释放文件以上传' : '点击上传截图或拖拽文件到此处'}
+                  </span>
                   <input
                     id="screenshotUpload"
                     type="file"
