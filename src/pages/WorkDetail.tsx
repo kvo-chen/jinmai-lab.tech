@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, lazy, Suspense } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
-import { mockWorks } from '@/pages/Explore'
+import { mockWorks } from '@/mock/works'
 // 使用React.lazy实现ARPreview组件的延迟加载
 const ARPreview = lazy(() => import('@/components/ARPreview'))
 import postsApi from '@/services/postService'
