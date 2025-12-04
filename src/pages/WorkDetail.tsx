@@ -7,17 +7,8 @@ import { mockWorks } from '@/mock/works'
 const ARPreview = lazy(() => import('@/components/ARPreview'))
 import postsApi from '@/services/postService'
 import exportService, { ExportOptions, ExportFormat } from '@/services/exportService'
-
-// 定义ARPreviewConfig类型
-interface ARPreviewConfig {
-  modelUrl?: string;
-  imageUrl?: string;
-  scale?: number;
-  rotation?: { x: number; y: number; z: number };
-  position?: { x: number; y: number; z: number };
-  type: '3d' | '2d';
-  animations?: boolean;
-}
+// 从ARPreview组件导入类型定义
+import type { ARPreviewConfig } from '@/components/ARPreview'
 
 export default function WorkDetail() {
   const { isDark } = useTheme()

@@ -1086,12 +1086,15 @@ export default function Explore() {
                     <span className={`text-sm px-2 py-0.5 rounded-full ${work.category === '老字号品牌' ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                       {work.category}
                     </span>
-                    <button
-                      onClick={() => navigate(`/work/${work.id}`)}
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => navigate(`/explore/${work.id}`)}
+                      className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                      aria-label={`查看作品 ${work.title} 的详情`}
                     >
                       查看详情
-                    </button>
+                    </motion.button>
                   </div>
 
                   {/* 应用到创作中心按钮 */}
