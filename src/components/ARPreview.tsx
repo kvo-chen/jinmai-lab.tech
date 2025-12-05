@@ -250,6 +250,55 @@ const ModelPreview: React.FC<{
     }
   });
 
+  // 添加默认模型几何体，当URL为空或加载失败时使用
+  const defaultGeometry = (
+    <group>
+      <mesh>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial 
+          color="#4CAF50"
+          opacity={0.8}
+          transparent
+          metalness={0.1}
+          roughness={0.9}
+        />
+      </mesh>
+      {/* 添加一些装饰元素，使默认模型更美观 */}
+      <mesh position={[0, 0.7, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial 
+          color="#2196F3"
+          opacity={0.8}
+          transparent
+        />
+      </mesh>
+      <mesh position={[-0.7, 0, 0]}>
+        <cylinderGeometry args={[0.2, 0.2, 1, 16]} />
+        <meshStandardMaterial 
+          color="#FFC107"
+          opacity={0.8}
+          transparent
+        />
+      </mesh>
+      <mesh position={[0.7, 0, 0]}>
+        <cylinderGeometry args={[0.2, 0.2, 1, 16]} />
+        <meshStandardMaterial 
+          color="#FFC107"
+          opacity={0.8}
+          transparent
+        />
+      </mesh>
+      <mesh position={[0, -0.7, 0]}>
+        <torusGeometry args={[0.3, 0.1, 16, 32]} />
+        <meshStandardMaterial 
+          color="#9C27B0"
+          opacity={0.8}
+          transparent
+        />
+      </mesh>
+    </group>
+  );
+
   return (
     <group 
       position={[position.x, position.y, position.z]} 
@@ -263,14 +312,7 @@ const ModelPreview: React.FC<{
         />
       ) : error ? (
         // 模型加载错误状态
-        <mesh>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial 
-            color="#ff4444"
-            opacity={0.7}
-            transparent
-          />
-        </mesh>
+        defaultGeometry
       ) : (
         // 加载中状态
         <mesh>
@@ -312,11 +354,10 @@ const ARPreview: React.FC<{
   // 改进的加载逻辑，支持真实的加载进度
   const [loadProgress, setLoadProgress] = useState(0);
 
-  // 环境预设状态管理
+  // 环境预设状态管理 - 只使用稳定的预设
   const [environmentPreset, setEnvironmentPreset] = useState<EnvironmentPreset>('studio');
   const environmentPresets: EnvironmentPreset[] = [
-    'studio', 'apartment', 'warehouse', 'forest', 'city', 
-    'night', 'sunset', 'dawn', 'park', 'lobby'
+    'studio', 'apartment', 'warehouse', 'park', 'lobby'
   ];
 
   // 错误状态管理
@@ -361,17 +402,14 @@ const ARPreview: React.FC<{
     };
   }, []);
 
-  // AR模式切换处理
+  // AR模式切换处理 - 简化实现，只显示AR视觉效果
   useEffect(() => {
     if (isARMode) {
-      // 进入AR模式时的处理逻辑
       console.log('进入AR模式');
-      // 这里应该初始化AR会话，访问设备摄像头，实现环境融合等
-      // 但目前只是简单的3D预览，没有真正的AR功能
+      // 简化AR模式，只显示AR视觉效果，不访问摄像头
     } else {
-      // 退出AR模式时的处理逻辑
       console.log('退出AR模式');
-      // 这里应该清理AR会话，释放摄像头资源等
+      // 清理AR模式相关资源
     }
   }, [isARMode]);
 

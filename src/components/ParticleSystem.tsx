@@ -692,137 +692,47 @@ const InstancedParticleSystem: React.FC<{
     }
   }, [config.color, config.particleCount, config.spread]);
 
-  // 获取几何体 - 优化：使用全局缓存，进一步减少几何体复杂度
+  // 获取几何体 - 简化实现，使用内置几何体
   const geometry = React.useMemo(() => {
-    const geometryKey = `${config.model}-${config.scale}`;
-    
-    // 先检查缓存
-    const cachedGeometry = geometryCache.get(geometryKey);
-    if (cachedGeometry) {
-      return cachedGeometry;
-    }
-    
     let geom: THREE.BufferGeometry;
     
-    // 进一步减少几何体分段数，提高性能
+    // 使用简单的几何体，减少性能开销
     switch (config.model) {
       case 'heart':
-        geom = new THREE.SphereGeometry(0.1 * config.scale, 8, 8); // 进一步减少分段数
+        geom = new THREE.SphereGeometry(0.1 * config.scale, 16, 16);
         break;
       case 'flower':
-        geom = new THREE.IcosahedronGeometry(0.1 * config.scale, 0); // 最低细分级别
+        geom = new THREE.IcosahedronGeometry(0.1 * config.scale, 1);
         break;
       case 'saturn':
-        geom = new THREE.TorusGeometry(0.15 * config.scale, 0.03 * config.scale, 8, 32); // 大幅减少分段数
+        geom = new THREE.TorusGeometry(0.15 * config.scale, 0.03 * config.scale, 16, 64);
         break;
       case 'buddha':
-        geom = new THREE.OctahedronGeometry(0.1 * config.scale, 0); // 最低细分级别
+        geom = new THREE.OctahedronGeometry(0.1 * config.scale, 1);
         break;
       case 'firework':
-        geom = new THREE.TetrahedronGeometry(0.1 * config.scale, 0); // 最低细分级别
+        geom = new THREE.TetrahedronGeometry(0.1 * config.scale, 1);
         break;
       default:
-        geom = new THREE.SphereGeometry(0.1 * config.scale, 8, 8); // 进一步减少分段数
+        geom = new THREE.SphereGeometry(0.1 * config.scale, 16, 16);
         break;
     }
     
-    // 缓存几何体
-    geometryCache.set(geometryKey, geom);
     return geom;
   }, [config.model, config.scale]);
 
-  // GPU加速材质 - 进一步优化着色器，减少计算量
+  // 使用简单的内置材质，避免自定义着色器问题
   const material = React.useMemo(() => {
-    const materialKey = `${config.color}-${config.model}-gpu-optimized`;
-    
-    // 先检查缓存
-    const cachedMaterial = materialCache.get(materialKey);
-    if (cachedMaterial) {
-      // 更新缓存材质的uniforms，使其与当前配置匹配
-      if (cachedMaterial instanceof THREE.ShaderMaterial) {
-        cachedMaterial.uniforms.baseColor.value.set(config.color);
-      }
-      return cachedMaterial;
-    }
-    
-    // 进一步优化的顶点着色器 - 最小化计算量，只保留必要的计算
-    const vertexShader = `
-      uniform float time;
-      uniform vec3 baseColor;
-      
-      varying vec3 vColor;
-      varying float vOpacity;
-      
-      void main() {
-        // 简化的颜色处理 - 直接传递基础颜色
-        vColor = baseColor;
-        vOpacity = 0.9;
-        
-        // 简化的旋转计算 - 只绕Y轴旋转，使用更简单的公式
-        float rotation = time * 0.25; // 移除animationSpeed uniform，使用固定旋转速度
-        float cosRot = cos(rotation);
-        float sinRot = sin(rotation);
-        
-        // 旋转计算 - 直接使用position进行变换
-        vec3 pos = position;
-        float tempX = pos.x * cosRot - pos.z * sinRot;
-        pos.z = pos.x * sinRot + pos.z * cosRot;
-        pos.x = tempX;
-        
-        // 简化的缩放动画 - 使用更简单的公式
-        float scale = 1.0 + sin(time) * 0.2;
-        
-        // 最终位置计算 - 简化矩阵乘法
-        vec4 mvPosition = modelViewMatrix * vec4(pos * scale, 1.0);
-        gl_Position = projectionMatrix * mvPosition;
-      }
-    `;
-    
-    // 进一步优化的片段着色器 - 最小化计算量
-    const fragmentShader = `
-      varying vec3 vColor;
-      varying float vOpacity;
-      uniform float time;
-      
-      void main() {
-        // 简化的颜色变化 - 只调整亮度，移除colorVariation uniform
-        float brightness = 0.8 + 0.2 * sin(time * 0.25);
-        vec3 finalColor = vColor * brightness;
-        
-        // 最终颜色输出 - 直接使用计算结果
-        gl_FragColor = vec4(finalColor, vOpacity);
-      }
-    `;
-    
-    // 创建优化的着色器材质 - 减少uniforms数量
-    const shaderMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0.0 },
-        baseColor: { value: new THREE.Color(config.color) } // 只保留必要的uniforms
-      },
-      vertexShader,
-      fragmentShader,
+    return new THREE.MeshStandardMaterial({
+      color: config.color,
       transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.FrontSide,
-      // 优化选项
-      precision: 'mediump' // 使用中等精度，提高性能
+      opacity: 0.8,
+      metalness: 0.1,
+      roughness: 0.9
     });
-    
-    // 缓存材质
-    materialCache.set(materialKey, shaderMaterial);
-    return shaderMaterial;
-  }, [config.color, config.model]);
+  }, [config.color]);
   
-  // 更新着色器uniforms和时间 - 进一步优化更新频率
-  useFrame((state) => {
-    if (material instanceof THREE.ShaderMaterial) {
-      // 只更新必要的uniforms
-      material.uniforms.time.value = state.clock.elapsedTime;
-      material.uniforms.baseColor.value.set(config.color);
-    }
-  });
+  // 移除不再使用的着色器uniforms更新hook
 
   // 动态调整批处理大小
   const adjustBatchSize = (currentFps: number) => {
