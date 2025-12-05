@@ -32,7 +32,7 @@ export default function CulturalEvents() {
   };
 
   return (
-    <>
+    <main className="container mx-auto px-4 py-8">
       {/* 渐变英雄区 */}
       <GradientHero 
         title="文化主题活动日历"
@@ -45,8 +45,6 @@ export default function CulturalEvents() {
         ]}
         pattern={true}
       />
-
-      <main className="container mx-auto px-4 py-8">
         {/* 活动统计卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <motion.div
@@ -112,7 +110,7 @@ export default function CulturalEvents() {
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h2 className="text-xl sm:text-2xl font-bold">即将开始的活动</h2>
               <button 
-                onClick={() => {}}
+                onClick={() => navigate('/tianjin')}
                 className={`text-xs sm:text-sm font-medium transition-colors ${isDark ? 'text-red-500 hover:text-red-400' : 'text-red-600 hover:text-red-500'}`}
               >
                 查看全部 <i className="fas fa-arrow-right ml-1"></i>
@@ -210,21 +208,20 @@ export default function CulturalEvents() {
             </button>
           </div>
         </motion.section>
-      </main>
 
-      {/* 页脚 */}
-      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-4 px-4 mt-8 sm:mt-12`}>
-        <div className="container mx-auto flex flex-col items-center justify-center text-center">
-          <p className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-4`}>
-            © 2025 津脉智坊. 保留所有权利
-          </p>
-          <div className="flex flex-wrap justify-center space-x-4 sm:space-x-6">
-            <a href="#" className={`text-xs sm:text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>隐私政策</a>
-            <a href="#" className={`text-xs sm:text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>服务条款</a>
-            <a href="#" className={`text-xs sm:text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>帮助中心</a>
+        {/* 页脚 */}
+        <footer className={`border-t mt-8 sm:mt-12 ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-4 px-4 z-10 relative`}>
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className={`text-xs sm:text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              © 2025 津脉智坊. 保留所有权利
+            </p>
+            <div className="flex flex-wrap justify-center space-x-4 sm:space-x-6">
+              <a href="#" className={`text-xs sm:text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>隐私政策</a>
+              <a href="#" className={`text-xs sm:text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>服务条款</a>
+              <a href="#" className={`text-xs sm:text-sm ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'} transition-colors`}>帮助中心</a>
+            </div>
           </div>
-        </div>
-      </footer>
-    </>
+        </footer>
+    </main>
   );
 }

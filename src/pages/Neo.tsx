@@ -10,6 +10,7 @@ import errorService from '@/services/errorService'
 import doubao from '@/services/doubao'
 import { createVideoTask, pollVideoTask } from '@/services/doubao'
 import type { DoubaoVideoContent } from '@/services/doubao'
+import GradientHero from '@/components/GradientHero'
 
 const BRAND_STORIES: Record<string, string> = {
   mahua: '始于清末，以多褶形态与香酥口感著称，传统工艺要求条条分明，不含水分。',
@@ -1445,7 +1446,22 @@ export default function Neo() {
               </div>
             )}
           </div>
-          <div ref={engineCardRef} className={`rounded-2xl shadow-md ${isDark ? 'bg-gray-800/95 backdrop-blur-sm' : 'bg-white/95 backdrop-blur-sm'} p-4 sm:p-6 mb-6 transition-all duration-300 hover:shadow-lg`} style={{ borderRadius: '24px' }}>
+          {/* 灵感引擎渐变英雄区 */}
+          <GradientHero 
+            title="津门 · 灵感引擎"
+            subtitle="面向传统文化创新的AI创作助手"
+            theme="red"
+            stats={[
+              { label: '引擎', value: engine },
+              { label: '风格', value: stylePresets.length },
+              { label: '模式', value: '普通' },
+              { label: '状态', value: isGenerating ? '生成中' : '就绪' }
+            ]}
+            pattern={true}
+            size="lg"
+          />
+          
+          <div ref={engineCardRef} className={`mt-6 rounded-2xl shadow-md ${isDark ? 'bg-gray-800/95 backdrop-blur-sm' : 'bg-white/95 backdrop-blur-sm'} p-4 sm:p-6 mb-6 transition-all duration-300 hover:shadow-lg`} style={{ borderRadius: '24px' }}>
             <h1 className="text-2xl font-bold mb-2">津门 · 灵感引擎</h1>
             <div className="w-20 h-1 rounded-full bg-gradient-to-r from-blue-600 via-red-500 to-yellow-500 mb-4"></div>
             <div className="flex items-center gap-3 mb-4">
@@ -2764,7 +2780,7 @@ export default function Neo() {
         </div>
       )}
       
-      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4`}>
+      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4 z-10 relative`}>
         <div className="container mx-auto flex justify-between items-center">
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>© 2025 AI共创平台. 保留所有权利</p>
           <div className="flex space-x-6">

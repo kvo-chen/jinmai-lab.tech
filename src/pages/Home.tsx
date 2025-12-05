@@ -341,7 +341,7 @@ export default function Home() {
   
   return (
     <section 
-        className={`relative w-full ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in`}
+        className={`relative w-full pt-12 ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in`}
       >
       {/* 主题切换按钮 */}
       {!isMobile && (
@@ -359,7 +359,7 @@ export default function Home() {
       )}
       
       {/* 首页主标题区域 */}
-      <div className="max-w-7xl mx-auto mt-12 mb-8">
+      <div className="max-w-7xl mx-auto mb-8">
         {/* 首页主标题：采用渐变文字与阴影效果，提升视觉吸引力 */}
         <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4 bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent text-center drop-shadow-md animate-gradient-text">
           创作者，您好

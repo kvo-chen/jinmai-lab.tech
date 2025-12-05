@@ -224,6 +224,7 @@ export default function WorkDetail() {
               rotation: { x: 0, y: 0, z: 0 },
               position: { x: 0, y: 0, z: 0 }
             }}
+            work={work}
             onClose={() => setIsARPreviewOpen(false)}
           />
         )}

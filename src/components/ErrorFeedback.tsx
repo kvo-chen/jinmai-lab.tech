@@ -26,9 +26,9 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
   
   // 生成表单控件基础样式
   const getFormControlStyles = (hasError = false) => {
-    const baseStyles = `w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-300`;
-    const darkStyles = `bg-gray-700 border-gray-600 text-white placeholder-gray-400 border hover:border-gray-500 focus:border-gray-500`;
-    const lightStyles = `bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border hover:border-gray-300 focus:border-gray-300`;
+    const baseStyles = `w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 hover:shadow-md`;
+    const darkStyles = `bg-gray-700 border-gray-600 text-white placeholder-gray-400 border hover:border-gray-500 focus:border-red-400 focus:ring-offset-gray-800`;
+    const lightStyles = `bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 border hover:border-gray-300 focus:border-red-400 focus:ring-offset-white`;
     const errorStyles = hasError ? ` border-red-500 focus:ring-red-500` : '';
     
     return `${baseStyles} ${isDark ? darkStyles : lightStyles}${errorStyles}`;
@@ -192,7 +192,7 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
       className={`fixed inset-0 z-50 flex items-center justify-center ${isDark ? 'bg-gray-900/80' : 'bg-gray-50/80'} backdrop-blur-md transition-opacity duration-300`}
     >
       <motion.div 
-        className={`rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-2xl max-w-2xl w-full mx-4 overflow-hidden`}
+        className={`rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-2xl max-w-2xl w-full mx-4 overflow-hidden md:max-h-[90vh] md:overflow-y-auto`}
         initial={{ opacity: 0, y: -20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -238,53 +238,8 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
                   <i className="fas fa-exclamation-triangle text-lg"></i>
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-base font-semibold mb-1">{errorDetails.message}</h4>
-                  <p className={`text-xs font-mono ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-3`}>
-                    错误类型: {errorDetails.errorType}
-                  </p>
-                  
-                  {/* 错误详情展开/收起 */}
-                  <div className="text-sm">
-                    <button
-                      onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors duration-200"
-                    >
-                      <span>{isDetailsOpen ? '隐藏' : '查看'}详细信息</span>
-                      <i className={`fas fa-chevron-down transition-transform duration-300 ${isDetailsOpen ? 'rotate-180' : ''}`}></i>
-                    </button>
-                    
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{
-                        opacity: isDetailsOpen ? 1 : 0,
-                        height: isDetailsOpen ? 'auto' : 0
-                      }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className={`mt-3 p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'} whitespace-pre-wrap text-xs overflow-auto max-h-60 font-mono border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
-                        <div className="mb-2 text-gray-500 dark:text-gray-400">📅 时间: {new Date(errorDetails.timestamp).toLocaleString()}</div>
-                        <div className="mb-2 text-gray-500 dark:text-gray-400">🌐 URL: {errorDetails.url}</div>
-                        <div className="mb-2 text-gray-500 dark:text-gray-400">💻 设备: {errorDetails.deviceInfo.device} / {errorDetails.deviceInfo.os}</div>
-                        <div className="mb-2 text-gray-500 dark:text-gray-400">🌍 浏览器: {errorDetails.deviceInfo.browser} v{errorDetails.deviceInfo.browserVersion}</div>
-                        {errorDetails.stackTrace && (
-                          <div className="mt-3">
-                            <div className="text-gray-500 dark:text-gray-400 mb-1">🔍 堆栈:</div>
-                            <div className="pl-2 border-l-2 border-gray-400 dark:border-gray-600">{errorDetails.stackTrace}</div>
-                          </div>
-                        )}
-                        {errorDetails.context && Object.keys(errorDetails.context).length > 0 && (
-                          <div className="mt-3">
-                            <div className="text-gray-500 dark:text-gray-400 mb-1">📋 上下文:</div>
-                            <div className="pl-2 border-l-2 border-gray-400 dark:border-gray-600">{JSON.stringify(errorDetails.context, null, 2)}</div>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  </div>
-                  
                   {/* 修复建议 */}
-                  <div className="mt-4">
+                  <div>
                     <h5 className="text-sm font-medium mb-2 flex items-center gap-1">
                       <i className="fas fa-lightbulb text-yellow-500"></i>
                       推荐解决方案:
@@ -341,7 +296,14 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
               ></textarea>
               <div className="flex justify-between items-center mt-1">
                 {!description.trim() && description.length > 0 && (
-                  <p className="text-xs text-red-500">请输入问题描述</p>
+                  <motion.p 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs text-red-500 flex items-center gap-1"
+                  >
+                    <i className="fas fa-exclamation-circle"></i>
+                    请输入问题描述
+                  </motion.p>
                 )}
                 <p id="description-count" className={`text-xs ${description.length > 400 ? 'text-yellow-500' : description.length === 500 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
                   {description.length}/500
@@ -364,8 +326,16 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
                 aria-describedby={contactError ? 'contact-error' : undefined}
               />
               {contactError && (
-                <p id="contact-error" className="text-xs text-red-500 mt-1">{contactError}</p>
-              )}
+              <motion.p 
+                id="contact-error"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs text-red-500 mt-1 flex items-center gap-1"
+              >
+                <i className="fas fa-exclamation-circle"></i>
+                {contactError}
+              </motion.p>
+            )}
             </div>
 
             {/* 截图上传 */}
@@ -382,9 +352,9 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
                         animate={{ opacity: 1, scale: 1 }}
                         className="relative group"
                       >
-                        <div className="w-24 h-24 rounded-lg border ${
+                        <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-lg border ${
                           isDark ? 'border-gray-600' : 'border-gray-200'
-                        } overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        } overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center shadow-sm`}>
                           <img
                             src={URL.createObjectURL(file)}
                             alt={`截图 ${index + 1}`}
@@ -393,8 +363,10 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
                         </div>
                         <button
                           onClick={() => removeScreenshot(index)}
-                          className="absolute -top-2 -right-2 p-1.5 rounded-full bg-red-600 text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-700"
+                          className="absolute -top-2 -right-2 p-1.5 rounded-full bg-red-600 text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                           aria-label={`删除截图 ${index + 1}`}
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && removeScreenshot(index)}
                         >
                           <i className="fas fa-times text-xs"></i>
                         </button>
@@ -444,19 +416,19 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
                 className="w-5 h-5 rounded text-red-600 focus:ring-red-500 transition-all duration-200"
                 tabIndex={0}
               />
-              <label htmlFor="includeLogs" className="text-sm ${
+              <label htmlFor="includeLogs" className={`text-sm ${
                 isDark ? 'text-gray-300' : 'text-gray-600'
-              }">
+              }`}>
                 包含错误日志信息（有助于我们更快定位问题）
               </label>
             </div>
           </div>
         </div>
         
-        <div className={`p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-end gap-3 bg-gradient-to-r ${isDark ? 'from-gray-800 to-gray-750' : 'from-white to-gray-50'}`}>
+        <div className={`p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-end gap-3 bg-gradient-to-r ${isDark ? 'from-gray-800 to-gray-750' : 'from-white to-gray-50'} flex-wrap`}>
           <button
             onClick={onClose}
-            className={`px-5 py-2.5 rounded-lg transition-all duration-300 hover:scale-105 ${
+            className={`px-4 py-2.5 sm:px-5 rounded-lg transition-all duration-300 hover:scale-105 ${
               isDark 
                 ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white' 
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
@@ -466,31 +438,43 @@ const ErrorFeedback: React.FC<ErrorFeedbackProps> = ({ errorInfo, error, onClose
           >
             取消
           </button>
-          <button
+          <motion.button
             onClick={handleSubmit}
             disabled={isSubmitting || !description.trim()}
-            className={`px-6 py-2.5 rounded-lg transition-all duration-300 hover:scale-105 font-medium ${
+            className={`px-5 py-2.5 sm:px-6 rounded-lg transition-all duration-300 hover:scale-105 font-medium ${
               isSubmitting || !description.trim()
                 ? 'bg-gray-500 cursor-not-allowed text-gray-200' 
                 : 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg'
             }`}
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && !isSubmitting && description.trim() && handleSubmit()}
+            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.05 }}
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <i className="fas fa-spinner fa-spin"></i>
                 </motion.div>
-                提交中...
+                <motion.span
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  提交中...
+                </motion.span>
               </div>
             ) : (
-              '提交反馈'
+              <motion.span
+                initial={{ opacity: 1 }}
+                whileTap={{ opacity: 0.8 }}
+              >
+                提交反馈
+              </motion.span>
             )}
-          </button>
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>

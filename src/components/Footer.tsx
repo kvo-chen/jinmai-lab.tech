@@ -24,7 +24,7 @@ export default function Footer({ variant = 'full', simpleText }: FooterProps) {
 
   if (variant === 'simple') {
     return (
-      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4`}>
+      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4 z-10 relative`}>
         <div className="container mx-auto text-center">
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{simpleText || '© 2025 津脉智坊. 保留所有权利'}</p>
         </div>
@@ -33,7 +33,7 @@ export default function Footer({ variant = 'full', simpleText }: FooterProps) {
   }
 
   return (
-    <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-12 px-4`}>
+    <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-12 px-4 z-10 relative`}>
       <div className="container mx-auto">
         <div className="h-px bg-gradient-to-r from-blue-600 via-red-500 to-yellow-500/80 opacity-30 mb-8"></div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">

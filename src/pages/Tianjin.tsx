@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
+import GradientHero from '@/components/GradientHero';
 
 // 动态导入，实现代码分割
 const TianjinCreativeActivities = lazy(() => import('@/components/TianjinCreativeActivities'));
@@ -20,20 +21,26 @@ export default function Tianjin() {
 
       
       {/* 主内容区 */}
-      <main className="container mx-auto px-4 py-4">
+      <main className="container mx-auto px-4 py-8">
+        {/* 天津特色专区渐变英雄区 */}
+        <GradientHero 
+          title="天津特色专区"
+          subtitle="探索天津特色文化、老字号与非遗传承"
+          theme="heritage"
+          stats={[
+            { label: '津门老字号', value: '精选' },
+            { label: '天津元素', value: '资产' },
+            { label: '非遗传承', value: '导览' },
+            { label: '津味应用', value: '共创' }
+          ]}
+          pattern={true}
+          size="lg"
+        />
+        
         {/* 津味共创活动 */}
-        <section className="mb-12">
+        <section className="mt-8 mb-12">
           <div className={`p-6 rounded-2xl shadow-lg ${isDark ? 'bg-gray-800/80 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-200'}`}>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-              <motion.div 
-                className="flex items-center"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <span className="text-red-500 text-3xl mr-3">🎨</span>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-500 bg-clip-text text-transparent">津味共创活动</h2>
-              </motion.div>
               
               {/* 搜索框 */}
               <motion.div 

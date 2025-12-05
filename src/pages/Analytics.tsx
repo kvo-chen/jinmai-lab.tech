@@ -7,7 +7,7 @@ export default function Analytics() {
   const { isDark } = useTheme();
 
   return (
-    <>
+    <main className="container mx-auto px-4 py-8">
       <GradientHero 
         title="数据分析与洞察" 
         subtitle="深入了解作品表现、用户活动和主题趋势"
@@ -21,9 +21,9 @@ export default function Analytics() {
         size="md"
       />
 
-      <main className="container mx-auto px-4 py-8">
+      <div className="mt-8">
         <AnalyticsDashboard />
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

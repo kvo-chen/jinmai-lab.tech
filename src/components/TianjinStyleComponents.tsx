@@ -651,7 +651,7 @@ export const TianjinImage: React.FC<{
   
   return (
     <div
-      className={`relative overflow-hidden ${roundedMap[rounded]} ${className} ${withBorder ? (isDark ? 'ring-1 ring-gray-700' : 'ring-1 ring-gray-200') : ''}`}
+      className={`relative overflow-hidden ${roundedMap[rounded]} ${className} ${withBorder ? (isDark ? 'ring-1 ring-gray-700' : 'ring-1 ring-gray-200') : ''} flex items-center justify-center`}
       style={ratioStyle}
       onClick={onClick}
     >
@@ -668,16 +668,16 @@ export const TianjinImage: React.FC<{
           <i className={`fas fa-image ${isDark ? 'text-gray-500' : 'text-gray-400'} text-3xl mb-2`}></i>
           <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>图片加载失败</div>
           <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} mb-3`}>已自动重试 {retryCount} 次</div>
-          <button 
+          <div 
             onClick={handleManualRetry}
-            className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+            className={`text-xs px-3 py-1 rounded cursor-pointer ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
           >
             点击重试
-          </button>
+          </div>
           {/* 备用图片显示 */}
           <div className="mt-3 text-xs text-gray-500">
             或显示
-            <button 
+            <div 
               onClick={(e) => {
                 e.stopPropagation();
                 // 显示备用图片
@@ -687,10 +687,10 @@ export const TianjinImage: React.FC<{
                 setError(false);
                 setRetryCount(0);
               }}
-              className="ml-1 text-blue-500 hover:underline"
+              className="ml-1 text-blue-500 hover:underline cursor-pointer"
             >
               备用图片
-            </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -737,23 +737,19 @@ export const TianjinImage: React.FC<{
       
       {badge && (
         <span
-          className={`absolute top-3 left-3 text-xs px-2 py-1 rounded-full ${
-            isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700'
-          } backdrop-blur-sm`}
+          className={`absolute top-3 left-3 text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700'} backdrop-blur-sm`}
         >
           {badge}
         </span>
       )}
       
-      {/* 图片标签显示 */}
+      {/* 图片标签显示 - 只显示文件类型 */}
       {imageTag && (
         <span
-          className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded-full ${
-            isDark ? 'bg-gray-800/90 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-700'
-          } backdrop-blur-sm z-50`}
+          className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800/90 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-700'} backdrop-blur-sm z-50`}
           style={{ fontSize: '10px', fontWeight: 'bold' }}
         >
-          {imageTag}
+          {imageTag.split('_').find(part => ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(part)) || '图片'}
         </span>
       )}
     </div>

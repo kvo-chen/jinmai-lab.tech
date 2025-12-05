@@ -41,6 +41,8 @@ const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
 const Drafts = lazy(() => import("@/pages/Drafts"));
 const Lab = lazy(() => import("@/pages/Lab"));
 const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
+const ParticleArt = lazy(() => import("@/pages/ParticleArt"));
+const Games = lazy(() => import("@/pages/Games"));
 
 // 布局组件
 import SidebarLayout from '@/components/SidebarLayout';
@@ -52,6 +54,8 @@ import AdminRoute from '@/components/AdminRoute';
 
 // 性能监控组件
 import PerformanceMonitor from '@/components/PerformanceMonitor';
+// PWA 安装按钮组件
+import PWAInstallButton from '@/components/PWAInstallButton';
 
 export default function App() {
   const location = useLocation();
@@ -213,7 +217,7 @@ export default function App() {
   );
 
   return (
-    <div>
+    <div className="relative">
       <PerformanceMonitor />
       <Suspense fallback={<GlobalLoadingSkeleton />}>
         <Routes>
@@ -226,12 +230,14 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/explore/:id" element={<WorkDetail />} />
+            <Route path="/particle-art" element={<ParticleArt />} />
             <Route path="/tools" element={<Tools />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/help" element={<Help />} />
             <Route path="/neo" element={<Neo />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/games" element={<Games />} />
             <Route path="/lab" element={<PrivateRoute component={Lab} />} />
             <Route path="/wizard" element={<PrivateRoute component={Wizard} />} />
             <Route path="/brand" element={<PrivateRoute component={BrandGuide} />} />
@@ -341,6 +347,8 @@ export default function App() {
         </Route>
       </Routes>
     </Suspense>
+    {/* PWA 安装按钮 */}
+    <PWAInstallButton />
   </div>
 );
 }

@@ -2532,7 +2532,7 @@ export default function Create() {
          )}
          
          {/* 页脚 */}
-      <footer className="border-t border-gray-200 bg-white py-6 px-4">
+      <footer className="border-t border-gray-200 bg-white py-6 px-4 z-10 relative">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-gray-600">
             © 2025 AI共创平台. 保留所有权利

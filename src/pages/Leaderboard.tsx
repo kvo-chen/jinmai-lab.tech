@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiClient from '@/lib/apiClient';
+import GradientHero from '@/components/GradientHero';
 
 interface Post {
   id: number;
@@ -36,7 +37,7 @@ type TimeRange = 'day' | 'week' | 'month' | 'all';
 type SortBy = 'likes_count' | 'views' | 'comments_count' | 'posts_count';
 
 const Leaderboard: React.FC = () => {
-  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>('posts');
+  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>('users');
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [sortBy, setSortBy] = useState<SortBy>('likes_count');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -130,15 +131,19 @@ const Leaderboard: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">排行榜</h1>
-        <p className="text-gray-600 dark:text-gray-400">发现平台上最受欢迎的内容和创作者</p>
-      </motion.div>
+      <GradientHero 
+        title="人气榜"
+        subtitle="发现平台上最受欢迎的内容和创作者"
+        theme="blue"
+        stats={[
+          { label: '类型', value: leaderboardType === 'posts' ? '热门帖子' : '热门创作者' },
+          { label: '时间', value: timeRange === 'day' ? '今日' : timeRange === 'week' ? '本周' : timeRange === 'month' ? '本月' : '总榜' },
+          { label: '排序', value: sortBy === 'likes_count' ? '点赞数' : sortBy === 'views' ? '浏览量' : sortBy === 'comments_count' ? '评论数' : '作品数量' },
+          { label: '数据', value: leaderboardType === 'posts' ? posts.length : users.length }
+        ]}
+        pattern={true}
+        size="md"
+      />
 
       {/* 筛选选项 */}
       <motion.div

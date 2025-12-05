@@ -25,6 +25,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
+  const [showSidebarDrawer, setShowSidebarDrawer] = useState(false)
   
   // 使用 useMemo 优化主题相关的样式计算
   const themeStyles = useMemo(() => {
@@ -205,8 +206,21 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
           'bg-white/90 backdrop-blur-xl border-gray-200'
         )}>
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center">
+            {/* Logo 和菜单按钮 */}
+            <div className="flex items-center space-x-3">
+              {/* 菜单按钮 */}
+              <button
+                onClick={() => setShowSidebarDrawer(true)}
+                className={clsx(
+                  'p-2 rounded-full transition-colors duration-200',
+                  isDark ? 'text-gray-300 hover:bg-gray-800' : 
+                  theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
+                  'text-gray-700 hover:bg-gray-200'
+                )}
+                aria-label="打开侧边栏"
+              >
+                <i className="fas fa-bars"></i>
+              </button>
               <NavLink
                 to="/"
                 onTouchStart={() => prefetchRoute('/')}
@@ -390,6 +404,125 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
           </div>
         </div>
       )}
+      
+      {/* 侧边栏抽屉 */}
+      <div className={`fixed inset-0 z-50 transform transition-all duration-300 ease-in-out ${showSidebarDrawer ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        {/* 遮罩层 */}
+        <div 
+          className="absolute inset-0 bg-black/50" 
+          onClick={() => setShowSidebarDrawer(false)}
+        />
+        {/* 抽屉内容 */}
+        <aside className={clsx(
+          'absolute left-0 top-0 bottom-0 w-64 overflow-y-auto transform transition-transform duration-300 ease-in-out',
+          showSidebarDrawer ? 'translate-x-0' : '-translate-x-full',
+          isDark ? 'bg-[#0b0e13] text-white' : 
+          theme === 'pink' ? 'bg-pink-50 text-pink-900' : 
+          'bg-white text-gray-900'
+        )}>
+          {/* 抽屉头部 */}
+          <div className={clsx(
+            'p-4 flex items-center justify-between border-b',
+            isDark ? 'border-gray-800' : 
+            theme === 'pink' ? 'border-pink-200' : 
+            'border-gray-200'
+          )}>
+            <div className="flex items-center">
+              <div className={clsx(
+                'w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold',
+                themeStyles.logoBackground
+              )}>
+                {themeStyles.logoText}
+              </div>
+              <span className="ml-2 text-xl font-bold">津脉智坊</span>
+            </div>
+            <button
+              onClick={() => setShowSidebarDrawer(false)}
+              className={clsx(
+                'p-2 rounded-full transition-colors duration-200',
+                isDark ? 'text-gray-300 hover:bg-gray-800' : 
+                theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
+                'text-gray-700 hover:bg-gray-200'
+              )}
+              aria-label="关闭侧边栏"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          
+          {/* 导航菜单 */}
+          <nav className="p-2 space-y-1">
+            <NavLink to="/" title="首页" onTouchStart={() => prefetchRoute('/')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-home mr-2"></i>
+              首页
+            </NavLink>
+            <NavLink to="/explore" title="探索作品" onTouchStart={() => prefetchRoute('/explore')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-compass mr-2"></i>
+              探索作品
+            </NavLink>
+            <NavLink to="/particle-art" title="粒子艺术" onTouchStart={() => prefetchRoute('/particle-art')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-palette mr-2"></i>
+              粒子艺术
+            </NavLink>
+            <NavLink to="/tools" title="创作中心" onTouchStart={() => prefetchRoute('/tools')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-tools mr-2"></i>
+              创作中心
+            </NavLink>
+            <NavLink to="/neo" title="灵感引擎" onTouchStart={() => prefetchRoute('/neo')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-bolt mr-2"></i>
+              灵感引擎
+            </NavLink>
+            <NavLink to="/lab" title="新窗口实验室" onTouchStart={() => prefetchRoute('/lab')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-window-restore mr-2"></i>
+              新窗口实验室
+            </NavLink>
+            <NavLink to="/wizard" title="共创向导" onTouchStart={() => prefetchRoute('/wizard')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-hat-wizard mr-2"></i>
+              共创向导
+            </NavLink>
+            <NavLink to="/square" title="共创广场" onTouchStart={() => prefetchRoute('/square')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-th-large mr-2"></i>
+              共创广场
+            </NavLink>
+            <NavLink to="/community?context=cocreation&tab=joined" title="共创社群" onTouchStart={() => prefetchRoute('/community')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-user-friends mr-2"></i>
+              共创社群
+            </NavLink>
+            <NavLink to="/community?context=creator" title="创作者社区" onTouchStart={() => prefetchRoute('/community')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-users mr-2"></i>
+              创作者社区
+            </NavLink>
+            <NavLink to="/leaderboard" title="人气榜" onTouchStart={() => prefetchRoute('/leaderboard')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-chart-line mr-2"></i>
+              人气榜
+            </NavLink>
+            <NavLink to="/games" title="趣味游戏" onTouchStart={() => prefetchRoute('/games')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-gamepad mr-2"></i>
+              趣味游戏
+            </NavLink>
+            <NavLink to="/knowledge" title="文化知识库" onTouchStart={() => prefetchRoute('/knowledge')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-book mr-2"></i>
+              文化知识库
+            </NavLink>
+            <NavLink to="/tianjin" title="天津特色专区" onTouchStart={() => prefetchRoute('/tianjin')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-landmark mr-2"></i>
+              天津特色专区
+            </NavLink>
+            <NavLink to="/events" title="文化活动" onTouchStart={() => prefetchRoute('/events')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-calendar-alt mr-2"></i>
+              文化活动
+            </NavLink>
+            <NavLink to="/brand" title="品牌合作" onTouchStart={() => prefetchRoute('/brand')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-handshake mr-2"></i>
+              品牌合作
+            </NavLink>
+            <NavLink to="/about" title="关于我们" onTouchStart={() => prefetchRoute('/about')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-info-circle mr-2"></i>
+              关于我们
+            </NavLink>
+          </nav>
+        </aside>
+      </div>
       
       {/* 主内容区 */}
       <main className="flex-1 overflow-y-auto pb-20">

@@ -498,7 +498,7 @@ export default function Dashboard() {
         </motion.div>
       </main>
       
-      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4`}>
+      <footer className={`border-t ${isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'} py-6 px-4 z-10 relative`}>
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             © 2025 津脉智坊. 保留所有权利

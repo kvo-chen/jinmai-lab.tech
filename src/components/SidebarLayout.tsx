@@ -17,10 +17,11 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState<boolean>(() => {
-    // 从localStorage读取保存的折叠状态
+    // 从localStorage读取保存的折叠状态，默认展开
     const saved = localStorage.getItem('sidebarCollapsed')
     return saved ? JSON.parse(saved) : false
   })
+  const [hovered, setHovered] = useState<boolean>(false)
   const [width, setWidth] = useState<number>(() => {
     const saved = localStorage.getItem('sidebarWidth')
     // 中文注释：默认侧边栏更窄（180px），并将可拖拽的最小宽度下调到 180px
@@ -175,6 +176,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       switch (path) {
         case '/': import('@/pages/Home').then(() => markPrefetched('home', { ttlMs })); break
         case '/explore': import('@/pages/Explore').then(() => markPrefetched('explore', { ttlMs })); break
+        case '/particle-art': import('@/pages/ParticleArt').then(() => markPrefetched('particle-art', { ttlMs })); break
         case '/create': import('@/pages/Create').then(() => markPrefetched('create', { ttlMs })); break
         case '/tools': import('@/pages/Tools').then(() => markPrefetched('tools', { ttlMs })); break
         case '/neo': import('@/pages/Neo').then(() => markPrefetched('neo', { ttlMs })); break
@@ -188,6 +190,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         case '/about': import('@/pages/About').then(() => markPrefetched('about', { ttlMs })); break
         case '/dashboard': import('@/pages/Dashboard').then(() => markPrefetched('dashboard', { ttlMs })); break
         case '/events': import('@/pages/CulturalEvents').then(() => markPrefetched('events', { ttlMs })); break
+        case '/games': import('@/pages/Games').then(() => markPrefetched('games', { ttlMs })); break
         default: break
       }
     } catch (error) {
@@ -334,13 +337,15 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     <div className={`flex min-h-screen ${isDark ? 'bg-gradient-to-br from-[#0b0e13] via-[#0e1218] to-[#0b0e13] text-gray-100' : theme === 'pink' ? 'bg-gradient-to-br from-[#fff0f5] via-[#ffe4ec] to-[#fff0f5] text-gray-900' : 'bg-white text-gray-900'}`}> 
       {/* 仅在桌面端显示侧边栏 */}
       <aside 
-        className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
-        style={{ width: collapsed ? 72 : width, transition: 'width 0.2s ease-in-out' }}
+        className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 z-10 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{ width: (collapsed && !hovered) ? 72 : width, transition: 'width 0.2s ease-in-out' }}
       >
         <div className={`px-4 py-3 flex items-center justify-between rounded-lg transition-colors group ${isDark ? 'hover:bg-gray-800/60' : theme === 'pink' ? 'hover:bg-pink-50' : 'hover:bg-gray-50'}`}>
           <div className="flex items-center space-x-2">
             <span className={`font-extrabold bg-gradient-to-r ${isDark ? 'from-red-400 to-rose-500' : 'from-red-600 to-rose-500'} bg-clip-text text-transparent tracking-tight`}>津脉</span>
-            {!collapsed && <span className="font-bold">智坊</span>}
+            {(!collapsed || hovered) && <span className="font-bold">智坊</span>}
           </div>
           <button
             className={`p-2 rounded-lg ring-1 transition-all ${isDark ? 'hover:bg-gray-800/70 ring-gray-800 hover:ring-2' : 'hover:bg-gray-100 ring-gray-200 hover:ring-2'} hover:shadow-sm`}
@@ -354,24 +359,28 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
 
         <nav className="px-2 space-y-1">
           <NavLink to="/" title={collapsed ? '首页' : undefined} onMouseEnter={() => prefetchRoute('/') } className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-            <i className="fas fa-home mr-2"></i>
-            {!collapsed && '首页'}
-          </NavLink>
+              <i className="fas fa-home mr-2"></i>
+              {(!collapsed || hovered) && '首页'}
+            </NavLink>
           <NavLink to="/explore" title={collapsed ? '探索作品' : undefined} onMouseEnter={() => prefetchRoute('/explore')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-compass mr-2"></i>
-            {!collapsed && '探索作品'}
+            {(!collapsed || hovered) && '探索作品'}
+          </NavLink>
+          <NavLink to="/particle-art" title={collapsed ? '粒子艺术' : undefined} onMouseEnter={() => prefetchRoute('/particle-art')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+            <i className="fas fa-palette mr-2"></i>
+            {(!collapsed || hovered) && '粒子艺术'}
           </NavLink>
           <NavLink to="/tools" title={collapsed ? '创作中心' : undefined} onMouseEnter={() => prefetchRoute('/tools')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-tools mr-2"></i>
-            {!collapsed && '创作中心'}
+            {(!collapsed || hovered) && '创作中心'}
           </NavLink>
           <NavLink to="/neo" title={collapsed ? '灵感引擎' : undefined} onMouseEnter={() => prefetchRoute('/neo')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-bolt mr-2"></i>
-            {!collapsed && '灵感引擎'}
+            {(!collapsed || hovered) && '灵感引擎'}
           </NavLink>
           <NavLink to="/lab" title={collapsed ? '新窗口实验室' : undefined} onMouseEnter={() => prefetchRoute('/lab')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-window-restore mr-2"></i>
-            {!collapsed && '新窗口实验室'}
+            {(!collapsed || hovered) && '新窗口实验室'}
           </NavLink>
           {/* 中文注释：为“共创向导”导航项补充辅助功能与预加载触发，提升可访问性与响应速度 */}
           <NavLink 
@@ -385,11 +394,11 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}
           > 
             <i className="fas fa-hat-wizard mr-2"></i>
-            {!collapsed && '共创向导'}
+            {(!collapsed || hovered) && '共创向导'}
           </NavLink>
           <NavLink to="/square" title={collapsed ? '共创广场' : undefined} onMouseEnter={() => prefetchRoute('/square')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-th-large mr-2"></i>
-            {!collapsed && '共创广场'}
+            {(!collapsed || hovered) && '共创广场'}
           </NavLink>
           {/* 中文注释：共创社群在折叠时也显示图标，便于快速进入 */}
           <NavLink 
@@ -400,39 +409,39 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             className={() => `${navItemClass} ${isCommunityActive('cocreation') ? activeClass : ''}`}
           >
             <i className="fas fa-user-friends mr-2"></i>
-            {!collapsed && '共创社群'}
+            {(!collapsed || hovered) && '共创社群'}
           </NavLink>
           <NavLink to="/community?context=creator" title={collapsed ? '创作者社区' : undefined} onMouseEnter={() => prefetchRoute('/community')} className={() => `${navItemClass} mt-2 ${isCommunityActive('creator') ? activeClass : ''}`}> 
             <i className="fas fa-users mr-2"></i>
-            {!collapsed && '创作者社区'}
+            {(!collapsed || hovered) && '创作者社区'}
           </NavLink>
           <NavLink to="/leaderboard" title={collapsed ? '排行榜' : undefined} onMouseEnter={() => prefetchRoute('/leaderboard')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-chart-line mr-2"></i>
-            {!collapsed && '排行榜'}
+            {(!collapsed || hovered) && '人气榜'}
           </NavLink>
-          <NavLink to="/analytics" title={collapsed ? '数据分析' : undefined} onMouseEnter={() => prefetchRoute('/analytics')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-            <i className="fas fa-chart-pie mr-2"></i>
-            {!collapsed && '数据分析'}
+          <NavLink to="/games" title={collapsed ? '小游戏' : undefined} onMouseEnter={() => prefetchRoute('/games')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
+            <i className="fas fa-gamepad mr-2"></i>
+            {(!collapsed || hovered) && '趣味游戏'}
           </NavLink>
           <NavLink to="/knowledge" title={collapsed ? '文化知识库' : undefined} onMouseEnter={() => prefetchRoute('/knowledge')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-book mr-2"></i>
-            {!collapsed && '文化知识库'}
+            {(!collapsed || hovered) && '文化知识库'}
           </NavLink>
           <NavLink to="/tianjin" title={collapsed ? '天津特色专区' : undefined} onMouseEnter={() => prefetchRoute('/tianjin')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-landmark mr-2"></i>
-            {!collapsed && '天津特色专区'}
+            {(!collapsed || hovered) && '天津特色专区'}
           </NavLink>
           <NavLink to="/events" title={collapsed ? '文化活动' : undefined} onMouseEnter={() => prefetchRoute('/events')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-calendar-alt mr-2"></i>
-            {!collapsed && '文化活动'}
+            {(!collapsed || hovered) && '文化活动'}
           </NavLink>
           <NavLink to="/brand" title={collapsed ? '品牌合作' : undefined} onMouseEnter={() => prefetchRoute('/brand')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-handshake mr-2"></i>
-            {!collapsed && '品牌合作'}
+            {(!collapsed || hovered) && '品牌合作'}
           </NavLink>
           <NavLink to="/about" title={collapsed ? '关于我们' : undefined} onMouseEnter={() => prefetchRoute('/about')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
             <i className="fas fa-info-circle mr-2"></i>
-            {!collapsed && '关于我们'}
+            {(!collapsed || hovered) && '关于我们'}
           </NavLink>
         </nav>
 
@@ -449,11 +458,12 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       </aside>
       {/* 中文注释：恢复点击自动收起功能，但优化实现方式避免跳动 */}
       <div 
-        className="flex-1 min-w-0 md:pb-0 pt-0 flex flex-col overflow-y-auto"
+        className="flex-1 min-w-0 md:pb-0 pt-0 flex flex-col overflow-y-auto relative z-10"
         onClick={(e) => {
           // 确保点击的不是内部的可交互元素
           const target = e.target as HTMLElement;
-          if (!collapsed && !target.closest('button, input, a, [role="menu"], [role="dialog"]')) {
+          // 只在点击主内容区域时收起侧边栏，不拦截导航链接等可交互元素
+          if (!collapsed && !target.closest('button, input, a, [role="menu"], [role="dialog"], nav, [data-discover="true"]')) {
             setCollapsed(true);
           }
         }}

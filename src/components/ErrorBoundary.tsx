@@ -80,14 +80,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
           
           {/* 错误信息 */}
           <main className="flex-1 container mx-auto px-4 py-16 flex flex-col items-center justify-center text-center">
-            <div className="mb-6 text-8xl text-red-600 animate-pulse">
-              <i className="fas fa-exclamation-circle"></i>
-            </div>
-            <h1 className="text-3xl font-bold mb-4">抱歉，出现了一些问题</h1>
-            <p className={`max-w-lg mx-auto mb-8 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              {error ? errorService.getFriendlyErrorMessage(errorType) : '页面加载过程中出现了错误。'}
-            </p>
-            
             {/* 解决方案 */}
             <div className={`mb-8 p-6 rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} max-w-md w-full shadow-lg transition-all hover:shadow-xl`}>
               <h3 className="text-lg font-semibold mb-4 flex items-center">
@@ -103,35 +95,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
                 ))}
               </ul>
             </div>
-            
-            {/* 错误详情（可展开） */}
-            {error && (
-              <div className={`mb-8 p-6 rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} max-w-md w-full shadow-lg`}>
-                <details className="group">
-                  <summary className="text-sm font-medium cursor-pointer flex items-center justify-between">
-                    <span>错误详情</span>
-                    <i className="fas fa-chevron-down group-open:rotate-180 transition-transform duration-200 text-gray-500"></i>
-                  </summary>
-                  <div className={`mt-4 p-4 rounded-lg ${isDark ? 'bg-gray-900' : 'bg-gray-50'} text-left overflow-x-auto`}>
-                    <p className="text-sm font-mono mb-2">{error.message}</p>
-                    {error.stack && (
-                      <pre className="text-xs text-gray-500 whitespace-pre-wrap">{error.stack}</pre>
-                    )}
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(error.stack || error.message)
-                          .then(() => alert('错误信息已复制到剪贴板'))
-                          .catch(() => alert('复制失败，请手动复制'))
-                      }}
-                      className="mt-3 text-xs text-blue-500 hover:text-blue-700 flex items-center"
-                    >
-                      <i className="fas fa-copy mr-1"></i>
-                      复制错误信息
-                    </button>
-                  </div>
-                </details>
-              </div>
-            )}
             
             {/* 操作按钮 */}
             <div className="flex flex-col sm:flex-row gap-4">

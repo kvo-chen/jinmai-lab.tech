@@ -7,6 +7,7 @@ import ipService from '@/services/ipService'
 // import llmService from '@/services/llmService'
 
 import { toast } from 'sonner'
+import GradientHero from '@/components/GradientHero'
 
 export default function BrandGuide() {
   const { isDark } = useTheme()
@@ -156,16 +157,23 @@ export default function BrandGuide() {
   }
   // 中文注释：移除页面锚点导航后，不再需要可视区监测逻辑
   return (
-      <main className="container mx-auto px-4 py-8 py-10 scroll-smooth" aria-label="主要内容">
-        {/* 中文注释：页面头部采用轻量渐变与说明文字，提升高级感 */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">品牌选择与知识引导</h1>
-            <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800 text-gray-300 ring-1 ring-gray-700' : 'bg-white text-gray-700 ring-1 ring-gray-200'}`}>Beta</span>
-          </div>
-          <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mt-2 text-sm`}>面向老字号品牌的共创入口：选择品牌、生成灵感、提交合作与管理申请。</p>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="container mx-auto px-4 py-8 scroll-smooth" aria-label="主要内容">
+        {/* 品牌合作渐变英雄区 */}
+        <GradientHero 
+          title="品牌合作"
+          subtitle="面向老字号品牌的共创入口：选择品牌、生成灵感、提交合作与管理申请"
+          theme="pink"
+          stats={[
+            { label: '当前品牌', value: brand.name },
+            { label: '申请数量', value: brandAll.length },
+            { label: '状态', value: statusFilter },
+            { label: '排序', value: sortKey === 'recent' ? '最新' : sortKey === 'old' ? '最早' : '状态' }
+          ]}
+          badgeText="Beta"
+          pattern={true}
+          size="lg"
+        />
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className={`${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700' : 'bg-white/90 ring-1 ring-gray-200'} rounded-2xl shadow-xl p-6 backdrop-blur lg:sticky lg:top-6`} id="brand-section" aria-labelledby="brand-section-title">
             {/* 中文注释：移除页面锚点导航，左侧仅保留品牌选择 */}
             <h2 className="text-base font-semibold mb-3">选择老字号</h2>
