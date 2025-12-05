@@ -159,10 +159,6 @@ export default defineConfig({
             return `page-${pageName}`;
           }
         },
-        // 优化拆包，减少初始加载体积
-        chunkSizeWarningLimit: 150,
-        // 启用代码分割
-        codeSplit: true,
         // 启用动态导入支持
         dynamicImportInCjs: true,
       },
