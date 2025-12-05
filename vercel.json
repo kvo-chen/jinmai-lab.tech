@@ -34,6 +34,48 @@
       }
     },
     {
+      "src": "/entries/(.*)",
+      "dest": "/entries/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/chunks/(.*)",
+      "dest": "/chunks/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/registerSW.js",
+      "dest": "/registerSW.js",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/manifest.webmanifest",
+      "dest": "/manifest.webmanifest",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "src": "/workbox-(.*)\.js",
+      "dest": "/workbox-$1.js",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
       "src": "/index.html",
       "dest": "/index.html"
     },
