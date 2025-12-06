@@ -1,7 +1,7 @@
 {
   "name": "project_template_react",
   "private": true,
-  "version": "0.0.8",
+  "version": "0.0.7",
   "type": "module",
   "scripts": {
     "dev:client": "vite --host --port 3000",
@@ -43,6 +43,7 @@
     "tailwind-merge": "^3.0.2",
     "three": "^0.181.2",
     "workbox-window": "^7.4.0",
+    "ws": "^8.18.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {

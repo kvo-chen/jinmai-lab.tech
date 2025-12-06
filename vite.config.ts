@@ -7,37 +7,69 @@ import { visualizer } from 'rollup-plugin-visualizer';
 function getPlugins() {
   const plugins = [
     react(), 
-    tsconfigPaths()
-    // 暂时移除PWA插件，避免Service Worker问题
-    // VitePWA({
-    //   registerType: 'autoUpdate',
-    //   includeAssets: [], // 移除不存在的资源引用
-    //   manifest: {
-    //     name: '津脉智坊 - 津门老字号共创平台',
-    //     short_name: '津脉智坊',
-    //     description: '津门老字号共创平台，传承与创新的桥梁',
-    //     theme_color: '#ffffff',
-    //     background_color: '#ffffff',
-    //     display: 'standalone',
-    //     orientation: 'portrait',
-    //     icons: [] // 移除不存在的图标引用
-    //   },
-    //   workbox: {
-    //     runtimeCaching: [
-    //       {
-    //         urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/.*$/,
-    //         handler: 'CacheFirst',
-    //         options: {
-    //           cacheName: 'font-awesome-cache',
-    //           expiration: {
-    //             maxEntries: 1,
-    //             maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-    //           }
-    //         }
-    //       }
-    //     ]
-    //   }
-    // })
+    tsconfigPaths(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.svg'],
+      manifest: {
+        name: '津脉智坊 - 津门老字号共创平台',
+        short_name: '津脉智坊',
+        description: '津门老字号共创平台，传承与创新的桥梁',
+        theme_color: '#2563eb',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait',
+        icons: [
+          {
+            src: 'icons/icon-192x192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml'
+          },
+          {
+            src: 'icons/icon-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml'
+          }
+        ]
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/.*$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-awesome-cache',
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          {
+            urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          {
+            urlPattern: /^https?:\/\/.*\.(js|css)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              }
+            }
+          }
+        ]
+      }
+    })
   ];
   return plugins;
 }
@@ -249,7 +281,7 @@ export default defineConfig({
       treeShaking: true,
     },
   },
-  // 服务器配置优化
+  // 开发服务器配置
   server: {
     // 启用 gzip 压缩
     compress: true,
@@ -260,14 +292,21 @@ export default defineConfig({
       timeout: 3000,
       overlay: true,
     },
-    // 添加代理配置，将/api/proxy请求转发到本地API服务器
+    // 添加开发服务器代理配置
     proxy: {
-      '/api/proxy': {
-        target: 'http://localhost:3006',
+      '/api/proxy/trae-api': {
+        target: 'http://localhost:3007',
         changeOrigin: true,
-        secure: false,
-      }
-    }
+        // 不需要rewrite，因为本地API服务器已经处理了路径
+        configure: (proxy, options) => {
+          // 允许所有响应头通过
+          options.onProxyRes = (proxyRes, req, res) => {
+            // 确保响应头被正确设置，特别是对于图片请求
+            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+          };
+        },
+      },
+    },
   },
   // 预览服务器配置
   preview: {
@@ -275,6 +314,21 @@ export default defineConfig({
     compress: true,
     // 设置端口为3000
     port: 3000,
+    // 添加预览服务器代理配置
+    proxy: {
+      '/api/proxy/trae-api': {
+        target: 'https://trae-api-sg.mchost.guru',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/proxy\/trae-api/, ''),
+        configure: (proxy, options) => {
+          // 允许所有响应头通过
+          options.onProxyRes = (proxyRes, req, res) => {
+            // 确保响应头被正确设置，特别是对于图片请求
+            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+          };
+        },
+      },
+    },
   },
 });
 

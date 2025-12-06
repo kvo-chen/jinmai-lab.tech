@@ -10,7 +10,7 @@ type ParticleBehavior = 'default' | 'spiral' | 'explosion' | 'wave' | 'orbit' | 
 
 // 粒子配置类型
 interface ParticleConfig {
-  model: 'heart' | 'flower' | 'saturn' | 'buddha' | 'firework';
+  model: 'heart' | 'flower' | 'saturn' | 'buddha' | 'firework' | 'baozi';
   color: string;
   particleCount: number;
   scale: number;
@@ -663,6 +663,9 @@ const InstancedParticleSystem: React.FC<{
         break;
       case 'firework':
         geom = new THREE.TetrahedronGeometry(0.1 * config.scale, 1);
+        break;
+      case 'baozi':
+        geom = new THREE.SphereGeometry(0.1 * config.scale, 16, 16);
         break;
       default:
         geom = new THREE.SphereGeometry(0.1 * config.scale, 16, 16);

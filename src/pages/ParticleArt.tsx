@@ -34,7 +34,7 @@ const tianjinThemes = [
     name: '狗不理包子',
     description: '天津传统美食，皮薄馅大',
     color: '#f7b733',
-    model: 'heart' as ParticleModelType,
+    model: 'baozi' as ParticleModelType,
     icon: '🥟',
     behavior: 'orbit' as const
   },

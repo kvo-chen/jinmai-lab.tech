@@ -139,7 +139,7 @@ const Leaderboard: React.FC = () => {
           { label: '类型', value: leaderboardType === 'posts' ? '热门帖子' : '热门创作者' },
           { label: '时间', value: timeRange === 'day' ? '今日' : timeRange === 'week' ? '本周' : timeRange === 'month' ? '本月' : '总榜' },
           { label: '排序', value: sortBy === 'likes_count' ? '点赞数' : sortBy === 'views' ? '浏览量' : sortBy === 'comments_count' ? '评论数' : '作品数量' },
-          { label: '数据', value: leaderboardType === 'posts' ? posts.length : users.length }
+          { label: '数据', value: (leaderboardType === 'posts' ? posts.length : users.length).toString() }
         ]}
         pattern={true}
         size="md"

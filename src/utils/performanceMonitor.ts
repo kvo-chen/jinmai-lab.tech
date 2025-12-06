@@ -125,9 +125,9 @@ class PerformanceMonitor {
     this.metrics.push(metric);
     
     // 发送到控制台（生产环境可发送到监控服务）
-    if (import.meta.env.DEV) {
-      console.log('[Performance Metric]', metric);
-    }
+    // if (import.meta.env.DEV) {
+    //   console.log('[Performance Metric]', metric);
+    // }
     
     // 限制指标数量，避免内存泄漏
     if (this.metrics.length > 1000) {

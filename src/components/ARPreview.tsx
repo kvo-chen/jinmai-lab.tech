@@ -1,9 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, ErrorInfo } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+
+// 性能优化：关闭不必要的Three.js特性
+THREE.DefaultLoadingManager.onStart = function (url, itemsLoaded, itemsTotal) {
+  console.log(`Loading started: ${url} ${itemsLoaded}/${itemsTotal}`);
+};
+
+THREE.DefaultLoadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+  console.log(`Loading progress: ${url} ${itemsLoaded}/${itemsTotal}`);
+};
+
+THREE.DefaultLoadingManager.onError = function (url) {
+  console.error(`Loading error: ${url}`);
+};
 
 // 导入作品类型
 import type { Work } from '@/mock/works';
@@ -35,165 +48,272 @@ export type EnvironmentPreset =
   | 'park' 
   | 'lobby';
 
-// 改进的纹理缓存，带引用计数和大小限制
-interface TextureCacheItem {
-  texture: THREE.Texture;
-  refCount: number;
-  size: number;
-  lastUsed: number;
-}
-
-const textureCache = new Map<string, TextureCacheItem>();
-const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB
-let currentCacheSize = 0;
+// 简化的纹理缓存，不使用复杂的引用计数
+const textureCache = new Map<string, THREE.Texture>();
+const MAX_CACHE_ITEMS = 10; // 限制缓存项数量
 
 // 清理纹理缓存的函数
 const cleanupTextureCache = () => {
-  if (currentCacheSize <= MAX_CACHE_SIZE) return;
+  if (textureCache.size <= MAX_CACHE_ITEMS) return;
   
-  // 按最后使用时间排序，清理最旧的纹理
-  const sortedItems = Array.from(textureCache.entries()).sort((a, b) => a[1].lastUsed - b[1].lastUsed);
-  
-  for (const [url, item] of sortedItems) {
-    if (currentCacheSize <= MAX_CACHE_SIZE) break;
-    
-    // 只有当引用计数为0时才清理
-    if (item.refCount <= 0) {
-      item.texture.dispose();
-      currentCacheSize -= item.size;
-      textureCache.delete(url);
+  // 移除最旧的缓存项（Map会保持插入顺序）
+  const firstKey = textureCache.keys().next().value;
+  if (firstKey) {
+    const texture = textureCache.get(firstKey);
+    if (texture) {
+      texture.dispose();
     }
+    textureCache.delete(firstKey);
   }
 };
 
-// 2D图片组件 - 带纹理缓存
+// 反馈效果组件
+const FeedbackEffect: React.FC<{
+  id: number;
+  type: 'click' | 'place';
+  position: { x: number; y: number; z: number };
+  timestamp: number;
+}> = ({ id, type, position, timestamp }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const startTime = useRef(Date.now());
+  
+  // 使用useFrame钩子实现动画
+  useFrame((state, delta) => {
+    if (!meshRef.current) return;
+    
+    const elapsed = (Date.now() - startTime.current) / 1000;
+    const mesh = meshRef.current;
+    const material = mesh.material as THREE.MeshBasicMaterial;
+    
+    if (type === 'click') {
+      // 点击效果：波纹扩散
+      const scale = elapsed * 3;
+      mesh.scale.set(scale, scale, scale);
+      material.opacity = 1 - elapsed;
+    } else {
+      // 放置效果：粒子爆炸
+      const scale = 1 + elapsed * 2;
+      mesh.scale.set(scale, scale, scale);
+      material.opacity = 1 - elapsed;
+      mesh.rotation.y += delta * 5;
+    }
+    
+    // 动画结束后可以移除对象
+    if (elapsed > 1) {
+      mesh.visible = false;
+    }
+  });
+  
+  return (
+    <mesh 
+      ref={meshRef}
+      position={[position.x, position.y, position.z]}
+      userData={{ animate: true }}
+    >
+      {type === 'click' ? (
+        // 点击效果：环形波纹
+        <>
+          <ringGeometry args={[0.05, 0.1, 32]} />
+          <meshBasicMaterial 
+            color="rgba(0, 255, 0, 0.8)" 
+            transparent 
+            side={THREE.DoubleSide}
+          />
+        </>
+      ) : (
+        // 放置效果：星形粒子
+        <>
+          <octahedronGeometry args={[0.1, 0]} />
+          <meshBasicMaterial 
+            color="rgba(0, 255, 100, 0.8)" 
+            transparent 
+            side={THREE.DoubleSide}
+          />
+        </>
+      )}
+    </mesh>
+  );
+};
+
+// 3D模型预览组件 - 极简版
+const ModelPreview: React.FC<{
+  url?: string;
+  scale: number;
+  rotation: { x: number; y: number; z: number };
+  position: { x: number; y: number; z: number };
+}> = React.memo(({ url, scale, rotation, position }) => {
+  // 加载3D模型，添加错误处理
+  const { scene: modelScene } = useGLTF(url || '');
+
+  return (
+    <group 
+      position={[position.x, position.y, position.z]} 
+      rotation={[rotation.x, rotation.y, rotation.z]} 
+      scale={scale}
+    >
+      {modelScene ? (
+        <primitive 
+          object={modelScene} 
+        />
+      ) : (
+        // 简化加载中状态
+        <mesh>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial 
+            color="#666666"
+            metalness={0}
+            roughness={1}
+          />
+        </mesh>
+      )}
+    </group>
+  );
+}, (prevProps, nextProps) => {
+  // 自定义比较函数，减少不必要的渲染
+  return prevProps.url === nextProps.url && 
+         prevProps.scale === nextProps.scale &&
+         prevProps.rotation.x === nextProps.rotation.x &&
+         prevProps.rotation.y === nextProps.rotation.y &&
+         prevProps.rotation.z === nextProps.rotation.z &&
+         prevProps.position.x === nextProps.position.x &&
+         prevProps.position.y === nextProps.position.y &&
+         prevProps.position.z === nextProps.position.z;
+});
+
+// 错误边界组件
+class ARPreviewErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ARPreview组件错误:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-10">
+          <div className="text-center text-white p-6 rounded-lg">
+            <h2 className="text-xl font-bold text-red-500 mb-4">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
+              组件加载出错
+            </h2>
+            <p className="mb-4">抱歉，AR预览组件加载失败，请重试</p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                toast.info('正在重新加载组件...');
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200"
+            >
+              <i className="fas fa-redo mr-2"></i>
+              重新加载
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 2D图片预览组件 - 极简版
 const ImagePreview: React.FC<{
   url: string;
   scale: number;
   rotation: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
-}> = ({ url, scale, rotation, position }) => {
+}> = React.memo(({ url, scale, rotation, position }) => {
   const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  
+
   React.useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    
     // 检查缓存中是否已有该纹理
     if (textureCache.has(url)) {
-      // 使用缓存的纹理并增加引用计数
-      const cachedItem = textureCache.get(url)!;
-      cachedItem.refCount++;
-      cachedItem.lastUsed = Date.now();
-      setTexture(cachedItem.texture);
-      setIsLoading(false);
+      // 使用缓存的纹理
+      const cachedTexture = textureCache.get(url)!;
+      if (isMounted) {
+        setTexture(cachedTexture);
+        setIsLoading(false);
+      }
       return;
     }
     
-    setIsLoading(true);
+    // 简单的占位纹理
+    const placeholderCanvas = document.createElement('canvas');
+    placeholderCanvas.width = 64;
+    placeholderCanvas.height = 64;
+    const ctx = placeholderCanvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, 64, 64);
+      ctx.strokeStyle = '#ccc';
+      ctx.strokeRect(0, 0, 64, 64);
+    }
     
-    // 缓存中没有，加载新纹理
+    const placeholderTexture = new THREE.CanvasTexture(placeholderCanvas);
+    placeholderTexture.colorSpace = THREE.SRGBColorSpace;
+    placeholderTexture.needsUpdate = true;
+    
+    if (isMounted) {
+      setTexture(placeholderTexture);
+    }
+    
+    // 加载纹理
     const loader = new THREE.TextureLoader();
     
-    // 先加载一个低分辨率的占位纹理
-    const placeholderTexture = new THREE.Texture();
-    placeholderTexture.colorSpace = THREE.SRGBColorSpace;
-    setTexture(placeholderTexture);
-    
-    // 然后加载完整纹理
     loader.load(
-      url, 
-      async (loadedTexture: THREE.Texture) => {
-        try {
-          const image = loadedTexture.image as HTMLImageElement;
-          
-          // 优化纹理尺寸，限制最大尺寸为2048px
-          const maxSize = 2048;
-          let optimizedImage = image;
-          
-          // 检查是否需要调整尺寸
-          if (image.width > maxSize || image.height > maxSize) {
-            // 计算调整后的尺寸，保持原比例
-            const aspectRatio = image.width / image.height;
-            let newWidth = maxSize;
-            let newHeight = maxSize;
-            
-            if (aspectRatio > 1) {
-              // 宽图
-              newHeight = Math.floor(maxSize / aspectRatio);
-            } else {
-              // 高图或正方形
-              newWidth = Math.floor(maxSize * aspectRatio);
-            }
-            
-            // 创建临时画布用于调整尺寸
-            const canvas = document.createElement('canvas');
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-            const ctx = canvas.getContext('2d');
-            
-            if (ctx) {
-              // 使用渐进式缩放算法，提高缩放质量
-              ctx.imageSmoothingQuality = 'high';
-              ctx.drawImage(image, 0, 0, newWidth, newHeight);
-              optimizedImage = canvas;
-            }
-          }
-          
-          // 更新纹理
-          loadedTexture.image = optimizedImage;
-          loadedTexture.colorSpace = THREE.SRGBColorSpace;
-          loadedTexture.generateMipmaps = true;
-          loadedTexture.minFilter = THREE.LinearMipmapLinearFilter;
-          loadedTexture.magFilter = THREE.LinearFilter;
-          loadedTexture.needsUpdate = true;
-          
-          // 计算纹理大小（近似值）
-          const imageData = new ImageData(optimizedImage.width, optimizedImage.height);
-          const textureSize = imageData.data.length * 4; // RGBA格式，每个通道1字节
-          
-          // 存入缓存，引用计数初始化为1
-          textureCache.set(url, {
-            texture: loadedTexture,
-            refCount: 1,
-            size: textureSize,
-            lastUsed: Date.now()
-          });
-          
-          currentCacheSize += textureSize;
-          
-          // 清理超出大小限制的缓存
-          cleanupTextureCache();
-          
+      url,
+      (loadedTexture) => {
+        if (!isMounted) return;
+        
+        // 优化纹理设置
+        loadedTexture.colorSpace = THREE.SRGBColorSpace;
+        loadedTexture.generateMipmaps = true;
+        loadedTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        loadedTexture.magFilter = THREE.LinearFilter;
+        loadedTexture.needsUpdate = true;
+        loadedTexture.anisotropy = 1;
+        
+        // 清理占位纹理
+        placeholderTexture.dispose();
+        
+        // 存入缓存
+        textureCache.set(url, loadedTexture);
+        cleanupTextureCache(); // 清理超出限制的缓存
+        
+        if (isMounted) {
           setTexture(loadedTexture);
-        } catch (error) {
-          console.error('Texture optimization error:', error);
-          setTexture(null);
-        } finally {
           setIsLoading(false);
         }
       },
       undefined,
       (error) => {
-        console.error('Texture loading error:', error);
-        setTexture(null);
-        setIsLoading(false);
+        console.error('纹理加载错误:', error);
+        // 清理占位纹理
+        placeholderTexture.dispose();
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     );
     
-    // 清理函数
     return () => {
-      const cachedItem = textureCache.get(url);
-      if (cachedItem) {
-        // 减少引用计数
-        cachedItem.refCount--;
-        cachedItem.lastUsed = Date.now();
-        
-        // 如果引用计数为0，清理纹理资源
-        if (cachedItem.refCount <= 0) {
-          cachedItem.texture.dispose();
-          currentCacheSize -= cachedItem.size;
-          textureCache.delete(url);
-        }
-      }
+      isMounted = false;
+      // 组件卸载时不清理缓存，缓存由全局清理函数管理
     };
   }, [url]);
   
@@ -209,133 +329,31 @@ const ImagePreview: React.FC<{
           transparent 
           side={THREE.DoubleSide} 
           map={texture} 
-          opacity={isLoading ? 0.5 : 1} // 加载过程中半透明
           metalness={0} 
           roughness={1}
         />
       ) : (
-        // 占位符材质，显示错误状态
+        // 错误状态材质
         <meshStandardMaterial 
           side={THREE.DoubleSide} 
-          color="#cccccc"
-          opacity={0.5}
-          transparent
+          color="#ff6b6b"
           metalness={0} 
           roughness={1}
-        >
-          {/* 可以添加更多占位符效果，比如文字或图标 */}
-        </meshStandardMaterial>
+        />
       )}
     </mesh>
   );
-};
-
-// 3D模型预览组件
-const ModelPreview: React.FC<{
-  url?: string;
-  scale: number;
-  rotation: { x: number; y: number; z: number };
-  position: { x: number; y: number; z: number };
-}> = ({ url, scale, rotation, position }) => {
-  // 加载3D模型，添加错误处理
-  const { scene: modelScene, error, progress } = useGLTF(url || '', { 
-    draco: true, // 启用Draco压缩支持
-    flipY: false,
-    onProgress: (event) => {
-      // 可以在这里处理加载进度
-      console.log('Model loading progress:', event.loaded / event.total);
-    },
-    onError: (err) => {
-      console.error('Model loading error:', err);
-    }
-  });
-
-  // 添加默认模型几何体，当URL为空或加载失败时使用
-  const defaultGeometry = (
-    <group>
-      <mesh>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial 
-          color="#4CAF50"
-          opacity={0.8}
-          transparent
-          metalness={0.1}
-          roughness={0.9}
-        />
-      </mesh>
-      {/* 添加一些装饰元素，使默认模型更美观 */}
-      <mesh position={[0, 0.7, 0]}>
-        <sphereGeometry args={[0.3, 16, 16]} />
-        <meshStandardMaterial 
-          color="#2196F3"
-          opacity={0.8}
-          transparent
-        />
-      </mesh>
-      <mesh position={[-0.7, 0, 0]}>
-        <cylinderGeometry args={[0.2, 0.2, 1, 16]} />
-        <meshStandardMaterial 
-          color="#FFC107"
-          opacity={0.8}
-          transparent
-        />
-      </mesh>
-      <mesh position={[0.7, 0, 0]}>
-        <cylinderGeometry args={[0.2, 0.2, 1, 16]} />
-        <meshStandardMaterial 
-          color="#FFC107"
-          opacity={0.8}
-          transparent
-        />
-      </mesh>
-      <mesh position={[0, -0.7, 0]}>
-        <torusGeometry args={[0.3, 0.1, 16, 32]} />
-        <meshStandardMaterial 
-          color="#9C27B0"
-          opacity={0.8}
-          transparent
-        />
-      </mesh>
-    </group>
-  );
-
-  return (
-    <group 
-      position={[position.x, position.y, position.z]} 
-      rotation={[rotation.x, rotation.y, rotation.z]} 
-      scale={scale}
-    >
-      {modelScene ? (
-        <primitive 
-          object={modelScene} 
-          dispose={null} // 让useGLTF处理资源释放
-        />
-      ) : error ? (
-        // 模型加载错误状态
-        defaultGeometry
-      ) : (
-        // 加载中状态
-        <mesh>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial 
-            color="#666666"
-            opacity={0.5}
-            transparent
-          />
-          {/* 加载进度指示器 */}
-          <mesh position={[0, 1.5, 0]}>
-            <cylinderGeometry args={[0.3, 0.3, 0.1, 32]} />
-            <meshBasicMaterial 
-              color="#4CAF50"
-              transparent
-              opacity={0.8}
-            />
-          </mesh>
-        </mesh>
-      )}
-    </group>
-  );
-};
+}, (prevProps, nextProps) => {
+  // 自定义比较函数，减少不必要的渲染
+  return prevProps.url === nextProps.url && 
+         prevProps.scale === nextProps.scale &&
+         prevProps.rotation.x === nextProps.rotation.x &&
+         prevProps.rotation.y === nextProps.rotation.y &&
+         prevProps.rotation.z === nextProps.rotation.z &&
+         prevProps.position.x === nextProps.position.x &&
+         prevProps.position.y === nextProps.position.y &&
+         prevProps.position.z === nextProps.position.z;
+});
 
 
 
@@ -351,67 +369,124 @@ const ARPreview: React.FC<{
   const [position, setPosition] = useState(config.position || { x: 0, y: 0, z: 0 });
   const [isARMode, setIsARMode] = useState(false);
 
-  // 改进的加载逻辑，支持真实的加载进度
-  const [loadProgress, setLoadProgress] = useState(0);
-
   // 环境预设状态管理 - 只使用稳定的预设
   const [environmentPreset, setEnvironmentPreset] = useState<EnvironmentPreset>('studio');
   const environmentPresets: EnvironmentPreset[] = [
     'studio', 'apartment', 'warehouse', 'park', 'lobby'
   ];
 
-  // 错误状态管理
-  const [error, setError] = useState<string | null>(null);
-
   // 清理函数，用于释放资源
   useEffect(() => {
     return () => {
       // 清理所有纹理缓存
-      textureCache.forEach((item) => {
-        item.texture.dispose();
+      textureCache.forEach((texture) => {
+        texture.dispose();
       });
       textureCache.clear();
-      currentCacheSize = 0;
     };
   }, []);
 
   // 截图功能状态管理
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  
-  useEffect(() => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setLoadProgress(Math.min(progress, 90)); // 先加载到90%
-      if (progress >= 90) {
-        clearInterval(interval);
-        // 模拟最终加载完成
-        setTimeout(() => {
-          setLoadProgress(100);
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 300); // 延迟隐藏加载界面，让用户看到100%
-        }, 500);
-      }
-    }, 200);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
+  // 控制面板折叠状态管理
+  const [controlPanelState, setControlPanelState] = useState({
+    presets: true,
+    scale: true,
+    rotation: true,
+    position: true
+  });
 
-  // AR模式切换处理 - 简化实现，只显示AR视觉效果
+  // 切换控制面板模块的折叠状态
+  const toggleControlPanel = (module: keyof typeof controlPanelState) => {
+    setControlPanelState(prev => ({
+      ...prev,
+      [module]: !prev[module]
+    }));
+  };
+
+  // 手势控制状态管理 - 简化版
+  const [gestureState, setGestureState] = useState({
+    isDragging: false,
+    lastTouch: { x: 0, y: 0 },
+    initialPosition: position
+  });
+
+  // 处理触摸开始事件 - 简化版
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const touches = e.touches;
+    
+    if (touches.length === 1) {
+      // 单指触摸：准备平移
+      setGestureState({
+        isDragging: true,
+        lastTouch: { x: touches[0].clientX, y: touches[0].clientY },
+        initialPosition: position
+      });
+    }
+  };
+
+  // 处理触摸移动事件 - 简化版
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const touches = e.touches;
+    
+    if (gestureState.isDragging && touches.length === 1) {
+      // 单指移动：平移
+      const deltaX = (touches[0].clientX - gestureState.lastTouch.x) / 100;
+      const deltaY = (gestureState.lastTouch.y - touches[0].clientY) / 100;
+      
+      setPosition(prev => ({
+        x: gestureState.initialPosition.x + deltaX,
+        y: gestureState.initialPosition.y + deltaY,
+        z: prev.z
+      }));
+      
+      setGestureState(prev => ({
+        ...prev,
+        lastTouch: { x: touches[0].clientX, y: touches[0].clientY }
+      }));
+    }
+  };
+
+  // 处理触摸结束事件 - 简化版
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // 重置手势状态
+    setGestureState({
+      isDragging: false,
+      lastTouch: { x: 0, y: 0 },
+      initialPosition: position
+    });
+  };
+
+  // 处理触摸取消事件 - 简化版
+  const handleTouchCancel = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // 重置手势状态
+    setGestureState({
+      isDragging: false,
+      lastTouch: { x: 0, y: 0 },
+      initialPosition: position
+    });
+  };
+
+  // AR模式切换处理 - 简化实现
   useEffect(() => {
     if (isARMode) {
-      console.log('进入AR模式');
       // 简化AR模式，只显示AR视觉效果，不访问摄像头
-    } else {
-      console.log('退出AR模式');
-      // 清理AR模式相关资源
     }
   }, [isARMode]);
+
+  // 处理AR场景点击 - 简化版
+  const handleARClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isARMode || isLoading) return;
+    
+    // 简化AR点击处理
+    toast.success('模型已放置');
+  };
 
   // 缩放控制
   const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -451,14 +526,15 @@ const ARPreview: React.FC<{
     toast.success(`已切换到${{ front: '前', back: '后', left: '左', right: '右', top: '顶', bottom: '底' }[view]}视图`);
   };
 
-  // 截图功能实现
+  // 截图功能实现 - 极简版
   const handleScreenshot = () => {
     // 获取Canvas元素
     const canvas = document.querySelector('canvas');
     if (canvas) {
       try {
         // 生成截图数据URL
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        const dataUrl = canvas.toDataURL('image/png', 0.8);
+        
         setScreenshot(dataUrl);
         setIsScreenshotModalOpen(true);
         toast.success('截图已保存');
@@ -481,32 +557,6 @@ const ARPreview: React.FC<{
       link.click();
       document.body.removeChild(link);
       toast.success('截图已保存到本地');
-    }
-  };
-
-  // 分享截图
-  const handleShareScreenshot = () => {
-    if (screenshot && navigator.share) {
-      try {
-        navigator.share({
-          title: 'AR预览截图',
-          text: '查看我的AR预览截图',
-          url: screenshot
-        });
-      } catch (error) {
-        console.error('分享失败:', error);
-        toast.error('分享失败，请重试');
-      }
-    } else {
-      // 复制到剪贴板
-      navigator.clipboard.writeText(screenshot || '')
-        .then(() => {
-          toast.success('截图链接已复制到剪贴板');
-        })
-        .catch(error => {
-          console.error('复制失败:', error);
-          toast.error('复制失败，请重试');
-        });
     }
   };
 
@@ -575,162 +625,112 @@ const ARPreview: React.FC<{
 
       {/* AR预览区域 */}
       <div className="flex-1 relative overflow-hidden min-h-[400px]">
-        {/* 加载状态 */}
+        {/* 加载状态 - 简化版 */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-10 backdrop-blur-md">
-            <div className="text-center text-white animate-fadeIn">
-              <div className="relative inline-block mb-6">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-3xl font-bold bg-gradient-to-r from-red-400 to-purple-500 bg-clip-text text-transparent">
-                    {loadProgress}%
-                  </div>
-                </div>
-                <div className={`w-24 h-24 rounded-full border-4 ${loadProgress === 100 ? 'border-green-500' : 'border-gray-700'} overflow-hidden`}>
-                  <div 
-                    className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 via-purple-600 to-blue-500 transition-all duration-300 ease-out"
-                    style={{ 
-                      transform: `rotate(${loadProgress * 3.6}deg)`,
-                      clipPath: `polygon(50% 50%, 50% 0%, ${50 + 50 * Math.cos(loadProgress * 3.6 * Math.PI / 180)}% ${50 - 50 * Math.sin(loadProgress * 3.6 * Math.PI / 180)}%)`
-                    }}
-                  ></div>
-                  <div className="absolute inset-0 bg-black rounded-full p-1">
-                    <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-gray-900 to-gray-800 rounded-full shadow-inner"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <p className="text-xl mb-4 font-medium bg-gradient-to-r from-red-400 to-purple-500 bg-clip-text text-transparent">正在加载AR资源...</p>
-              <div className="h-2 w-48 bg-gray-700 rounded-full overflow-hidden mx-auto">
-                <div 
-                  className="h-full bg-gradient-to-r from-red-500 via-purple-600 to-blue-500 transition-all duration-300 ease-out"
-                  style={{ width: `${loadProgress}%` }}
-                ></div>
-              </div>
+            <div className="text-center text-white">
+              <div className="w-16 h-16 border-4 border-t-green-500 border-gray-700 rounded-full animate-spin mb-4"></div>
+              <p className="text-xl font-medium bg-gradient-to-r from-red-400 to-purple-500 bg-clip-text text-transparent">正在加载AR资源...</p>
             </div>
           </div>
         )}
         
         {/* 3D预览内容 */}
-        <div className="w-full h-full relative bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800">
+        <div 
+          className="w-full h-full relative bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 cursor-crosshair touch-none"
+          onClick={handleARClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+        >
           {!isLoading && (
-            <Canvas 
-              shadows 
-              className="w-full h-full" 
-              camera={{ position: [0, 0, 3], fov: 75, near: 0.1, far: 1000 }} 
-              gl={{ antialias: true, alpha: true }} 
-              style={{ backgroundColor: '#f0f0f0' }}
-            >
-              {/* 基础相机和灯光 */}
-              <PerspectiveCamera makeDefault position={[0, 0, 3]} />
-              <ambientLight intensity={isARMode ? 0.5 : 0.7} />
-              <directionalLight position={[5, 5, 5]} intensity={isARMode ? 1 : 1.2} castShadow />
-              <directionalLight position={[-5, -5, -5]} intensity={0.5} />
-              
-              {/* 环境预设 */}
-              <Environment
-                preset={environmentPreset as any}
-                background={true}
-                transition={0.5} // 添加平滑过渡效果
-              />
-              
-              {/* 2D图片预览 */}
-              {config.type === '2d' && config.imageUrl && (
-                <ImagePreview
-                  url={config.imageUrl}
-                  scale={scale}
-                  rotation={rotation}
-                  position={position}
+            <ARPreviewErrorBoundary>
+              <Canvas 
+                shadows={false} 
+                className="w-full h-full" 
+                camera={{ position: [0, 0, 3], fov: 60, near: 0.1, far: 1000 }} 
+                gl={{ 
+                    antialias: false, 
+                    alpha: true, 
+                    preserveDrawingBuffer: false, 
+                    powerPreference: 'low-power', 
+                    stencil: false,
+                    depth: true,
+                    toneMapping: THREE.NoToneMapping,
+                    autoClear: true
+                  }} 
+                style={{ backgroundColor: '#f0f0f0' }}
+                frameloop="demand"
+              >
+                {/* 基础相机和灯光 - 极简版本 */}
+                <PerspectiveCamera makeDefault position={[0, 0, 3]} />
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[5, 5, 5]} intensity={0.8} castShadow={false} />
+                
+                {/* 2D图片预览 */}
+                {config.type === '2d' && config.imageUrl && (
+                  <ImagePreview
+                    url={config.imageUrl}
+                    scale={scale}
+                    rotation={rotation}
+                    position={position}
+                  />
+                )}
+                
+                {/* 3D模型预览 - 使用ModelPreview组件 */}
+                {config.type === '3d' && (
+                  <ModelPreview
+                    url={config.modelUrl}
+                    scale={scale}
+                    rotation={rotation}
+                    position={position}
+                  />
+                )}
+                
+                {/* 交互控件 - 极简版本 */}
+                <OrbitControls 
+                  enableZoom={true} 
+                  enablePan={true} 
+                  enableRotate={true} 
+                  enableDamping={false} 
+                  rotateSpeed={0.3} 
+                  zoomSpeed={0.3} 
+                  panSpeed={0.3} 
+                  minDistance={0.5} 
+                  maxDistance={10} 
+                  enabled={!isARMode} // AR模式下禁用轨道控制
                 />
-              )}
-              
-              {/* 3D模型预览 - 使用ModelPreview组件 */}
-              {config.type === '3d' && (
-                <ModelPreview
-                  url={config.modelUrl}
-                  scale={scale}
-                  rotation={rotation}
-                  position={position}
-                />
-              )}
-              
-              {/* 网格辅助线 - AR模式下隐藏 */}
-              {!isARMode && <gridHelper args={[10, 10, '#888888', '#444444']} />}
-              
-              {/* 坐标系辅助线 - AR模式下隐藏 */}
-              {!isARMode && <axesHelper args={[2]} />}
-              
-              {/* AR模式下的视觉指示器 */}
-              {isARMode && (
-                <group>
-                  {/* AR平面指示器 */}
-                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-                    <planeGeometry args={[5, 5]} />
-                    <meshBasicMaterial 
-                      color="rgba(0, 255, 0, 0.2)" 
-                      transparent 
-                      side={THREE.DoubleSide}
-                    />
-                  </mesh>
-                  
-                  {/* AR平面网格 */}
-                  <lineSegments>
-                    <gridHelper args={[5, 5, 'rgba(0, 255, 0, 0.5)', 'rgba(0, 255, 0, 0.2)']} />
-                    <lineBasicMaterial color="rgba(0, 255, 0, 0.5)" />
-                  </lineSegments>
-                  
-                  {/* AR中心点指示器 */}
-                  <mesh position={[0, 0, 0]}>
-                    <ringGeometry args={[0.1, 0.15, 32]} />
-                    <meshBasicMaterial 
-                      color="rgba(0, 255, 0, 0.8)" 
-                      transparent 
-                      side={THREE.DoubleSide}
-                    />
-                  </mesh>
-                </group>
-              )}
-              
-              {/* 交互控件 */}
-              <OrbitControls 
-                enableZoom 
-                enablePan 
-                enableRotate 
-                dampingFactor={0.05} 
-                enableDamping={true} 
-                rotateSpeed={0.5} 
-                zoomSpeed={0.5} 
-                panSpeed={0.5} 
-                minDistance={0.5} 
-                maxDistance={10} 
-                enabled={!isARMode} // AR模式下禁用轨道控制
-              />
-            </Canvas>
+              </Canvas>
+            </ARPreviewErrorBoundary>
           )}
           
-          {/* AR模式下的提示信息 */}
+          {/* AR模式下的提示信息 - 极简版 */}
           {isARMode && !isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-between p-6 pointer-events-none">
-              <div className="animate-pulse bg-black bg-opacity-70 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium shadow-lg">
-                <i className="fas fa-info-circle mr-2"></i>AR模式已激活
+              {/* 顶部状态提示 */}
+              <div className="bg-black bg-opacity-75 backdrop-blur-md px-5 py-2.5 rounded-full text-white text-sm font-medium shadow-xl">
+                <i className="fas fa-info-circle mr-2 text-green-400"></i>
+                <span>AR模式已激活</span>
               </div>
               
-              <div className="animate-bounce bg-black bg-opacity-70 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium shadow-lg">
-                <i className="fas fa-hand-pointer mr-2"></i>点击屏幕放置模型
+              {/* 中央交互引导 */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-black bg-opacity-75 backdrop-blur-md px-5 py-3 rounded-full text-white text-sm font-medium shadow-xl">
+                  <i className="fas fa-hand-pointer mr-2 text-green-400"></i>
+                  <span>点击屏幕放置模型</span>
+                </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-black bg-opacity-70 backdrop-blur-sm px-3 py-2 rounded-lg text-white text-xs text-center shadow-lg">
-                  <i className="fas fa-expand-arrows-alt block mb-1 text-lg"></i>
-                  缩放
+              {/* 底部操作提示 */}
+              <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+                <div className="bg-black bg-opacity-75 backdrop-blur-sm px-3 py-2.5 rounded-lg text-white text-xs text-center shadow-lg">
+                  <i className="fas fa-eye-slash block mb-1 text-lg"></i>
+                  退出AR
                 </div>
-                <div className="bg-black bg-opacity-70 backdrop-blur-sm px-3 py-2 rounded-lg text-white text-xs text-center shadow-lg">
-                  <i className="fas fa-rotate block mb-1 text-lg"></i>
-                  旋转
-                </div>
-                <div className="bg-black bg-opacity-70 backdrop-blur-sm px-3 py-2 rounded-lg text-white text-xs text-center shadow-lg">
-                  <i className="fas fa-move block mb-1 text-lg"></i>
-                  移动
+                <div className="bg-black bg-opacity-75 backdrop-blur-sm px-3 py-2.5 rounded-lg text-white text-xs text-center shadow-lg">
+                  <i className="fas fa-redo block mb-1 text-lg"></i>
+                  重置
                 </div>
               </div>
             </div>
@@ -745,7 +745,7 @@ const ARPreview: React.FC<{
           <button
             onClick={() => {
               setIsARMode(!isARMode);
-              console.log('AR mode toggled:', !isARMode);
+              // console.log('AR mode toggled:', !isARMode);
             }}
             className={`py-3 px-2 rounded-xl font-medium transition-all duration-300 flex flex-col items-center justify-center gap-1 hover:shadow-lg transform hover:-translate-y-1 active:scale-95 ${isARMode 
               ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg shadow-red-500/30' 
@@ -822,151 +822,219 @@ const ARPreview: React.FC<{
           </div>
         </div>
         
-        {/* 预设视图 */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold mb-3 text-gray-500">预设视图</h3>
-          <div className="grid grid-cols-6 gap-2">
-            {(['front', 'back', 'left', 'right', 'top', 'bottom'] as const).map(view => (
-              <button
-                key={view}
-                onClick={() => handlePresetView(view)}
-                className={`py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center hover:shadow-md transform hover:-translate-y-0.5 active:scale-95 text-xs ${
-                  view === 'top' || view === 'bottom' 
-                  ? (isDark 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30' 
-                    : 'bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-900 shadow-md shadow-blue-500/20')
-                  : (isDark 
-                    ? 'bg-gray-800 hover:bg-gray-700 text-white' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-900')
-                }`}
-              >
-                <i className={`fas fa-${{
-                  front: 'eye',
-                  back: 'eye-slash',
-                  left: 'arrow-left',
-                  right: 'arrow-right',
-                  top: 'arrow-up',
-                  bottom: 'arrow-down'
-                }[view]} text-sm mr-1`}></i>
-                {{
-                  front: '前',
-                  back: '后',
-                  left: '左',
-                  right: '右',
-                  top: '顶',
-                  bottom: '底'
-                }[view]}
+        {/* 预设视图 - 可折叠 */}
+        <div className="mb-4 overflow-hidden transition-all duration-300 ease-in-out">
+          <div 
+            className="flex justify-between items-center mb-3 cursor-pointer"
+            onClick={() => toggleControlPanel('presets')}
+          >
+            <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+              <i className={`fas fa-camera-retro`}></i>
+              预设视图
+            </h3>
+            <button className={`text-gray-500 transition-transform duration-300 ${
+              controlPanelState.presets ? 'rotate-180' : ''
+            }`}>
+              <i className="fas fa-chevron-down"></i>
+            </button>
+          </div>
+          
+          {controlPanelState.presets && (
+            <div className="animate-fadeIn">
+              <div className="grid grid-cols-6 gap-2">
+                {(['front', 'back', 'left', 'right', 'top', 'bottom'] as const).map(view => (
+                  <button
+                    key={view}
+                    onClick={() => handlePresetView(view)}
+                    className={`py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center hover:shadow-md transform hover:-translate-y-0.5 active:scale-95 text-xs ${
+                      view === 'top' || view === 'bottom' 
+                      ? (isDark 
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30' 
+                        : 'bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-900 shadow-md shadow-blue-500/20')
+                      : (isDark 
+                        ? 'bg-gray-800 hover:bg-gray-700 text-white' 
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900')
+                    }`}
+                  >
+                    <i className={`fas fa-${{
+                      front: 'eye',
+                      back: 'eye-slash',
+                      left: 'arrow-left',
+                      right: 'arrow-right',
+                      top: 'arrow-up',
+                      bottom: 'arrow-down'
+                    }[view]} text-sm mr-1`}></i>
+                    {{
+                      front: '前',
+                      back: '后',
+                      left: '左',
+                      right: '右',
+                      top: '顶',
+                      bottom: '底'
+                    }[view]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* 缩放控制 - 可折叠 */}
+        <div className="mb-4 overflow-hidden transition-all duration-300 ease-in-out">
+          <div 
+            className="flex justify-between items-center mb-3 cursor-pointer"
+            onClick={() => toggleControlPanel('scale')}
+          >
+            <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+              <i className="fas fa-expand-arrows-alt"></i>
+              缩放
+            </h3>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">{scale.toFixed(1)}x</span>
+              <button className={`text-gray-500 transition-transform duration-300 ${
+                controlPanelState.scale ? 'rotate-180' : ''
+              }`}>
+                <i className="fas fa-chevron-down"></i>
               </button>
-            ))}
+            </div>
           </div>
+          
+          {controlPanelState.scale && (
+            <div className="animate-fadeIn">
+              <input
+                type="range"
+                min="0.1"
+                max="5"
+                step="0.1"
+                value={scale}
+                onChange={handleScaleChange}
+                className="w-full h-4 bg-gradient-to-r from-gray-300 to-gray-200 rounded-full appearance-none cursor-pointer transition-all duration-200 hover:h-5"
+                style={{
+                  background: isDark ? 'linear-gradient(to right, #374151, #4b5563)' : 'linear-gradient(to right, #e5e7eb, #d1d5db)',
+                  WebkitAppearance: 'none',
+                  appearance: 'none'
+                }}
+              />
+            </div>
+          )}
         </div>
         
-        {/* 缩放控制 */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-sm font-semibold text-gray-500">缩放</label>
-            <span className="text-sm font-bold bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">{scale.toFixed(1)}x</span>
+        {/* 旋转控制 - 可折叠 */}
+        <div className="mb-4 overflow-hidden transition-all duration-300 ease-in-out">
+          <div 
+            className="flex justify-between items-center mb-3 cursor-pointer"
+            onClick={() => toggleControlPanel('rotation')}
+          >
+            <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+              <i className="fas fa-sync-alt"></i>
+              旋转
+            </h3>
+            <button className={`text-gray-500 transition-transform duration-300 ${
+              controlPanelState.rotation ? 'rotate-180' : ''
+            }`}>
+              <i className="fas fa-chevron-down"></i>
+            </button>
           </div>
-          <input
-            type="range"
-            min="0.1"
-            max="5"
-            step="0.1"
-            value={scale}
-            onChange={handleScaleChange}
-            className="w-full h-4 bg-gradient-to-r from-gray-300 to-gray-200 rounded-full appearance-none cursor-pointer transition-all duration-200 hover:h-5"
-            style={{
-              background: isDark ? 'linear-gradient(to right, #374151, #4b5563)' : 'linear-gradient(to right, #e5e7eb, #d1d5db)',
-              WebkitAppearance: 'none',
-              appearance: 'none'
-            }}
-          />
-        </div>
-        
-        {/* 旋转控制 */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold mb-3 text-gray-500">旋转</h3>
-          <div className="space-y-4">
-            {(['x', 'y', 'z'] as const).map(axis => (
-              <div key={axis}>
-                <div className="flex justify-between items-center mb-2">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {axis.toUpperCase()} 轴
-                  </label>
-                  <span className="text-xs font-mono bg-gray-800 text-green-400 px-2 py-0.5 rounded">
-                    {(rotation[axis] * 180 / Math.PI).toFixed(0)}°
-                  </span>
+          
+          {controlPanelState.rotation && (
+            <div className="animate-fadeIn space-y-4">
+              {(['x', 'y', 'z'] as const).map(axis => (
+                <div key={axis}>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {axis.toUpperCase()} 轴
+                    </label>
+                    <span className="text-xs font-mono bg-gray-800 text-green-400 px-2 py-0.5 rounded">
+                      {(rotation[axis] * 180 / Math.PI).toFixed(0)}°
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="5"
+                    value={rotation[axis] * 180 / Math.PI}
+                    onChange={(e) => handleRotationChange(axis, parseFloat(e.target.value) * Math.PI / 180)}
+                    className="w-full h-3 bg-gradient-to-r from-red-400 via-purple-500 to-blue-500 rounded-full appearance-none cursor-pointer transition-all duration-200"
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none'
+                    }}
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  step="5"
-                  value={rotation[axis] * 180 / Math.PI}
-                  onChange={(e) => handleRotationChange(axis, parseFloat(e.target.value) * Math.PI / 180)}
-                  className="w-full h-3 bg-gradient-to-r from-red-400 via-purple-500 to-blue-500 rounded-full appearance-none cursor-pointer transition-all duration-200"
-                  style={{
-                    WebkitAppearance: 'none',
-                    appearance: 'none'
-                  }}
-                />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
         
-        {/* 平移控制 */}
-        <div>
-          <h3 className="text-sm font-semibold mb-3 text-gray-500">平移</h3>
-          <div className="space-y-4">
-            {(['x', 'y', 'z'] as const).map(axis => (
-              <div key={axis}>
-                <div className="flex justify-between items-center mb-2">
-                  <label className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {axis.toUpperCase()} 轴
-                  </label>
-                  <span className="text-xs font-mono bg-gray-800 text-blue-400 px-2 py-0.5 rounded">
-                    {position[axis].toFixed(2)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="-5"
-                  max="5"
-                  step="0.1"
-                  value={position[axis]}
-                  onChange={(e) => handlePositionChange(axis, parseFloat(e.target.value))}
-                  className="w-full h-3 bg-gradient-to-r from-blue-400 via-green-500 to-yellow-500 rounded-full appearance-none cursor-pointer transition-all duration-200"
-                  style={{
-                    WebkitAppearance: 'none',
-                    appearance: 'none'
-                  }}
-                />
-              </div>
-            ))}
+        {/* 平移控制 - 可折叠 */}
+        <div className="overflow-hidden transition-all duration-300 ease-in-out">
+          <div 
+            className="flex justify-between items-center mb-3 cursor-pointer"
+            onClick={() => toggleControlPanel('position')}
+          >
+            <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+              <i className="fas fa-arrows-alt"></i>
+              平移
+            </h3>
+            <button className={`text-gray-500 transition-transform duration-300 ${
+              controlPanelState.position ? 'rotate-180' : ''
+            }`}>
+              <i className="fas fa-chevron-down"></i>
+            </button>
           </div>
+          
+          {controlPanelState.position && (
+            <div className="animate-fadeIn space-y-4">
+              {(['x', 'y', 'z'] as const).map(axis => (
+                <div key={axis}>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {axis.toUpperCase()} 轴
+                    </label>
+                    <span className="text-xs font-mono bg-gray-800 text-blue-400 px-2 py-0.5 rounded">
+                      {position[axis].toFixed(2)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-5"
+                    max="5"
+                    step="0.1"
+                    value={position[axis]}
+                    onChange={(e) => handlePositionChange(axis, parseFloat(e.target.value))}
+                    className="w-full h-3 bg-gradient-to-r from-blue-400 via-green-500 to-yellow-500 rounded-full appearance-none cursor-pointer transition-all duration-200"
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       
-      {/* 截图预览模态框 */}
+      {/* 截图预览模态框 - 极简版 */}
       {isScreenshotModalOpen && screenshot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-sm animate-fadeIn">
-          <div className={`relative max-w-4xl w-full mx-4 rounded-2xl overflow-hidden shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} animate-scaleIn`}>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-90 backdrop-blur-sm">
+          <div className={`relative max-w-3xl w-full mx-4 rounded-2xl overflow-hidden shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} max-h-[90vh] flex flex-col`}>
             {/* 模态框头部 */}
             <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
               <h3 className="text-lg font-bold bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">截图预览</h3>
               <button
                 onClick={() => setIsScreenshotModalOpen(false)}
-                className={`p-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} transition-all duration-200 hover:scale-110`}
+                className={`p-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} transition-all duration-200`}
               >
                 <i className="fas fa-times text-xl"></i>
               </button>
             </div>
             
             {/* 截图预览内容 */}
-            <div className="p-6">
+            <div className="p-4 flex-1 overflow-auto">
               <div className="flex justify-center mb-6">
-                <div className="rounded-lg overflow-hidden shadow-lg max-h-[60vh] overflow-y-auto">
+                <div className="rounded-lg overflow-hidden shadow-2xl max-h-[50vh] overflow-y-auto">
                   <img 
                     src={screenshot} 
                     alt="AR预览截图" 
@@ -975,40 +1043,14 @@ const ARPreview: React.FC<{
                 </div>
               </div>
               
-              {/* 编辑工具（简化版） */}
-              <div className="mb-6">
-                <h4 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>编辑选项</h4>
-                <div className="flex gap-2 flex-wrap">
-                  <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
-                    <i className="fas fa-crop-alt mr-2"></i>裁剪
-                  </button>
-                  <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
-                    <i className="fas fa-filter mr-2"></i>滤镜
-                  </button>
-                  <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
-                    <i className="fas fa-text mr-2"></i>添加文字
-                  </button>
-                  <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
-                    <i className="fas fa-undo mr-2"></i>重置
-                  </button>
-                </div>
-              </div>
-              
-              {/* 操作按钮 */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* 操作按钮 - 极简版 */}
+              <div className="grid grid-cols-1 gap-4">
                 <button
                   onClick={handleSaveScreenshot}
                   className="py-3 px-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-1 active:scale-95 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30"
                 >
                   <i className="fas fa-download text-lg"></i>
                   保存到本地
-                </button>
-                <button
-                  onClick={handleShareScreenshot}
-                  className="py-3 px-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-1 active:scale-95 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg shadow-green-500/30"
-                >
-                  <i className="fas fa-share-alt text-lg"></i>
-                  分享截图
                 </button>
               </div>
             </div>

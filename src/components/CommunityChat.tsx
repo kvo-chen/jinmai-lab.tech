@@ -98,7 +98,7 @@ const CommunityChat: React.FC<CommunityChatProps> = ({
         text: replyingTo.text 
       } : undefined,
       reactions: {},
-      editable: true // 允许编辑自己的消息
+      // editable: true // 允许编辑自己的消息
     };
 
     const updatedMessages = {
@@ -149,7 +149,7 @@ const CommunityChat: React.FC<CommunityChatProps> = ({
       text: `转发：${message.text}`,
       avatar: user.avatar,
       createdAt: Date.now(),
-      forwardedFrom: { user: message.user, text: message.text },
+      // forwardedFrom: { user: message.user, text: message.text },
       reactions: {}
     };
 

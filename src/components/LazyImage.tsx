@@ -126,7 +126,7 @@ export default function LazyImage({
 
   const handleLoad = () => {
     const loadTime = Date.now() - loadStartTimeRef.current;
-    console.log(`Image loaded in ${loadTime}ms: ${src}`);
+    // console.log(`Image loaded in ${loadTime}ms: ${src}`);
     setIsLoaded(true);
     onLoad?.();
     
@@ -135,7 +135,7 @@ export default function LazyImage({
   };
 
   const handleError = () => {
-    console.error(`Failed to load image: ${src}`);
+    // console.error(`Failed to load image: ${src}`);
     setIsError(true);
     onError?.();
     

@@ -16,6 +16,10 @@ import { initPerformanceMonitor } from './utils/performanceMonitor';
 // 初始化性能监控
 initPerformanceMonitor();
 
+// 注册Service Worker
+import { registerServiceWorker } from './utils/serviceWorker';
+registerServiceWorker();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>

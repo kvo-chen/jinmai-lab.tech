@@ -162,10 +162,10 @@ export default function BrandGuide() {
         <GradientHero 
           title="品牌合作"
           subtitle="面向老字号品牌的共创入口：选择品牌、生成灵感、提交合作与管理申请"
-          theme="pink"
+          theme="red"
           stats={[
             { label: '当前品牌', value: brand.name },
-            { label: '申请数量', value: brandAll.length },
+            { label: '申请数量', value: brandAll.length.toString() },
             { label: '状态', value: statusFilter },
             { label: '排序', value: sortKey === 'recent' ? '最新' : sortKey === 'old' ? '最早' : '状态' }
           ]}

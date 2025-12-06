@@ -6,8 +6,7 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist/static",
-        "buildCommand": "pnpm build",
-        "installCommand": "pnpm install"
+        "buildCommand": "npm run build"
       }
     }
   ],
@@ -39,10 +38,6 @@
     {
       "source": "/registerSW.js",
       "destination": "/registerSW.js"
-    },
-    {
-      "source": "/api/proxy/trae-api/(.*)",
-      "destination": "https://trae-api-sg.mchost.guru/$1"
     },
     {
       "source": "/(.*)",

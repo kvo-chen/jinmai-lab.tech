@@ -71,7 +71,7 @@ class ErrorLogger {
   private sendToServer(error: ErrorInfo): void {
     // 模拟API调用延迟
     setTimeout(() => {
-      console.log('Sending error to server:', error);
+      // console.log('Sending error to server:', error);
       // 实际项目中，这里会发送HTTP请求到错误监控服务器
     }, 0);
   }

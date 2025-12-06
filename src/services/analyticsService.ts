@@ -165,10 +165,11 @@ class AnalyticsService {
     filteredData = filteredData.filter(point => point.timestamp >= timeRangeStart);
 
     // 应用自定义日期范围过滤
-    if (query.filters?.dateRange) {
+    const dateRange = query.filters?.dateRange;
+    if (dateRange) {
       filteredData = filteredData.filter(point => 
-        point.timestamp >= query.filters.dateRange!.start && 
-        point.timestamp <= query.filters.dateRange!.end
+        point.timestamp >= dateRange.start && 
+        point.timestamp <= dateRange.end
       );
     }
 

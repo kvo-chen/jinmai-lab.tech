@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // 粒子模型类型
-export type ParticleModelType = 'heart' | 'flower' | 'saturn' | 'buddha' | 'firework';
+export type ParticleModelType = 'heart' | 'flower' | 'saturn' | 'buddha' | 'firework' | 'baozi';
 
 // 粒子模型配置
 export interface ParticleModelConfig {
@@ -150,6 +150,54 @@ export class ParticleModelGenerator {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     return geometry;
   }
+  
+  // 生成包子形状
+  static generateBaozi(config: ParticleModelConfig): THREE.BufferGeometry {
+    const { size } = config;
+    const geometry = new THREE.BufferGeometry();
+    const vertices: number[] = [];
+    
+    const segments = 32;
+    const radius = size * 0.5;
+    const height = size * 0.8;
+    
+    // 包子底部（圆形）
+    for (let i = 0; i <= segments; i++) {
+      const t = (i / segments) * Math.PI * 2;
+      const x = Math.cos(t) * radius;
+      const y = -height / 2;
+      const z = Math.sin(t) * radius;
+      vertices.push(x, y, z);
+    }
+    
+    // 包子顶部（曲线）
+    for (let i = 0; i <= segments; i++) {
+      const t = (i / segments) * Math.PI * 2;
+      const x = Math.cos(t) * radius * 0.8;
+      const y = Math.cos(t * 2) * height / 4 + height / 4;
+      const z = Math.sin(t) * radius * 0.8;
+      vertices.push(x, y, z);
+    }
+    
+    // 包子侧面轮廓
+    for (let i = 0; i <= segments; i++) {
+      const t = (i / segments) * Math.PI * 2;
+      // 底部边缘
+      const x1 = Math.cos(t) * radius;
+      const y1 = -height / 2;
+      const z1 = Math.sin(t) * radius;
+      // 顶部边缘
+      const x2 = Math.cos(t) * radius * 0.8;
+      const y2 = Math.cos(t * 2) * height / 4 + height / 4;
+      const z2 = Math.sin(t) * radius * 0.8;
+      
+      vertices.push(x1, y1, z1);
+      vertices.push(x2, y2, z2);
+    }
+    
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    return geometry;
+  }
 
   // 根据类型获取模型
   static getModel(
@@ -167,6 +215,8 @@ export class ParticleModelGenerator {
         return this.generateBuddha(config);
       case 'firework':
         return this.generateFirework(config);
+      case 'baozi':
+        return this.generateBaozi(config);
       default:
         return new THREE.SphereGeometry(config.size, 16, 16);
     }
@@ -221,7 +271,7 @@ export const clearModelCache = () => {
 };
 
 // 预加载常用模型
-export const preloadModels = (types: ParticleModelType[] = ['heart', 'flower', 'saturn', 'buddha', 'firework']) => {
+export const preloadModels = (types: ParticleModelType[] = ['heart', 'flower', 'saturn', 'buddha', 'firework', 'baozi']) => {
   const sizes = [0.1, 0.5, 1.0];
   
   types.forEach(type => {

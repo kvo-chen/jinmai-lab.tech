@@ -43,6 +43,7 @@ const Lab = lazy(() => import("@/pages/Lab"));
 const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
 const ParticleArt = lazy(() => import("@/pages/ParticleArt"));
 const Games = lazy(() => import("@/pages/Games"));
+const CollaborationDemo = lazy(() => import("@/pages/CollaborationDemo"));
 
 // 布局组件
 import SidebarLayout from '@/components/SidebarLayout';
@@ -56,6 +57,8 @@ import AdminRoute from '@/components/AdminRoute';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
 // PWA 安装按钮组件
 import PWAInstallButton from '@/components/PWAInstallButton';
+// 首次启动引导组件
+import FirstLaunchGuide from '@/components/FirstLaunchGuide';
 
 export default function App() {
   const location = useLocation();
@@ -232,6 +235,7 @@ export default function App() {
             <Route path="/explore/:id" element={<WorkDetail />} />
             <Route path="/particle-art" element={<ParticleArt />} />
             <Route path="/tools" element={<Tools />} />
+            <Route path="/collaboration" element={<CollaborationDemo />} />
             <Route path="/about" element={<About />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/help" element={<Help />} />
@@ -298,6 +302,8 @@ export default function App() {
             element={<PrivateRoute component={CulturalKnowledge} />} 
           />
           
+          
+          
           {/* 创新功能路由 */}
           <Route 
             path="/daily-checkin" 
@@ -347,6 +353,8 @@ export default function App() {
     </Suspense>
     {/* PWA 安装按钮 */}
     <PWAInstallButton />
+    {/* 首次启动引导 */}
+    <FirstLaunchGuide />
   </div>
 );
 }

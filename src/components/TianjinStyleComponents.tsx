@@ -629,14 +629,12 @@ export const TianjinImage: React.FC<{
   
   const handleLoad = () => {
     const loadTime = Date.now() - loadStartTimeRef.current;
-    console.log(`Image loaded in ${loadTime}ms: ${src}`);
     setLoaded(true);
     // 更新图片状态到缓存
     imageService.updateImageStatus(src, true);
   };
   
   const handleError = () => {
-    console.error(`Failed to load image: ${src}`);
     setError(true);
     // 更新图片状态到缓存
     imageService.updateImageStatus(src, false);

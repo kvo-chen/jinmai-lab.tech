@@ -298,7 +298,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                           src={user.avatar}
                           alt={user.username}
                           className="w-full h-full object-cover"
-                          quality={80}
+                          quality="high"
                         />
                       ) : (
                         <div className={clsx(

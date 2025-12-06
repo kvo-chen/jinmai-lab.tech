@@ -1453,7 +1453,7 @@ export default function Neo() {
             theme="red"
             stats={[
               { label: '引擎', value: engine },
-              { label: '风格', value: stylePresets.length },
+              { label: '风格', value: stylePresets.length.toString() },
               { label: '模式', value: '普通' },
               { label: '状态', value: isGenerating ? '生成中' : '就绪' }
             ]}

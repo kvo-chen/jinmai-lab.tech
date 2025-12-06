@@ -2,6 +2,7 @@ import http from 'http'
 import { URL } from 'url'
 import fs from 'fs'
 import bcrypt from 'bcryptjs'
+import { WebSocketServer } from 'ws'
 import { generateToken, verifyToken } from './jwt.mjs'
 import { userDB, favoriteDB, videoTaskDB, getDBStatus } from './database.mjs'
 
@@ -115,7 +116,7 @@ try {
 }
 
 // 端口配置
-const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3006
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3007
 
 // Volcengine TTS config (server-side only)
 const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''
@@ -996,7 +997,7 @@ const server = http.createServer(async (req, res) => {
         const resp = await fetch(remoteUrl, {
           method: req.method,
           headers: {
-            'Accept': 'application/json, image/*',
+            'Accept': 'application/json, image/*, text/html, */*',
           }
         })
         
@@ -1005,14 +1006,19 @@ const server = http.createServer(async (req, res) => {
         const contentType = resp.headers.get('content-type') || 'application/octet-stream'
         res.setHeader('Content-Type', contentType)
         
-        // 如果是图片类型，返回二进制数据
+        // 根据响应类型返回相应的数据
         if (contentType.startsWith('image/')) {
+          // 图片类型，返回二进制数据
           const buffer = Buffer.from(await resp.arrayBuffer())
           res.end(buffer)
-        } else {
-          // 否则返回 JSON 数据
+        } else if (contentType.startsWith('application/json')) {
+          // JSON类型，返回JSON数据
           const data = await resp.json()
           sendJson(res, resp.status, data)
+        } else {
+          // 其他类型（如text/html、text/plain等），返回文本数据
+          const text = await resp.text()
+          res.end(text)
         }
       } catch (e) {
         sendJson(res, 500, { error: 'PROXY_ERROR', message: e?.message || 'UNKNOWN' })
@@ -1348,6 +1354,232 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
-server.listen(PORT, () => {
-
+server.listen(3007, () => {
+  console.log(`Local API server running on port 3007`);
 })
+
+// 实时协作WebSocket服务器
+const wss = new WebSocketServer({ server, path: '/ws' })
+
+// 协作会话管理
+const collaborationSessions = new Map()
+const connectedUsers = new Map()
+
+// WebSocket连接处理
+wss.on('connection', (ws, req) => {
+  console.log('WebSocket连接建立')
+  
+  // 解析URL参数获取会话ID和用户信息
+  const url = new URL(req.url, `http://localhost:3007`)
+  const sessionId = url.searchParams.get('sessionId')
+  const userId = url.searchParams.get('userId')
+  const username = url.searchParams.get('username')
+  
+  if (!sessionId || !userId) {
+    ws.close(1008, '缺少必要参数')
+    return
+  }
+  
+  // 初始化会话
+  if (!collaborationSessions.has(sessionId)) {
+    collaborationSessions.set(sessionId, {
+      id: sessionId,
+      users: new Map(),
+      content: '',
+      createdAt: Date.now(),
+      lastActivity: Date.now()
+    })
+  }
+  
+  const session = collaborationSessions.get(sessionId)
+  const userInfo = { id: userId, username, ws, joinedAt: Date.now() }
+  
+  // 添加用户到会话
+  session.users.set(userId, userInfo)
+  connectedUsers.set(ws, { sessionId, userId })
+  
+  // 发送欢迎消息和当前会话状态
+  ws.send(JSON.stringify({
+    type: 'session_joined',
+    sessionId,
+    userId,
+    content: session.content,
+    users: Array.from(session.users.values()).map(u => ({
+      id: u.id,
+      username: u.username,
+      joinedAt: u.joinedAt
+    }))
+  }))
+  
+  // 广播用户加入消息
+  broadcastToSession(sessionId, {
+    type: 'user_joined',
+    userId,
+    username,
+    timestamp: Date.now()
+  }, userId)
+  
+  // 处理消息
+  ws.on('message', (data) => {
+    try {
+      const message = JSON.parse(data.toString())
+      handleWebSocketMessage(ws, sessionId, userId, message)
+      session.lastActivity = Date.now()
+    } catch (error) {
+      console.error('WebSocket消息解析错误:', error)
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: '消息格式错误'
+      }))
+    }
+  })
+  
+  // 处理连接关闭
+  ws.on('close', () => {
+    console.log('WebSocket连接关闭')
+    handleUserDisconnect(ws, sessionId, userId)
+  })
+  
+  // 处理错误
+  ws.on('error', (error) => {
+    console.error('WebSocket错误:', error)
+    handleUserDisconnect(ws, sessionId, userId)
+  })
+})
+
+// 处理WebSocket消息
+function handleWebSocketMessage(ws, sessionId, userId, message) {
+  const session = collaborationSessions.get(sessionId)
+  if (!session) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: '会话不存在'
+    }))
+    return
+  }
+  
+  switch (message.type) {
+    case 'text_edit':
+      // 处理文本编辑
+      handleTextEdit(sessionId, userId, message)
+      break
+      
+    case 'cursor_move':
+      // 处理光标移动
+      broadcastToSession(sessionId, {
+        type: 'cursor_update',
+        userId,
+        position: message.position,
+        timestamp: Date.now()
+      }, userId)
+      break
+      
+    case 'selection_change':
+      // 处理选择变化
+      broadcastToSession(sessionId, {
+        type: 'selection_update',
+        userId,
+        selection: message.selection,
+        timestamp: Date.now()
+      }, userId)
+      break
+      
+    case 'ping':
+      // 心跳检测
+      ws.send(JSON.stringify({
+        type: 'pong',
+        timestamp: Date.now()
+      }))
+      break
+      
+    default:
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: '未知的消息类型'
+      }))
+  }
+}
+
+// 处理文本编辑
+function handleTextEdit(sessionId, userId, message) {
+  const session = collaborationSessions.get(sessionId)
+  if (!session) return
+  
+  // 应用编辑操作（简单的文本合并，实际应该使用CRDT算法）
+  if (message.operation === 'insert') {
+    session.content = 
+      session.content.slice(0, message.position) + 
+      message.text + 
+      session.content.slice(message.position)
+  } else if (message.operation === 'delete') {
+    session.content = 
+      session.content.slice(0, message.position) + 
+      session.content.slice(message.position + message.length)
+  }
+  
+  // 广播编辑操作给其他用户
+  broadcastToSession(sessionId, {
+    type: 'text_edit',
+    userId,
+    operation: message.operation,
+    position: message.position,
+    text: message.text,
+    length: message.length,
+    timestamp: Date.now()
+  }, userId)
+}
+
+// 向会话中的所有用户广播消息（排除发送者）
+function broadcastToSession(sessionId, message, excludeUserId = null) {
+  const session = collaborationSessions.get(sessionId)
+  if (!session) return
+  
+  const messageStr = JSON.stringify(message)
+  
+  for (const [userId, userInfo] of session.users) {
+    if (userId !== excludeUserId && userInfo.ws.readyState === 1) {
+      userInfo.ws.send(messageStr)
+    }
+  }
+}
+
+// 处理用户断开连接
+function handleUserDisconnect(ws, sessionId, userId) {
+  const userInfo = connectedUsers.get(ws)
+  if (!userInfo) return
+  
+  connectedUsers.delete(ws)
+  
+  const session = collaborationSessions.get(sessionId)
+  if (session) {
+    session.users.delete(userId)
+    
+    // 如果会话中没有用户了，清理会话
+    if (session.users.size === 0) {
+      collaborationSessions.delete(sessionId)
+      console.log(`会话 ${sessionId} 已清理`)
+    } else {
+      // 广播用户离开消息
+      broadcastToSession(sessionId, {
+        type: 'user_left',
+        userId,
+        timestamp: Date.now()
+      })
+    }
+  }
+}
+
+// 定期清理不活跃的会话（24小时无活动）
+setInterval(() => {
+  const now = Date.now()
+  const inactiveThreshold = 24 * 60 * 60 * 1000 // 24小时
+  
+  for (const [sessionId, session] of collaborationSessions) {
+    if (now - session.lastActivity > inactiveThreshold) {
+      collaborationSessions.delete(sessionId)
+      console.log(`清理不活跃会话: ${sessionId}`)
+    }
+  }
+}, 60 * 60 * 1000) // 每小时检查一次
+
+console.log('WebSocket实时协作服务器已启动')

@@ -25,8 +25,7 @@ const BlindBoxCard: React.FC<{
           alt={blindBox.name}
           className="w-full h-48 object-cover"
           loading="lazy"
-          decoding="async"
-          quality={80}
+          quality="high"
         />
         <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-medium ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
           {blindBox.rarity === 'common' && '普通'}
@@ -123,7 +122,7 @@ const BlindBoxOpeningAnimation: React.FC<{
               src={result.content.image}
               alt={result.content.name}
               className="w-full h-full object-cover relative z-10"
-              quality={80}
+              quality="high"
             />
           </div>
           
@@ -250,8 +249,7 @@ const BlindBoxShop: React.FC = () => {
           alt={content.name}
           className="w-full h-40 object-cover"
           loading="lazy"
-          decoding="async"
-          quality={80}
+          quality="high"
         />
         <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-sm font-medium ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
           {content.rarity === 'common' && '普通'}

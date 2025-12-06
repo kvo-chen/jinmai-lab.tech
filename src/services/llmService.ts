@@ -1588,7 +1588,7 @@ class LLMService {
         const jitter = Math.random() * 100;
         const nextBackoff = Math.min(backoffMs * backoffFactor + jitter, 5000); // 最大等待5秒
         
-        console.log(`API调用失败，正在重试... [${modelId}] 尝试${attempt + 1}/${maxRetries}，错误类型：${errorType}，等待${Math.round(nextBackoff)}ms`);
+        // console.log(`API调用失败，正在重试... [${modelId}] 尝试${attempt + 1}/${maxRetries}，错误类型：${errorType}，等待${Math.round(nextBackoff)}ms`);
         
         await new Promise(r => setTimeout(r, nextBackoff));
         

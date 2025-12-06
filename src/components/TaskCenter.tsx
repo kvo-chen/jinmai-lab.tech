@@ -99,7 +99,7 @@ const TaskCenter: React.FC = () => {
   // 处理任务完成
   const handleCompleteTask = (taskId: string) => {
     // 这里可以添加任务完成的逻辑
-    console.log('完成任务:', taskId);
+    // console.log('完成任务:', taskId);
   };
 
   // 切换任务展开状态

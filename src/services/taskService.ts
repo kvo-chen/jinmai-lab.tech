@@ -342,8 +342,8 @@ class TaskService {
     // 3. 发送通知
     // 4. 其他自定义逻辑
     
-    console.log(`Task completed: ${task.title} by user ${userId}`);
-    console.log(`Reward: ${task.reward.points} points`);
+    // console.log(`Task completed: ${task.title} by user ${userId}`);
+    // console.log(`Reward: ${task.reward.points} points`);
     
     // 这里可以通过事件或直接调用其他服务来实现积分和成就的更新
     // 例如：achievementService.addPoints(userId, task.reward.points);
