@@ -7,36 +7,37 @@ import { visualizer } from 'rollup-plugin-visualizer';
 function getPlugins() {
   const plugins = [
     react(), 
-    tsconfigPaths(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: [], // 移除不存在的资源引用
-      manifest: {
-        name: '津脉智坊 - 津门老字号共创平台',
-        short_name: '津脉智坊',
-        description: '津门老字号共创平台，传承与创新的桥梁',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait',
-        icons: [] // 移除不存在的图标引用
-      },
-      workbox: {
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/.*$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'font-awesome-cache',
-              expiration: {
-                maxEntries: 1,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          }
-        ]
-      }
-    })
+    tsconfigPaths()
+    // 暂时移除PWA插件，避免Service Worker问题
+    // VitePWA({
+    //   registerType: 'autoUpdate',
+    //   includeAssets: [], // 移除不存在的资源引用
+    //   manifest: {
+    //     name: '津脉智坊 - 津门老字号共创平台',
+    //     short_name: '津脉智坊',
+    //     description: '津门老字号共创平台，传承与创新的桥梁',
+    //     theme_color: '#ffffff',
+    //     background_color: '#ffffff',
+    //     display: 'standalone',
+    //     orientation: 'portrait',
+    //     icons: [] // 移除不存在的图标引用
+    //   },
+    //   workbox: {
+    //     runtimeCaching: [
+    //       {
+    //         urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/.*$/,
+    //         handler: 'CacheFirst',
+    //         options: {
+    //           cacheName: 'font-awesome-cache',
+    //           expiration: {
+    //             maxEntries: 1,
+    //             maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+    //           }
+    //         }
+    //       }
+    //     ]
+    //   }
+    // })
   ];
   return plugins;
 }
