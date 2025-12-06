@@ -27,10 +27,15 @@ createRoot(document.getElementById("root")!).render(
             <WorkflowProvider>
               <App />
               <Toaster />
-              {/* 挂载网站分析组件：仅在部署环境采集访问与页面浏览等数据 */}
-              <Analytics />
-              {/* 挂载速度洞察组件：采集 Web Vitals 性能指标用于优化 */}
-              <SpeedInsights />
+              {/* 仅在生产环境挂载 Vercel 分析和速度洞察组件 */}
+              {import.meta.env.PROD && (
+                <>
+                  {/* 挂载网站分析组件：采集访问与页面浏览等数据 */}
+                  <Analytics />
+                  {/* 挂载速度洞察组件：采集 Web Vitals 性能指标用于优化 */}
+                  <SpeedInsights />
+                </>
+              )}
             </WorkflowProvider>
           </AuthProvider>
         </BrowserRouter>

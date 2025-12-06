@@ -288,6 +288,8 @@ export default defineConfig({
   server: {
     // 启用 gzip 压缩
     compress: true,
+    // 设置端口为3000
+    port: 3000,
     // 优化热更新
     hmr: {
       timeout: 3000,
@@ -298,6 +300,8 @@ export default defineConfig({
   preview: {
     // 启用 gzip 压缩
     compress: true,
+    // 设置端口为3000
+    port: 3000,
   },
 });
 
