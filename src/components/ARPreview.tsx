@@ -194,11 +194,7 @@ const ModelPreview: React.FC<{
   position: { x: number; y: number; z: number };
 }> = React.memo(({ url, scale, rotation, position }) => {
   // 优化：只有当url有效时才加载模型
-  const { scene: modelScene, error } = useGLTF(url || '', { 
-    // 添加错误处理选项
-    failIfNoData: false,
-    useCache: true
-  });
+  const modelScene = useGLTF(url || '').scene;
 
   return (
     <group 
@@ -206,17 +202,7 @@ const ModelPreview: React.FC<{
       rotation={[rotation.x, rotation.y, rotation.z]} 
       scale={scale}
     >
-      {error ? (
-        // 错误状态
-        <mesh>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial 
-            color="#ff6b6b"
-            metalness={0}
-            roughness={1}
-          />
-        </mesh>
-      ) : modelScene ? (
+      {modelScene ? (
         <primitive 
           object={modelScene} 
         />
@@ -719,29 +705,21 @@ const ARPreview: React.FC<{
               )}
               
               <Canvas 
-                shadows={false} 
-                className="w-full h-full" 
-                camera={{ position: [0, 0, 3], fov: 60, near: 0.1, far: 1000 }} 
-                gl={{ 
-                    antialias: false, 
-                    alpha: true, 
-                    preserveDrawingBuffer: false, 
-                    powerPreference: 'low-power', 
-                    stencil: false,
-                    depth: true,
-                    toneMapping: THREE.NoToneMapping,
-                    autoClear: true,
-                    // 新增性能优化配置
-                    premultipliedAlpha: false,
-                    desynchronized: true,
-                    failIfMajorPerformanceCaveat: true
-                  }} 
-                style={{ backgroundColor: '#f0f0f0' }}
-                frameloop="demand"
-                // 新增性能优化配置
-                flat
-                dpr={1}
-              >
+              shadows={false} 
+              className="w-full h-full" 
+              camera={{ position: [0, 0, 3], fov: 60, near: 0.1, far: 1000 }} 
+              gl={{ 
+                  antialias: false, 
+                  alpha: true, 
+                  preserveDrawingBuffer: false, 
+                  powerPreference: 'low-power', 
+                  stencil: false,
+                  depth: true
+                }} 
+              style={{ backgroundColor: '#f0f0f0' }}
+              frameloop="demand"
+              dpr={1}
+            >
                 {/* 基础相机和灯光 - 极简版本 */}
                 <PerspectiveCamera makeDefault position={[0, 0, 3]} />
                 <ambientLight intensity={0.5} />
