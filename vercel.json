@@ -12,8 +12,16 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*\.(js|css|png|jpg|jpeg|gif|svg|ico|json|webmanifest|wasm))$",
-      "destination": "/$1"
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/chunks/(.*)",
+      "destination": "/chunks/$1"
+    },
+    {
+      "source": "/entries/(.*)",
+      "destination": "/entries/$1"
     },
     {
       "source": "/(.*)",
