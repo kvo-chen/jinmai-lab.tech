@@ -116,7 +116,9 @@ class ImageService {
   public getResponsiveUrl(url: string, size: keyof typeof RESPONSIVE_SIZES = 'md', quality?: number): string {
     if (url.includes('trae-api-sg.mchost.guru')) {
       try {
-        const urlObj = new URL(url);
+        // 使用本地代理替换直接调用，解决CORS问题
+        let proxyUrl = url.replace('https://trae-api-sg.mchost.guru', '/api/proxy/trae-api');
+        const urlObj = new URL(proxyUrl);
         const responsiveConfig = RESPONSIVE_SIZES[size];
         const finalQuality = quality || responsiveConfig.quality;
         
@@ -140,7 +142,9 @@ class ImageService {
   public getLowQualityUrl(url: string): string {
     if (url.includes('trae-api-sg.mchost.guru')) {
       try {
-        const urlObj = new URL(url);
+        // 使用本地代理替换直接调用，解决CORS问题
+        let proxyUrl = url.replace('https://trae-api-sg.mchost.guru', '/api/proxy/trae-api');
+        const urlObj = new URL(proxyUrl);
         urlObj.searchParams.set('quality', '20');
         urlObj.searchParams.set('width', '200');
         
@@ -160,7 +164,8 @@ class ImageService {
   // 生成备用图片URL
   public getFallbackUrl(alt: string): string {
     const prompt = encodeURIComponent(`Beautiful ${alt} design, colorful, high quality`);
-    let url = `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${prompt}&image_size=1024x1024`;
+    // 使用本地代理替换直接调用，解决CORS问题
+    let url = `/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=${prompt}&image_size=1024x1024`;
     
     // 启用WebP格式
     if (this.config.enableWebP) {

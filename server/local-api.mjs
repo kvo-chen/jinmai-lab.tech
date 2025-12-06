@@ -986,6 +986,40 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // 代理 trae-api-sg.mchost.guru API 请求，解决 CORS 问题
+    if (req.method === 'GET' && path.startsWith('/api/proxy/trae-api')) {
+      const remotePath = path.replace('/api/proxy/trae-api', '')
+      const queryString = u.search
+      const remoteUrl = `https://trae-api-sg.mchost.guru${remotePath}${queryString}`
+      
+      try {
+        const resp = await fetch(remoteUrl, {
+          method: req.method,
+          headers: {
+            'Accept': 'application/json, image/*',
+          }
+        })
+        
+        // 设置响应头
+        res.statusCode = resp.status
+        const contentType = resp.headers.get('content-type') || 'application/octet-stream'
+        res.setHeader('Content-Type', contentType)
+        
+        // 如果是图片类型，返回二进制数据
+        if (contentType.startsWith('image/')) {
+          const buffer = Buffer.from(await resp.arrayBuffer())
+          res.end(buffer)
+        } else {
+          // 否则返回 JSON 数据
+          const data = await resp.json()
+          sendJson(res, resp.status, data)
+        }
+      } catch (e) {
+        sendJson(res, 500, { error: 'PROXY_ERROR', message: e?.message || 'UNKNOWN' })
+      }
+      return
+    }
+
     // 健康检查：返回各模型的配置状态，便于前端快速定位问题
     if (req.method === 'GET' && path === '/api/health/llms') {
       const status = {
