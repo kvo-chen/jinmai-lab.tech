@@ -413,7 +413,7 @@ export default function Explore() {
   
   // 处理作品点击
   const handleWorkClick = (id: number) => {
-    navigate(`/work/${id}`);
+    navigate(`/explore/${id}`);
   };
   
   // 实现无限滚动，优化阈值和根边距，让加载更及时
