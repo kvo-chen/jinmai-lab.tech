@@ -260,6 +260,14 @@ export default defineConfig({
       timeout: 3000,
       overlay: true,
     },
+    // 添加代理配置，将/api/proxy请求转发到本地API服务器
+    proxy: {
+      '/api/proxy': {
+        target: 'http://localhost:3006',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   // 预览服务器配置
   preview: {
