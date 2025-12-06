@@ -31,19 +31,25 @@ const CulturalQuizGame: React.FC<CulturalQuizGameProps> = ({ isOpen, onClose }) 
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
 
-  // 加载游戏数据
+  // 加载游戏数据 - 简化逻辑，避免不必要的延迟
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      const allLevels = culturalQuizGameService.getLevels();
-      setLevels(allLevels);
       
-      if (user) {
-        const progress = culturalQuizGameService.getGameProgress(user.id);
-        setGameProgress(progress);
+      // 直接获取数据，不添加延迟
+      try {
+        const allLevels = culturalQuizGameService.getLevels();
+        setLevels(allLevels);
+        
+        if (user) {
+          const progress = culturalQuizGameService.getGameProgress(user.id);
+          setGameProgress(progress);
+        }
+      } catch (error) {
+        console.error('加载游戏数据失败:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     }
   }, [isOpen, user]);
 

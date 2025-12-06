@@ -1,355 +1,309 @@
-// 文化元素解谜游戏服务，用于管理游戏关卡和谜题
+// 文化拼图游戏服务
 
-// 谜题类型定义
-export interface Puzzle {
-  id: string;
-  title: string;
-  description: string;
-  culturalElement: string;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  hint: string;
-  explanation: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
-  imageUrl?: string;
+// 拼图碎片类型
+export interface PuzzlePiece {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  correctX: number;
+  correctY: number;
+  isPlaced: boolean;
+  imageUrl: string;
+  pieceUrl?: string;
 }
 
-// 关卡类型定义
-export interface Level {
+// 关卡类型
+export interface PuzzleLevel {
   id: string;
   name: string;
   description: string;
-  puzzles: Puzzle[];
-  unlockCondition?: { type: 'score' | 'level'; value: number };
-  reward: string;
-  culturalTheme: string;
-  imageUrl?: string;
+  imageUrl: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  pieceCount: number; // 碎片数量
+  rows: number; // 行数
+  cols: number; // 列数
+  timeLimit: number; // 时间限制（秒）
+  reward: string; // 奖励
+  culturalTheme: string; // 文化主题
+  unlockedHints: number; // 可用提示次数
 }
 
-// 游戏进度类型定义
+// 游戏进度类型
 export interface GameProgress {
   userId: string;
-  currentLevel: string;
   completedLevels: string[];
-  totalScore: number;
   levelScores: Record<string, number>;
+  totalScore: number;
   unlockedHints: number;
   lastPlayed: Date;
 }
 
-// 文化元素解谜游戏服务类
-class CulturalPuzzleService {
-  private puzzles: Puzzle[] = [];
-  private levels: Level[] = [];
-  private gameProgress: Map<string, GameProgress> = new Map();
-  private nextPuzzleId = 1;
-  private nextLevelId = 1;
+// 本地存储键名
+const STORAGE_KEY = 'cultural_puzzle_game_progress';
 
-  constructor() {
-    this.initPuzzles();
-    this.initLevels();
+// 游戏关卡数据
+const levels: PuzzleLevel[] = [
+  {
+    id: 'level1',
+    name: '天津之眼',
+    description: '天津地标建筑，世界上唯一建在桥上的摩天轮',
+    imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x768&prompt=Tianjin%20Eye%20Ferris%20Wheel%20at%20night%20with%20beautiful%20lights',
+    difficulty: 'easy',
+    pieceCount: 16,
+    rows: 4,
+    cols: 4,
+    timeLimit: 300,
+    reward: '100积分 + 1个提示',
+    culturalTheme: '天津地标',
+    unlockedHints: 2
+  },
+  {
+    id: 'level2',
+    name: '古文化街',
+    description: '天津最具代表性的古文化街区，展示天津民俗文化',
+    imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x768&prompt=Traditional%20Chinese%20cultural%20street%20in%20Tianjin%20with%20ancient%20architecture',
+    difficulty: 'medium',
+    pieceCount: 25,
+    rows: 5,
+    cols: 5,
+    timeLimit: 480,
+    reward: '150积分 + 2个提示',
+    culturalTheme: '天津民俗',
+    unlockedHints: 3
+  },
+  {
+    id: 'level3',
+    name: '泥人张彩塑',
+    description: '天津传统民间艺术，国家级非物质文化遗产',
+    imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x768&prompt=Traditional%20Chinese%20clay%20sculptures%20by%20Zhang%20Family%20in%20Tianjin',
+    difficulty: 'hard',
+    pieceCount: 36,
+    rows: 6,
+    cols: 6,
+    timeLimit: 600,
+    reward: '200积分 + 3个提示',
+    culturalTheme: '天津非遗',
+    unlockedHints: 4
   }
+];
 
-  // 初始化谜题
-  private initPuzzles(): void {
-    this.puzzles = [
-      {
-        id: `puzzle-${this.nextPuzzleId++}`,
-        title: '杨柳青年画',
-        description: '识别这幅杨柳青年画的主题',
-        culturalElement: '杨柳青年画',
-        question: '以下哪项是杨柳青年画的主要特点？',
-        options: [
-          '以水墨画为主',
-          '色彩鲜艳，构图饱满',
-          '抽象艺术风格',
-          '以西方绘画技法为主'
-        ],
-        correctAnswer: 1,
-        hint: '杨柳青年画是中国传统民间木版年画之一',
-        explanation: '杨柳青年画以色彩鲜艳、构图饱满、题材丰富、寓意吉祥为主要特点，是中国传统民间木版年画的代表之一。',
-        difficulty: 'easy',
-        tags: ['天津', '杨柳青', '年画', '传统艺术'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Yangliuqing%20New%20Year%20Painting%20traditional%20Chinese%20art'
-      },
-      {
-        id: `puzzle-${this.nextPuzzleId++}`,
-        title: '泥人张彩塑',
-        description: '识别泥人张彩塑的制作材料',
-        culturalElement: '泥人张彩塑',
-        question: '泥人张彩塑主要使用什么材料制作？',
-        options: [
-          '陶瓷',
-          '黏土',
-          '木材',
-          '金属'
-        ],
-        correctAnswer: 1,
-        hint: '泥人张彩塑是天津著名的民间艺术',
-        explanation: '泥人张彩塑主要使用黏土制作，经过塑造、晾干、烧制、彩绘等多道工序完成，具有造型生动、色彩丰富的特点。',
-        difficulty: 'easy',
-        tags: ['天津', '泥人张', '彩塑', '传统艺术'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Nirenzhang%20clay%20sculpture%20traditional%20Chinese%20art'
-      },
-      {
-        id: `puzzle-${this.nextPuzzleId++}`,
-        title: '京剧脸谱',
-        description: '识别京剧脸谱的颜色含义',
-        culturalElement: '京剧脸谱',
-        question: '京剧中红色脸谱通常代表什么性格？',
-        options: [
-          '忠勇正义',
-          '阴险狡诈',
-          '刚正不阿',
-          '勇猛暴躁'
-        ],
-        correctAnswer: 0,
-        hint: '关羽的脸谱是红色的',
-        explanation: '在京剧中，红色脸谱通常代表忠勇正义的人物形象，如关羽、赵匡胤等。',
-        difficulty: 'medium',
-        tags: ['京剧', '脸谱', '传统戏曲', '文化符号'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Beijing%20Opera%20face%20paint%20red%20color%20traditional%20Chinese%20art'
-      },
-      {
-        id: `puzzle-${this.nextPuzzleId++}`,
-        title: '中国传统色彩',
-        description: '识别中国传统色彩名称',
-        culturalElement: '传统色彩',
-        question: '以下哪项是中国传统色彩名称？',
-        options: [
-          '珊瑚红',
-          '天青色',
-          '柠檬黄',
-          '宝石蓝'
-        ],
-        correctAnswer: 1,
-        hint: '天青色等烟雨，而我在等你',
-        explanation: '天青色是中国传统色彩之一，源自宋代汝窑青瓷的釉色，代表着清新、典雅的审美意境。',
-        difficulty: 'medium',
-        tags: ['传统色彩', '中国文化', '美学'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20color%20sky%20blue%20aesthetic'
-      },
-      {
-        id: `puzzle-${this.nextPuzzleId++}`,
-        title: '传统纹样',
-        description: '识别传统纹样的名称',
-        culturalElement: '传统纹样',
-        question: '以下哪项是中国传统云纹的特点？',
-        options: [
-          '几何图形组成',
-          '流畅的曲线构成',
-          '直线和折线构成',
-          '点状图案组成'
-        ],
-        correctAnswer: 1,
-        hint: '云纹常出现在中国传统建筑和服饰中',
-        explanation: '中国传统云纹以流畅的曲线为主要特征，象征着吉祥如意、高升和祥瑞，常用于传统建筑、服饰、陶瓷等领域。',
-        difficulty: 'medium',
-        tags: ['传统纹样', '云纹', '中国文化', '装饰艺术'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20cloud%20pattern%20decorative%20art'
-      },
-      {
-        id: `puzzle-${this.nextPuzzleId++}`,
-        title: '书法艺术',
-        description: '识别书法字体类型',
-        culturalElement: '书法',
-        question: '以下哪项是楷书的特点？',
-        options: [
-          '笔画流畅，连绵不断',
-          '结构严谨，笔画规整',
-          '自由奔放，变化多端',
-          '笔画简约，形态古朴'
-        ],
-        correctAnswer: 1,
-        hint: '唐代书法家颜真卿以楷书著称',
-        explanation: '楷书是中国书法的主要字体之一，以结构严谨、笔画规整、端庄秀丽为主要特点，适合正式场合使用。',
-        difficulty: 'hard',
-        tags: ['书法', '楷书', '传统艺术', '文化遗产'],
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20calligraphy%20regular%20script%20art'
-      }
-    ];
-  }
-
-  // 初始化关卡
-  private initLevels(): void {
-    this.levels = [
-      {
-        id: `level-${this.nextLevelId++}`,
-        name: '天津文化之旅',
-        description: '探索天津的传统文化元素',
-        puzzles: [this.puzzles[0], this.puzzles[1]],
-        reward: '解锁杨柳青年画素材包',
-        culturalTheme: '天津地方文化',
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20cultural%20heritage%20tourism'
-      },
-      {
-        id: `level-${this.nextLevelId++}`,
-        name: '中国传统艺术',
-        description: '了解中国传统艺术形式',
-        puzzles: [this.puzzles[2], this.puzzles[3]],
-        unlockCondition: { type: 'level', value: 1 },
-        reward: '解锁传统色彩配色方案',
-        culturalTheme: '传统艺术',
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20traditional%20art%20collection'
-      },
-      {
-        id: `level-${this.nextLevelId++}`,
-        name: '文化符号解密',
-        description: '解密中国传统符号的含义',
-        puzzles: [this.puzzles[4], this.puzzles[5]],
-        unlockCondition: { type: 'level', value: 2 },
-        reward: '解锁传统纹样素材包',
-        culturalTheme: '文化符号',
-        imageUrl: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20cultural%20symbols%20mystery'
-      }
-    ];
-  }
-
-  // 获取所有关卡
-  getLevels(): Level[] {
-    return [...this.levels];
-  }
-
-  // 根据ID获取关卡
-  getLevelById(levelId: string): Level | undefined {
-    return this.levels.find(level => level.id === levelId);
-  }
-
-  // 获取所有谜题
-  getPuzzles(): Puzzle[] {
-    return [...this.puzzles];
-  }
-
-  // 根据ID获取谜题
-  getPuzzleById(puzzleId: string): Puzzle | undefined {
-    return this.puzzles.find(puzzle => puzzle.id === puzzleId);
-  }
-
-  // 根据关卡ID获取谜题
-  getPuzzlesByLevelId(levelId: string): Puzzle[] {
-    const level = this.getLevelById(levelId);
-    return level?.puzzles || [];
-  }
-
-  // 获取用户游戏进度
-  getGameProgress(userId: string): GameProgress {
-    if (!this.gameProgress.has(userId)) {
-      const progress: GameProgress = {
-        userId,
-        currentLevel: 'level-1',
-        completedLevels: [],
-        totalScore: 0,
-        levelScores: {},
-        unlockedHints: 3,
-        lastPlayed: new Date()
-      };
-      this.gameProgress.set(userId, progress);
-    }
-    return this.gameProgress.get(userId)!;
-  }
-
-  // 更新用户游戏进度
-  updateGameProgress(userId: string, progress: Partial<GameProgress>): GameProgress {
-    const currentProgress = this.getGameProgress(userId);
-    const updatedProgress = {
-      ...currentProgress,
-      ...progress,
-      lastPlayed: new Date()
-    };
-    this.gameProgress.set(userId, updatedProgress);
-    return updatedProgress;
-  }
-
-  // 检查答案是否正确
-  checkAnswer(puzzleId: string, answer: number): { isCorrect: boolean; explanation: string } {
-    const puzzle = this.getPuzzleById(puzzleId);
-    if (!puzzle) {
-      return { isCorrect: false, explanation: '谜题不存在' };
-    }
-    return {
-      isCorrect: puzzle.correctAnswer === answer,
-      explanation: puzzle.explanation
-    };
-  }
-
-  // 计算关卡得分
-  calculateLevelScore(correctAnswers: number, totalPuzzles: number, timeTaken?: number): number {
-    const baseScore = (correctAnswers / totalPuzzles) * 100;
-    // 时间奖励（如果提供了时间）
-    const timeBonus = timeTaken ? Math.max(0, 20 - (timeTaken / 60)) : 0;
-    return Math.round(baseScore + timeBonus);
-  }
-
-  // 完成关卡
-  completeLevel(userId: string, levelId: string, score: number): GameProgress {
-    const progress = this.getGameProgress(userId);
-    const updatedProgress: GameProgress = {
-      ...progress,
-      completedLevels: [...progress.completedLevels, levelId],
-      totalScore: progress.totalScore + score,
-      levelScores: {
-        ...progress.levelScores,
-        [levelId]: score
-      },
-      lastPlayed: new Date()
-    };
-    
-    // 解锁下一关
-    const currentLevelIndex = this.levels.findIndex(level => level.id === levelId);
-    if (currentLevelIndex < this.levels.length - 1) {
-      const nextLevel = this.levels[currentLevelIndex + 1];
-      updatedProgress.currentLevel = nextLevel.id;
-    }
-    
-    this.gameProgress.set(userId, updatedProgress);
-    return updatedProgress;
-  }
-
-  // 使用提示
-  useHint(userId: string): boolean {
-    const progress = this.getGameProgress(userId);
-    if (progress.unlockedHints > 0) {
-      this.updateGameProgress(userId, {
-        unlockedHints: progress.unlockedHints - 1
+// 生成拼图碎片
+export const generatePuzzlePieces = (level: PuzzleLevel): PuzzlePiece[] => {
+  const pieces: PuzzlePiece[] = [];
+  const pieceWidth = 100 / level.cols;
+  const pieceHeight = 100 / level.rows;
+  
+  let id = 0;
+  for (let row = 0; row < level.rows; row++) {
+    for (let col = 0; col < level.cols; col++) {
+      pieces.push({
+        id: id++,
+        x: Math.random() * 100, // 随机初始位置
+        y: Math.random() * 100, // 随机初始位置
+        width: pieceWidth,
+        height: pieceHeight,
+        correctX: col * pieceWidth,
+        correctY: row * pieceHeight,
+        isPlaced: false,
+        imageUrl: level.imageUrl,
+        // 这里可以生成具体的碎片图片URL，实际项目中需要后端支持
+        // pieceUrl: `${level.imageUrl}?piece=${row}_${col}`
       });
-      return true;
     }
-    return false;
   }
+  
+  // 打乱碎片顺序
+  return shuffleArray(pieces);
+};
 
-  // 解锁新提示
-  unlockHint(userId: string): void {
-    const progress = this.getGameProgress(userId);
-    this.updateGameProgress(userId, {
-      unlockedHints: progress.unlockedHints + 1
-    });
+// 检查碎片是否放置在正确位置
+export const checkPiecePlacement = (piece: PuzzlePiece, x: number, y: number): boolean => {
+  const tolerance = 5; // 容差范围（百分比）
+  return Math.abs(x - piece.correctX) <= tolerance && Math.abs(y - piece.correctY) <= tolerance;
+};
+
+// 检查拼图是否完成
+export const checkPuzzleComplete = (pieces: PuzzlePiece[]): boolean => {
+  return pieces.every(piece => piece.isPlaced);
+};
+
+// 计算游戏得分
+export const calculateScore = (
+  level: PuzzleLevel,
+  timeTaken: number,
+  moves: number,
+  hintsUsed: number
+): number => {
+  // 基础分数
+  let baseScore = 1000;
+  
+  // 难度系数
+  const difficultyMultiplier = {
+    easy: 1,
+    medium: 1.5,
+    hard: 2
+  };
+  
+  // 时间系数（越快完成分数越高）
+  const timeRatio = Math.max(0, 1 - (timeTaken / level.timeLimit));
+  const timeScore = baseScore * timeRatio;
+  
+  // 移动次数系数（越少移动分数越高）
+  const movesRatio = Math.max(0, 1 - (moves / (level.pieceCount * 2)));
+  const movesScore = baseScore * movesRatio;
+  
+  // 提示惩罚
+  const hintPenalty = hintsUsed * 50;
+  
+  // 计算最终得分
+  const finalScore = Math.round(
+    (timeScore + movesScore) / 2 * difficultyMultiplier[level.difficulty] - hintPenalty
+  );
+  
+  return Math.max(0, finalScore);
+};
+
+// 获取所有关卡
+export const getLevels = (): PuzzleLevel[] => {
+  return levels;
+};
+
+// 获取单个关卡
+export const getLevel = (id: string): PuzzleLevel | undefined => {
+  return levels.find(level => level.id === id);
+};
+
+// 检查关卡是否解锁
+export const isLevelUnlocked = (userId: string, levelId: string): boolean => {
+  const progress = getGameProgress(userId);
+  
+  // 第一关默认解锁
+  if (levelId === 'level1') {
+    return true;
   }
-
-  // 根据难度获取谜题
-  getPuzzlesByDifficulty(difficulty: Puzzle['difficulty']): Puzzle[] {
-    return this.puzzles.filter(puzzle => puzzle.difficulty === difficulty);
+  
+  // 检查前一关是否已完成
+  const levelIndex = levels.findIndex(level => level.id === levelId);
+  if (levelIndex > 0) {
+    const previousLevelId = levels[levelIndex - 1].id;
+    return progress.completedLevels.includes(previousLevelId);
   }
+  
+  return false;
+};
 
-  // 根据标签获取谜题
-  getPuzzlesByTag(tag: string): Puzzle[] {
-    return this.puzzles.filter(puzzle => puzzle.tags.includes(tag));
+// 获取游戏进度
+export const getGameProgress = (userId: string): GameProgress => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const progressMap: Record<string, GameProgress> = JSON.parse(stored);
+      if (progressMap[userId]) {
+        return {
+          ...progressMap[userId],
+          lastPlayed: new Date(progressMap[userId].lastPlayed)
+        };
+      }
+    }
+  } catch (error) {
+    console.error('读取游戏进度失败:', error);
   }
+  
+  // 返回默认进度
+  return {
+    userId,
+    completedLevels: [],
+    levelScores: {},
+    totalScore: 0,
+    unlockedHints: 3,
+    lastPlayed: new Date()
+  };
+};
 
-  // 搜索谜题
-  searchPuzzles(query: string): Puzzle[] {
-    const lowerQuery = query.toLowerCase();
-    return this.puzzles.filter(puzzle => 
-      puzzle.title.toLowerCase().includes(lowerQuery) ||
-      puzzle.description.toLowerCase().includes(lowerQuery) ||
-      puzzle.culturalElement.toLowerCase().includes(lowerQuery) ||
-      puzzle.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
-    );
+// 保存游戏进度
+export const saveGameProgress = (progress: GameProgress): void => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const progressMap: Record<string, GameProgress> = stored ? JSON.parse(stored) : {};
+    
+    progressMap[progress.userId] = {
+      ...progress,
+      lastPlayed: new Date()
+    };
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressMap));
+  } catch (error) {
+    console.error('保存游戏进度失败:', error);
   }
-}
+};
 
-// 创建单例实例
-const culturalPuzzleService = new CulturalPuzzleService();
+// 完成关卡
+export const completeLevel = (
+  userId: string,
+  levelId: string,
+  score: number,
+  timeTaken: number
+): GameProgress => {
+  const progress = getGameProgress(userId);
+  
+  // 如果关卡未完成，添加到已完成列表
+  if (!progress.completedLevels.includes(levelId)) {
+    progress.completedLevels.push(levelId);
+  }
+  
+  // 更新关卡分数（如果新分数更高）
+  if (!progress.levelScores[levelId] || score > progress.levelScores[levelId]) {
+    progress.levelScores[levelId] = score;
+    
+    // 更新总分
+    const totalScore = Object.values(progress.levelScores).reduce((sum, s) => sum + s, 0);
+    progress.totalScore = totalScore;
+  }
+  
+  // 保存进度
+  saveGameProgress(progress);
+  
+  return progress;
+};
 
-export default culturalPuzzleService;
+// 使用提示
+export const useHint = (userId: string): boolean => {
+  const progress = getGameProgress(userId);
+  
+  if (progress.unlockedHints > 0) {
+    progress.unlockedHints -= 1;
+    saveGameProgress(progress);
+    return true;
+  }
+  
+  return false;
+};
+
+// 辅助函数：打乱数组
+const shuffleArray = <T>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+// 文化拼图游戏服务对象
+const culturalPuzzleGameService = {
+  generatePuzzlePieces,
+  checkPiecePlacement,
+  checkPuzzleComplete,
+  calculateScore,
+  getLevels,
+  getLevel,
+  isLevelUnlocked,
+  getGameProgress,
+  saveGameProgress,
+  completeLevel,
+  useHint
+};
+
+export default culturalPuzzleGameService;

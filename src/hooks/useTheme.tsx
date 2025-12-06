@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, ReactNode, useContext, useMemo } from 'react';
 
-type Theme = 'light' | 'dark' | 'pink' | 'blue' | 'green' | 'auto';
+type Theme = 'light' | 'dark' | 'pink' | 'auto';
 
 interface ThemeContextType {
   theme: Theme;
@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // 更新主题类名
   const updateThemeClass = () => {
     // 移除所有主题类
-    document.documentElement.classList.remove('light', 'dark', 'pink', 'blue', 'green');
+    document.documentElement.classList.remove('light', 'dark', 'pink');
     
     // 确定当前使用的实际主题
     const currentTheme = theme === 'auto' 
@@ -68,7 +68,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   const toggleTheme = () => {
     setTheme(prevTheme => {
-      const themes: Theme[] = ['light', 'dark', 'pink', 'blue', 'green', 'auto'];
+      const themes: Theme[] = ['light', 'dark', 'pink', 'auto'];
       const currentIndex = themes.indexOf(prevTheme);
       return themes[(currentIndex + 1) % themes.length];
     });
@@ -78,9 +78,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     { value: 'auto', label: '自动', icon: 'fas fa-circle-half-stroke' },
     { value: 'light', label: '浅色', icon: 'fas fa-sun' },
     { value: 'dark', label: '深色', icon: 'fas fa-moon' },
-    { value: 'pink', label: '粉色', icon: 'fas fa-heart' },
-    { value: 'blue', label: '蓝色', icon: 'fas fa-water' },
-    { value: 'green', label: '绿色', icon: 'fas fa-leaf' }
+    { value: 'pink', label: '粉色', icon: 'fas fa-heart' }
   ];
 
   // 确定当前是否为深色模式

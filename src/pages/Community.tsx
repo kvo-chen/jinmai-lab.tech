@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { TianjinImage } from '@/components/TianjinStyleComponents'
 import GradientHero from '@/components/GradientHero'
-// 使用React.lazy实现子组件的延迟加载
+// 使用React.lazy实现子组件的延迟加载，优化初始加载速度
 const CommunityChat = lazy(() => import('@/components/CommunityChat'))
 const CommunityManagement = lazy(() => import('@/components/CommunityManagement'))
 // 对于有命名导出的组件，需要使用正确的动态导入语法
@@ -16,6 +16,14 @@ const DiscussionSection = lazy(() => import('@/components/DiscussionSection').th
 const ScheduledPost = lazy(() => import('@/components/ScheduledPost'))
 const VirtualList = lazy(() => import('@/components/VirtualList'))
 const CulturalMatchingGame = lazy(() => import('@/components/CulturalMatchingGame'))
+
+
+// 优化：添加Suspense fallback，提升用户体验
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-24">
+    <div className="w-8 h-8 border-4 border-t-blue-500 border-gray-300 rounded-full animate-spin"></div>
+  </div>
+)
 import { useTheme } from '@/hooks/useTheme'
 import postsApi, { Post } from '@/services/postService'
 import { toast } from 'sonner'
@@ -46,11 +54,13 @@ type Creator = {
   avatar: string;
   online: boolean;
 };
+// 优化：使用本地默认头像，减少不必要的API请求
+const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZiI+PC9yZWN0PjxjaXJjbGUgY3g9IjUwIiBjeT0iNTUiIHI9IjI1IiBmaWxsPSIjN2E4NTg1Ii8+PHN2ZyB3aWR0aD0iNTAlIiBoZWlnaHQ9IjUwJSIgeD0iMjUlIiB5PSIyNSI+PGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiNmN2Y3ZjciLz48L3N2Zz48L3N2Zz4=';
 const mockCreators: Creator[] = [
-  { name: '设计师小明', role: '视觉设计', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Designer%20avatar%20xiaoming%20high%20quality', online: true },
-  { name: '插画师小陈', role: '插画设计', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Illustrator%20avatar%20xiaochen%20flat%20style', online: true },
-  { name: '品牌设计师老王', role: '品牌策略', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Designer%20avatar%20laowang%20brand', online: false },
-  { name: '数字艺术家小张', role: '数字艺术', avatar: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Artist%20avatar%20xiaozhang%20digital', online: true },
+  { name: '设计师小明', role: '视觉设计', avatar: defaultAvatar, online: true },
+  { name: '插画师小陈', role: '插画设计', avatar: defaultAvatar, online: true },
+  { name: '品牌设计师老王', role: '品牌策略', avatar: defaultAvatar, online: false },
+  { name: '数字艺术家小张', role: '数字艺术', avatar: defaultAvatar, online: true },
 ];
 
 // 中文注释：创作者徽章（用于在详情弹窗中展示）
@@ -671,6 +681,7 @@ export default function Community() {
   const MUTE_KEY = 'jmzf_muted_communities'
   const [pinnedJoined, setPinnedJoined] = useState<string[]>([])
   const [mutedCommunities, setMutedCommunities] = useState<string[]>([])
+  const [gameOpen, setGameOpen] = useState(false)
   const [joinedSearch, setJoinedSearch] = useState('')
   const [preferPinned, setPreferPinned] = useState(true)
   const [hideMuted, setHideMuted] = useState(false)
@@ -719,8 +730,7 @@ export default function Community() {
   const [communitySort, setCommunitySort] = useState<'members' | 'alphabet'>('members')
   const [communityOpen, setCommunityOpen] = useState(false)
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null)
-  // 游戏状态
-  const [gameOpen, setGameOpen] = useState(false)
+  
 
   
 
@@ -809,14 +819,27 @@ export default function Community() {
     loadLocalStorageData()
   }, [])
 
-  useEffect(() => { try { localStorage.setItem(PIN_KEY, JSON.stringify(pinnedJoined)) } catch {} }, [pinnedJoined])
-  useEffect(() => { try { localStorage.setItem(MUTE_KEY, JSON.stringify(mutedCommunities)) } catch {} }, [mutedCommunities])
-  useEffect(() => { try { localStorage.setItem(MEMBER_KEY, JSON.stringify(memberStore)) } catch {} }, [memberStore])
-  useEffect(() => { try { localStorage.setItem(ANNOUNCE_KEY, JSON.stringify(announceStore)) } catch {} }, [announceStore])
-  useEffect(() => { try { localStorage.setItem(PRIVACY_KEY, JSON.stringify(privacyStore)) } catch {} }, [privacyStore])
-  useEffect(() => { try { localStorage.setItem(ADMIN_KEY, JSON.stringify(adminStore)) } catch {} }, [adminStore])
-  useEffect(() => { try { localStorage.setItem(FOLLOW_KEY, JSON.stringify(followedCreators)) } catch {} }, [followedCreators])
-  useEffect(() => { try { localStorage.setItem(JOINED_KEY, JSON.stringify(joinedCommunities)) } catch {} }, [joinedCommunities])
+  // 优化：合并localStorage写入操作，减少频繁写入
+  useEffect(() => {
+    const saveToLocalStorage = () => {
+      try {
+        localStorage.setItem(PIN_KEY, JSON.stringify(pinnedJoined))
+        localStorage.setItem(MUTE_KEY, JSON.stringify(mutedCommunities))
+        localStorage.setItem(MEMBER_KEY, JSON.stringify(memberStore))
+        localStorage.setItem(ANNOUNCE_KEY, JSON.stringify(announceStore))
+        localStorage.setItem(PRIVACY_KEY, JSON.stringify(privacyStore))
+        localStorage.setItem(ADMIN_KEY, JSON.stringify(adminStore))
+        localStorage.setItem(FOLLOW_KEY, JSON.stringify(followedCreators))
+        localStorage.setItem(JOINED_KEY, JSON.stringify(joinedCommunities))
+      } catch (error) {
+        console.error('保存到localStorage失败:', error)
+      }
+    }
+    
+    // 使用防抖函数，避免频繁写入
+    const timeoutId = setTimeout(saveToLocalStorage, 500)
+    return () => clearTimeout(timeoutId)
+  }, [pinnedJoined, mutedCommunities, memberStore, announceStore, privacyStore, adminStore, followedCreators, joinedCommunities])
   // 中文注释：当加入社群变化时，自动选择一个社群用于右侧聊天（优先置顶）
   useEffect(() => {
     if (!joinedCommunities.length) { setActiveChatCommunityId(null); return }
@@ -912,12 +935,16 @@ export default function Community() {
     return `${mm}分钟`
   }
 
+  // 优化：降低定时任务的检查频率，从10秒改为30秒，减少不必要的计算和localStorage写入
   useEffect(() => {
     const timer = setInterval(() => {
       setScheduled(prev => {
         const now = Date.now()
+        let hasChanges = false
+        
         const next = prev.map(it => {
           if (it.time <= now && !it.published) {
+            hasChanges = true
             // 中文注释：到点自动生成讨论帖并标记为已发布
             const thread: Thread = {
               id: `t-${Date.now()}`,
@@ -935,15 +962,22 @@ export default function Community() {
           }
           return it
         })
-        localStorage.setItem(SCHEDULE_KEY, JSON.stringify(next))
+        
+        // 只有在有变化时才写入localStorage
+        if (hasChanges) {
+          localStorage.setItem(SCHEDULE_KEY, JSON.stringify(next))
+        }
+        
         return next
       })
-  }, 10000) // 中文注释：每10秒检查一次定时任务是否到期
-  return () => clearInterval(timer)
-}, [])
+    }, 30000) // 中文注释：每30秒检查一次定时任务是否到期
+    
+    return () => clearInterval(timer)
+  }, [])
 
+  // 优化：降低时间更新的频率，从30秒改为60秒，减少不必要的状态更新
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 30000)
+    const tick = setInterval(() => setNow(Date.now()), 60000)
     return () => clearInterval(tick)
   }, [])
 
@@ -976,18 +1010,37 @@ export default function Community() {
     setNewContent(baseContent)
   }
 
+  // 优化：使用useMemo缓存计算结果，减少不必要的计算
   const filteredPosts = useMemo(() => {
-    return posts.filter(p => mode === 'style' ? pickStyle(p.title) === selectedStyle : pickTopic(p.title) === selectedTopic)
+    if (!posts.length) return []
+    return posts.filter(p => {
+      if (mode === 'style') {
+        return pickStyle(p.title) === selectedStyle
+      } else {
+        return pickTopic(p.title) === selectedTopic
+      }
+    })
   }, [posts, mode, selectedStyle, selectedTopic])
 
+  // 优化：减少hotTopics的计算复杂度
   const hotTopics = useMemo(() => {
+    if (!posts.length) return []
     const keywords = ['国潮', '非遗', '京剧', '景德镇', '老字号', '校园']
     const map: Record<string, number> = {}
-    posts.forEach(p => {
-      keywords.forEach(k => { if (p.title.includes(k)) map[k] = (map[k] || 0) + (p.likes || 0) + (p.comments?.length || 0) })
-    })
-    const entries = Object.entries(map).sort((a, b) => b[1] - a[1])
-    return entries.slice(0, 6)
+    
+    // 简化计算逻辑，减少嵌套循环的计算量
+    for (const p of posts) {
+      const title = p.title.toLowerCase()
+      for (const k of keywords) {
+        if (title.includes(k)) {
+          map[k] = (map[k] || 0) + (p.likes || 0) + (p.comments?.length || 0)
+        }
+      }
+    }
+    
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
   }, [posts])
 
   const submitThread = () => {
@@ -1245,28 +1298,7 @@ export default function Community() {
           ]}
         />
 
-        {/* 游戏入口区域 */}
-        <motion.section
-          className={`mb-6 rounded-2xl shadow-md p-6 ${isDark ? 'bg-gray-800' : 'bg-gradient-to-r from-blue-50 to-purple-50'} border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold mb-2">🎮 文化元素连连看</h3>
-              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                通过匹配相同的文化元素卡片，了解中国传统文化和天津地方特色，赢取丰厚奖励！
-              </p>
-            </div>
-            <button
-              onClick={() => setGameOpen(true)}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} shadow-md hover:shadow-lg transform hover:-translate-y-0.5`}
-            >
-              <i className="fas fa-gamepad mr-2"></i> 开始游戏
-            </button>
-          </div>
-        </motion.section>
+
 
         {/* 中文注释：横向社群列表条（置于聊天模块上方，便于快速切换社群） */}
         {communityContext === 'cocreation' && communityTab === 'joined' && (

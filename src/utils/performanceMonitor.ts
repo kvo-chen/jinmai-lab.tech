@@ -28,11 +28,16 @@ class PerformanceMonitor {
   init() {
     if (this.isInitialized) return;
 
-    // 监听核心 Web Vitals
+    // 优化：只在开发环境启用完整的性能监控
+    const isDev = import.meta.env.DEV;
+    
+    // 监听核心 Web Vitals - 始终启用，开销较小
     this.setupWebVitalsObserver();
     
-    // 监听资源加载性能
-    this.setupResourceObserver();
+    // 监听资源加载性能 - 只在开发环境启用，避免生产环境开销
+    if (isDev) {
+      this.setupResourceObserver();
+    }
     
     this.isInitialized = true;
   }
@@ -122,16 +127,17 @@ class PerformanceMonitor {
    * 记录自定义性能指标
    */
   recordMetric(metric: PerformanceMetric) {
+    // 优化：只在开发环境记录完整指标，生产环境只记录核心Web Vitals
+    const isDev = import.meta.env.DEV;
+    if (!isDev && !this.isWebVital(metric.name)) {
+      return;
+    }
+    
     this.metrics.push(metric);
     
-    // 发送到控制台（生产环境可发送到监控服务）
-    // if (import.meta.env.DEV) {
-    //   console.log('[Performance Metric]', metric);
-    // }
-    
-    // 限制指标数量，避免内存泄漏
-    if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-500);
+    // 优化：进一步限制指标数量，避免内存泄漏
+    if (this.metrics.length > 500) {
+      this.metrics = this.metrics.slice(-200);
     }
   }
 

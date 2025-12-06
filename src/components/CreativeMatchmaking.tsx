@@ -215,8 +215,6 @@ export default function CreativeMatchmaking() {
                       ratio="square"
                       fit="cover"
                       className="w-full h-full"
-                      priority={false}
-                      quality="medium"
                     />
                   </div>
                   <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
@@ -320,8 +318,6 @@ export default function CreativeMatchmaking() {
                       ratio="square"
                       fit="cover"
                       className="w-full h-full"
-                      priority={false}
-                      quality="medium"
                     />
                   </div>
                   <span className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white ${
@@ -386,8 +382,7 @@ export default function CreativeMatchmaking() {
                         fit="cover"
                         rounded="lg"
                         className="w-full h-full"
-                        priority={false}
-                        quality="medium"
+
                       />
                     </div>
                   ))}

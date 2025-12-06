@@ -206,11 +206,11 @@ class CulturalMemoryGameService {
     // 简单难度：4x4网格，8对卡片
     const easyCards = this.getShuffledCards(8);
     
-    // 中等难度：6x6网格，18对卡片
-    const mediumCards = this.getShuffledCards(18);
+    // 中等难度：6x6网格，12对卡片（减少到可用数量）
+    const mediumCards = this.getShuffledCards(12);
     
-    // 困难难度：8x8网格，32对卡片
-    const hardCards = this.getShuffledCards(32);
+    // 困难难度：8x8网格，16对卡片（减少到可用数量）
+    const hardCards = this.getShuffledCards(16);
 
     this.levels = [
       {
@@ -256,12 +256,14 @@ class CulturalMemoryGameService {
 
   // 获取随机打乱的卡片列表
   private getShuffledCards(pairCount: number): MemoryCard[] {
-    // 从数据库中随机选择指定数量的卡片对
-    const selectedPairs = new Set<string>();
-    while (selectedPairs.size < pairCount) {
-      const randomPairId = `pair-${Math.floor(Math.random() * (this.nextCardId - 1)) + 1}`;
-      selectedPairs.add(randomPairId);
-    }
+    // 计算可用的最大卡片对数量
+    const availablePairs = this.nextCardId - 1;
+    const actualPairCount = Math.min(pairCount, availablePairs);
+    
+    // 从数据库中选择指定数量的卡片对
+    const allPairIds = Array.from({ length: availablePairs }, (_, i) => `pair-${i + 1}`);
+    const shuffledPairIds = this.shuffleArray(allPairIds);
+    const selectedPairs = new Set(shuffledPairIds.slice(0, actualPairCount));
 
     // 获取选中的卡片并打乱顺序
     const selectedCards = this.cardDatabase.filter(card => selectedPairs.has(card.pairId));

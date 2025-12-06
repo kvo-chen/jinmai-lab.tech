@@ -113,24 +113,21 @@
 }
 
 /* 细节优化 */
-button { transition: all 0.2s ease; }
+button { transition: all 0.15s ease; }
 img { border-radius: 0.5rem; }
-input { transition: box-shadow 0.2s ease; }
+input { transition: box-shadow 0.15s ease; }
 
-/* 全局主题过渡效果 */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+/* 优化：只对交互元素应用过渡效果，减少全局过渡开销 */
+button, input, select, textarea, a, .card, .modal, .notification, .nav-item, .btn, .form-control, .dropdown-item {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-/* 主题切换平滑过渡动画 */
+/* 主题切换平滑过渡动画 - 简化版 */
 :root {
-  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* 主题切换时的淡入淡出效果 */
-body {
-  transition: opacity 0.3s ease;
-}
+/* 移除不必要的body淡入淡出效果，减少不必要的过渡动画 */
 
 /* 页面切换动画 */
 .animate-page-transition {

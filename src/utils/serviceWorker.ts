@@ -7,6 +7,12 @@ export const isServiceWorkerSupported = (): boolean => {
 
 // 注册Service Worker
 export const registerServiceWorker = async (): Promise<void> => {
+  // 只在生产环境注册Service Worker，开发环境不生成service-worker.js
+  if (import.meta.env.DEV) {
+    console.log('Service Worker registration skipped in development mode.');
+    return;
+  }
+  
   if (!isServiceWorkerSupported()) {
     console.log('Service Worker is not supported in this browser.');
     return;

@@ -469,7 +469,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         }}
       >
         {/* 中文注释：暗色头部采用半透明背景与毛玻璃，弱化硬边 */}
-        <header className={`sticky top-0 z-40 ${isDark ? 'bg-[#0b0e13]/80 backdrop-blur-sm' : theme === 'pink' ? 'bg-white/80 backdrop-blur-sm' : 'bg-white'} border-b ${isDark ? 'border-gray-800' : theme === 'pink' ? 'border-pink-200' : 'border-gray-200'} px-4 py-3`}> 
+        <header className={`sticky top-0 z-40 ${isDark ? 'bg-[#0b0e13]/80 backdrop-blur-sm' : theme === 'pink' ? 'bg-white/80 backdrop-blur-sm' : 'bg-white'} border-b ${isDark ? 'border-gray-800' : theme === 'pink' ? 'border-pink-200' : 'border-gray-200'} px-4 py-3`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <button
@@ -573,6 +573,16 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                   </div>
                 )}
               </div>
+              {/* 主题切换按钮 */}
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg transition-all duration-300 flex items-center ${isDark ? 'bg-gray-800 hover:bg-gray-700 ring-1 ring-gray-700 text-gray-100 hover:ring-gray-600' : theme === 'pink' ? 'bg-pink-50 hover:bg-pink-100 ring-1 ring-pink-200 text-pink-800 hover:ring-pink-300' : 'bg-white hover:bg-gray-50 ring-1 ring-gray-200 text-gray-900 hover:ring-gray-300'}`}
+                aria-label="切换主题"
+                title="切换主题（浅色/深色/粉色）"
+              >
+                <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'} transition-transform duration-300 hover:scale-110`}></i>
+              </button>
+              
               {/* 中文注释：快捷键提示入口 */}
               <div className="relative" ref={shortcutsRef}>
                 <button

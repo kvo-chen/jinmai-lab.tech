@@ -14,11 +14,17 @@ const mockWork = {
   id: 1,
   title: '测试作品',
   description: '这是一个测试作品',
+  creator: '测试作者',
+  creatorAvatar: 'https://example.com/avatar.jpg',
+  thumbnail: 'https://example.com/thumbnail.jpg',
+  likes: 100,
+  comments: 10,
+  views: 1000,
+  category: '测试类别',
+  tags: ['标签1', '标签2', '标签3'],
+  featured: false,
   imageUrl: 'https://example.com/image.jpg',
   modelUrl: 'https://example.com/model.glb',
-  author: '测试作者',
-  tags: ['标签1', '标签2', '标签3'],
-  views: 100,
 };
 
 describe('ARPreview Component', () => {

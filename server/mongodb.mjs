@@ -8,6 +8,8 @@ const MONGODB_OPTIONS = {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
+  loggerLevel: 'error', // 禁用调试日志，只显示错误信息
+  monitorCommands: false // 禁用命令监控日志
 }
 
 // 全局MongoDB客户端和数据库实例

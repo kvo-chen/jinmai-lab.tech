@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="256" fill="#2563eb" />
+  
+  <!-- 创新之门元素 - 代表津门 -->
+  <rect x="128" y="170.67" width="256" height="213.33" rx="21.33" fill="white" opacity="0.9" />
+  
+  <!-- 门的装饰线条 -->
+  <rect x="234.67" y="170.67" width="42.67" height="213.33" fill="#2563eb" />
+  <rect x="128" y="213.33" width="256" height="21.33" fill="#2563eb" />
+  <rect x="128" y="341.33" width="256" height="21.33" fill="#2563eb" />
+  
+  <!-- 创新元素 - 代表 AI 与科技 -->
+  <circle cx="256" cy="256" r="64" fill="#2563eb" />
+  <path d="M234.67 234.67 L277.33 277.33 M277.33 234.67 L234.67 277.33" stroke="white" stroke-width="10.67" stroke-linecap="round" />
+  
+  <!-- 文化元素 - 代表天津特色 -->
+  <circle cx="192" cy="362.67" r="21.33" fill="white" />
+  <circle cx="320" cy="362.67" r="21.33" fill="white" />
+  <path d="M192 362.67 L320 362.67" stroke="white" stroke-width="10.67" stroke-linecap="round" />
+</svg>

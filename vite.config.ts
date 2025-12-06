@@ -116,20 +116,20 @@ export default defineConfig({
         chunkFileNames: 'chunks/[name]-[hash:6].js',
         entryFileNames: 'entries/[name]-[hash:6].js',
         // 启用代码分割
-        experimentalMinChunkSize: 10000, // 最小chunk大小10KB
+        experimentalMinChunkSize: 8000, // 最小chunk大小8KB，更精细的分割
         // 优化代码分割策略
         manualChunks(id) {
           // 优先使用手动 chunk 配置
           const manualChunkNames = {
-            'react': 'vendor',
-            'react-dom': 'vendor',
-            'react-router-dom': 'vendor',
+            'react': 'vendor-react',
+            'react-dom': 'vendor-react',
+            'react-router-dom': 'vendor-react',
             'clsx': 'utils',
             'tailwind-merge': 'utils',
             'framer-motion': 'animation',
-            'three': 'three',
-            '@react-three/fiber': 'three',
-            '@react-three/drei': 'three',
+            'three': 'three-core',
+            '@react-three/fiber': 'three-r3f',
+            '@react-three/drei': 'three-drei',
             'recharts': 'charts',
             'sonner': 'ui',
             'zod': 'helpers',
@@ -140,6 +140,17 @@ export default defineConfig({
             '@tensorflow/tfjs-backend-webgl': 'gesture',
           };
           
+          // 精确匹配three.js相关依赖，确保正确分割
+          if (id.includes('three') && !id.includes('@react-three')) {
+            return 'three-core';
+          }
+          if (id.includes('@react-three/fiber')) {
+            return 'three-r3f';
+          }
+          if (id.includes('@react-three/drei')) {
+            return 'three-drei';
+          }
+          
           for (const [lib, chunkName] of Object.entries(manualChunkNames)) {
             if (id.includes(lib)) {
               return chunkName;
@@ -147,14 +158,30 @@ export default defineConfig({
           }
           
           // 自动分割大型node_modules依赖
-          if (id.includes('node_modules') && !id.includes('.css') && !id.includes('@react-three')) {
-            return 'vendor';
+          if (id.includes('node_modules') && !id.includes('.css')) {
+            // 进一步细分vendor依赖
+            if (id.includes('lodash') || id.includes('date-fns') || id.includes('uuid')) {
+              return 'utils';
+            }
+            if (id.includes('axios') || id.includes('fetch') || id.includes('http')) {
+              return 'network';
+            }
+            return 'vendor-other';
           }
           
           // 按页面分割代码
           if (id.includes('src/pages/')) {
             const pageName = id.split('src/pages/')[1].split('/')[0];
             return `page-${pageName}`;
+          }
+          
+          // 按组件分割大型组件
+          if (id.includes('src/components/') && id.includes('.tsx')) {
+            const componentName = id.split('src/components/')[1].split('.')[0];
+            // 只分割大型组件
+            if (['ARPreview', 'ThreeDPreview', 'ModelViewer'].includes(componentName)) {
+              return `component-${componentName}`;
+            }
           }
         },
         // 启用动态导入支持

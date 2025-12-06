@@ -1,0 +1,359 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '@/hooks/useTheme';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+
+// 作品统计接口
+interface WorkStats {
+  totalWorks: number;
+  totalLikes: number;
+  totalViews: number;
+  totalComments: number;
+  draftCount: number;
+}
+
+// 近期活动接口
+interface RecentActivity {
+  id: string;
+  type: 'like' | 'comment' | 'message' | 'follow';
+  user: string;
+  userAvatar: string;
+  content: string;
+  timestamp: Date;
+  workId?: string;
+  workTitle?: string;
+}
+
+// 社群消息接口
+interface CommunityMessage {
+  id: string;
+ 社群名称: string;
+  sender: string;
+  senderAvatar: string;
+  content: string;
+  timestamp: Date;
+}
+
+const CreatorDashboard: React.FC = () => {
+  const { isDark } = useTheme();
+  const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(false);
+  const [workStats, setWorkStats] = useState<WorkStats>({
+    totalWorks: 0,
+    totalLikes: 0,
+    totalViews: 0,
+    totalComments: 0,
+    draftCount: 0
+  });
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>([]);
+  
+  // 引用面板和切换按钮元素
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const toggleBtnRef = useRef<HTMLButtonElement>(null);
+
+  // 模拟数据 - 实际项目中应从API获取
+  useEffect(() => {
+    // 模拟作品统计数据
+    const mockWorkStats: WorkStats = {
+      totalWorks: 15,
+      totalLikes: 245,
+      totalViews: 3200,
+      totalComments: 89,
+      draftCount: 3
+    };
+
+    // 使用内联SVG作为头像占位图，避免外部请求失败
+    const avatarSvg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMTUiIGZpbGw9IiM3MDcwNzAiLz4KPHBhdGggZD0iTTIwIDMwQzE0LjQ3NyAzMCAxMCAyNS41MjMgMTAgMjBDMTAgMTQuNDc3IDE0LjQ3NyAxMCAyMCAxMEMyNS41MjMgMTAgMzAgMTQuNDc3IDMwIDIwQzMwIDI1LjUyMyAyNS41MjMgMzAgMjAgMzBaIiBmaWxsPSIjRjVGNkZGIi8+CjxwYXRoIGQ9Ik0xNSAxN0MxNSAxNS4zNDcgMTYuMzQ3IDE0IDE4IDE0QzE5LjY1MyAxNCAyMSAxNS4zNDcgMjEgMTdDMjEgMTguNjUzIDE5LjY1MyAyMCAxOCAyMEMxNi4zNDcgMjAgMTUgMTguNjUzIDE1IDE3WiIgZmlsbD0iIzE5MWMxOTEiLz4KPC9zdmc+';
+
+    // 模拟近期活动数据
+    const mockRecentActivities: RecentActivity[] = [
+      {
+        id: '1',
+        type: 'like',
+        user: '创作者小明',
+        userAvatar: avatarSvg,
+        content: '点赞了你的作品',
+        timestamp: new Date(Date.now() - 30 * 60 * 1000),
+        workId: '101',
+        workTitle: '国潮设计作品'
+      },
+      {
+        id: '2',
+        type: 'comment',
+        user: '用户小红',
+        userAvatar: avatarSvg,
+        content: '这个设计太棒了！',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        workId: '102',
+        workTitle: '老字号品牌升级'
+      },
+      {
+        id: '3',
+        type: 'follow',
+        user: '设计师小李',
+        userAvatar: avatarSvg,
+        content: '关注了你',
+        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000)
+      }
+    ];
+
+    // 模拟社群消息数据
+    const mockCommunityMessages: CommunityMessage[] = [
+      {
+        id: '1',
+        社群名称: 'AI设计交流群',
+        sender: '群主',
+        senderAvatar: avatarSvg,
+        content: '本周社群活动：AI设计大赛开始报名',
+        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000)
+      },
+      {
+        id: '2',
+        社群名称: '国潮设计联盟',
+        sender: '设计师小张',
+        senderAvatar: avatarSvg,
+        content: '分享一个国潮设计的新趋势',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
+      }
+    ];
+
+    // 更新状态
+    setWorkStats(mockWorkStats);
+    setRecentActivities(mockRecentActivities);
+    setCommunityMessages(mockCommunityMessages);
+  }, []);
+  
+  // 添加点击外部关闭面板的功能
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // 如果面板可见，且点击位置不在面板内，也不在切换按钮内，则关闭面板
+      if (
+        isVisible &&
+        dashboardRef.current &&
+        !dashboardRef.current.contains(event.target as Node) &&
+        toggleBtnRef.current &&
+        !toggleBtnRef.current.contains(event.target as Node)
+      ) {
+        setIsVisible(false);
+      }
+    };
+    
+    // 添加事件监听器
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // 清理事件监听器
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isVisible]);
+
+  // 格式化时间
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (minutes < 60) {
+      return `${minutes}分钟前`;
+    } else if (hours < 24) {
+      return `${hours}小时前`;
+    } else {
+      return `${days}天前`;
+    }
+  };
+
+  // 获取活动图标
+  const getActivityIcon = (type: RecentActivity['type']) => {
+    switch (type) {
+      case 'like':
+        return 'fas fa-heart text-red-500';
+      case 'comment':
+        return 'fas fa-comment text-blue-500';
+      case 'message':
+        return 'fas fa-envelope text-green-500';
+      case 'follow':
+        return 'fas fa-user-plus text-purple-500';
+      default:
+        return 'fas fa-info-circle text-gray-500';
+    }
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      {/* 切换按钮 */}
+      <button
+        ref={toggleBtnRef}
+        onClick={() => setIsVisible(!isVisible)}
+        className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105"
+        title="查看创作者仪表盘"
+      >
+        <i className="fas fa-chart-line"></i>
+      </button>
+
+      {/* 创作者仪表盘面板 */}
+      {isVisible && (
+        <div 
+          ref={dashboardRef}
+          className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 max-w-xs animate-fadeIn"
+        >
+          <h3 className="text-lg font-bold mb-3 text-gray-800 dark:text-white flex items-center">
+            <i className="fas fa-rocket mr-2 text-purple-500"></i>
+            创作者仪表盘
+          </h3>
+          
+          {/* 作品概览 */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">作品概览</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
+                <p className="text-xs text-gray-500 dark:text-gray-400">总作品</p>
+                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalWorks}</p>
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
+                <p className="text-xs text-gray-500 dark:text-gray-400">总点赞</p>
+                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalLikes}</p>
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
+                <p className="text-xs text-gray-500 dark:text-gray-400">总浏览</p>
+                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalViews}</p>
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
+                <p className="text-xs text-gray-500 dark:text-gray-400">总评论</p>
+                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalComments}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 创作进度 */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400">创作进度</h4>
+              <span className="text-xs text-purple-600 dark:text-purple-400">
+                {workStats.draftCount} 个草稿
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+              <div 
+                className="bg-gradient-to-r from-purple-600 to-pink-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min((workStats.totalWorks / 20) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              完成 {workStats.totalWorks} / 20 个作品目标
+            </p>
+          </div>
+
+          {/* 近期活动 */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">近期活动</h4>
+            <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+              {recentActivities.map(activity => (
+                <div 
+                  key={activity.id} 
+                  className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (activity.workId) {
+                      navigate(`/explore/${activity.workId}`);
+                      setIsVisible(false); // 关闭面板
+                    } else if (activity.type === 'follow') {
+                      navigate('/dashboard/followers');
+                      setIsVisible(false); // 关闭面板
+                    }
+                  }}
+                >
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={activity.userAvatar} 
+                      alt={activity.user} 
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-800 dark:text-gray-200 truncate">
+                      <span className="font-medium">{activity.user}</span> 
+                      <span className="text-gray-600 dark:text-gray-400">{activity.content}</span>
+                      {activity.workTitle && (
+                        <span className="text-purple-600 dark:text-purple-400 ml-1 hover:underline">{activity.workTitle}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                      {formatTime(activity.timestamp)}
+                    </p>
+                  </div>
+                  <i className={`${getActivityIcon(activity.type)} text-sm flex-shrink-0 mt-0.5`}></i>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 社群消息 */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">社群消息</h4>
+            <div className="space-y-3 max-h-32 overflow-y-auto pr-2">
+              {communityMessages.map(message => (
+                <div 
+                  key={message.id} 
+                  className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  onClick={() => {
+                    navigate('/community');
+                    setIsVisible(false); // 关闭面板
+                  }}
+                >
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={message.senderAvatar} 
+                      alt={message.sender} 
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-800 dark:text-gray-200 truncate">
+                      <span className="font-medium text-purple-600 dark:text-purple-400 hover:underline">{message.社群名称}</span>
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">
+                      {message.content}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                      {formatTime(message.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 快速操作 */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                navigate('/create');
+                setIsVisible(false); // 关闭面板
+              }}
+              className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm rounded-lg hover:from-purple-600 hover:to-purple-700 transition-colors flex items-center justify-center gap-1 hover:shadow-md transform hover:-translate-y-0.5 active:scale-95"
+              title="创建新作品"
+            >
+              <i className="fas fa-plus text-xs"></i>
+              <span>创作</span>
+            </button>
+            <button
+              onClick={() => {
+                navigate('/dashboard');
+                setIsVisible(false); // 关闭面板
+              }}
+              className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1 hover:shadow-md transform hover:-translate-y-0.5 active:scale-95"
+              title="查看作品管理"
+            >
+              <i className="fas fa-images text-xs"></i>
+              <span>作品</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CreatorDashboard;

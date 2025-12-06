@@ -446,7 +446,6 @@ export default function AchievementMuseum() {
                       src={exhibit.image} 
                       alt={exhibit.name} 
                       className="w-full h-full object-cover min-h-[300px]"
-                      quality="high"
                     />
                     <div className="absolute top-3 right-3">
                       <span className={`text-xs px-2 py-1 rounded-full bg-black bg-opacity-70 text-white`}>
@@ -541,7 +540,6 @@ export default function AchievementMuseum() {
                 src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=VR%20virtual%20museum%20experience%20of%20art%20exhibition" 
                 alt="VR博物馆体验" 
                 className="rounded-xl w-full max-h-96 object-cover mx-auto"
-                quality="high"
               />
             </div>
             <div className="flex flex-col sm:flex-row justify-center gap-4">

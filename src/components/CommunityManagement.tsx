@@ -429,7 +429,6 @@ const CommunityManagement: React.FC<CommunityManagementProps> = ({
                     src={c.cover} 
                     alt={c.name} 
                     className="w-full aspect-[4/3] object-cover" 
-                    quality="high"
                   />
                   <div className="p-4">
                     <div className="font-medium mb-1 flex items-center gap-2">

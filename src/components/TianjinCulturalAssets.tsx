@@ -84,8 +84,6 @@ function DetailModal({
                 ratio="landscape"
                 fit="cover"
                 className="w-full h-full transition-transform duration-500 hover:scale-105"
-                priority={false}
-                quality="medium"
                 loading="lazy"
               />
             </div>
@@ -194,8 +192,6 @@ function HeritageCard({ heritage, isDark, onOpenModal, isFavorite, toggleFavorit
           ratio="landscape"
           fit="cover"
           className="w-full h-48 transition-transform duration-500 hover:scale-105" 
-          priority={false}
-          quality="medium"
           loading="lazy"
         />
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
@@ -246,8 +242,6 @@ function SymbolCard({ symbol, isDark, onOpenModal, isFavorite, toggleFavorite }:
           ratio="landscape"
           fit="cover"
           className="w-full h-40 transition-transform duration-500 hover:scale-105" 
-          priority={false}
-          quality="medium"
           loading="lazy"
         />
         {/* 收藏按钮 */}

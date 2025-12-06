@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -507,10 +507,9 @@ export const FishAndPancakeAnimation: React.FC = () => {
   );
 };
 
-// 导入优化后的图片服务
-import imageService from '@/services/imageService';
 
-// 天津风格图片组件 - 修复了useTheme钩子的安全问题
+
+// 天津风格图片组件 - 优化版，轻量高效
 export const TianjinImage: React.FC<{
   src: string;
   alt: string;
@@ -521,10 +520,6 @@ export const TianjinImage: React.FC<{
   badge?: string;
   fit?: 'cover' | 'contain';
   onClick?: () => void;
-  sizes?: string;
-  priority?: boolean;
-  blurDataURL?: string;
-  quality?: 'low' | 'medium' | 'high';
   loading?: 'eager' | 'lazy';
   imageTag?: string;
 }> = ({
@@ -537,62 +532,15 @@ export const TianjinImage: React.FC<{
   badge,
   fit = 'cover',
   onClick,
-  sizes,
-  priority = false,
-  blurDataURL,
-  quality = 'medium',
   loading = 'lazy',
   imageTag,
 }) => {
-  // 为useTheme解构添加默认值，防止返回undefined导致崩溃
+  // 简化主题处理
   const { isDark = false } = useTheme() || {};
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [currentSrc, setCurrentSrc] = useState<string>(src);
-  const [placeholderSrc, setPlaceholderSrc] = useState<string>('');
-  const reduceMotion = useReducedMotion();
-  const maxRetries = 3;
-  const loadStartTimeRef = useRef<number>(0);
   
-  useEffect(() => {
-    if (!src) {
-      setError(true);
-      setLoaded(false);
-      setRetryCount(0);
-      return;
-    }
-    
-    // 生成高质量图片URL
-    const highQualityUrl = imageService.getResponsiveUrl(src, 'lg', quality === 'high' ? 90 : quality === 'medium' ? 80 : 70);
-    setCurrentSrc(highQualityUrl);
-    
-    // 生成低质量占位图URL
-    const lowQualityUrl = imageService.getLowQualityUrl(src);
-    setPlaceholderSrc(lowQualityUrl);
-    
-    // 重置状态
-    setError(false);
-    setLoaded(false);
-    setRetryCount(0);
-  }, [src, quality]);
-  
-  // 自动重试机制
-  useEffect(() => {
-    if (error && retryCount < maxRetries) {
-      const retryTimer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        setError(false);
-        setLoaded(false);
-        // 生成新的URL以避免浏览器缓存
-        const newUrl = `${currentSrc}?retry=${Date.now()}`;
-        setCurrentSrc(newUrl);
-      }, 500 * Math.pow(2, retryCount)); // 更快的指数退避策略
-      
-      return () => clearTimeout(retryTimer);
-    }
-  }, [error, retryCount, currentSrc]);
-  
+  // 简化ratio样式计算
   const ratioStyle =
     ratio === 'square'
       ? { paddingTop: '100%' }
@@ -612,40 +560,20 @@ export const TianjinImage: React.FC<{
     full: 'rounded-full',
   };
   
-  // 生成备用图片URL
-  const getFallbackUrl = () => {
-    return imageService.getFallbackUrl(alt);
-  };
-  
-  // 手动重试函数
-  const handleManualRetry = () => {
-    setRetryCount(0);
-    setError(false);
-    setLoaded(false);
-    // 生成新的URL以避免浏览器缓存
-    const newUrl = `${currentSrc}?retry=${Date.now()}`;
-    setCurrentSrc(newUrl);
-  };
-  
+  // 简化图片加载处理
   const handleLoad = () => {
-    const loadTime = Date.now() - loadStartTimeRef.current;
     setLoaded(true);
-    // 更新图片状态到缓存
-    imageService.updateImageStatus(src, true);
   };
   
   const handleError = () => {
     setError(true);
-    // 更新图片状态到缓存
-    imageService.updateImageStatus(src, false);
   };
   
-  // 高优先级图片立即预加载
-  useEffect(() => {
-    if (priority) {
-      imageService.preloadImage(currentSrc);
-    }
-  }, [currentSrc, priority]);
+  // 简化重试函数
+  const handleManualRetry = () => {
+    setError(false);
+    setLoaded(false);
+  };
   
   return (
     <div
@@ -653,84 +581,33 @@ export const TianjinImage: React.FC<{
       style={ratioStyle}
       onClick={onClick}
     >
-      {/* 骨架屏占位 - 优化版 */}
+      {/* 简化骨架屏 */}
       {!loaded && !error && (
-        <div className={`absolute inset-0 ${isDark ? 'bg-gray-800' : 'bg-gray-100'} animate-pulse`}>
-          {/* 更丰富的骨架屏效果 */}
-          <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800' : 'bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100'} animate-pulse`} style={{ backgroundSize: '200% 100%', animationDuration: '1.5s' }}></div>
-        </div>
+        <div className={`absolute inset-0 ${isDark ? 'bg-gray-800' : 'bg-gray-100'} animate-pulse`}></div>
       )}
       
       {error ? (
-        <div className={`absolute inset-0 flex flex-col items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-white'} text-center p-4 cursor-pointer`} onClick={handleManualRetry}>
-          <i className={`fas fa-image ${isDark ? 'text-gray-500' : 'text-gray-400'} text-3xl mb-2`}></i>
+        <div className={`absolute inset-0 flex items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-white'} text-center p-4 cursor-pointer`} onClick={handleManualRetry}>
+          <i className={`fas fa-image ${isDark ? 'text-gray-500' : 'text-gray-400'} text-2xl mb-2`}></i>
           <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>图片加载失败</div>
-          <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'} mb-3`}>已自动重试 {retryCount} 次</div>
           <div 
             onClick={handleManualRetry}
             className={`text-xs px-3 py-1 rounded cursor-pointer ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
           >
             点击重试
           </div>
-          {/* 备用图片显示 */}
-          <div className="mt-3 text-xs text-gray-500">
-            或显示
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                // 显示备用图片
-                const fallbackUrl = getFallbackUrl();
-                setCurrentSrc(fallbackUrl);
-                setLoaded(false);
-                setError(false);
-                setRetryCount(0);
-              }}
-              className="ml-1 text-blue-500 hover:underline cursor-pointer"
-            >
-              备用图片
-            </div>
-          </div>
         </div>
       ) : (
-        <>
-          {/* 低质量占位图 - 渐进式加载 */}
-          {!loaded && placeholderSrc && (
-            <div className="absolute inset-0 w-full h-full overflow-hidden">
-              <img
-                src={placeholderSrc}
-                alt={alt}
-                className={`w-full h-full object-${fit} blur-sm`}
-                loading="eager"
-                decoding="async"
-              />
-            </div>
-          )}
-          
-          {/* 主图片 - 优化动画 */}
-          <motion.img
-            key={`${currentSrc}-${retryCount}`} // 强制重新渲染以实现重试
-            src={currentSrc}
-            alt={alt}
-            className={`absolute inset-0 w-full h-full object-${fit}`}
-            loading={loading}
-            decoding="async"
-            sizes={sizes}
-            onLoad={handleLoad}
-            onError={handleError}
-            initial={reduceMotion ? undefined : { opacity: 0, scale: 1.05 }}
-            animate={reduceMotion ? undefined : { 
-              opacity: loaded ? 1 : 0,
-              scale: loaded ? 1 : 1.05
-            }}
-            transition={reduceMotion ? undefined : { 
-              duration: 0.6,
-              ease: "easeOut"
-            }}
-            onLoadStart={() => {
-              loadStartTimeRef.current = Date.now();
-            }}
-          />
-        </>
+        // 简化图片渲染，使用普通img标签
+        <img
+          src={src}
+          alt={alt}
+          className={`absolute inset-0 w-full h-full object-${fit} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          loading={loading}
+          decoding="async"
+          onLoad={handleLoad}
+          onError={handleError}
+        />
       )}
       
       {badge && (
@@ -741,7 +618,6 @@ export const TianjinImage: React.FC<{
         </span>
       )}
       
-      {/* 图片标签显示 - 只显示文件类型 */}
       {imageTag && (
         <span
           className={`absolute bottom-2 right-2 text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-800/90 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-700'} backdrop-blur-sm z-50`}

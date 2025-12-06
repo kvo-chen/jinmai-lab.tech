@@ -28,19 +28,25 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
   const [gameProgress, setGameProgress] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // 加载游戏数据
+  // 加载游戏数据 - 简化逻辑，避免不必要的延迟
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      const allLevels = culturalMemoryGameService.getLevels();
-      setLevels(allLevels);
       
-      if (user) {
-        const progress = culturalMemoryGameService.getGameProgress(user.id);
-        setGameProgress(progress);
+      // 直接获取数据，不添加延迟
+      try {
+        const allLevels = culturalMemoryGameService.getLevels();
+        setLevels(allLevels);
+        
+        if (user) {
+          const progress = culturalMemoryGameService.getGameProgress(user.id);
+          setGameProgress(progress);
+        }
+      } catch (error) {
+        console.error('加载游戏数据失败:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     }
   }, [isOpen, user]);
 
@@ -99,7 +105,7 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
     }
   }, [user]);
 
-  // 处理卡片点击
+  // 处理卡片点击 - 优化性能
   const handleCardClick = useCallback((card: MemoryCard) => {
     if (
       gameState !== 'playing' ||
@@ -111,45 +117,53 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
       return;
     }
 
-    // 翻转卡片
-    const updatedCards = cards.map(c => 
-      c.id === card.id ? { ...c, isFlipped: true } : c
+    // 使用函数式更新来避免闭包问题并提高性能
+    setCards(prevCards => 
+      prevCards.map(c => 
+        c.id === card.id ? { ...c, isFlipped: true } : c
+      )
     );
-    setCards(updatedCards);
 
     const newFlippedCard = { ...card, isFlipped: true };
-    const newFlippedCards = [...flippedCards, newFlippedCard];
-    setFlippedCards(newFlippedCards);
+    setFlippedCards(prev => [...prev, newFlippedCard]);
 
     // 检查是否匹配
-    if (newFlippedCards.length === 2) {
-      setIsChecking(true);
+    setFlippedCards(prev => {
+      const newFlippedCards = [...prev, newFlippedCard];
       
-      const [card1, card2] = newFlippedCards;
-      const isMatch = card1.pairId === card2.pairId;
-
-      setTimeout(() => {
-        if (isMatch) {
-          // 匹配成功
-          const matchedCards = updatedCards.map(c => 
-            c.pairId === card1.pairId ? { ...c, isMatched: true } : c
-          );
-          setCards(matchedCards);
-          setMatchedPairs(prev => prev + 1);
-          toast.success('配对成功！');
-        } else {
-          // 匹配失败，翻转回去
-          const resetCards = updatedCards.map(c => 
-            (c.id === card1.id || c.id === card2.id) ? { ...c, isFlipped: false } : c
-          );
-          setCards(resetCards);
-        }
+      if (newFlippedCards.length === 2) {
+        setIsChecking(true);
         
-        setFlippedCards([]);
-        setIsChecking(false);
-      }, 1000);
-    }
-  }, [cards, flippedCards, gameState, isChecking]);
+        const [card1, card2] = newFlippedCards;
+        const isMatch = card1.pairId === card2.pairId;
+
+        // 使用setTimeout延迟处理，避免UI阻塞
+        setTimeout(() => {
+          setCards(prevCards => {
+            if (isMatch) {
+              // 匹配成功
+              const matchedCards = prevCards.map(c => 
+                c.pairId === card1.pairId ? { ...c, isMatched: true } : c
+              );
+              setMatchedPairs(prev => prev + 1);
+              toast.success('配对成功！');
+              return matchedCards;
+            } else {
+              // 匹配失败，翻转回去
+              return prevCards.map(c => 
+                (c.id === card1.id || c.id === card2.id) ? { ...c, isFlipped: false } : c
+              );
+            }
+          });
+          
+          setFlippedCards([]);
+          setIsChecking(false);
+        }, 800); // 稍微减少延迟，提高响应速度
+      }
+      
+      return newFlippedCards;
+    });
+  }, [gameState, isChecking]);
 
   // 完成关卡
   const handleCompleteLevel = useCallback(() => {

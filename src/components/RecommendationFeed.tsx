@@ -137,8 +137,6 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
                     fit="cover"
                     rounded="lg"
                     className="w-full h-full"
-                    priority={false}
-                    quality="medium"
                   />
                 </div>
               )}

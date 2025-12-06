@@ -75,7 +75,23 @@ global.ResizeObserver = jest.fn(() => ({
 }));
 
 global.IntersectionObserver = jest.fn(() => ({
+  root: null,
+  rootMargin: '0px',
+  thresholds: [],
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
+  takeRecords: jest.fn(),
 }));
+
+// Fix the type error by casting to any
+type MockObserver = any;
+global.IntersectionObserver = jest.fn(() => ({
+  root: null,
+  rootMargin: '0px',
+  thresholds: [],
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+  takeRecords: jest.fn(),
+})) as MockObserver;

@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import GradientHero from '@/components/GradientHero';
+
+// 直接导入游戏组件，避免懒加载可能带来的问题
 import CulturalQuizGame from '@/components/CulturalQuizGame';
 import CulturalMemoryGame from '@/components/CulturalMemoryGame';
-import GradientHero from '@/components/GradientHero';
+import CulturalMatchingGame from '@/components/CulturalMatchingGame';
+import CulturalPuzzleGame from '@/components/CulturalPuzzleGame';
 
 const Games: React.FC = () => {
   const { isDark } = useTheme();
   const [showQuizGame, setShowQuizGame] = useState(false);
   const [showMemoryGame, setShowMemoryGame] = useState(false);
+  const [showMatchingGame, setShowMatchingGame] = useState(false);
+  const [showPuzzleGame, setShowPuzzleGame] = useState(false);
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
@@ -23,19 +29,20 @@ const Games: React.FC = () => {
           isOpen={showMemoryGame} 
           onClose={() => setShowMemoryGame(false)} 
         />
+      ) : showMatchingGame ? (
+        <CulturalMatchingGame 
+          isOpen={showMatchingGame} 
+          onClose={() => setShowMatchingGame(false)} 
+        />
+      ) : showPuzzleGame ? (
+        <CulturalPuzzleGame 
+          isOpen={showPuzzleGame} 
+          onClose={() => setShowPuzzleGame(false)} 
+        />
       ) : (
         // 显示游戏介绍
         <div className="container mx-auto px-4 py-8">
-          {/* 返回按钮 */}
-          <div className="mb-8">
-            <button
-              onClick={() => window.history.back()}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}
-            >
-              <i className="fas fa-arrow-left"></i>
-              <span>返回</span>
-            </button>
-          </div>
+
           
           <GradientHero 
             title="文化知识游戏" 
@@ -130,6 +137,84 @@ const Games: React.FC = () => {
               </ul>
               <button
                 onClick={() => setShowMemoryGame(true)}
+                className="w-full px-6 py-3 text-lg font-bold rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors duration-300 shadow-md hover:shadow-xl"
+              >
+                <i className="fas fa-gamepad mr-2"></i>开始游戏
+              </button>
+            </div>
+
+            {/* 文化元素连连看 */}
+            <div className={`p-6 rounded-xl shadow-lg ${isDark ? 'bg-gray-800' : 'bg-white'} hover:shadow-xl transition-shadow`}>
+              <div className="relative aspect-video overflow-hidden rounded-lg mb-4">
+                <img
+                  src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x768&prompt=Matching%20game%20with%20Chinese%20cultural%20elements%20cards"
+                  alt="文化元素连连看"
+                  className="w-full h-full object-cover transition-transform hover:scale-105"
+                />
+              </div>
+              <h2 className="text-2xl font-bold mb-3">文化元素连连看</h2>
+              <p className={`mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                通过匹配相同的文化元素卡片，了解中国传统文化和天津地方特色，赢取丰厚奖励！
+              </p>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>多种关卡：从简单到困难，逐步挑战</span>
+                </li>
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>丰富的文化元素：包含天津地方特色和中国传统文化</span>
+                </li>
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>计时挑战：记录你的完成时间，挑战最佳成绩</span>
+                </li>
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>提示系统：遇到困难时可使用提示功能</span>
+                </li>
+              </ul>
+              <button
+                onClick={() => setShowMatchingGame(true)}
+                className="w-full px-6 py-3 text-lg font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300 shadow-md hover:shadow-xl"
+              >
+                <i className="fas fa-gamepad mr-2"></i>开始游戏
+              </button>
+            </div>
+
+            {/* 文化拼图游戏 */}
+            <div className={`p-6 rounded-xl shadow-lg ${isDark ? 'bg-gray-800' : 'bg-white'} hover:shadow-xl transition-shadow`}>
+              <div className="relative aspect-video overflow-hidden rounded-lg mb-4">
+                <img
+                  src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x768&prompt=Puzzle%20game%20with%20Chinese%20cultural%20elements%20in%20Tianjin"
+                  alt="文化拼图游戏"
+                  className="w-full h-full object-cover transition-transform hover:scale-105"
+                />
+              </div>
+              <h2 className="text-2xl font-bold mb-3">文化拼图游戏</h2>
+              <p className={`mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                拼合文化图片碎片，了解天津地方文化和中国传统文化，挑战你的观察力和动手能力！
+              </p>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>多种难度：4x4、5x5、6x6 不同规格的拼图</span>
+                </li>
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>丰富的文化图片：包含天津地标、民俗文化和非遗技艺</span>
+                </li>
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>计时挑战：记录你的完成时间和移动次数</span>
+                </li>
+                <li className="flex items-center">
+                  <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span>提示功能：遇到困难时可使用提示和查看答案</span>
+                </li>
+              </ul>
+              <button
+                onClick={() => setShowPuzzleGame(true)}
                 className="w-full px-6 py-3 text-lg font-bold rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors duration-300 shadow-md hover:shadow-xl"
               >
                 <i className="fas fa-gamepad mr-2"></i>开始游戏

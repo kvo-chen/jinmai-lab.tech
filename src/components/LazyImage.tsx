@@ -39,42 +39,39 @@ export default function LazyImage({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadStartTimeRef = useRef<number>(0);
 
-  // 生成响应式图片URL
-  const getResponsiveUrl = (originalUrl: string, qualityLevel: 'low' | 'medium' | 'high') => {
-    try {
-      const url = new URL(originalUrl);
-      let qualityParam = '80';
-      let widthParam = width?.toString() || '1920';
-      
-      switch (qualityLevel) {
-        case 'low':
-          qualityParam = '40';
-          widthParam = (parseInt(widthParam) / 2).toString();
-          break;
-        case 'high':
-          qualityParam = '90';
-          break;
-        default:
-          qualityParam = '80';
-      }
-      
-      // 添加或更新质量和宽度参数
-      url.searchParams.set('quality', qualityParam);
-      url.searchParams.set('width', widthParam);
-      
-      return url.toString();
-    } catch {
-      return originalUrl;
-    }
-  };
-
   useEffect(() => {
+    // 优化：检查浏览器是否支持WebP格式
+    const supportsWebP = (() => {
+      try {
+        const canvas = document.createElement('canvas');
+        if (canvas.getContext && canvas.getContext('2d')) {
+          return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        }
+      } catch (e) {}
+      return false;
+    })();
+    
     // 生成低质量占位符URL
     const lowQualityUrl = imageService.getLowQualityUrl(src);
     setPlaceholderSrc(lowQualityUrl);
     
-    // 生成高质量图片URL
-    const highQualityUrl = getResponsiveUrl(src, quality);
+    // 生成高质量图片URL - 直接使用imageService的响应式URL生成功能
+    // 根据质量等级映射到响应式尺寸
+    const sizeMap: Record<string, 'sm' | 'md' | 'lg' | 'xl'> = {
+      low: 'sm',
+      medium: 'md',
+      high: 'lg'
+    };
+    const responsiveSize = sizeMap[quality] as 'sm' | 'md' | 'lg' | 'xl';
+    
+    // 优化：如果支持WebP，优先使用WebP格式
+    let highQualityUrl = imageService.getResponsiveUrl(src, responsiveSize);
+    // 只对实际的图片服务URL进行WebP转换，跳过占位符图片
+    if (supportsWebP && !highQualityUrl.includes('format=webp') && 
+        (highQualityUrl.includes('trae-api-sg.mchost.guru') || highQualityUrl.includes('/api/proxy/'))) {
+      highQualityUrl += (highQualityUrl.includes('?') ? '&' : '?') + 'format=webp';
+    }
+    
     setCurrentSrc(highQualityUrl);
   }, [src, quality, width]);
 
@@ -85,12 +82,48 @@ export default function LazyImage({
     // 立即加载高优先级图片
     if (priority || loading === 'eager') {
       loadStartTimeRef.current = Date.now();
+      
+      // 优化：检查缓存中是否已有图片
+      const cachedImage = sessionStorage.getItem(`image_cache_${btoa(currentSrc)}`);
+      if (cachedImage) {
+        img.src = cachedImage;
+        return;
+      }
+      
       img.src = currentSrc;
+      // 优化：添加preload链接，提前获取图片资源
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = currentSrc;
+      document.head.appendChild(link);
+      
+      // 优化：图片加载完成后缓存到sessionStorage
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0);
+          try {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // 压缩为JPEG格式
+            sessionStorage.setItem(`image_cache_${btoa(currentSrc)}`, dataUrl);
+          } catch (e) {
+            // 缓存失败不影响正常显示
+          }
+        }
+      };
+      
       return;
     }
 
     // 检查浏览器是否支持 Intersection Observer
     if ('IntersectionObserver' in window) {
+      // 优化：根据设备性能调整预加载距离
+      const devicePerformance = navigator.hardwareConcurrency || 4;
+      const preloadDistance = devicePerformance > 4 ? '300px' : '150px';
+      
       observerRef.current = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -103,10 +136,10 @@ export default function LazyImage({
           });
         },
         {
-          // 提前 200px 开始加载，增加预加载距离
-          rootMargin: '200px 0px',
-          // 当图片 5% 进入视口时开始加载，提高敏感度
-          threshold: 0.05
+          // 优化：根据设备性能调整预加载距离
+          rootMargin: `${preloadDistance} 0px`,
+          // 优化：降低阈值，图片刚进入视口就开始加载
+          threshold: 0.01
         }
       );
 
@@ -130,8 +163,12 @@ export default function LazyImage({
     setIsLoaded(true);
     onLoad?.();
     
-    // 更新图片状态到缓存
-    imageService.updateImageStatus(src, true);
+    // 获取图片实际尺寸
+    const img = imgRef.current;
+    const imageSize = img ? img.naturalWidth * img.naturalHeight : undefined;
+    
+    // 更新图片状态到缓存，包含加载时间和尺寸
+    imageService.updateImageStatus(src, true, imageSize);
   };
 
   const handleError = () => {
@@ -188,6 +225,7 @@ export default function LazyImage({
       {/* 高质量图片 */}
       <img
         ref={imgRef}
+        src={currentSrc}
         alt={alt}
         className={clsx(
           'w-full h-full object-cover transition-all duration-500 ease-in-out',

@@ -49,6 +49,7 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
   const handsRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
   const enabledRef = useRef(config.enabled !== false);
+  const originalConsoleLogRef = useRef<typeof console.log | null>(null);
 
   // 更新enabled状态
   useEffect(() => {
@@ -66,6 +67,18 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
     setError(null);
 
     try {
+      // 临时拦截console.log，过滤WebAssembly内存地址日志
+      const originalConsoleLog = console.log;
+      console.log = function(...args) {
+        // 过滤掉看起来像内存地址的日志：[0x...] [0x...] [0x...] ...
+        const isMemoryAddressLog = args.length > 0 && typeof args[0] === 'string' && args[0].match(/\[0x[0-9a-f]+(\s+0x[0-9a-f]+)+\]/i);
+        if (!isMemoryAddressLog) {
+          originalConsoleLog.apply(console, args);
+        }
+      };
+      // 保存原始console.log到ref以便在stopTracking中恢复
+      originalConsoleLogRef.current = originalConsoleLog;
+
       // 动态导入MediaPipe Hands
       const { Hands } = await import('@mediapipe/hands');
       const Camera = (await import('@mediapipe/camera_utils')).default;
@@ -284,6 +297,12 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
     if (!isActive) return;
 
     try {
+      // 恢复原始console.log
+      if (originalConsoleLogRef.current) {
+        console.log = originalConsoleLogRef.current;
+        originalConsoleLogRef.current = null;
+      }
+      
       if (cameraRef.current) {
         cameraRef.current.stop();
         cameraRef.current = null;

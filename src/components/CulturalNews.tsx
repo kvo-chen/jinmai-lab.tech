@@ -30,8 +30,6 @@ const NewsCard = memo(({ news, isDark, navigate }: { news: NewsItem; isDark: boo
           ratio="landscape"
           fit="cover"
           className="w-full h-36 sm:h-40 transition-transform duration-500 group-hover:scale-105"
-          priority={false}
-          quality="medium"
           loading="lazy"
         />
         {/* 渐变遮罩 */}

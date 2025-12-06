@@ -296,7 +296,6 @@ export default function ChallengeCenter({ isOpen = true, onClose }: ChallengeCen
                             src={challenge.imageUrl} 
                             alt={challenge.title} 
                             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                            quality="high"
                           />
                           <div className="absolute top-3 left-3 flex flex-wrap gap-2">
                             <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${isDark ? 'bg-black/70 text-white' : 'bg-white/80 text-gray-800'}`}>
@@ -399,7 +398,6 @@ export default function ChallengeCenter({ isOpen = true, onClose }: ChallengeCen
                     src={selectedChallenge.imageUrl} 
                     alt={selectedChallenge.title} 
                     className="w-full h-full object-cover"
-                    quality="high"
                   />
                   <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                     <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${isDark ? 'bg-black/70 text-white' : 'bg-white/80 text-gray-800'}`}>

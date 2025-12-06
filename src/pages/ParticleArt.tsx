@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ParticleModelType } from '@/lib/particleModels';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
@@ -75,11 +75,11 @@ const particlePresets: ParticlePreset[] = [
     icon: '✨',
     controls: {
       showTrails: true,
-      particleCount: 200,
+      particleCount: 300, // 增加粒子数量，使形状更清晰
       animationSpeed: 1.0,
-      colorVariation: 0.4,
-      particleSize: 1.2,
-      rotationSpeed: 1.0,
+      colorVariation: 0.3, // 减少颜色变化，保持形状一致性
+      particleSize: 1.0, // 调整粒子大小
+      rotationSpeed: 0.8, // 降低旋转速度，便于观察形状
       gestureSensitivity: 1.2
     }
   },
@@ -89,26 +89,26 @@ const particlePresets: ParticlePreset[] = [
     icon: '🌊',
     controls: {
       showTrails: true,
-      particleCount: 400,
+      particleCount: 500, // 增加粒子数量
       animationSpeed: 0.8,
-      colorVariation: 0.6,
-      particleSize: 0.8,
-      rotationSpeed: 0.8,
+      colorVariation: 0.4,
+      particleSize: 0.7,
+      rotationSpeed: 0.6,
       gestureSensitivity: 1.0
     }
   },
   {
-    id: 'sparse',
-    name: '稀疏效果',
-    icon: '⭐',
+    id: 'shaped',
+    name: '形状效果',
+    icon: '🎯',
     controls: {
-      showTrails: false,
-      particleCount: 100,
-      animationSpeed: 1.5,
-      colorVariation: 0.2,
-      particleSize: 1.5,
-      rotationSpeed: 1.2,
-      gestureSensitivity: 1.5
+      showTrails: true,
+      particleCount: 400, // 充足的粒子数量展示形状
+      animationSpeed: 0.6, // 慢速动画，便于观察形状
+      colorVariation: 0.2, // 低颜色变化，保持形状清晰
+      particleSize: 1.1,
+      rotationSpeed: 0.5, // 低旋转速度
+      gestureSensitivity: 1.0
     }
   },
   {
@@ -117,7 +117,7 @@ const particlePresets: ParticlePreset[] = [
     icon: '⚡',
     controls: {
       showTrails: true,
-      particleCount: 150,
+      particleCount: 200,
       animationSpeed: 2.0,
       colorVariation: 0.5,
       particleSize: 1.0,
@@ -131,11 +131,11 @@ const particlePresets: ParticlePreset[] = [
     icon: '🐌',
     controls: {
       showTrails: true,
-      particleCount: 250,
-      animationSpeed: 0.5,
+      particleCount: 350,
+      animationSpeed: 0.4,
       colorVariation: 0.3,
-      particleSize: 1.2,
-      rotationSpeed: 0.5,
+      particleSize: 1.3,
+      rotationSpeed: 0.4,
       gestureSensitivity: 1.2
     }
   }
@@ -246,8 +246,6 @@ export default function ParticleArt() {
             rotationSpeed={controls.rotationSpeed}
             colorVariation={controls.colorVariation}
             showTrails={controls.showTrails}
-            gestureSensitivity={controls.gestureSensitivity}
-            onFullscreen={handleFullscreen}
           />
         </div>
       

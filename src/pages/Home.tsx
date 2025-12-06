@@ -343,20 +343,7 @@ export default function Home() {
     <section 
         className={`relative w-full pt-12 ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in`}
       >
-      {/* 主题切换按钮 */}
-      {!isMobile && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <button
-            onClick={toggleTheme}
-            className={`px-3 py-2 rounded-lg shadow-sm ring-1 transition-all duration-300 flex items-center ${isDark ? 'bg-gray-800 hover:bg-gray-700 ring-gray-700 text-gray-100 hover:shadow-md hover:ring-gray-600' : theme === 'pink' ? 'bg-pink-50 hover:bg-pink-100 ring-pink-200 text-pink-800 hover:shadow-md hover:ring-pink-300' : 'bg-white hover:bg-gray-50 ring-gray-200 text-gray-900 hover:shadow-md hover:ring-gray-300'}`}
-            aria-label="切换主题"
-            title="切换主题（浅色/深色/粉色）"
-          >
-            <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'} mr-2 transition-transform duration-300 hover:scale-110`}></i>
-            切换主题
-          </button>
-        </div>
-      )}
+
       
       {/* 首页主标题区域 */}
       <div className="max-w-7xl mx-auto mb-8">
@@ -400,11 +387,11 @@ export default function Home() {
             
             {/* 功能按钮组 */}
             <div className="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto">
-              <button onClick={handleInspireClick} className={`px-3 py-2 rounded-lg text-xs sm:text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-200 hover:ring-primary'} transition-all duration-300 flex items-center hover:shadow-md hover:-translate-y-0.5 flex-1 sm:flex-none justify-center`}>
+              <button onClick={handleInspireClick} className={`px-4 py-2.5 rounded-lg text-sm sm:text-base font-semibold ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-md shadow-gray-500/20' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-md shadow-gray-200'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-1.5 hover:shadow-lg hover:-translate-y-0.5 flex-1 sm:flex-none`}>
                 <i className="fas fa-bolt mr-1 transition-transform duration-300 hover:scale-110"></i>
                 灵感
               </button>
-              <button onClick={handleGenerateClick} className={`px-3 py-2 rounded-lg text-xs sm:text-sm ${isDark ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-primary hover:bg-primary/90 text-white'} ring-2 ${isDark ? 'ring-primary/50 hover:ring-primary' : 'ring-primary/50 hover:ring-primary'} transition-all duration-300 flex items-center hover:shadow-md hover:-translate-y-0.5 flex-1 sm:flex-none justify-center`}>
+              <button onClick={handleGenerateClick} className={`px-4 py-2.5 rounded-lg text-sm sm:text-base font-semibold ${isDark ? 'bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20' : 'bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/10'} ring-2 ${isDark ? 'ring-primary/50 hover:ring-primary' : 'ring-primary/50 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-1.5 hover:shadow-xl hover:-translate-y-0.5 flex-1 sm:flex-none`}>
                 <i className="fas fa-wand-magic-sparkles mr-1 transition-transform duration-300 hover:scale-110"></i>
                 生成
               </button>
@@ -413,11 +400,11 @@ export default function Home() {
           
           {/* 功能按钮组 - 第二行 */}
           <div className="flex flex-wrap items-center justify-center gap-2 w-full">
-            <button onClick={handleOptimizeClick} disabled={isOptimizing} className={`px-3 py-2 rounded-lg text-xs sm:text-sm ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-50 text-gray-900'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-200 hover:ring-primary'} transition-all duration-300 flex items-center hover:shadow-md hover:-translate-y-0.5 ${isOptimizing ? 'opacity-60 cursor-not-allowed hover:shadow-none hover:-translate-y-0' : ''} flex-1 sm:flex-none justify-center`}>
+            <button onClick={handleOptimizeClick} disabled={isOptimizing} className={`px-4 py-2.5 rounded-lg text-sm sm:text-base font-semibold ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-md shadow-gray-500/20' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-md shadow-gray-200'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-1.5 hover:shadow-lg hover:-translate-y-0.5 ${isOptimizing ? 'opacity-60 cursor-not-allowed hover:shadow-none hover:-translate-y-0' : ''} flex-1 sm:flex-none`}>
               <i className="fas fa-adjust mr-1 transition-transform duration-300 hover:scale-110"></i>
               {isOptimizing ? '优化中…' : '优化'}
             </button>
-            <button onClick={toggleInspire} className={`px-3 py-2 rounded-lg text-xs sm:text-sm ${inspireOn ? 'bg-primary text-white' : isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'} ring-2 ${inspireOn ? 'ring-primary hover:ring-primary/80' : isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-200 hover:ring-primary'} transition-all duration-300 flex items-center hover:shadow-md hover:-translate-y-0.5 flex-1 sm:flex-none justify-center`}>
+            <button onClick={toggleInspire} className={`px-4 py-2.5 rounded-lg text-sm sm:text-base font-semibold ${inspireOn ? 'bg-primary text-white shadow-lg shadow-primary/20' : isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-md shadow-gray-500/20' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-md shadow-gray-200'} ring-2 ${inspireOn ? 'ring-primary hover:ring-primary/80' : isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-1.5 hover:shadow-lg hover:-translate-y-0.5 flex-1 sm:flex-none`}>
               灵感加持 {inspireOn ? 'ON' : 'OFF'}
             </button>
           </div>
@@ -426,9 +413,9 @@ export default function Home() {
           <div className="mt-5 flex flex-wrap gap-3 scroll-mt-24">
             {quickTags.map((t, i) => {
               const active = selectedTags.includes(t);
-              const base = 'ring-2 text-xs px-3 py-1 rounded-full transition-all duration-300 hover:shadow-md hover:-translate-y-0.5';
-              const activeCls = isDark ? 'bg-primary text-white ring-primary/50' : 'bg-primary/10 text-primary ring-primary';
-              const normalCls = isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700 hover:ring-primary/50' : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50 hover:ring-primary/50';
+              const base = 'ring-2 text-sm px-3 py-1 rounded-full transition-all duration-300 hover:shadow-md hover:-translate-y-0.5';
+              const activeCls = isDark ? 'bg-primary text-white ring-primary/50' : 'bg-primary/10 text-primary ring-primary font-medium';
+              const normalCls = isDark ? 'bg-gray-800 text-gray-200 ring-gray-700 hover:bg-gray-700 hover:ring-primary/50 font-medium' : 'bg-white text-gray-800 ring-gray-300 hover:bg-gray-50 hover:ring-primary/50 font-medium';
               return (
                 <button
                   key={i}
@@ -461,13 +448,13 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
               <button
                 onClick={handleGenerateClick}
-                className={`px-6 py-3 rounded-full font-medium ${isDark ? 'bg-primary hover:bg-primary/90 text-white ring-2 ring-primary/50' : 'bg-primary hover:bg-primary/90 text-white ring-2 ring-primary/20'} transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex-1 justify-center`}
+                className={`px-8 py-3.5 rounded-full font-semibold ${isDark ? 'bg-primary hover:bg-primary/90 text-white ring-2 ring-primary/50 shadow-xl shadow-primary/20' : 'bg-primary hover:bg-primary/90 text-white ring-2 ring-primary/20 shadow-xl shadow-primary/10'} transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex-1 justify-center text-center`}
               >
                 立即开始创作
               </button>
               <button
                 onClick={handleExplore}
-                className={`px-4 py-2 rounded-full font-medium ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white ring-gray-600' : 'bg-white hover:bg-gray-50 text-gray-900 ring-gray-200'} transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 flex-1 justify-center`}
+                className={`px-6 py-2.5 rounded-full font-semibold ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white ring-gray-600 shadow-lg shadow-gray-500/20' : 'bg-white hover:bg-gray-50 text-gray-900 ring-gray-300 shadow-lg shadow-gray-200'} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex-1 justify-center text-center`}
               >
                 浏览精选作品
               </button>
@@ -481,7 +468,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {recommended.map((r, idx) => (
             <div key={idx} className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 ring-1 ring-gray-700 hover:bg-gray-750' : 'bg-white ring-1 ring-gray-200 hover:bg-gray-50'} flex items-center justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-slide-up-${idx + 1}`}>
-              <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm md:text-base`}>{r}</span>
+              <span className={`${isDark ? 'text-gray-100' : 'text-gray-700'} text-sm md:text-base`}>{r}</span>
               <button onClick={() => handleRecommendedClick(r)} className="text-primary text-sm md:text-base px-2 py-1 rounded hover:bg-primary/10 transition-all duration-300">查看</button>
             </div>
           ))}
@@ -562,17 +549,17 @@ export default function Home() {
               }}
             >
               <div className="relative aspect-video overflow-hidden rounded-t-2xl">
-                <TianjinImage src={item.thumbnail} alt={item.title} ratio="landscape" rounded="2xl" sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw" className="transition-transform duration-500 hover:scale-105" />
+                <TianjinImage src={item.thumbnail} alt={item.title} ratio="landscape" rounded="2xl" className="transition-transform duration-500 hover:scale-105" />
                 <span className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full backdrop-blur ${isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 text-gray-200' : 'bg-white/80 ring-1 ring-gray-200 text-gray-700'} transition-all duration-200 hover:shadow-sm`}>
                   <i className="far fa-heart mr-1"></i>{item.likes}
                 </span>
               </div>
               <div className={`p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} transition-all duration-300`}>
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium text-sm md:text-base transition-all duration-200 hover:text-primary">{item.title}</h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} transition-all duration-200 hover:bg-primary/10`}>{item.category}</span>
+                  <h3 className={`font-medium text-sm md:text-base transition-all duration-200 hover:text-primary ${isDark ? 'text-gray-100' : ''}`}>{item.title}</h3>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-100' : 'bg-gray-100 text-gray-800'} transition-all duration-200 hover:bg-primary/10`}>{item.category}</span>
                 </div>
-                <div className={`${isDark ? 'text-gray-400' : 'text-gray-500'} text-xs`}>精选创作 · 高质量示例</div>
+                <div className={`${isDark ? 'text-gray-200' : 'text-gray-500'} text-xs`}>精选创作 · 高质量示例</div>
               </div>
             </div>
           ))}
@@ -611,21 +598,19 @@ export default function Home() {
          >
            <div className="relative overflow-hidden">
              <TianjinImage
-               src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Tianjin%20cultural%20heritage%20museum%20interior%2C%20warm%20premium%20lighting%2C%20modern%20minimal%20design%2C%20high%20detail"
-               alt="天津文化知识库封面"
-               ratio="landscape"
-               fit="cover"
-               className="transition-transform duration-500 hover:scale-105"
-               priority={false}
-               quality="medium"
-             />
+                src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Tianjin%20cultural%20heritage%20museum%20interior%2C%20warm%20premium%20lighting%2C%20modern%20minimal%20design%2C%20high%20detail"
+                alt="天津文化知识库封面"
+                ratio="landscape"
+                fit="cover"
+                className="transition-transform duration-500 hover:scale-105"
+              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent transition-opacity duration-300 hover:opacity-80"></div>
            </div>
            <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'} transition-all duration-300`}>
-             <h4 className="font-bold mb-2 text-sm md:text-base transition-colors duration-200 hover:text-primary">天津文化知识库</h4>
-             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-               探索天津独特的历史文化、非遗技艺和地方特色
-             </p>
+             <h4 className={`font-bold mb-2 text-sm md:text-base transition-colors duration-200 hover:text-primary ${isDark ? 'text-gray-100' : ''}`}>天津文化知识库</h4>
+             <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                探索天津独特的历史文化、非遗技艺和地方特色
+              </p>
            </div>
          </div>
          <div
@@ -641,21 +626,19 @@ export default function Home() {
          >
            <div className="relative overflow-hidden">
              <TianjinImage
-               src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Creative%20co-creation%20workshop%2C%20premium%20studio%20lighting%2C%20designers%20collaborating%2C%20sleek%20minimal%20aesthetic%2C%20high%20detail"
-               alt="津味共创活动封面"
-               ratio="landscape"
-               fit="cover"
-               className="transition-transform duration-500 hover:scale-105"
-               priority={false}
-               quality="medium"
-             />
+                src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Creative%20co-creation%20workshop%2C%20premium%20studio%20lighting%2C%20designers%20collaborating%2C%20sleek%20minimal%20aesthetic%2C%20high%20detail"
+                alt="津味共创活动封面"
+                ratio="landscape"
+                fit="cover"
+                className="transition-transform duration-500 hover:scale-105"
+              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent transition-opacity duration-300 hover:opacity-80"></div>
            </div>
            <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'} transition-all duration-300`}>
-             <h4 className="font-bold mb-2 text-sm md:text-base transition-colors duration-200 hover:text-primary">津味共创活动</h4>
-             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-               参与天津特色主题创作活动，展示津门文化魅力
-             </p>
+             <h4 className={`font-bold mb-2 text-sm md:text-base transition-colors duration-200 hover:text-primary ${isDark ? 'text-gray-100' : ''}`}>津味共创活动</h4>
+             <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                参与天津特色主题创作活动，展示津门文化魅力
+              </p>
            </div>
          </div>
          <div
@@ -671,38 +654,25 @@ export default function Home() {
          >
            <div className="relative overflow-hidden">
              <TianjinImage
-               src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Futuristic%20AI%20interface%20with%20Chinese%20calligraphy%20elements%2C%20premium%20neon%20glow%2C%20dark%20sleek%20UI%2C%20high%20detail"
-               alt="方言指令创作封面"
-               ratio="landscape"
-               fit="cover"
-               className="transition-transform duration-500 hover:scale-105"
-               priority={false}
-               quality="medium"
-             />
+                src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Futuristic%20AI%20interface%20with%20Chinese%20calligraphy%20elements%2C%20premium%20neon%20glow%2C%20dark%20sleek%20UI%2C%20high%20detail"
+                alt="方言指令创作封面"
+                ratio="landscape"
+                fit="cover"
+                className="transition-transform duration-500 hover:scale-105"
+              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent transition-opacity duration-300 hover:opacity-80"></div>
            </div>
            <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'} transition-all duration-300`}>
-             <h4 className="font-bold mb-2 text-sm md:text-base transition-colors duration-200 hover:text-primary">方言指令创作</h4>
-             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-               使用天津方言指令进行AI创作，体验独特的交互方式
-             </p>
+             <h4 className={`font-bold mb-2 text-sm md:text-base transition-colors duration-200 hover:text-primary ${isDark ? 'text-gray-100' : ''}`}>方言指令创作</h4>
+             <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
+                使用天津方言指令进行AI创作，体验独特的交互方式
+              </p>
            </div>
          </div>
         </div>
       </div>
       
-      {/* 移动端主题切换按钮 */}
-      {isMobile && (
-        <button
-          aria-label="切换主题"
-          title="切换主题（快捷键：T）"
-          onClick={toggleTheme}
-          className={`fixed right-4 bottom-20 z-40 p-3 rounded-full shadow-lg ring-1 transition-colors ${isDark ? 'bg-gray-800 text-yellow-300 ring-gray-700 hover:bg-gray-700' : 'bg-white text-gray-900 ring-gray-200 hover:bg-gray-50'}`}
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) / 2)' }}
-        >
-          <i className={`fas ${isDark ? 'fa-moon' : 'fa-sun'}`}></i>
-        </button>
-      )}
+
     </section>
   );
 }
