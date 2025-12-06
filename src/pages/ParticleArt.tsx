@@ -161,6 +161,7 @@ export default function ParticleArt() {
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [newPresetIcon, setNewPresetIcon] = useState('🎨');
+  const [particleSystemError, setParticleSystemError] = useState(false);
   
   // 组件挂载后强制触发一次状态更新，确保Framer Motion动画能正常触发
   useEffect(() => {
@@ -174,6 +175,11 @@ export default function ParticleArt() {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  // 错误处理：粒子系统渲染失败时显示友好信息
+  const handleParticleSystemError = () => {
+    setParticleSystemError(true);
+  };
 
   // 主题切换处理
   const handleThemeChange = (index: number) => {
@@ -234,19 +240,44 @@ export default function ParticleArt() {
 
   return (
     <div className={containerClasses}>
-      {/* 粒子系统容器 - 直接在组件内部渲染，方便传递状态 */}
+      {/* 粒子系统容器 - 添加错误处理，确保在粒子系统渲染失败时显示友好信息 */}
         <div className="absolute inset-0 z-0">
-          <ParticleSystemContainer 
-            model={model} 
-            color={color} 
-            behavior={tianjinThemes[selectedTheme].behavior}
-            particleCount={controls.particleCount}
-            particleSize={controls.particleSize}
-            animationSpeed={controls.animationSpeed}
-            rotationSpeed={controls.rotationSpeed}
-            colorVariation={controls.colorVariation}
-            showTrails={controls.showTrails}
-          />
+          {particleSystemError ? (
+            // 粒子系统渲染失败时的回退内容
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-sm">
+              <div className="text-center p-8 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-lg">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    粒子系统加载失败
+                  </span>
+                </h3>
+                <p className="text-gray-300 mb-6">
+                  很抱歉，粒子系统暂时无法加载。这可能是由于浏览器兼容性问题或资源加载失败导致的。
+                </p>
+                <button
+                  onClick={() => setParticleSystemError(false)}
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-green-500 to-teal-500 text-white font-medium hover:shadow-lg transition-all duration-300 hover:scale-105"
+                >
+                  重试加载
+                </button>
+              </div>
+            </div>
+          ) : (
+            // 正常渲染粒子系统
+            <div onError={handleParticleSystemError}>
+              <ParticleSystemContainer 
+                model={model} 
+                color={color} 
+                behavior={tianjinThemes[selectedTheme].behavior}
+                particleCount={controls.particleCount}
+                particleSize={controls.particleSize}
+                animationSpeed={controls.animationSpeed}
+                rotationSpeed={controls.rotationSpeed}
+                colorVariation={controls.colorVariation}
+                showTrails={controls.showTrails}
+              />
+            </div>
+          )}
         </div>
       
       {/* 背景装饰 */}
