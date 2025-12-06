@@ -57,13 +57,13 @@ const cleanupTextureCache = () => {
   if (textureCache.size <= MAX_CACHE_ITEMS) return;
   
   // 移除最旧的缓存项（Map会保持插入顺序）
-  const firstKey = textureCache.keys().next().value;
-  if (firstKey) {
-    const texture = textureCache.get(firstKey);
+  const keys = Array.from(textureCache.keys());
+  for (let i = 0; i < keys.length - MAX_CACHE_ITEMS; i++) {
+    const texture = textureCache.get(keys[i]);
     if (texture) {
       texture.dispose();
     }
-    textureCache.delete(firstKey);
+    textureCache.delete(keys[i]);
   }
 };
 
@@ -192,9 +192,18 @@ const ModelPreview: React.FC<{
   scale: number;
   rotation: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
-}> = React.memo(({ url, scale, rotation, position }) => {
+  onLoad?: () => void;
+  onError?: () => void;
+}> = React.memo(({ url, scale, rotation, position, onLoad, onError }) => {
   // 优化：只有当url有效时才加载模型
-  const modelScene = useGLTF(url || '').scene;
+  const modelScene = url ? useGLTF(url).scene : null;
+
+  // 模型加载完成后通知父组件
+  React.useEffect(() => {
+    if (modelScene && onLoad) {
+      onLoad();
+    }
+  }, [modelScene, onLoad]);
 
   return (
     <group 
@@ -425,6 +434,27 @@ const ARPreview: React.FC<{
   const environmentPresets: EnvironmentPreset[] = [
     'studio', 'apartment', 'warehouse', 'park', 'lobby'
   ];
+
+  // 资源加载完成处理
+  const handleResourceLoaded = () => {
+    setIsLoading(false);
+  };
+
+  // 资源加载错误处理
+  const handleResourceError = () => {
+    setIsLoading(false);
+    toast.error('资源加载失败');
+  };
+
+  // 初始化加载状态
+  useEffect(() => {
+    setIsLoading(true);
+    // 2秒后自动设置为false，防止资源加载超时
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [config.modelUrl, config.imageUrl]);
 
   // 清理函数，用于释放资源
   useEffect(() => {
@@ -736,12 +766,14 @@ const ARPreview: React.FC<{
                 )}
                 
                 {/* 3D模型预览 - 使用ModelPreview组件 */}
-                {config.type === '3d' && (
+                {config.type === '3d' && config.modelUrl && (
                   <ModelPreview
                     url={config.modelUrl}
                     scale={scale}
                     rotation={rotation}
                     position={position}
+                    onLoad={handleResourceLoaded}
+                    onError={handleResourceError}
                   />
                 )}
                 
