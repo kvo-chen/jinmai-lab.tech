@@ -1068,9 +1068,9 @@ export default function Neo() {
   const genImages = (extra: string = '') => {
     const base = `${prompt} ${tags.join(' ')} ${brand} ${extra}`.trim() || 'Tianjin cultural design'
     return [
-      `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant A')}&image_size=1024x1024`,
-      `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant B')}&image_size=1024x1024`,
-      `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant C')}&image_size=1024x1024`,
+      `/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant A')}&image_size=1024x1024`,
+      `/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant B')}&image_size=1024x1024`,
+      `/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=${encodeURIComponent(base + ' variant C')}&image_size=1024x1024`,
     ]
   }
 

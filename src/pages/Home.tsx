@@ -201,12 +201,12 @@ export default function Home() {
   
   // 推荐作品
   const gallery = [
-    { id: 1, title: '桂发祥麻花包装焕新', category: '老字号品牌', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guifaxiang%20mahua%20modern%20packaging%20design%2C%20cultural%20red%20and%20gold%2C%20studio%20lighting%2C%20high%20detail&image_size=1920x1080', likes: 256 },
-    { id: 2, title: '狗不理联名海报', category: '视觉设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Goubuli%20steamed%20buns%20brand%20poster%20design', likes: 198 },
-    { id: 3, title: '耳朵眼炸糕IP形象', category: 'IP设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Erduoyan%20fried%20cake%20brand%20mascot%20illustration%2C%20cute%20IP%2C%20flat%20style%2C%20high%20detail&image_size=1920x1080', likes: 312 },
-    { id: 4, title: '果仁张秋季礼盒', category: '包装设计', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guorenzhang%20candied%20chestnut%20autumn%20gift%20box%2C%20packaging%20design%2C%20warm%20tone%2C%20high%20detail&image_size=1920x1080', likes: 224 },
-    { id: 5, title: '杨柳青年画主题插画', category: '插画', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Yangliuqing%20New%20Year%20Painting%20theme%20modern%20illustration', likes: 341 },
-    { id: 6, title: '泥人张彩塑联名周边', category: '文创', thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Nirenzhang%20clay%20sculpture%20collaboration%20merch%20design', likes: 187 }
+    { id: 1, title: '桂发祥麻花包装焕新', category: '老字号品牌', thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guifaxiang%20mahua%20modern%20packaging%20design%2C%20cultural%20red%20and%20gold%2C%20studio%20lighting%2C%20high%20detail&image_size=1920x1080', likes: 256 },
+    { id: 2, title: '狗不理联名海报', category: '视觉设计', thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Goubuli%20steamed%20buns%20brand%20poster%20design', likes: 198 },
+    { id: 3, title: '耳朵眼炸糕IP形象', category: 'IP设计', thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=SDXL%2C%20Erduoyan%20fried%20cake%20brand%20mascot%20illustration%2C%20cute%20IP%2C%20flat%20style%2C%20high%20detail&image_size=1920x1080', likes: 312 },
+    { id: 4, title: '果仁张秋季礼盒', category: '包装设计', thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?prompt=SDXL%2C%20Guorenzhang%20candied%20chestnut%20autumn%20gift%20box%2C%20packaging%20design%2C%20warm%20tone%2C%20high%20detail&image_size=1920x1080', likes: 224 },
+    { id: 5, title: '杨柳青年画主题插画', category: '插画', thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Yangliuqing%20New%20Year%20Painting%20theme%20modern%20illustration', likes: 341 },
+    { id: 6, title: '泥人张彩塑联名周边', category: '文创', thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Nirenzhang%20clay%20sculpture%20collaboration%20merch%20design', likes: 187 }
   ];
   
 
@@ -611,7 +611,7 @@ export default function Home() {
          >
            <div className="relative overflow-hidden">
              <TianjinImage
-               src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Tianjin%20cultural%20heritage%20museum%20interior%2C%20warm%20premium%20lighting%2C%20modern%20minimal%20design%2C%20high%20detail"
+               src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Tianjin%20cultural%20heritage%20museum%20interior%2C%20warm%20premium%20lighting%2C%20modern%20minimal%20design%2C%20high%20detail"
                alt="天津文化知识库封面"
                ratio="landscape"
                fit="cover"
@@ -641,7 +641,7 @@ export default function Home() {
          >
            <div className="relative overflow-hidden">
              <TianjinImage
-               src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Creative%20co-creation%20workshop%2C%20premium%20studio%20lighting%2C%20designers%20collaborating%2C%20sleek%20minimal%20aesthetic%2C%20high%20detail"
+               src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Creative%20co-creation%20workshop%2C%20premium%20studio%20lighting%2C%20designers%20collaborating%2C%20sleek%20minimal%20aesthetic%2C%20high%20detail"
                alt="津味共创活动封面"
                ratio="landscape"
                fit="cover"
@@ -671,7 +671,7 @@ export default function Home() {
          >
            <div className="relative overflow-hidden">
              <TianjinImage
-               src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Futuristic%20AI%20interface%20with%20Chinese%20calligraphy%20elements%2C%20premium%20neon%20glow%2C%20dark%20sleek%20UI%2C%20high%20detail"
+               src="/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_16_9&prompt=Futuristic%20AI%20interface%20with%20Chinese%20calligraphy%20elements%2C%20premium%20neon%20glow%2C%20dark%20sleek%20UI%2C%20high%20detail"
                alt="方言指令创作封面"
                ratio="landscape"
                fit="cover"

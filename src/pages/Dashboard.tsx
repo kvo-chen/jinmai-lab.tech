@@ -24,7 +24,7 @@ const recentWorks = [
   {
     id: 1,
     title: '国潮插画设计',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20traditional%20cultural%20illustration%20design',
+    thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Chinese%20traditional%20cultural%20illustration%20design',
     status: '已发布',
     views: 1245,
     likes: 324,
@@ -34,7 +34,7 @@ const recentWorks = [
   {
     id: 2,
     title: '老字号包装设计',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20brand%20packaging%20design',
+    thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Traditional%20Chinese%20brand%20packaging%20design',
     status: '审核中',
     views: 0,
     likes: 0,
@@ -44,7 +44,7 @@ const recentWorks = [
   {
     id: 3,
     title: '传统纹样AI创作',
-    thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=AI%20generated%20traditional%20Chinese%20patterns',
+    thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1024x1024&prompt=AI%20generated%20traditional%20Chinese%20patterns',
     status: '草稿',
     views: 0,
     likes: 0,
@@ -150,7 +150,7 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row items-center md:items-start">
             <div className="relative mb-4 md:mb-0 md:mr-6">
               <img 
-                src={user?.avatar || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar'} 
+                src={user?.avatar || '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar'} 
                 
                 alt={user?.username || '用户头像'} 
                 className="w-24 h-24 rounded-full object-cover border-4 border-red-600"
