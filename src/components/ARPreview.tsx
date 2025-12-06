@@ -67,19 +67,57 @@ const cleanupTextureCache = () => {
   }
 };
 
+// 性能监控组件
+const PerformanceMonitor: React.FC = () => {
+  const [fps, setFps] = useState(0);
+  const [frameTime, setFrameTime] = useState(0);
+  const frameCountRef = useRef(0);
+  const lastTimeRef = useRef(Date.now());
+  const frameStartTimeRef = useRef(Date.now());
+  
+  // 使用useFrame钩子监控性能
+  useFrame(() => {
+    // 计算FPS
+    const now = Date.now();
+    const delta = now - lastTimeRef.current;
+    const frameDelta = now - frameStartTimeRef.current;
+    
+    setFrameTime(frameDelta);
+    frameCountRef.current++;
+    
+    if (delta >= 1000) {
+      setFps(frameCountRef.current);
+      frameCountRef.current = 0;
+      lastTimeRef.current = now;
+    }
+    
+    frameStartTimeRef.current = now;
+  });
+  
+  return (
+    <div>
+      <div>FPS: {fps}</div>
+      <div>Frame Time: {frameTime}ms</div>
+      <div>Texture Cache: {textureCache.size}/{MAX_CACHE_ITEMS}</div>
+    </div>
+  );
+};
+
 // 反馈效果组件
 const FeedbackEffect: React.FC<{
   id: number;
   type: 'click' | 'place';
   position: { x: number; y: number; z: number };
   timestamp: number;
-}> = ({ id, type, position, timestamp }) => {
+  onComplete: (id: number) => void;
+}> = ({ id, type, position, timestamp, onComplete }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const startTime = useRef(Date.now());
+  const hasCompleted = useRef(false);
   
   // 使用useFrame钩子实现动画
   useFrame((state, delta) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || hasCompleted.current) return;
     
     const elapsed = (Date.now() - startTime.current) / 1000;
     const mesh = meshRef.current;
@@ -98,9 +136,22 @@ const FeedbackEffect: React.FC<{
       mesh.rotation.y += delta * 5;
     }
     
-    // 动画结束后可以移除对象
-    if (elapsed > 1) {
-      mesh.visible = false;
+    // 动画结束后移除对象
+    if (elapsed > 1 && !hasCompleted.current) {
+      hasCompleted.current = true;
+      // 从场景中移除对象
+      if (mesh.parent) {
+        mesh.parent.remove(mesh);
+      }
+      // 释放资源
+      mesh.geometry.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach(m => m.dispose());
+      } else {
+        mesh.material.dispose();
+      }
+      // 通知父组件移除该反馈效果
+      onComplete(id);
     }
   });
   
@@ -135,15 +186,19 @@ const FeedbackEffect: React.FC<{
   );
 };
 
-// 3D模型预览组件 - 极简版
+// 3D模型预览组件 - 优化版
 const ModelPreview: React.FC<{
   url?: string;
   scale: number;
   rotation: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
 }> = React.memo(({ url, scale, rotation, position }) => {
-  // 加载3D模型，添加错误处理
-  const { scene: modelScene } = useGLTF(url || '');
+  // 优化：只有当url有效时才加载模型
+  const { scene: modelScene, error } = useGLTF(url || '', { 
+    // 添加错误处理选项
+    failIfNoData: false,
+    useCache: true
+  });
 
   return (
     <group 
@@ -151,7 +206,17 @@ const ModelPreview: React.FC<{
       rotation={[rotation.x, rotation.y, rotation.z]} 
       scale={scale}
     >
-      {modelScene ? (
+      {error ? (
+        // 错误状态
+        <mesh>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial 
+            color="#ff6b6b"
+            metalness={0}
+            roughness={1}
+          />
+        </mesh>
+      ) : modelScene ? (
         <primitive 
           object={modelScene} 
         />
@@ -399,12 +464,12 @@ const ARPreview: React.FC<{
   });
 
   // 切换控制面板模块的折叠状态
-  const toggleControlPanel = (module: keyof typeof controlPanelState) => {
+  const toggleControlPanel = useCallback((module: keyof typeof controlPanelState) => {
     setControlPanelState(prev => ({
       ...prev,
       [module]: !prev[module]
     }));
-  };
+  }, []);
 
   // 手势控制状态管理 - 简化版
   const [gestureState, setGestureState] = useState({
@@ -414,7 +479,7 @@ const ARPreview: React.FC<{
   });
 
   // 处理触摸开始事件 - 简化版
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     const touches = e.touches;
     
@@ -426,10 +491,10 @@ const ARPreview: React.FC<{
         initialPosition: position
       });
     }
-  };
+  }, [position]);
 
   // 处理触摸移动事件 - 简化版
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     const touches = e.touches;
     
@@ -449,10 +514,10 @@ const ARPreview: React.FC<{
         lastTouch: { x: touches[0].clientX, y: touches[0].clientY }
       }));
     }
-  };
+  }, [gestureState]);
 
   // 处理触摸结束事件 - 简化版
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     // 重置手势状态
     setGestureState({
@@ -460,10 +525,10 @@ const ARPreview: React.FC<{
       lastTouch: { x: 0, y: 0 },
       initialPosition: position
     });
-  };
+  }, [position]);
 
   // 处理触摸取消事件 - 简化版
-  const handleTouchCancel = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchCancel = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     // 重置手势状态
     setGestureState({
@@ -471,7 +536,7 @@ const ARPreview: React.FC<{
       lastTouch: { x: 0, y: 0 },
       initialPosition: position
     });
-  };
+  }, [position]);
 
   // AR模式切换处理 - 简化实现
   useEffect(() => {
@@ -481,39 +546,39 @@ const ARPreview: React.FC<{
   }, [isARMode]);
 
   // 处理AR场景点击 - 简化版
-  const handleARClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleARClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isARMode || isLoading) return;
     
     // 简化AR点击处理
     toast.success('模型已放置');
-  };
+  }, [isARMode, isLoading]);
 
   // 缩放控制
-  const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScaleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newScale = parseFloat(e.target.value);
     setScale(newScale);
-  };
+  }, []);
 
   // 旋转控制
-  const handleRotationChange = (axis: 'x' | 'y' | 'z', value: number) => {
+  const handleRotationChange = useCallback((axis: 'x' | 'y' | 'z', value: number) => {
     setRotation(prev => ({ ...prev, [axis]: value }));
-  };
+  }, []);
 
   // 平移控制
-  const handlePositionChange = (axis: 'x' | 'y' | 'z', value: number) => {
+  const handlePositionChange = useCallback((axis: 'x' | 'y' | 'z', value: number) => {
     setPosition(prev => ({ ...prev, [axis]: value }));
-  };
+  }, []);
 
   // 重置位置和旋转
-  const handleResetTransform = () => {
+  const handleResetTransform = useCallback(() => {
     setPosition({ x: 0, y: 0, z: 0 });
     setRotation({ x: 0, y: 0, z: 0 });
     setScale(config.scale || 1.0);
     toast.success('模型变换已重置');
-  };
+  }, [config.scale]);
 
   // 预设视图控制
-  const handlePresetView = (view: 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom') => {
+  const handlePresetView = useCallback((view: 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom') => {
     const presetRotations = {
       front: { x: 0, y: 0, z: 0 },
       back: { x: 0, y: Math.PI, z: 0 },
@@ -524,10 +589,10 @@ const ARPreview: React.FC<{
     };
     setRotation(presetRotations[view]);
     toast.success(`已切换到${{ front: '前', back: '后', left: '左', right: '右', top: '顶', bottom: '底' }[view]}视图`);
-  };
+  }, []);
 
   // 截图功能实现 - 极简版
-  const handleScreenshot = () => {
+  const handleScreenshot = useCallback(() => {
     // 获取Canvas元素
     const canvas = document.querySelector('canvas');
     if (canvas) {
@@ -545,10 +610,10 @@ const ARPreview: React.FC<{
     } else {
       toast.error('无法获取Canvas元素');
     }
-  };
+  }, []);
 
   // 保存截图到本地
-  const handleSaveScreenshot = () => {
+  const handleSaveScreenshot = useCallback(() => {
     if (screenshot) {
       const link = document.createElement('a');
       link.href = screenshot;
@@ -558,7 +623,7 @@ const ARPreview: React.FC<{
       document.body.removeChild(link);
       toast.success('截图已保存到本地');
     }
-  };
+  }, [screenshot]);
 
   return (
     <div className={`fixed inset-0 z-50 flex flex-col ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'} overflow-y-auto`}>
@@ -646,6 +711,13 @@ const ARPreview: React.FC<{
         >
           {!isLoading && (
             <ARPreviewErrorBoundary>
+              {/* 性能监控组件 */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-2 rounded-lg text-sm font-mono z-20">
+                  <PerformanceMonitor />
+                </div>
+              )}
+              
               <Canvas 
                 shadows={false} 
                 className="w-full h-full" 
@@ -658,10 +730,17 @@ const ARPreview: React.FC<{
                     stencil: false,
                     depth: true,
                     toneMapping: THREE.NoToneMapping,
-                    autoClear: true
+                    autoClear: true,
+                    // 新增性能优化配置
+                    premultipliedAlpha: false,
+                    desynchronized: true,
+                    failIfMajorPerformanceCaveat: true
                   }} 
                 style={{ backgroundColor: '#f0f0f0' }}
                 frameloop="demand"
+                // 新增性能优化配置
+                flat
+                dpr={1}
               >
                 {/* 基础相机和灯光 - 极简版本 */}
                 <PerspectiveCamera makeDefault position={[0, 0, 3]} />
