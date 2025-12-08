@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { XR, useXR, useXRHitTest, createXRStore } from '@react-three/xr';
+
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import ParticleSystem from './ParticleSystem';
@@ -48,7 +48,7 @@ interface ClickInteractionConfig {
   duration: number;
 }
 
-// AR模式下的模型放置组件 - 增强平面检测和放置体验
+// AR模式下的模型放置组件 - 简化版本，移除WebXR依赖
 const ARModelPlacer: React.FC<{
   config: ARPreviewConfig;
   scale: number;
@@ -60,152 +60,35 @@ const ARModelPlacer: React.FC<{
   onPlace: () => void;
   isARMode: boolean;
 }> = ({ config, scale, rotation, position, texture, model, isPlaced, onPlace, isARMode }) => {
-  const [hitPose, setHitPose] = useState<THREE.Matrix4 | null>(null);
-  const [hitTestActive, setHitTestActive] = useState(false);
-  const [hitTestError, setHitTestError] = useState(false);
-  const [planeDetected, setPlaneDetected] = useState(false);
-  const { session } = useXR();
-  const hitTestSourceRef = useRef<any>(null);
-  const hitTestSourceRequestedRef = useRef(false);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  
-  // 获取渲染器引用
-  const { gl } = useThree();
-  useEffect(() => {
-    rendererRef.current = gl;
-  }, [gl]);
-  
-  // 平面检测逻辑 - 使用WebXR的hit-test功能
-  const setupHitTest = useCallback(async () => {
-    if (!session || hitTestSourceRequestedRef.current || hitTestSourceRef.current) return;
-    
-    try {
-      setHitTestActive(true);
-      setHitTestError(false);
-      
-      // 请求hit-test源 - 添加类型检查
-      const requestHitTestSource = (session as any).requestHitTestSource;
-      if (!requestHitTestSource) {
-        throw new Error('WebXR hit-test not supported');
-      }
-      
-      const referenceSpace = await session.requestReferenceSpace('local');
-      const hitTestSource = await requestHitTestSource({
-        space: referenceSpace,
-        offsetRay: new XRRay()
-      });
-      
-      hitTestSourceRef.current = hitTestSource;
-      hitTestSourceRequestedRef.current = true;
-      
-      // 监听frame事件进行hit-test
-      const onXRFrame = (time: number, frame: XRFrame) => {
-        if (!hitTestSourceRef.current || !session) return;
-        
-        const hitTestResults = frame.getHitTestResults(hitTestSourceRef.current);
-        
-        if (hitTestResults.length > 0) {
-          const hitTestResult = hitTestResults[0];
-          const pose = hitTestResult.getPose(referenceSpace);
-          
-          if (pose) {
-            const matrix = new THREE.Matrix4().fromArray(pose.transform.matrix);
-            setHitPose(matrix);
-            setPlaneDetected(true);
-            setHitTestError(false);
-          }
-        } else {
-          setPlaneDetected(false);
-        }
-      };
-      
-      session.requestAnimationFrame(onXRFrame);
-      
-      return () => {
-        if (hitTestSourceRef.current) {
-          hitTestSourceRef.current.cancel();
-          hitTestSourceRef.current = null;
-        }
-        hitTestSourceRequestedRef.current = false;
-      };
-    } catch (error) {
-      console.warn('WebXR Hit Test not supported, falling back to basic plane detection:', error);
-      setHitTestError(true);
-      // 回退到基本平面检测
-      const matrix = new THREE.Matrix4().makeTranslation(0, 0, -2);
-      setHitPose(matrix);
-      setPlaneDetected(true);
-    }
-  }, [session]);
-  
-  // 清理hit-test资源
-  useEffect(() => {
-    return () => {
-      if (hitTestSourceRef.current) {
-        hitTestSourceRef.current.cancel();
-        hitTestSourceRef.current = null;
-      }
-      hitTestSourceRequestedRef.current = false;
-    };
-  }, []);
-  
-  // 当进入AR模式时，设置hit-test
-  useEffect(() => {
-    if (session) {
-      setupHitTest();
-    }
-  }, [session, setupHitTest]);
+  // 简化AR模式，移除WebXR依赖
+  // 使用固定位置作为放置点，不再依赖平面检测
+  const hitPose = useRef<THREE.Matrix4>(new THREE.Matrix4().makeTranslation(0, 0, -2));
   
   // 处理模型放置
   const handlePlaceModel = useCallback(() => {
-    if (hitPose) {
-      onPlace();
-    }
-  }, [hitPose, onPlace]);
+    onPlace();
+  }, [onPlace]);
   
   // 添加点击事件监听器
   useEffect(() => {
-    const canvas = rendererRef.current?.domElement;
+    const { gl } = useThree();
+    const canvas = gl.domElement;
     if (!canvas || !isARMode) return;
     
     const handleClick = () => {
-      if (!isPlaced && hitPose) {
+      if (!isPlaced) {
         handlePlaceModel();
       }
     };
     
     canvas.addEventListener('click', handleClick);
     return () => canvas.removeEventListener('click', handleClick);
-  }, [isPlaced, hitPose, handlePlaceModel, isARMode]);
+  }, [isPlaced, handlePlaceModel, isARMode, useThree]);
   
   return (
     <>
-      {/* 平面检测状态指示器 */}
+      {/* 如果模型未放置，显示固定位置的预览模型 */}
       {!isPlaced && (
-        <>
-          {/* 平面检测中指示器 */}
-          {hitTestActive && !planeDetected && !hitTestError && (
-            <mesh position={[0, -0.5, -2]} scale={[1, 1, 1]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[2, 2]} />
-              <meshBasicMaterial color="#4f46e5" transparent opacity={0.3} side={THREE.DoubleSide} />
-              <sprite scale={[1, 1, 1]} position={[0, 0, 0.01]}>
-                <spriteMaterial color="#4f46e5" transparent opacity={0.8} />
-              </sprite>
-            </mesh>
-          )}
-          
-          {/* 平面检测错误指示器 */}
-          {hitTestError && (
-            <mesh position={[0, -0.5, -2]} scale={[1, 1, 1]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[2, 2]} />
-              <meshBasicMaterial color="#ef4444" transparent opacity={0.3} side={THREE.DoubleSide} />
-            </mesh>
-          )}
-        </>
-      )}
-      
-      {/* 如果模型未放置，显示跟随视线的预览模型 */}
-      {!isPlaced && hitPose && (
         <>
           {/* 放置引导线 */}
           <line>
@@ -222,7 +105,7 @@ const ARModelPlacer: React.FC<{
           
           {/* 2D图像预览 */}
             {config.imageUrl && texture && (
-              <mesh matrix={hitPose} scale={[scale * 0.03, scale * 0.03, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]}>
+              <mesh matrix={hitPose.current} scale={[scale * 0.03, scale * 0.03, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]}>
                 <planeGeometry args={[1, 1]} />
                 <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
               </mesh>
@@ -230,22 +113,13 @@ const ARModelPlacer: React.FC<{
           
           {/* 3D模型预览 */}
           {config.type === '3d' && model && (
-            <primitive object={model} matrix={hitPose} scale={scale} rotation={[rotation.x, rotation.y, rotation.z]} />
+            <primitive object={model} matrix={hitPose.current} scale={scale} rotation={[rotation.x, rotation.y, rotation.z]} />
           )}
           
           {/* 增强的放置指示器 */}
-          <mesh matrix={hitPose} scale={[0.5, 0.5, 0.5]}>
+          <mesh matrix={hitPose.current} scale={[0.5, 0.5, 0.5]}>
             <ringGeometry args={[0.2, 0.25, 32]} />
             <meshBasicMaterial color="#4f46e5" transparent opacity={0.8} side={THREE.DoubleSide} />
-          </mesh>
-          <mesh matrix={hitPose} scale={[0.6, 0.6, 0.6]} rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.25, 0.26, 32]} />
-            <meshBasicMaterial color="#4f46e5" transparent opacity={0.5} side={THREE.DoubleSide} />
-          </mesh>
-          {/* 脉冲动画效果 */}
-          <mesh matrix={hitPose} scale={[0.7, 0.7, 0.7]}>
-            <ringGeometry args={[0.2, 0.3, 32]} />
-            <meshBasicMaterial color="#4f46e5" transparent opacity={0.3} side={THREE.DoubleSide} />
           </mesh>
         </>
       )}
@@ -290,10 +164,9 @@ const CanvasContent: React.FC<{
   model: THREE.Group | null;
   modelLoading: boolean;
   modelError: boolean;
-  xrStore: ReturnType<typeof createXRStore>;
   cameraView: 'perspective' | 'top' | 'front' | 'side';
   isPlaced: boolean;
-}> = ({ config, scale, rotation, position, isARMode, particleEffect, texture, textureError, model, modelLoading, modelError, xrStore, cameraView, isPlaced }) => {
+}> = ({ config, scale, rotation, position, isARMode, particleEffect, texture, textureError, model, modelLoading, modelError, cameraView, isPlaced }) => {
   // 访问相机
   const { camera, gl, scene } = useThree();
   
@@ -519,21 +392,20 @@ const CanvasContent: React.FC<{
       )}
       
       {/* AR模式和非AR模式的渲染逻辑分离 */}
+      {/* 简化AR模式，移除WebXR依赖 */}
       {isARMode ? (
-        /* AR模式 - 使用模型放置组件，需要包裹在XR组件内 */
-        <XR store={xrStore}>
-          <ARModelPlacer
-            config={config}
-            scale={scale}
-            rotation={rotation}
-            position={position}
-            texture={texture}
-            model={model}
-            isPlaced={isPlaced}
-            onPlace={() => toast.success('模型已放置')}
-            isARMode={isARMode}
-          />
-        </XR>
+        /* AR模式 - 简化的3D渲染 */
+        <ARModelPlacer
+          config={config}
+          scale={scale}
+          rotation={rotation}
+          position={position}
+          texture={texture}
+          model={model}
+          isPlaced={isPlaced}
+          onPlace={() => toast.success('模型已放置')}
+          isARMode={isARMode}
+        />
       ) : (
         /* 非AR模式 - 正常3D渲染 */
         <>
@@ -823,11 +695,10 @@ const ThreeDPreviewContent: React.FC<{
   particleEffect: ParticleEffectConfig;
   clickInteraction?: ClickInteractionConfig;
   cameraView: 'perspective' | 'top' | 'front' | 'side';
-  xrStore: ReturnType<typeof createXRStore>;
   isPlaced: boolean;
   onLoadingComplete?: () => void;
   onProgress?: (progress: number) => void;
-}> = React.memo(({ config, scale, rotation, position, isARMode, particleEffect, clickInteraction, cameraView, xrStore, isPlaced, onLoadingComplete, onProgress }) => {
+}> = React.memo(({ config, scale, rotation, position, isARMode, particleEffect, clickInteraction, cameraView, isPlaced, onLoadingComplete, onProgress }) => {
   // 使用useState和useEffect手动加载纹理，避免useLoader的硬性错误
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   // 初始化为false，避免不必要的加载状态显示
@@ -1654,21 +1525,20 @@ const ThreeDPreviewContent: React.FC<{
       >
         {/* Canvas内部内容 */}
         <CanvasContent
-          config={config}
-          scale={scale}
-          rotation={rotation}
-          position={position}
-          isARMode={isARMode}
-          particleEffect={optimizedParticleEffect}
-          texture={texture}
-          textureError={textureError}
-          model={model}
-          modelLoading={modelLoading}
-          modelError={modelError}
-          xrStore={xrStore}
-          cameraView={cameraView}
-          isPlaced={isPlaced}
-        />
+                config={config}
+                scale={scale}
+                rotation={rotation}
+                position={position}
+                isARMode={isARMode}
+                particleEffect={optimizedParticleEffect}
+                texture={texture}
+                textureError={textureError}
+                model={model}
+                modelLoading={modelLoading}
+                modelError={modelError}
+                cameraView={cameraView}
+                isPlaced={isPlaced}
+              />
       </Canvas>
       
       {/* 统一的资源加载状态提示 - 仅在有实际资源需要加载时显示 */}
@@ -2033,8 +1903,7 @@ const ARPreview: React.FC<{
   // 设备性能检测
   const devicePerformance = getDevicePerformance();
   
-  // 创建全局XRStore实例
-  const xrStore = createXRStore();
+
   
   // 粒子效果配置 - 根据设备性能动态调整
   const [particleEffect, setParticleEffect] = useState<ParticleEffectConfig>({
@@ -2317,7 +2186,6 @@ const ARPreview: React.FC<{
                         particleEffect={particleEffect}
                         clickInteraction={clickInteraction}
                         cameraView={cameraView}
-                        xrStore={xrStore}
                         isPlaced={isPlaced}
                         onLoadingComplete={() => setIsLoading(false)}
                         onProgress={(progress) => setLoadingProgress(progress)}
@@ -2371,7 +2239,6 @@ const ARPreview: React.FC<{
                         particleEffect={particleEffect}
                         clickInteraction={clickInteraction}
                         cameraView={cameraView}
-                        xrStore={xrStore}
                         isPlaced={isPlaced}
                         onLoadingComplete={() => setIsLoading(false)}
                         onProgress={(progress) => setLoadingProgress(progress)}
