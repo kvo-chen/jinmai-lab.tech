@@ -332,10 +332,11 @@ export default defineConfig({
       'framer-motion',
       '@react-three/fiber', '@react-three/drei'
     ],
-    // 禁用预构建的数据库依赖，它们仅用于服务器端
+    // 禁用预构建的依赖，包括数据库依赖和可能存在兼容性问题的XR库
     exclude: [
       'better-sqlite3', 'mongodb', 'pg', '@neondatabase/serverless',
-      '@mediapipe/hands', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl'
+      '@mediapipe/hands', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl',
+      '@react-three/xr' // 禁用预构建，避免与React版本兼容性问题
     ],
     // 优化依赖构建
     esbuildOptions: {
