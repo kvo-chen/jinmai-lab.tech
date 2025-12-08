@@ -1975,12 +1975,6 @@ const ARPreview: React.FC<{
   
   // AR模式切换处理 - 增强用户反馈
   const toggleARMode = useCallback(() => {
-    // 检测WebXR支持
-    if (!navigator.xr) {
-      toast.warning('当前设备不支持AR功能，请使用支持WebXR的设备');
-      return;
-    }
-    
     if (!isARMode) {
       // 进入AR模式前的准备
       setIsLoading(true);
