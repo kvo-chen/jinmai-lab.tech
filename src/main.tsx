@@ -114,9 +114,9 @@ import { initPerformanceMonitor } from './utils/performanceMonitor';
 // 初始化性能监控
 initPerformanceMonitor();
 
-// 注册Service Worker
-import { registerServiceWorker } from './utils/serviceWorker';
-registerServiceWorker();
+// 暂时禁用Service Worker注册，因为PWA插件已禁用
+// import { registerServiceWorker } from './utils/serviceWorker';
+// registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
