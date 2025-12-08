@@ -176,7 +176,8 @@ export default defineConfig({
             'three': 'three-core',
             '@react-three/fiber': 'three-r3f',
             '@react-three/drei': 'three-drei',
-            '@react-three/xr': 'three-xr',
+            // 移除@react-three/xr的manualChunk配置，避免预打包导致的useLayoutEffect错误
+            // '@react-three/xr': 'three-xr',
             'recharts': 'charts',
             'sonner': 'ui',
             'zod': 'helpers',
@@ -199,9 +200,10 @@ export default defineConfig({
           if (id.includes('@react-three/drei')) {
             return 'three-drei';
           }
-          if (id.includes('@react-three/xr')) {
-            return 'three-xr';
-          }
+          // 移除@react-three/xr的条件判断，避免预打包导致的useLayoutEffect错误
+          // if (id.includes('@react-three/xr')) {
+          //   return 'three-xr';
+          // }
           
           for (const [lib, chunkName] of Object.entries(manualChunkNames)) {
             if (id.includes(lib)) {
