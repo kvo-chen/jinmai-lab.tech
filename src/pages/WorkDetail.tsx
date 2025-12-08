@@ -1,14 +1,14 @@
-import { useMemo, useState, useEffect, lazy, Suspense } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
 import { mockWorks } from '@/mock/works'
-// 使用懒加载优化ARPreview组件
-const ARPreview = lazy(() => import('@/components/ARPreview'))
+// 暂时移除ARPreview组件，解决Vercel部署问题
+// const ARPreview = lazy(() => import('@/components/ARPreview'))
 import postsApi from '@/services/postService'
 import exportService, { ExportOptions, ExportFormat } from '@/services/exportService'
-// 从ARPreview组件导入类型定义
-import type { ARPreviewConfig } from '@/components/ARPreview'
+// 暂时移除ARPreview类型定义，解决Vercel部署问题
+// import type { ARPreviewConfig } from '@/components/ARPreview'
 
 export default function WorkDetail() {
   const { isDark } = useTheme()
@@ -218,8 +218,8 @@ export default function WorkDetail() {
             )}
           </motion.div>
           
-          {/* AR预览组件 - 使用Suspense包装懒加载组件 */}
-          {isARPreviewOpen && (
+          {/* AR预览组件 - 暂时移除，解决Vercel部署问题 */}
+          {/* {isARPreviewOpen && (
             <Suspense fallback={
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
                 <div className="text-white text-center">
