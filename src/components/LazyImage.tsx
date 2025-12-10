@@ -103,14 +103,45 @@ export default function LazyImage({
     return null;
   }, [src]);
 
+  // 处理API图片的重定向问题
+  const [resolvedSrc, setResolvedSrc] = useState<string>(src);
+
+  useEffect(() => {
+    // 只处理API图片URL
+    if (!src.includes('/api/proxy/trae-api/api/ide/v1/text_to_image')) {
+      setResolvedSrc(src);
+      return;
+    }
+
+    // 使用fetch API处理重定向，获取真实图片URL
+    const fetchRealImageUrl = async () => {
+      try {
+        const response = await fetch(src, {
+          method: 'HEAD', // 只获取头信息，不下载图片
+          redirect: 'follow', // 自动跟随重定向
+        });
+        
+        // 如果请求成功，使用最终的URL
+        if (response.ok) {
+          setResolvedSrc(response.url);
+        }
+      } catch (error) {
+        // 如果请求失败，继续使用原始URL
+        console.error('Failed to resolve image URL:', error);
+      }
+    };
+
+    fetchRealImageUrl();
+  }, [src]);
+
   // 优化图片加载，直接处理API返回JSON错误的情况
   const optimizedSrc = useMemo(() => {
     // 对于API图片URL，添加时间戳防止缓存
-    if (src.includes('/api/proxy/trae-api')) {
-      return `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    if (resolvedSrc.includes('/api/proxy/trae-api')) {
+      return `${resolvedSrc}${resolvedSrc.includes('?') ? '&' : '?'}t=${Date.now()}`;
     }
-    return src;
-  }, [src]);
+    return resolvedSrc;
+  }, [resolvedSrc]);
 
   const handleLoad = () => {
     setIsLoading(false);
