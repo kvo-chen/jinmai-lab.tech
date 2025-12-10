@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import LazyImage from './LazyImage';
 import llmService from '../services/llmService';
 
 // 点评结果类型定义
@@ -322,10 +323,12 @@ const AID点评: React.FC<AID点评Props> = ({ workId, onClose }) => {
                         className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md`}
                         whileHover={{ y: -5 }}
                       >
-                        <img 
+                        <LazyImage 
                           src={work.thumbnail} 
                           alt={work.title} 
                           className="w-full h-32 object-cover"
+                          ratio="landscape"
+                          fit="cover"
                         />
                         <div className="p-3">
                           <p className="text-sm font-medium text-center">{work.title}</p>
@@ -503,10 +506,12 @@ const AID点评: React.FC<AID点评Props> = ({ workId, onClose }) => {
                   ].map((activity, index) => (
                     <div key={index} className={`rounded-lg overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
                       <div className="flex">
-                        <img 
+                        <LazyImage 
                           src={activity.image} 
                           alt={activity.title} 
                           className="w-24 h-24 object-cover"
+                          ratio="square"
+                          fit="cover"
                         />
                         <div className="p-3 flex-1">
                           <h6 className="font-medium mb-1">{activity.title}</h6>
