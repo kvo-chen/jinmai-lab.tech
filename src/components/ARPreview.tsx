@@ -430,18 +430,27 @@ const CanvasContent: React.FC<{
           
           {/* 渲染2D图像为3D平面 - 只在2D模式下显示 */}
           {config.type === '2d' && config.imageUrl && texture && !textureError && (
-            <mesh
-              scale={[scale * 1, scale * 1, 0.01]}
-              rotation={[rotation.x, rotation.y, rotation.z]}
-              position={[position.x, position.y, position.z]}
-            >
-              <planeGeometry args={[1, 1]} />
-              <meshBasicMaterial 
-                map={texture} 
-                transparent 
-                side={THREE.DoubleSide}
-              />
-            </mesh>
+            <group>
+              {/* 2D图像主体 */}
+              <mesh
+                scale={[scale * 1, scale * 1, 0.01]}
+                rotation={[rotation.x, rotation.y, rotation.z]}
+                position={[position.x, position.y, position.z]}
+              >
+                <planeGeometry args={[1, 1]} />
+                <meshStandardMaterial 
+                  map={texture} 
+                  transparent 
+                  side={THREE.DoubleSide}
+                  roughness={0.5}
+                  metalness={0.1}
+                />
+              </mesh>
+              
+              {/* 图像周围的环境光源，增强3D感 */}
+              <pointLight position={[5, 5, 5]} intensity={0.8} color="#ffffff" distance={10} />
+              <pointLight position={[-5, -5, -5]} intensity={0.5} color="#ffffff" distance={10} />
+            </group>
           )}
           
           {/* 图像加载错误时的回退显示 - 只在2D模式下显示 */}
@@ -490,12 +499,21 @@ const CanvasContent: React.FC<{
               
               {/* 模型加载成功时显示 */}
               {model && !modelLoading && !modelError && (
-                <primitive
-                  object={model}
-                  scale={scale}
-                  rotation={[rotation.x, rotation.y, rotation.z]}
-                  position={[position.x, position.y, position.z]}
-                />
+                <group>
+                  {/* 模型主体 */}
+                  <primitive
+                    object={model}
+                    scale={scale}
+                    rotation={[rotation.x, rotation.y, rotation.z]}
+                    position={[position.x, position.y, position.z]}
+                  />
+                  
+                  {/* 模型周围的环境光源，增强3D效果 */}
+                  <pointLight position={[5, 5, 5]} intensity={0.8} color="#ffffff" distance={10} />
+                  <pointLight position={[-5, -5, -5]} intensity={0.5} color="#ffffff" distance={10} />
+                  <pointLight position={[5, -5, 5]} intensity={0.3} color="#ffffff" distance={10} />
+                  <pointLight position={[-5, 5, -5]} intensity={0.3} color="#ffffff" distance={10} />
+                </group>
               )}
             </>
           )}
