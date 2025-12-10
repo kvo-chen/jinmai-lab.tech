@@ -231,7 +231,7 @@ export default function WorkDetail() {
                   imageUrl: work?.thumbnail || '/images/placeholder-image.svg',
                   modelUrl: work?.modelUrl || '',
                   type: work?.modelUrl ? '3d' : '2d',
-                  scale: 1.0,
+                  scale: 5.0,
                   rotation: { x: 0, y: 0, z: 0 },
                   position: { x: 0, y: 0, z: 0 }
                 }}

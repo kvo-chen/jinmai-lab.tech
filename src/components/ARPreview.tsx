@@ -107,7 +107,7 @@ const ARModelPlacer: React.FC<{
           
           {/* 2D图像预览 */}
             {config.imageUrl && texture && (
-              <mesh matrix={hitPose.current} scale={[scale * 3, scale * 3, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]}>
+              <mesh matrix={hitPose.current} scale={[scale * 1, scale * 1, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]}>
                 <planeGeometry args={[1, 1]} />
                 <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
               </mesh>
@@ -131,7 +131,7 @@ const ARModelPlacer: React.FC<{
         <>
           {/* 2D图像 */}
             {config.imageUrl && texture && (
-              <mesh scale={[scale * 3, scale * 3, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]} position={[position.x, position.y, position.z]}>
+              <mesh scale={[scale * 1, scale * 1, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]} position={[position.x, position.y, position.z]}>
                 <planeGeometry args={[1, 1]} />
                 <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
               </mesh>
@@ -172,21 +172,21 @@ const CanvasContent: React.FC<{
   // 访问相机
   const { camera, gl, scene } = useThree();
   
-  // 根据cameraView切换相机位置
+  // 根据cameraView切换相机位置 - 调整为更近的距离，让3D效果看起来更大
   useEffect(() => {
     if (camera && !isARMode) {
       switch (cameraView) {
         case 'perspective':
-          camera.position.set(15, 15, 15);
+          camera.position.set(5, 5, 5);
           break;
         case 'top':
-          camera.position.set(0, 12, 0);
+          camera.position.set(0, 5, 0);
           break;
         case 'front':
-          camera.position.set(0, 0, 12);
+          camera.position.set(0, 0, 5);
           break;
         case 'side':
-          camera.position.set(12, 0, 0);
+          camera.position.set(5, 0, 0);
           break;
       }
       // 确保相机始终看向原点
@@ -428,10 +428,10 @@ const CanvasContent: React.FC<{
             </mesh>
           )}
           
-          {/* 渲染2D图像为3D平面 */}
+          {/* 渲染2D图像为3D平面 - 只在2D模式下显示 */}
           {config.type === '2d' && config.imageUrl && texture && !textureError && (
             <mesh
-              scale={[scale * 3, scale * 3, 0.01]}
+              scale={[scale * 1, scale * 1, 0.01]}
               rotation={[rotation.x, rotation.y, rotation.z]}
               position={[position.x, position.y, position.z]}
             >
@@ -444,10 +444,10 @@ const CanvasContent: React.FC<{
             </mesh>
           )}
           
-          {/* 图像加载错误时的回退显示 */}
-          {config.imageUrl && textureError && (
+          {/* 图像加载错误时的回退显示 - 只在2D模式下显示 */}
+          {config.type === '2d' && config.imageUrl && textureError && (
             <mesh
-              scale={[scale * 3, scale * 3, 0.01]}
+              scale={[scale * 1, scale * 1, 0.01]}
               rotation={[rotation.x, rotation.y, rotation.z]}
               position={[position.x, position.y, position.z]}
             >
@@ -712,9 +712,8 @@ const ThreeDPreviewContent: React.FC<{
   // 组件初始化时检查是否有资源需要加载
   useEffect(() => {
     // 检查是否有实际需要加载的资源，排除占位符图像
-    const isPlaceholderImage = config.imageUrl === '/images/placeholder-image.svg';
     const hasResourcesToLoad = 
-      (config.type === '2d' && config.imageUrl && !isPlaceholderImage) || 
+      (config.type === '2d' && config.imageUrl) || 
       (config.type === '3d' && config.modelUrl);
     
     // 如果没有资源需要加载，立即通知父组件加载完成
@@ -728,6 +727,54 @@ const ThreeDPreviewContent: React.FC<{
       }
     }
   }, [config.type, config.imageUrl, config.modelUrl, onLoadingComplete, onProgress]);
+
+  // 简化的纹理加载逻辑，添加备用方案
+  useEffect(() => {
+    if (config.type === '2d' && config.imageUrl) {
+      setTextureLoading(true);
+      setTextureError(false);
+      
+      const loader = new THREE.TextureLoader();
+      loader.load(
+        config.imageUrl,
+        (loadedTexture) => {
+          setTexture(loadedTexture);
+          setTextureLoading(false);
+          setTextureError(false);
+          if (onLoadingComplete) {
+            onLoadingComplete();
+          }
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading texture:', error);
+          // 加载失败时，创建一个默认的紫色纹理作为备用
+          const canvas = document.createElement('canvas');
+          canvas.width = 512;
+          canvas.height = 512;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            // 绘制一个紫色背景的默认图像
+            ctx.fillStyle = '#4f46e5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('图像加载失败', canvas.width / 2, canvas.height / 2);
+            ctx.fillText('使用默认图像', canvas.width / 2, canvas.height / 2 + 40);
+          }
+          // 创建纹理
+          const defaultTexture = new THREE.CanvasTexture(canvas);
+          setTexture(defaultTexture);
+          setTextureLoading(false);
+          setTextureError(true);
+          if (onLoadingComplete) {
+            onLoadingComplete();
+          }
+        }
+      );
+    }
+  }, [config.type, config.imageUrl, onLoadingComplete]);
   
   // 错误类型定义
   type ImageErrorType = 'NETWORK_ERROR' | 'INVALID_URL' | 'SERVER_ERROR' | 'TIMEOUT' | 'CORRUPTED_IMAGE' | 'UNKNOWN_ERROR';
@@ -1055,35 +1102,41 @@ const ThreeDPreviewContent: React.FC<{
       return originalUrl;
     }
     
-    // 生成备选低分辨率URL（根据不同CDN或URL格式调整）
-    const urlObj = new URL(originalUrl);
-    
-    // 处理text_to_image API特殊情况
-    if (urlObj.pathname.includes('text_to_image')) {
-      // 修改现有的image_size参数为较低分辨率
-      urlObj.searchParams.set('image_size', '1024x768'); // 使用更低的分辨率
-      return urlObj.toString();
-    }
-    
-    // 示例：添加低分辨率后缀
-    let fallbackUrl = originalUrl;
-    
-    // 处理不同类型的URL格式
-    if (originalUrl.includes('?')) {
-      // 添加size参数（适合大部分CDN）
-      fallbackUrl = `${originalUrl}&size=small`;
-    } else {
-      // 在文件名前添加_thumb后缀
-      const pathParts = urlObj.pathname.split('.');
-      if (pathParts.length > 1) {
-        const extension = pathParts.pop();
-        const baseName = pathParts.join('.');
-        fallbackUrl = `${urlObj.origin}${baseName}_thumb.${extension}${urlObj.search}`;
+    try {
+      // 生成备选低分辨率URL（根据不同CDN或URL格式调整）
+      const urlObj = new URL(originalUrl);
+      
+      // 处理text_to_image API特殊情况
+      if (urlObj.pathname.includes('text_to_image')) {
+        // 修改现有的image_size参数为较低分辨率
+        urlObj.searchParams.set('image_size', '1024x768'); // 使用更低的分辨率
+        return urlObj.toString();
       }
+      
+      // 示例：添加低分辨率后缀
+      let fallbackUrl = originalUrl;
+      
+      // 处理不同类型的URL格式
+      if (originalUrl.includes('?')) {
+        // 添加size参数（适合大部分CDN）
+        fallbackUrl = `${originalUrl}&size=small`;
+      } else {
+        // 在文件名前添加_thumb后缀
+        const pathParts = urlObj.pathname.split('.');
+        if (pathParts.length > 1) {
+          const extension = pathParts.pop();
+          const baseName = pathParts.join('.');
+          fallbackUrl = `${urlObj.origin}${baseName}_thumb.${extension}${urlObj.search}`;
+        }
+      }
+      
+      console.debug(`Generated fallback URL for ${originalUrl}: ${fallbackUrl}`);
+      return fallbackUrl;
+    } catch (error) {
+      console.error('Error generating fallback URL:', error);
+      // 如果URL无效，返回原始URL或默认占位符
+      return originalUrl;
     }
-    
-    console.debug(`Generated fallback URL for ${originalUrl}: ${fallbackUrl}`);
-    return fallbackUrl;
   }, []);
 
   // 扩展占位符图像检测：支持多种占位符格式和路径
@@ -1115,6 +1168,13 @@ const ThreeDPreviewContent: React.FC<{
     let texture: THREE.Texture | null = null;
     let isMounted = true;
     let currentUrl: string | null = null;
+    
+    // 只有在2D模式下才加载纹理
+    if (config.type !== '2d') {
+      setTextureLoading(false);
+      setTextureError(false);
+      return;
+    }
     
     // 只有在真正的占位图时才跳过加载
     if (isPlaceholderImage) {
@@ -1335,7 +1395,23 @@ const ThreeDPreviewContent: React.FC<{
             
             if (isFallback) {
               // 备选URL也失败了
-              setTexture(null);
+              // 创建一个默认的紫色纹理作为备用
+              const canvas = document.createElement('canvas');
+              canvas.width = 512;
+              canvas.height = 512;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                // 绘制一个紫色背景的默认图像
+                ctx.fillStyle = '#4f46e5';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('图像加载失败', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('使用默认图像', canvas.width / 2, canvas.height / 2 + 40);
+              }
+              const defaultTexture = new THREE.CanvasTexture(canvas);
+              setTexture(defaultTexture);
               setTextureLoading(false);
               setTextureError(true);
               setLoadingProgress(100);
@@ -1622,8 +1698,8 @@ const ThreeDPreviewContent: React.FC<{
         );
       })()}
       
-      {/* 纹理加载错误提示 - 优化版 */}
-      {textureError && config.imageUrl && (
+      {/* 纹理加载错误提示 - 优化版：只在没有备用纹理时显示 */}
+      {textureError && config.imageUrl && !texture && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm z-20">
           <div className="text-white text-center max-w-md bg-gradient-to-br from-indigo-900/90 to-purple-900/90 rounded-2xl p-6 shadow-2xl border border-white/10">
             <div className="text-red-500 text-5xl mb-4 animate-pulse">
@@ -1896,6 +1972,13 @@ const ARPreview: React.FC<{
   const [scale, setScale] = useState(config.scale || 0.5);
   const [rotation, setRotation] = useState(config.rotation || { x: 0, y: 0, z: 0 });
   const [position, setPosition] = useState(config.position || { x: 0, y: 0.5, z: 0 });
+
+  // 监听config.scale变化，更新scale状态
+  useEffect(() => {
+    if (config.scale !== undefined) {
+      setScale(config.scale);
+    }
+  }, [config.scale]);
 
   // 当没有资源需要加载时，自动设置isLoading为false
   useEffect(() => {
