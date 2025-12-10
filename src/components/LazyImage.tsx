@@ -10,6 +10,7 @@ interface LazyImageProps {
   height?: number;
   onLoad?: () => void;
   onError?: () => void;
+  onClick?: () => void;
   priority?: boolean;
   quality?: 'low' | 'medium' | 'high';
   loading?: 'eager' | 'lazy';
@@ -27,6 +28,7 @@ export default function LazyImage({
   height,
   onLoad,
   onError,
+  onClick,
   loading = 'lazy',
   sizes = '100vw',
   ratio = 'auto',
@@ -97,6 +99,7 @@ export default function LazyImage({
         height={height}
         sizes={sizes}
         onLoad={onLoad}
+        onClick={onClick}
         onError={() => {
           if (!isError) {
             // 生成备用图像并设置

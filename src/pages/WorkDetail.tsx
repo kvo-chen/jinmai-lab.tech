@@ -228,7 +228,7 @@ export default function WorkDetail() {
             }>
               <ARPreview
                 config={{
-                  imageUrl: work?.thumbnail || '/images/placeholder-image.svg',
+                  imageUrl: work?.thumbnail && work.thumbnail.includes('unsplash.com') ? work.thumbnail : 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80',
                   modelUrl: work?.modelUrl || '',
                   type: work?.modelUrl ? '3d' : '2d',
                   scale: 5.0,

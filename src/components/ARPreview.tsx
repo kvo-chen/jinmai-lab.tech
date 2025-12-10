@@ -106,8 +106,8 @@ const ARModelPlacer: React.FC<{
           </line>
           
           {/* 2D图像预览 */}
-            {config.imageUrl && texture && (
-              <mesh matrix={hitPose.current} scale={[scale * 1, scale * 1, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]}>
+            {texture && (
+              <mesh matrix={hitPose.current} scale={[scale * 3, scale * 3, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]}>
                 <planeGeometry args={[1, 1]} />
                 <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
               </mesh>
@@ -131,7 +131,7 @@ const ARModelPlacer: React.FC<{
         <>
           {/* 2D图像 */}
             {config.imageUrl && texture && (
-              <mesh scale={[scale * 1, scale * 1, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]} position={[position.x, position.y, position.z]}>
+              <mesh scale={[scale * 3, scale * 3, 0.01]} rotation={[rotation.x, rotation.y, rotation.z]} position={[position.x, position.y, position.z]}>
                 <planeGeometry args={[1, 1]} />
                 <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
               </mesh>
@@ -414,7 +414,7 @@ const CanvasContent: React.FC<{
           {/* 默认3D对象 - 当没有图像或模型资源时显示 */}
           {!((config.type === '2d' && config.imageUrl) || (config.type === '3d' && config.modelUrl)) && (
             <mesh
-              scale={[5, 5, 0.1]}
+              scale={[10, 10, 0.1]}
               rotation={[0, 0, 0]}
               position={[0, 0, 0]}
             >
@@ -433,7 +433,7 @@ const CanvasContent: React.FC<{
             <group>
               {/* 2D图像主体 */}
               <mesh
-                scale={[scale * 1, scale * 1, 0.01]}
+                scale={[scale * 3, scale * 3, 0.01]}
                 rotation={[rotation.x, rotation.y, rotation.z]}
                 position={[position.x, position.y, position.z]}
               >
