@@ -129,7 +129,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕天津传统文化元素，创作具有现代感的设计作品，展示津门文化魅力。',
       startDate: '2025-12-01',
       endDate: '2026-01-15',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20cultural%20festival%20creative%20design%20competition',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20cultural%20festival%20creative%20design%20competition',
       participants: 325,
       status: 'active'
     },
@@ -139,7 +139,7 @@ export default function TianjinCreativeActivities() {
       description: '为天津海河龙舟赛设计视觉形象，包括海报、标志和宣传物料。',
       startDate: '2026-03-01',
       endDate: '2026-04-30',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20Haihe%20Dragon%20Boat%20Race%20visual%20design',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20Haihe%20Dragon%20Boat%20Race%20visual%20design',
       participants: 187,
       status: 'upcoming'
     },
@@ -149,7 +149,7 @@ export default function TianjinCreativeActivities() {
       description: '以杨柳青年画为灵感，创作现代风格的设计作品，传承非物质文化遗产。',
       startDate: '2025-10-01',
       endDate: '2025-11-15',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Yangliuqing%20New%20Year%20Painting%20innovative%20design%20exhibition',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Yangliuqing%20New%20Year%20Painting%20innovative%20design%20exhibition',
       participants: 452,
       status: 'ended'
     },
@@ -160,7 +160,7 @@ export default function TianjinCreativeActivities() {
       description: '以海河夜游为主题，联动灯光装置与互动艺术，打造城市夜间文化体验。',
       startDate: '2026-05-10',
       endDate: '2026-06-10',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20Haihe%20night%20tour%20light%20art%20festival%20interactive%20installation',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20Haihe%20night%20tour%20light%20art%20festival%20interactive%20installation',
       participants: 268,
       status: 'upcoming'
     },
@@ -171,7 +171,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕天津相声文化进行视觉创作，征集海报与传播图形，弘扬曲艺精神。',
       startDate: '2026-02-01',
       endDate: '2026-02-28',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20crosstalk%20culture%20poster%20design%20competition%20graphic%20design',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20crosstalk%20culture%20poster%20design%20competition%20graphic%20design',
       participants: 312,
       status: 'upcoming'
     },
@@ -182,7 +182,7 @@ export default function TianjinCreativeActivities() {
       description: '联合天津老字号开展包装升级设计，探索传统与现代的视觉融合。',
       startDate: '2025-11-25',
       endDate: '2025-12-20',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20traditional%20brand%20packaging%20redesign%20challenge%20modern%20vs%20heritage',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20traditional%20brand%20packaging%20redesign%20challenge%20modern%20vs%20heritage',
       participants: 198,
       status: 'active'
     },
@@ -193,7 +193,7 @@ export default function TianjinCreativeActivities() {
       description: '以天津风筝为核心图形元素，进行IP延展与插画创作。',
       startDate: '2026-03-15',
       endDate: '2026-04-15',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20kite%20art%20creation%20season%20illustration%20design',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20kite%20art%20creation%20season%20illustration%20design',
       participants: 141,
       status: 'upcoming'
     },
@@ -204,7 +204,7 @@ export default function TianjinCreativeActivities() {
       description: '面向公众征集泥人张的IP形象与周边设计，提升非遗传播力。',
       startDate: '2025-09-01',
       endDate: '2025-10-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20Niren%20Zhang%20IP%20character%20design%20public%20submission',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20Niren%20Zhang%20IP%20character%20design%20public%20submission',
       participants: 403,
       status: 'ended'
     },
@@ -215,7 +215,7 @@ export default function TianjinCreativeActivities() {
       description: '以天津地标为主题进行插画创作，构建城市文化视觉资产库。',
       startDate: '2025-12-05',
       endDate: '2026-01-05',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20landmark%20illustration%20collection%20creative%20art',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20landmark%20illustration%20collection%20creative%20art',
       participants: 256,
       status: 'active'
     },
@@ -226,7 +226,7 @@ export default function TianjinCreativeActivities() {
       description: '为静海葡萄节打造完整视觉系统，涵盖主视觉、导视与物料。',
       startDate: '2026-07-01',
       endDate: '2026-07-31',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Jinghai%20grape%20festival%20visual%20identity%20system%20design',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Jinghai%20grape%20festival%20visual%20identity%20system%20design',
       participants: 105,
       status: 'upcoming'
     },
@@ -237,7 +237,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕滨海新区海风元素设计文创周边，探索跨场景产品化。',
       startDate: '2025-08-01',
       endDate: '2025-09-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Binhai%20Tanggu%20sea%20breeze%20cultural%20creative%20merchandise%20design',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Binhai%20Tanggu%20sea%20breeze%20cultural%20creative%20merchandise%20design',
       participants: 167,
       status: 'ended'
     },
@@ -248,7 +248,7 @@ export default function TianjinCreativeActivities() {
       description: '以京津双城为背景，48小时跨学科快速共创，产出落地方案。',
       startDate: '2026-01-20',
       endDate: '2026-01-22',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Beijing%20Tianjin%20dual-city%20creative%20hackathon%20collaboration%2048h',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Beijing%20Tianjin%20dual-city%20creative%20hackathon%20collaboration%2048h',
       participants: 93,
       status: 'upcoming'
     }
@@ -260,7 +260,7 @@ export default function TianjinCreativeActivities() {
       description: '以天津地标与方言为灵感，创作具有城市个性的字体与字形海报。',
       startDate: '2025-12-10',
       endDate: '2026-01-20',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20typography%20challenge%20custom%20type%20poster',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20typography%20challenge%20custom%20type%20poster',
       participants: 142,
       status: 'active'
     },
@@ -271,7 +271,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕海河冬季光影与城市生活，征集夜景与人文摄影作品。',
       startDate: '2025-12-01',
       endDate: '2026-01-10',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20winter%20photography%20competition%20night%20city%20lights',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20winter%20photography%20competition%20night%20city%20lights',
       participants: 189,
       status: 'active'
     },
@@ -282,7 +282,7 @@ export default function TianjinCreativeActivities() {
       description: '为天津老城区周末市集创作视觉海报与导视系统，突出市井文化。',
       startDate: '2025-10-10',
       endDate: '2025-11-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20old%20town%20market%20visual%20identity%20poster',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20old%20town%20market%20visual%20identity%20poster',
       participants: 121,
       status: 'ended'
     },
@@ -293,7 +293,7 @@ export default function TianjinCreativeActivities() {
       description: '结合相声经典桥段，设计数字表情包与贴纸周边，传播曲艺幽默。',
       startDate: '2026-02-15',
       endDate: '2026-03-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20crosstalk%20meme%20sticker%20design%20collection',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20crosstalk%20meme%20sticker%20design%20collection',
       participants: 98,
       status: 'upcoming'
     },
@@ -304,7 +304,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕锅巴菜、耳朵眼等本地小吃进行IP角色与包装插画创作。',
       startDate: '2025-11-20',
       endDate: '2025-12-25',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20snack%20brand%20IP%20character%20and%20packaging%20illustration',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20snack%20brand%20IP%20character%20and%20packaging%20illustration',
       participants: 204,
       status: 'active'
     },
@@ -315,7 +315,7 @@ export default function TianjinCreativeActivities() {
       description: '以天津港口机械与航运元素为主，创作工业风格主题海报。',
       startDate: '2026-03-05',
       endDate: '2026-04-05',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20port%20industrial%20style%20poster%20design%20competition',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20port%20industrial%20style%20poster%20design%20competition',
       participants: 76,
       status: 'upcoming'
     }
@@ -327,7 +327,7 @@ export default function TianjinCreativeActivities() {
       description: '以海河为舞台，融合电音与民乐，打造城市音乐节品牌形象。',
       startDate: '2026-06-01',
       endDate: '2026-06-03',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20Music%20Carnival%20stage%20city%20festival%20electric%20and%20traditional%20music',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20Music%20Carnival%20stage%20city%20festival%20electric%20and%20traditional%20music',
       participants: 512,
       status: 'upcoming'
     },
@@ -338,7 +338,7 @@ export default function TianjinCreativeActivities() {
       description: '面向全国街舞团队的公开赛，倡导青年街头文化与积极生活方式。',
       startDate: '2026-05-10',
       endDate: '2026-05-12',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20street%20dance%20open%20competition%20urban%20youth%20culture',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20street%20dance%20open%20competition%20urban%20youth%20culture',
       participants: 276,
       status: 'upcoming'
     },
@@ -349,7 +349,7 @@ export default function TianjinCreativeActivities() {
       description: '以国潮元素为灵感，发布服饰与配件设计，融合传统纹样与现代剪裁。',
       startDate: '2026-09-05',
       endDate: '2026-09-12',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Guochao%20fashion%20design%20week%20traditional%20pattern%20modern%20cutting',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Guochao%20fashion%20design%20week%20traditional%20pattern%20modern%20cutting',
       participants: 348,
       status: 'upcoming'
     },
@@ -360,7 +360,7 @@ export default function TianjinCreativeActivities() {
       description: '聚合创客作品与工作坊演示，展示开源硬件、互动艺术与手作。',
       startDate: '2026-07-18',
       endDate: '2026-07-20',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20maker%20fair%20open%20hardware%20interactive%20art%20market',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20maker%20fair%20open%20hardware%20interactive%20art%20market',
       participants: 229,
       status: 'upcoming'
     },
@@ -371,7 +371,7 @@ export default function TianjinCreativeActivities() {
       description: '结合生成式模型，进行跨媒体视觉与叙事创作挑战，强调伦理与版权。',
       startDate: '2026-01-28',
       endDate: '2026-02-15',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=AI%20creative%20design%20challenge%20generative%20art%20ethical%20creation',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=AI%20creative%20design%20challenge%20generative%20art%20ethical%20creation',
       participants: 317,
       status: 'active'
     },
@@ -382,7 +382,7 @@ export default function TianjinCreativeActivities() {
       description: '记录海河皮划艇赛事的速度与激情，征集运动美学摄影作品。',
       startDate: '2026-04-10',
       endDate: '2026-04-20',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20kayak%20sports%20photography%20competition%20action%20and%20speed',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20kayak%20sports%20photography%20competition%20action%20and%20speed',
       participants: 165,
       status: 'upcoming'
     },
@@ -393,7 +393,7 @@ export default function TianjinCreativeActivities() {
       description: '以纪录片与短视频形式讲述天津美食故事，搭建影像交流平台。',
       startDate: '2025-12-12',
       endDate: '2026-01-12',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20food%20film%20festival%20documentary%20and%20short%20video',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20food%20film%20festival%20documentary%20and%20short%20video',
       participants: 241,
       status: 'active'
     },
@@ -404,7 +404,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕五大道与意式风情区的建筑细节，征集影像作品与图像档案。',
       startDate: '2025-11-01',
       endDate: '2025-12-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20historic%20architecture%20visual%20archive%20collection',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20historic%20architecture%20visual%20archive%20collection',
       participants: 302,
       status: 'ended'
     },
@@ -415,7 +415,7 @@ export default function TianjinCreativeActivities() {
       description: '开放泥人张、风筝魏等非遗工坊，开展体验课程与讲座。',
       startDate: '2026-03-25',
       endDate: '2026-03-27',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20intangible%20heritage%20open%20day%20workshop%20education',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20intangible%20heritage%20open%20day%20workshop%20education',
       participants: 158,
       status: 'upcoming'
     },
@@ -426,7 +426,7 @@ export default function TianjinCreativeActivities() {
       description: '征集沿海河的交互式灯光装置方案，打造夜游公共艺术体验。',
       startDate: '2026-08-10',
       endDate: '2026-08-24',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20night%20interactive%20light%20installation%20competition%20public%20art',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20night%20interactive%20light%20installation%20competition%20public%20art',
       participants: 214,
       status: 'upcoming'
     },
@@ -437,7 +437,7 @@ export default function TianjinCreativeActivities() {
       description: '面向市民征集城市品牌LOGO提案，鼓励公众参与与共创。',
       startDate: '2026-02-01',
       endDate: '2026-03-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20citizen%20co-creation%20logo%20design%20city%20branding',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20citizen%20co-creation%20logo%20design%20city%20branding',
       participants: 427,
       status: 'active'
     },
@@ -448,7 +448,7 @@ export default function TianjinCreativeActivities() {
       description: '联合高校开展艺术联展巡展，建立校地合作的青年创作平台。',
       startDate: '2026-04-01',
       endDate: '2026-05-01',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=University%20art%20joint%20exhibition%20tour%20Tianjin%20collaboration',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=University%20art%20joint%20exhibition%20tour%20Tianjin%20collaboration',
       participants: 196,
       status: 'upcoming'
     },
@@ -459,7 +459,7 @@ export default function TianjinCreativeActivities() {
       description: '将唢呐、笙等传统乐器与电子音乐融合，探索跨界现场。',
       startDate: '2025-12-22',
       endDate: '2025-12-22',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Electronic%20music%20meets%20traditional%20Chinese%20instruments%20live%20show%20Tianjin',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Electronic%20music%20meets%20traditional%20Chinese%20instruments%20live%20show%20Tianjin',
       participants: 388,
       status: 'active'
     },
@@ -470,7 +470,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕天津文旅场景与品牌联名，征集整套创意方案与执行计划。',
       startDate: '2026-03-02',
       endDate: '2026-03-26',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20cultural%20tourism%20co-branding%20creative%20proposal%20competition',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20cultural%20tourism%20co-branding%20creative%20proposal%20competition',
       participants: 134,
       status: 'upcoming'
     },
@@ -481,7 +481,7 @@ export default function TianjinCreativeActivities() {
       description: '倡导海洋环保意识，围绕渤海生态主题创作公益海报。',
       startDate: '2026-06-15',
       endDate: '2026-06-30',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Ocean%20environmental%20protection%20poster%20design%20Bohai%20Sea%20Tianjin',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Ocean%20environmental%20protection%20poster%20design%20Bohai%20Sea%20Tianjin',
       participants: 211,
       status: 'upcoming'
     },
@@ -492,7 +492,7 @@ export default function TianjinCreativeActivities() {
       description: '以徒步形式完成沿海河的摄影创作打卡，提升公众参与度。',
       startDate: '2026-05-28',
       endDate: '2026-05-28',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20walking%20photo%20marathon%20community%20participation%20Tianjin',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20walking%20photo%20marathon%20community%20participation%20Tianjin',
       participants: 322,
       status: 'upcoming'
     },
@@ -503,7 +503,7 @@ export default function TianjinCreativeActivities() {
       description: '征集代表天津气质的城市IP吉祥物形象，应用于文旅宣传。',
       startDate: '2026-02-05',
       endDate: '2026-02-28',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20mascot%20IP%20design%20competition%20branding',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20city%20mascot%20IP%20design%20competition%20branding',
       participants: 403,
       status: 'active'
     },
@@ -514,7 +514,7 @@ export default function TianjinCreativeActivities() {
       description: '以天津的历史、人文与风物为素材，创作儿童绘本与故事插图。',
       startDate: '2026-09-20',
       endDate: '2026-10-20',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20children%27s%20picture%20book%20season%20story%20illustration',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20children%27s%20picture%20book%20season%20story%20illustration',
       participants: 147,
       status: 'upcoming'
     },
@@ -525,7 +525,7 @@ export default function TianjinCreativeActivities() {
       description: '围绕城市骑行的健康生活方式，征集海报与短视频视觉作品。',
       startDate: '2026-04-02',
       endDate: '2026-04-16',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Urban%20cycling%20lifestyle%20visual%20competition%20poster%20video',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Urban%20cycling%20lifestyle%20visual%20competition%20poster%20video',
       participants: 188,
       status: 'upcoming'
     },
@@ -536,7 +536,7 @@ export default function TianjinCreativeActivities() {
       description: '以社区公共空间为对象征集改造提案，强化设计与生活的连接。',
       startDate: '2026-03-12',
       endDate: '2026-03-31',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Community%20public%20space%20revitalization%20proposal%20competition%20Tianjin',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Community%20public%20space%20revitalization%20proposal%20competition%20Tianjin',
       participants: 115,
       status: 'active'
     },
@@ -547,7 +547,7 @@ export default function TianjinCreativeActivities() {
       description: '以津门茶文化为灵感，进行品牌识别与包装升级设计。',
       startDate: '2025-12-05',
       endDate: '2026-01-05',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20tea%20culture%20brand%20refresh%20identity%20and%20packaging',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Tianjin%20tea%20culture%20brand%20refresh%20identity%20and%20packaging',
       participants: 236,
       status: 'active'
     },
@@ -558,7 +558,7 @@ export default function TianjinCreativeActivities() {
       description: '为海河帆船节打造完整视觉系统，涵盖徽标、旗帜与导视。',
       startDate: '2026-07-02',
       endDate: '2026-07-18',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20Sailing%20Festival%20visual%20identity%20system%20design',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Haihe%20Sailing%20Festival%20visual%20identity%20system%20design',
       participants: 128,
       status: 'upcoming'
     }
@@ -586,7 +586,7 @@ export default function TianjinCreativeActivities() {
       id: 1,
       name: '津沽文化节主题模板',
       description: '融合天津传统文化元素，适用于各类文化节活动宣传设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20cultural%20festival%20template%20design',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20cultural%20festival%20template%20design',
       category: '节日主题',
       usageCount: 235
     },
@@ -594,7 +594,7 @@ export default function TianjinCreativeActivities() {
       id: 2,
       name: '海河风光模板',
       description: '以海河风光为背景，适合城市宣传和旅游相关设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Haihe%20River%20scenery%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Haihe%20River%20scenery%20template',
       category: '城市风光',
       usageCount: 189
     },
@@ -602,7 +602,7 @@ export default function TianjinCreativeActivities() {
       id: 3,
       name: '杨柳青年画风格模板',
       description: '模仿杨柳青年画的线条和色彩风格，具有浓厚的传统韵味。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20painting%20style%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20painting%20style%20template',
       category: '传统风格',
       usageCount: 156
     },
@@ -610,7 +610,7 @@ export default function TianjinCreativeActivities() {
       id: 4,
       name: '天津小吃宣传模板',
       description: '为天津特色小吃设计的宣传模板，突出地方美食特色。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20local%20food%20promotion%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20local%20food%20promotion%20template',
       category: '美食宣传',
       usageCount: 123
     },
@@ -619,7 +619,7 @@ export default function TianjinCreativeActivities() {
       id: 5,
       name: '城市地标插画模板',
       description: '以天津之眼、解放桥等地标为核心图形的插画类模板。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20city%20landmark%20illustration%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20city%20landmark%20illustration%20template',
       category: '城市风光',
       usageCount: 144
     },
@@ -628,7 +628,7 @@ export default function TianjinCreativeActivities() {
       id: 6,
       name: '非遗风物纹样模板',
       description: '提取泥人张、风筝魏等非遗元素纹样，适配现代版式。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20intangible%20heritage%20pattern%20design%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20intangible%20heritage%20pattern%20design%20template',
       category: '非遗传承',
       usageCount: 117
     },
@@ -637,7 +637,7 @@ export default function TianjinCreativeActivities() {
       id: 7,
       name: '夜游光影视觉模板',
       description: '以海河夜景的光影氛围为主视觉，适配品牌活动海报。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20night%20tour%20light%20and%20shadow%20visual%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20night%20tour%20light%20and%20shadow%20visual%20template',
       category: '夜游光影',
       usageCount: 98
     },
@@ -646,7 +646,7 @@ export default function TianjinCreativeActivities() {
       id: 8,
       name: '老字号联名模板',
       description: '面向老字号品牌的联名海报与包装视觉模板。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20traditional%20brand%20co-branding%20visual%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20traditional%20brand%20co-branding%20visual%20template',
       category: '品牌联名',
       usageCount: 135
     },
@@ -655,7 +655,7 @@ export default function TianjinCreativeActivities() {
       id: 9,
       name: '滨海蓝色旅游模板',
       description: '提取滨海新区的海风与蓝色主题，面向旅游宣传设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Binhai%20blue%20tourism%20poster%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Binhai%20blue%20tourism%20poster%20template',
       category: '旅游主题',
       usageCount: 122
     },
@@ -664,7 +664,7 @@ export default function TianjinCreativeActivities() {
       id: 10,
       name: '工业记忆影像模板',
       description: '以老厂房与工业质感为主，适合纪录片与影像项目。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20industrial%20memory%20visual%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20industrial%20memory%20visual%20template',
       category: '工业风',
       usageCount: 87
     },
@@ -673,7 +673,7 @@ export default function TianjinCreativeActivities() {
       id: 11,
       name: '文博展陈主题模板',
       description: '适用于博物馆、美术馆展陈的主视觉与导视系统。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Museum%20exhibition%20visual%20identity%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Museum%20exhibition%20visual%20identity%20template',
       category: '文博展陈',
       usageCount: 95
     },
@@ -682,7 +682,7 @@ export default function TianjinCreativeActivities() {
       id: 12,
       name: '港口文化视觉模板',
       description: '以港口机械与城市航运为元素，体现天津港口文化。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20port%20culture%20visual%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20port%20culture%20visual%20template',
       category: '港口文化',
       usageCount: 76
     }
@@ -692,7 +692,7 @@ export default function TianjinCreativeActivities() {
       id: 13,
       name: '五大道历史风情模板',
       description: '以五大道近代建筑群为视觉元素，突出天津的历史人文风貌。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Wudadao%20historical%20architecture%20poster%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Wudadao%20historical%20architecture%20poster%20template',
       category: '历史风情',
       usageCount: 142
     },
@@ -701,7 +701,7 @@ export default function TianjinCreativeActivities() {
       id: 14,
       name: '意式风情区摄影模板',
       description: '以意式风情区的欧式街景为背景，适合城市旅行与摄影主题设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Italian%20Style%20Town%20photography%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Italian%20Style%20Town%20photography%20template',
       category: '城市风光',
       usageCount: 168
     },
@@ -710,7 +710,7 @@ export default function TianjinCreativeActivities() {
       id: 15,
       name: '鼓楼文化宣传模板',
       description: '围绕鼓楼与老城厢的市井生活，适合社区文化与城市宣传设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Gulou%20culture%20promotion%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Gulou%20culture%20promotion%20template',
       category: '城市文化',
       usageCount: 121
     },
@@ -719,7 +719,7 @@ export default function TianjinCreativeActivities() {
       id: 16,
       name: '北塘海鲜美食模板',
       description: '以北塘渔港与海鲜元素为主，适合餐饮美食类宣传设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Beitang%20seafood%20promotion%20template%20Tianjin',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Beitang%20seafood%20promotion%20template%20Tianjin',
       category: '美食宣传',
       usageCount: 132
     },
@@ -728,7 +728,7 @@ export default function TianjinCreativeActivities() {
       id: 17,
       name: '静海葡萄节活动模板',
       description: '围绕静海葡萄节打造节庆主视觉，适配导视与物料延展。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Jinghai%20grape%20festival%20poster%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Jinghai%20grape%20festival%20poster%20template',
       category: '节日主题',
       usageCount: 109
     },
@@ -737,7 +737,7 @@ export default function TianjinCreativeActivities() {
       id: 18,
       name: '滨海新区科技主题模板',
       description: '以科技蓝与未来感图形为核心，突出滨海新区产业形象。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Binhai%20New%20Area%20technology%20theme%20visual%20template',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Binhai%20New%20Area%20technology%20theme%20visual%20template',
       category: '科技主题',
       usageCount: 87
     },
@@ -746,7 +746,7 @@ export default function TianjinCreativeActivities() {
       id: 19,
       name: '蓟州长城风光模板',
       description: '以蓟州长城与山野风光为主视觉，适合文旅宣传类设计。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Jizhou%20Great%20Wall%20scenery%20poster%20template%20Tianjin',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Jizhou%20Great%20Wall%20scenery%20poster%20template%20Tianjin',
       category: '自然风光',
       usageCount: 153
     },
@@ -755,7 +755,7 @@ export default function TianjinCreativeActivities() {
       id: 20,
       name: '海河滨水休闲模板',
       description: '围绕海河滨水休闲的生活方式场景，适合社区活动与品牌海报。',
-      thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20riverside%20leisure%20lifestyle%20visual%20template%20Tianjin',
+      thumbnail: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20riverside%20leisure%20lifestyle%20visual%20template%20Tianjin',
       category: '城市休闲',
       usageCount: 174
     }
@@ -769,7 +769,7 @@ export default function TianjinCreativeActivities() {
       description: '亲手绘制杨柳青年画，体验传统木版年画的制作过程。',
       location: '天津市西青区杨柳青古镇',
       price: '¥128/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20ancient%20town%20New%20Year%20painting%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20ancient%20town%20New%20Year%20painting%20experience',
       availableSlots: 15,
       rating: 4.8,
       reviewCount: 126
@@ -780,7 +780,7 @@ export default function TianjinCreativeActivities() {
       description: '跟随泥人张传承人学习彩塑技艺，制作属于自己的泥人作品。',
       location: '天津市南开区古文化街',
       price: '¥168/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Nirenzhang%20clay%20sculpture%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Nirenzhang%20clay%20sculpture%20workshop%20experience',
       availableSlots: 8,
       rating: 4.9,
       reviewCount: 89
@@ -791,7 +791,7 @@ export default function TianjinCreativeActivities() {
       description: '学习传统风筝的制作技艺，亲手制作一只精美的天津风筝。',
       location: '天津市和平区劝业场',
       price: '¥98/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Weifeng%20kite%20making%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Weifeng%20kite%20making%20experience',
       availableSlots: 20,
       rating: 4.7,
       reviewCount: 76
@@ -803,7 +803,7 @@ export default function TianjinCreativeActivities() {
       description: '走进相声社，体验台前幕后，与演员互动学习基本“捧逗”。',
       location: '天津市河北区意式风情区',
       price: '¥158/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20crosstalk%20club%20immersive%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20crosstalk%20club%20immersive%20experience',
       availableSlots: 12,
       rating: 4.8,
       reviewCount: 64
@@ -815,7 +815,7 @@ export default function TianjinCreativeActivities() {
       description: '深度导览古文化街，打卡风物人文，体验天津老城味道。',
       location: '天津市南开区古文化街',
       price: '¥88/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Ancient%20Culture%20Street%20guided%20tour',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Ancient%20Culture%20Street%20guided%20tour',
       availableSlots: 25,
       rating: 4.6,
       reviewCount: 142
@@ -827,7 +827,7 @@ export default function TianjinCreativeActivities() {
       description: '在工坊学习瓷器绘彩，从草图到上色完成一件专属作品。',
       location: '天津市红桥区手作工坊',
       price: '¥198/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Ceramic%20painting%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Ceramic%20painting%20workshop%20experience',
       availableSlots: 10,
       rating: 4.9,
       reviewCount: 58
@@ -839,7 +839,7 @@ export default function TianjinCreativeActivities() {
       description: '学习锅巴菜、煎饼果子等家常做法，掌握地道津味。',
       location: '天津市河西区共享厨房',
       price: '¥138/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20local%20cuisine%20cooking%20class%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20local%20cuisine%20cooking%20class%20experience',
       availableSlots: 18,
       rating: 4.7,
       reviewCount: 73
@@ -851,7 +851,7 @@ export default function TianjinCreativeActivities() {
       description: '乘坐游船欣赏海河夜景，配合讲解了解城市光影与故事。',
       location: '天津市河东区海河码头',
       price: '¥168/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20night%20cruise%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20night%20cruise%20experience',
       availableSlots: 40,
       rating: 4.5,
       reviewCount: 211
@@ -863,7 +863,7 @@ export default function TianjinCreativeActivities() {
       description: '跟随向导拍摄地标建筑，学习夜景与构图技巧。',
       location: '天津市河西区文化中心',
       price: '¥158/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20city%20landmark%20photography%20walk',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20city%20landmark%20photography%20walk',
       availableSlots: 22,
       rating: 4.8,
       reviewCount: 96
@@ -874,7 +874,7 @@ export default function TianjinCreativeActivities() {
       description: '学习传统素包制作技法，从和面到包制完整体验。',
       location: '天津市南开区老城厢',
       price: '¥128/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Shitoumenkan%20vegetarian%20bun%20making%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Shitoumenkan%20vegetarian%20bun%20making%20workshop%20experience',
       availableSlots: 16,
       rating: 4.6,
       reviewCount: 54
@@ -885,7 +885,7 @@ export default function TianjinCreativeActivities() {
       description: '跟随老师学习传统茶汤调制，体验细腻甘香的津门味道。',
       location: '天津市河东区小吃工坊',
       price: '¥88/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chatangli%20sweet%20soup%20making%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Chatangli%20sweet%20soup%20making%20workshop%20experience',
       availableSlots: 20,
       rating: 4.5,
       reviewCount: 67
@@ -896,7 +896,7 @@ export default function TianjinCreativeActivities() {
       description: '专业教练带领在海河进行皮划艇体验，欣赏城市水岸风光。',
       location: '天津市河西区海河沿线',
       price: '¥198/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20kayaking%20urban%20tour%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20kayaking%20urban%20tour%20experience',
       availableSlots: 12,
       rating: 4.7,
       reviewCount: 82
@@ -907,7 +907,7 @@ export default function TianjinCreativeActivities() {
       description: '专业向导讲解近代建筑与城市史，深度漫步意式风情区。',
       location: '天津市河北区意式风情区',
       price: '¥68/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Italian%20Style%20Town%20heritage%20walking%20tour',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Italian%20Style%20Town%20heritage%20walking%20tour',
       availableSlots: 30,
       rating: 4.6,
       reviewCount: 134
@@ -918,7 +918,7 @@ export default function TianjinCreativeActivities() {
       description: '学习京剧脸谱色彩与构图，完成一幅个人脸谱作品。',
       location: '天津市红桥区戏曲社',
       price: '¥128/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Peking%20opera%20face%20painting%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Peking%20opera%20face%20painting%20workshop%20experience',
       availableSlots: 14,
       rating: 4.8,
       reviewCount: 92
@@ -929,7 +929,7 @@ export default function TianjinCreativeActivities() {
       description: '体验皮影雕刻与拼装，学习基本操偶，现场小型演出。',
       location: '天津市津南区文化馆',
       price: '¥158/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20shadow%20puppetry%20making%20and%20performance%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20shadow%20puppetry%20making%20and%20performance%20workshop%20experience',
       availableSlots: 10,
       rating: 4.7,
       reviewCount: 59
@@ -940,7 +940,7 @@ export default function TianjinCreativeActivities() {
       description: '串联多家天津老字号，边走边品，了解品牌故事与美味。',
       location: '天津市南开区古文化街',
       price: '¥98/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20time-honored%20brands%20food%20tour%20walking%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20time-honored%20brands%20food%20tour%20walking%20experience',
       availableSlots: 25,
       rating: 4.7,
       reviewCount: 105
@@ -951,7 +951,7 @@ export default function TianjinCreativeActivities() {
       description: '学习木版水印工艺流程，完成一件传统水印作品。',
       location: '天津市西青区杨柳青古镇',
       price: '¥168/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20woodblock%20water%20printing%20craft%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20woodblock%20water%20printing%20craft%20workshop%20experience',
       availableSlots: 12,
       rating: 4.8,
       reviewCount: 64
@@ -963,7 +963,7 @@ export default function TianjinCreativeActivities() {
       description: '学习传统剪纸技法，完成节庆主题剪纸作品并装裱展示。',
       location: '天津市和平区文化馆',
       price: '¥88/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20paper-cutting%20workshop%20experience%20festive%20designs',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Chinese%20paper-cutting%20workshop%20experience%20festive%20designs',
       availableSlots: 24,
       rating: 4.6,
       reviewCount: 72
@@ -975,7 +975,7 @@ export default function TianjinCreativeActivities() {
       description: '在老师带领下体验击鼓与演唱的基本节奏与腔韵。',
       location: '天津市红桥区曲艺社',
       price: '¥128/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Peking%20drum%20music%20beginner%20workshop%20experience%20traditional%20stage',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Peking%20drum%20music%20beginner%20workshop%20experience%20traditional%20stage',
       availableSlots: 16,
       rating: 4.7,
       reviewCount: 58
@@ -987,7 +987,7 @@ export default function TianjinCreativeActivities() {
       description: '亲子共同学习年画拓印流程，完成一幅纪念作品。',
       location: '天津市西青区杨柳青古镇',
       price: '¥98/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20New%20Year%20print%20rubbing%20parent-child%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Yangliuqing%20New%20Year%20print%20rubbing%20parent-child%20workshop%20experience',
       availableSlots: 20,
       rating: 4.8,
       reviewCount: 88
@@ -999,7 +999,7 @@ export default function TianjinCreativeActivities() {
       description: '沿古文化街夜游拍摄，学习夜景用光与构图技巧。',
       location: '天津市南开区古文化街',
       price: '¥88/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Ancient%20Culture%20Street%20night%20photography%20walk%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Ancient%20Culture%20Street%20night%20photography%20walk%20experience',
       availableSlots: 28,
       rating: 4.6,
       reviewCount: 119
@@ -1011,7 +1011,7 @@ export default function TianjinCreativeActivities() {
       description: '探访天津港工业遗址，学习纪录摄影与城市工业美学。',
       location: '天津市滨海新区港区',
       price: '¥128/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20port%20industrial%20heritage%20photography%20tour%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20port%20industrial%20heritage%20photography%20tour%20experience',
       availableSlots: 18,
       rating: 4.7,
       reviewCount: 76
@@ -1023,7 +1023,7 @@ export default function TianjinCreativeActivities() {
       description: '了解瓷器修复基础流程，体验简单修补与彩绘工序。',
       location: '天津市红桥区手作工坊',
       price: '¥168/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Ceramic%20restoration%20beginner%20workshop%20experience%20painting%20and%20repair',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Ceramic%20restoration%20beginner%20workshop%20experience%20painting%20and%20repair',
       availableSlots: 12,
       rating: 4.7,
       reviewCount: 64
@@ -1035,7 +1035,7 @@ export default function TianjinCreativeActivities() {
       description: '学习面糊调配与摊制技巧，完成地道风味的煎饼果子。',
       location: '天津市河西区共享厨房',
       price: '¥118/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20jianbing%20guozi%20cooking%20masterclass%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20jianbing%20guozi%20cooking%20masterclass%20workshop%20experience',
       availableSlots: 20,
       rating: 4.6,
       reviewCount: 91
@@ -1047,7 +1047,7 @@ export default function TianjinCreativeActivities() {
       description: '沿海河骑行漫游，结合导览讲解城市历史与地标。',
       location: '天津市河西区海河沿线',
       price: '¥88/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20riverfront%20city%20cycling%20tour%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Haihe%20riverfront%20city%20cycling%20tour%20experience',
       availableSlots: 30,
       rating: 4.5,
       reviewCount: 110
@@ -1059,7 +1059,7 @@ export default function TianjinCreativeActivities() {
       description: '观摩糖炒栗子工艺演示，了解配方与火候，现场试吃。',
       location: '天津市和平区老字号门店',
       price: '¥68/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Candied%20chestnut%20handcraft%20demonstration%20workshop%20experience',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Candied%20chestnut%20handcraft%20demonstration%20workshop%20experience',
       availableSlots: 26,
       rating: 4.6,
       reviewCount: 85
@@ -1071,7 +1071,7 @@ export default function TianjinCreativeActivities() {
       description: '学习风筝放飞技巧与保养，现场集体放飞与拍照打卡。',
       location: '天津市河西区文化中心绿地',
       price: '¥68/人',
-      image: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20kite%20flying%20family%20experience%20day%20Tianjin',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Traditional%20kite%20flying%20family%20experience%20day%20Tianjin',
       availableSlots: 40,
       rating: 4.7,
       reviewCount: 120
@@ -1083,7 +1083,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 1,
       name: '桂发祥',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Guifaxiang%20traditional%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Guifaxiang%20traditional%20brand%20logo',
       description: '创建于1927年，以十八街麻花闻名，是天津食品行业的老字号品牌。',
       establishedYear: '1927',
       collaborationTools: 8,
@@ -1092,7 +1092,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 2,
       name: '狗不理',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Goubuli%20traditional%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Goubuli%20traditional%20brand%20logo',
       description: '创建于1858年，以特色包子闻名，是天津餐饮行业的代表性老字号。',
       establishedYear: '1858',
       collaborationTools: 12,
@@ -1101,7 +1101,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 3,
       name: '耳朵眼',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Erduoyan%20traditional%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Tianjin%20Erduoyan%20traditional%20brand%20logo',
       description: '创建于1900年，以炸糕和酒类产品闻名，是天津的传统老字号。',
       establishedYear: '1900',
       collaborationTools: 6,
@@ -1110,7 +1110,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 4,
       name: '老美华',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Laomeihua%20traditional%20shoe%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Laomeihua%20traditional%20shoe%20brand%20logo',
       description: '始于民国时期的传统鞋履品牌，以手工缝制与舒适耐穿著称。',
       establishedYear: '1911',
       collaborationTools: 5,
@@ -1119,7 +1119,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 5,
       name: '大福来',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Dafulai%20guobacai%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Dafulai%20guobacai%20brand%20logo',
       description: '以锅巴菜闻名，糊辣香浓、层次丰富，是天津特色早点代表。',
       establishedYear: '1930',
       collaborationTools: 4,
@@ -1128,7 +1128,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 6,
       name: '果仁张',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Guorenzhang%20candied%20chestnut%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Guorenzhang%20candied%20chestnut%20brand%20logo',
       description: '百年坚果品牌，以糖炒栗子香甜饱满闻名，老天津味道的代表。',
       establishedYear: '1906',
       collaborationTools: 6,
@@ -1137,7 +1137,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 7,
       name: '茶汤李',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Chatangli%20sweet%20soup%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Chatangli%20sweet%20soup%20brand%20logo',
       description: '源自清末的茶汤品牌，口感细腻柔滑、甘香回甜，承载城市记忆。',
       establishedYear: '1895',
       collaborationTools: 3,
@@ -1147,7 +1147,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 8,
       name: '利顺德',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Lishunde%20hotel%20heritage%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Lishunde%20hotel%20heritage%20brand%20logo',
       description: '百年酒店品牌，承载天津近代史与文化记忆，适合文旅联名。',
       establishedYear: '1863',
       collaborationTools: 7,
@@ -1157,7 +1157,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 9,
       name: '亨得利表行',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Hengdeli%20watch%20store%20heritage%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Hengdeli%20watch%20store%20heritage%20brand%20logo',
       description: '老牌钟表行品牌，精工与匠艺象征，可开展工艺联名。',
       establishedYear: '1890',
       collaborationTools: 5,
@@ -1167,7 +1167,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 10,
       name: '正兴德茶庄',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Zhengxingde%20tea%20house%20traditional%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Zhengxingde%20tea%20house%20traditional%20brand%20logo',
       description: '历史悠久的茶庄品牌，融合津门茶文化与现代设计。',
       establishedYear: '1908',
       collaborationTools: 4,
@@ -1177,7 +1177,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 11,
       name: '石头门坎素包',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Shitoumenkan%20vegetarian%20bun%20heritage%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Shitoumenkan%20vegetarian%20bun%20heritage%20brand%20logo',
       description: '素包名店，传承传统素馅工艺，可做餐饮联名设计。',
       establishedYear: '1926',
       collaborationTools: 3,
@@ -1187,7 +1187,7 @@ export default function TianjinCreativeActivities() {
     {
       id: 12,
       name: '孙记烧卖',
-      logo: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=square&prompt=Sunji%20shaomai%20traditional%20brand%20logo',
+      logo: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=square&prompt=Sunji%20shaomai%20traditional%20brand%20logo',
       description: '街巷点心品牌，家常美味代表，适合集市活动联名。',
       establishedYear: '1935',
       collaborationTools: 2,
