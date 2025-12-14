@@ -300,9 +300,12 @@ const useMobileGestures = (config: GestureConfig = {}) => {
     
     if (!target || !enabled) return;
     
-    target.addEventListener('touchstart', handleTouchStart, { passive: false });
+    // 优化事件监听器配置
+    // touchstart 和 touchend 使用 passive: true，因为它们不调用 preventDefault
+    target.addEventListener('touchstart', handleTouchStart, { passive: true });
+    // touchmove 使用 passive: false，因为它可能调用 preventDefault
     target.addEventListener('touchmove', handleTouchMove, { passive: false });
-    target.addEventListener('touchend', handleTouchEnd, { passive: false });
+    target.addEventListener('touchend', handleTouchEnd, { passive: true });
     
     return () => {
       if (target) {

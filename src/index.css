@@ -129,19 +129,18 @@ button, input, select, textarea, a, .card, .modal, .notification, .nav-item, .bt
 
 /* 移除不必要的body淡入淡出效果，减少不必要的过渡动画 */
 
-/* 页面切换动画 */
+/* 页面切换动画 - 优化为快速淡入，减少对导航响应的影响 */
 .animate-page-transition {
-  animation: pageTransition 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pageTransition 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: forwards;
 }
 
 @keyframes pageTransition {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -214,6 +213,354 @@ button, input, select, textarea, a, .card, .modal, .notification, .nav-item, .bt
 
 .animate-slide-up-6 {
   animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both;
+}
+
+/* 会员中心卡片样式 - 亮色主题 */
+section.rounded-xl.shadow-lg, article.rounded-xl.shadow-lg {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--border-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+section.rounded-xl.shadow-lg::before, article.rounded-xl.shadow-lg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+section.rounded-xl.shadow-lg:hover::before, article.rounded-xl.shadow-lg:hover::before {
+  opacity: 1;
+}
+
+section.rounded-xl.shadow-lg:hover, article.rounded-xl.shadow-lg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border-primary);
+}
+
+/* 会员套餐卡片悬停效果增强 */
+article.rounded-xl.shadow-lg:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--border-primary);
+}
+
+/* 列表项悬停效果 */
+ul.grid.grid-cols-1.md\:grid-cols-2.gap-4 li {
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid transparent;
+}
+
+ul.grid.grid-cols-1.md\:grid-cols-2.gap-4 li:hover {
+  background-color: var(--bg-hover);
+  transform: translateX(4px);
+  border-color: var(--border-primary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 按钮样式优化 */
+button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+button.bg-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary));
+}
+
+button.bg-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary));
+}
+
+/* 最受欢迎标签样式优化 */
+.bg-primary.text-white.text-center.py-2.font-medium {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* 会员状态卡片样式优化 */
+section.bg-white.rounded-xl.shadow-lg {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--border-primary);
+}
+
+/* 会员权益卡片样式优化 */
+section.bg-white.rounded-xl.shadow-lg {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--border-primary);
+}
+
+/* 常见问题卡片样式优化 */
+section.bg-white.rounded-xl.shadow-lg {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--border-primary);
+}
+
+/* 页面标题样式优化 */
+header.text-center.mb-10 {
+  animation: fadeInDown 0.5s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 卡片进入动画 */
+section.rounded-xl.shadow-lg, article.rounded-xl.shadow-lg {
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+section.rounded-xl.shadow-lg:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+section.rounded-xl.shadow-lg:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+section.rounded-xl.shadow-lg:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+article.rounded-xl.shadow-lg {
+  animation-delay: 0.4s;
+}
+
+article.rounded-xl.shadow-lg:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+section.rounded-xl.shadow-lg:last-child {
+  animation-delay: 0.6s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 详情展开动画 */
+details summary {
+  transition: all 0.3s ease;
+}
+
+details[open] summary {
+  color: var(--color-primary);
+}
+
+details[open] summary span:last-child {
+  transform: rotate(180deg);
+}
+
+details p {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 100px;
+  }
+}
+
+/* 深色主题下的卡片样式优化 */
+.dark section.rounded-xl.shadow-lg, .dark article.rounded-xl.shadow-lg {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 1px solid var(--border-primary);
+}
+
+.dark section.rounded-xl.shadow-lg::before, .dark article.rounded-xl.shadow-lg::before {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+}
+
+/* 深色主题下的列表项样式优化 */
+.dark ul.grid.grid-cols-1.md\:grid-cols-2.gap-4 li {
+  background: var(--bg-secondary);
+}
+
+.dark ul.grid.grid-cols-1.md\:grid-cols-2.gap-4 li:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-secondary);
+}
+
+/* 深色主题下的按钮样式优化 */
+.dark button.bg-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary));
+}
+
+.dark button.bg-primary:hover {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary));
+  opacity: 0.9;
+}
+
+/* 深色主题下的最受欢迎标签样式优化 */
+.dark .bg-primary.text-white.text-center.py-2.font-medium {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+/* 深色主题下的会员中心卡片样式 */
+.dark section.rounded-xl.shadow-lg, .dark article.rounded-xl.shadow-lg {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+.dark section.rounded-xl.shadow-lg:hover, .dark article.rounded-xl.shadow-lg:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* 深色主题下的会员套餐卡片样式 */
+.dark article.rounded-xl.shadow-lg:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+/* 深色主题下的列表项样式 */
+.dark ul.grid.grid-cols-1.md\:grid-cols-2.gap-4 li {
+  color: var(--text-primary);
+}
+
+.dark ul.grid.grid-cols-1.md\:grid-cols-2.gap-4 li:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 深色主题下的文字颜色 */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--text-primary);
+}
+
+.dark p, .dark span.text-gray-600, .dark span.text-gray-500 {
+  color: var(--text-secondary);
+}
+
+/* 深色主题下的按钮样式 */
+.dark button.bg-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.dark button.bg-primary:hover {
+  background-color: var(--color-primary);
+  opacity: 0.9;
+}
+
+/* 深色主题下的会员状态样式 */
+.dark .text-green-500 {
+  color: var(--color-accent);
+}
+
+.dark .text-red-500 {
+  color: #f87171;
+}
+
+/* 深色主题下的复选标记样式 */
+.dark span.text-primary {
+  color: var(--color-primary);
+}
+
+/* 深色主题下的常见问题样式 */
+.dark details summary {
+  color: var(--text-primary);
+}
+
+.dark details p {
+  color: var(--text-secondary);
+}
+
+/* 页面加载动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 应用到所有卡片和章节 */
+section, article {
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* 错开动画延迟 */
+section:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+section:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+section:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+article {
+  animation-delay: 0.4s;
+}
+
+article:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+section:nth-child(5) {
+  animation-delay: 0.6s;
 }
 
 /* 悬停浮动动画 */

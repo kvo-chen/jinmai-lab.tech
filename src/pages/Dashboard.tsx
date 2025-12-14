@@ -64,6 +64,7 @@ export default function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [creatorLevelInfo, setCreatorLevelInfo] = useState(() => achievementService.getCreatorLevelInfo());
   const [achievements, setAchievements] = useState(() => achievementService.getUnlockedAchievements());
+  const [pointsStats, setPointsStats] = useState(() => achievementService.getPointsStats());
   
   // 检查是否已登录
   useEffect(() => {
@@ -148,46 +149,57 @@ export default function Dashboard() {
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <div className="flex flex-col md:flex-row items-center md:items-start">
-            <div className="relative mb-4 md:mb-0 md:mr-6">
-              <img 
-                src={user?.avatar || 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop&prompt=User%20avatar'} 
-                alt={user?.username || '用户头像'} 
-                className="w-24 h-24 rounded-full object-cover border-4 border-red-600"
-                loading="lazy" decoding="async"
-              />
-              <div className="absolute -bottom-2 -right-2 bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold">
-                {creatorLevelInfo.levelProgress}%
+              <div className="relative mb-4 md:mb-0 md:mr-6">
+                <img 
+                  src={user?.avatar || 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop&prompt=User%20avatar'} 
+                  alt={user?.username || '用户头像'} 
+                  className="w-24 h-24 rounded-full object-cover border-4 border-red-600"
+                  loading="lazy" decoding="async"
+                />
+                <div className="absolute -bottom-2 -right-2 bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold">
+                  {creatorLevelInfo.levelProgress}%
+                </div>
               </div>
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-xl font-bold mb-1">{user?.username}</h2>
-                  <div className="flex items-center">
-                    <span className="bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full mr-2">
-                      {creatorLevelInfo.currentLevel.name} {creatorLevelInfo.currentLevel.icon}
-                    </span>
-                    <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {creatorLevelInfo.currentPoints} 积分
-                    </span>
+              
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-xl font-bold mb-1">{user?.username}</h2>
+                    <div className="flex items-center">
+                      <span className="bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full mr-2">
+                        {creatorLevelInfo.currentLevel.name} {creatorLevelInfo.currentLevel.icon}
+                      </span>
+                      <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {creatorLevelInfo.currentPoints} 积分
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    {/* 会员中心入口 */}
+                    <Link 
+                      to="/membership"
+                      className={`mt-3 md:mt-0 px-4 py-2 rounded-lg min-h-[44px] bg-red-600 hover:bg-red-700 text-white transition-colors text-sm flex items-center justify-center`}
+                    >
+                      <i className="fas fa-crown mr-1.5"></i>
+                      会员中心
+                    </Link>
+                    
+                    {/* 中文注释：移动端优化——详情切换按钮触控区统一至少44px，并增加无障碍属性 */}
+                    <button 
+                      onClick={() => setShowCreatorProfile(!showCreatorProfile)}
+                      className={`mt-3 md:mt-0 px-4 py-2 rounded-lg min-h-[44px] ${
+                        isDark 
+                          ? 'bg-gray-700 hover:bg-gray-600' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      } transition-colors text-sm`}
+                      aria-expanded={showCreatorProfile}
+                      aria-label={showCreatorProfile ? '收起创作者详情' : '查看创作者详情'}
+                    >
+                      {showCreatorProfile ? '收起详情' : '查看创作者详情'}
+                    </button>
                   </div>
                 </div>
-                
-                {/* 中文注释：移动端优化——详情切换按钮触控区统一至少44px，并增加无障碍属性 */}
-                <button 
-                  onClick={() => setShowCreatorProfile(!showCreatorProfile)}
-                  className={`mt-3 md:mt-0 px-4 py-2 rounded-lg min-h-[44px] ${
-                    isDark 
-                      ? 'bg-gray-700 hover:bg-gray-600' 
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  } transition-colors text-sm`}
-                  aria-expanded={showCreatorProfile}
-                  aria-label={showCreatorProfile ? '收起创作者详情' : '查看创作者详情'}
-                >
-                  {showCreatorProfile ? '收起详情' : '查看创作者详情'}
-                </button>
-              </div>
               
               {/* 等级进度条 */}
               <div className="mb-4">
@@ -246,7 +258,8 @@ export default function Dashboard() {
                 commercialApplications: [
                   { id: 1, title: '国潮插画设计', brand: '老字号品牌A', status: '洽谈中', date: '2025-11-11' },
                   { id: 2, title: '传统纹样创新', brand: '老字号品牌B', status: '已采纳', date: '2025-11-05', revenue: '¥1,200' },
-                ]
+                ],
+                pointsStats: pointsStats
               }}
               isDark={isDark}
             />

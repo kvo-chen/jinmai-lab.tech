@@ -193,6 +193,39 @@ function createSQLiteTables(db) {
       }
     }
     
+    // 添加会员相关列
+    try {
+      db.exec(`ALTER TABLE users ADD COLUMN membership_level TEXT DEFAULT 'free'`)
+    } catch (e) {
+      if (!e.message.includes('duplicate column name')) {
+        throw e
+      }
+    }
+    
+    try {
+      db.exec(`ALTER TABLE users ADD COLUMN membership_status TEXT DEFAULT 'active'`)
+    } catch (e) {
+      if (!e.message.includes('duplicate column name')) {
+        throw e
+      }
+    }
+    
+    try {
+      db.exec(`ALTER TABLE users ADD COLUMN membership_start INTEGER`)
+    } catch (e) {
+      if (!e.message.includes('duplicate column name')) {
+        throw e
+      }
+    }
+    
+    try {
+      db.exec(`ALTER TABLE users ADD COLUMN membership_end INTEGER`)
+    } catch (e) {
+      if (!e.message.includes('duplicate column name')) {
+        throw e
+      }
+    }
+    
     // 创建收藏表
     db.exec(`
       CREATE TABLE IF NOT EXISTS favorites (
@@ -387,7 +420,12 @@ async function createPostgreSQLTables(pool) {
         age INTEGER,
         tags TEXT,
         created_at BIGINT NOT NULL,
-        updated_at BIGINT NOT NULL
+        updated_at BIGINT NOT NULL,
+        -- 会员相关字段
+        membership_level VARCHAR(20) DEFAULT 'free',
+        membership_status VARCHAR(20) DEFAULT 'active',
+        membership_start BIGINT,
+        membership_end BIGINT
       );
     `)
     
@@ -689,38 +727,227 @@ export const userDB = {
    */
   async createUser(userData) {
     const db = await getDB()
-    const { username, email, password_hash, phone = null, avatar_url = null, interests = null, age = null, tags = null } = userData
+    const { 
+      username, 
+      email, 
+      password_hash, 
+      phone = null, 
+      avatar_url = null, 
+      interests = null, 
+      age = null, 
+      tags = null,
+      membership_level = 'free',
+      membership_status = 'active',
+      membership_start = null,
+      membership_end = null
+    } = userData
     const now = Date.now()
+    const membershipStart = membership_start || now
     
     switch (config.dbType) {
       case DB_TYPE.SQLITE:
         return db.prepare(`
-          INSERT INTO users (username, email, password_hash, phone, avatar_url, interests, age, tags, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO users (
+            username, email, password_hash, phone, avatar_url, interests, age, tags, 
+            membership_level, membership_status, membership_start, membership_end,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           RETURNING id
-        `).get(username, email, password_hash, phone, avatar_url, interests, age, tags, now, now)
+        `).get(
+          username, email, password_hash, phone, avatar_url, interests, age, tags,
+          membership_level, membership_status, membershipStart, membership_end,
+          now, now
+        )
         
       case DB_TYPE.MONGODB:
         const result = await db.collection('users').insertOne({
-          username, email, password_hash, phone, avatar_url, interests, age, tags, created_at: now, updated_at: now
+          username, email, password_hash, phone, avatar_url, interests, age, tags,
+          membership_level, membership_status, membership_start: membershipStart, membership_end,
+          created_at: now, updated_at: now
         })
         return { id: result.insertedId }
         
       case DB_TYPE.POSTGRESQL:
         const { rows } = await db.query(`
-          INSERT INTO users (username, email, password_hash, phone, avatar_url, interests, age, tags, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          INSERT INTO users (
+            username, email, password_hash, phone, avatar_url, interests, age, tags, 
+            membership_level, membership_status, membership_start, membership_end,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
           RETURNING id
-        `, [username, email, password_hash, phone, avatar_url, interests, age, tags, now, now])
+        `, [
+          username, email, password_hash, phone, avatar_url, interests, age, tags,
+          membership_level, membership_status, membershipStart, membership_end,
+          now, now
+        ])
         return rows[0]
         
       case DB_TYPE.NEON_API:
         const neonResult = await db.query(`
-          INSERT INTO users (username, email, password_hash, phone, avatar_url, interests, age, tags, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          INSERT INTO users (
+            username, email, password_hash, phone, avatar_url, interests, age, tags, 
+            membership_level, membership_status, membership_start, membership_end,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
           RETURNING id
-        `, [username, email, password_hash, phone, avatar_url, interests, age, tags, now, now])
+        `, [
+          username, email, password_hash, phone, avatar_url, interests, age, tags,
+          membership_level, membership_status, membershipStart, membership_end,
+          now, now
+        ])
         return neonResult.result.rows[0]
+        
+      default:
+        throw new Error(`不支持的数据库类型: ${config.dbType}`)
+    }
+  },
+  
+  /**
+   * 根据ID更新用户
+   */
+  async updateById(id, updateData) {
+    const db = await getDB()
+    const { 
+      username, email, password_hash, phone, avatar_url, interests, age, tags,
+      membership_level, membership_status, membership_start, membership_end
+    } = updateData
+    const now = Date.now()
+    
+    switch (config.dbType) {
+      case DB_TYPE.SQLITE:
+        // 构建更新语句
+        const updateFields = []
+        const params = []
+        let paramIndex = 1
+        
+        if (username) { updateFields.push(`username = ?`); params.push(username); paramIndex++ }
+        if (email) { updateFields.push(`email = ?`); params.push(email); paramIndex++ }
+        if (password_hash) { updateFields.push(`password_hash = ?`); params.push(password_hash); paramIndex++ }
+        if (phone !== undefined) { updateFields.push(`phone = ?`); params.push(phone); paramIndex++ }
+        if (avatar_url !== undefined) { updateFields.push(`avatar_url = ?`); params.push(avatar_url); paramIndex++ }
+        if (interests !== undefined) { updateFields.push(`interests = ?`); params.push(interests); paramIndex++ }
+        if (age !== undefined) { updateFields.push(`age = ?`); params.push(age); paramIndex++ }
+        if (tags !== undefined) { updateFields.push(`tags = ?`); params.push(tags); paramIndex++ }
+        if (membership_level) { updateFields.push(`membership_level = ?`); params.push(membership_level); paramIndex++ }
+        if (membership_status) { updateFields.push(`membership_status = ?`); params.push(membership_status); paramIndex++ }
+        if (membership_start) { updateFields.push(`membership_start = ?`); params.push(membership_start); paramIndex++ }
+        if (membership_end !== undefined) { updateFields.push(`membership_end = ?`); params.push(membership_end); paramIndex++ }
+        
+        updateFields.push(`updated_at = ?`)
+        params.push(now)
+        params.push(id)
+        
+        if (updateFields.length === 1) {
+          // 只有updated_at被更新，直接返回当前用户
+          return this.findById(id)
+        }
+        
+        const updateSql = `
+          UPDATE users 
+          SET ${updateFields.join(', ')} 
+          WHERE id = ?
+          RETURNING *
+        `
+        
+        return db.prepare(updateSql).get(...params)
+        
+      case DB_TYPE.MONGODB:
+        const updateObj = {}
+        if (username) updateObj.username = username
+        if (email) updateObj.email = email
+        if (password_hash) updateObj.password_hash = password_hash
+        if (phone !== undefined) updateObj.phone = phone
+        if (avatar_url !== undefined) updateObj.avatar_url = avatar_url
+        if (interests !== undefined) updateObj.interests = interests
+        if (age !== undefined) updateObj.age = age
+        if (tags !== undefined) updateObj.tags = tags
+        if (membership_level) updateObj.membership_level = membership_level
+        if (membership_status) updateObj.membership_status = membership_status
+        if (membership_start) updateObj.membership_start = membership_start
+        if (membership_end !== undefined) updateObj.membership_end = membership_end
+        updateObj.updated_at = now
+        
+        const updateResult = await db.collection('users').findOneAndUpdate(
+          { _id: id },
+          { $set: updateObj },
+          { returnDocument: 'after' }
+        )
+        
+        return updateResult.value
+        
+      case DB_TYPE.POSTGRESQL:
+        const pgUpdateFields = []
+        const pgParams = []
+        let pgParamIndex = 1
+        
+        if (username) { pgUpdateFields.push(`username = $${pgParamIndex++}`); pgParams.push(username) }
+        if (email) { pgUpdateFields.push(`email = $${pgParamIndex++}`); pgParams.push(email) }
+        if (password_hash) { pgUpdateFields.push(`password_hash = $${pgParamIndex++}`); pgParams.push(password_hash) }
+        if (phone !== undefined) { pgUpdateFields.push(`phone = $${pgParamIndex++}`); pgParams.push(phone) }
+        if (avatar_url !== undefined) { pgUpdateFields.push(`avatar_url = $${pgParamIndex++}`); pgParams.push(avatar_url) }
+        if (interests !== undefined) { pgUpdateFields.push(`interests = $${pgParamIndex++}`); pgParams.push(interests) }
+        if (age !== undefined) { pgUpdateFields.push(`age = $${pgParamIndex++}`); pgParams.push(age) }
+        if (tags !== undefined) { pgUpdateFields.push(`tags = $${pgParamIndex++}`); pgParams.push(tags) }
+        if (membership_level) { pgUpdateFields.push(`membership_level = $${pgParamIndex++}`); pgParams.push(membership_level) }
+        if (membership_status) { pgUpdateFields.push(`membership_status = $${pgParamIndex++}`); pgParams.push(membership_status) }
+        if (membership_start) { pgUpdateFields.push(`membership_start = $${pgParamIndex++}`); pgParams.push(membership_start) }
+        if (membership_end !== undefined) { pgUpdateFields.push(`membership_end = $${pgParamIndex++}`); pgParams.push(membership_end) }
+        
+        pgUpdateFields.push(`updated_at = $${pgParamIndex++}`)
+        pgParams.push(now)
+        pgParams.push(id)
+        
+        if (pgUpdateFields.length === 1) {
+          // 只有updated_at被更新，直接返回当前用户
+          return this.findById(id)
+        }
+        
+        const pgUpdateSql = `
+          UPDATE users 
+          SET ${pgUpdateFields.join(', ')} 
+          WHERE id = $${pgParamIndex - 1}
+          RETURNING *
+        `
+        
+        const { rows: pgRows } = await db.query(pgUpdateSql, pgParams)
+        return pgRows[0]
+        
+      case DB_TYPE.NEON_API:
+        const neonUpdateFields = []
+        const neonParams = []
+        let neonParamIndex = 1
+        
+        if (username) { neonUpdateFields.push(`username = $${neonParamIndex++}`); neonParams.push(username) }
+        if (email) { neonUpdateFields.push(`email = $${neonParamIndex++}`); neonParams.push(email) }
+        if (password_hash) { neonUpdateFields.push(`password_hash = $${neonParamIndex++}`); neonParams.push(password_hash) }
+        if (phone !== undefined) { neonUpdateFields.push(`phone = $${neonParamIndex++}`); neonParams.push(phone) }
+        if (avatar_url !== undefined) { neonUpdateFields.push(`avatar_url = $${neonParamIndex++}`); neonParams.push(avatar_url) }
+        if (interests !== undefined) { neonUpdateFields.push(`interests = $${neonParamIndex++}`); neonParams.push(interests) }
+        if (age !== undefined) { neonUpdateFields.push(`age = $${neonParamIndex++}`); neonParams.push(age) }
+        if (tags !== undefined) { neonUpdateFields.push(`tags = $${neonParamIndex++}`); neonParams.push(tags) }
+        if (membership_level) { neonUpdateFields.push(`membership_level = $${neonParamIndex++}`); neonParams.push(membership_level) }
+        if (membership_status) { neonUpdateFields.push(`membership_status = $${neonParamIndex++}`); neonParams.push(membership_status) }
+        if (membership_start) { neonUpdateFields.push(`membership_start = $${neonParamIndex++}`); neonParams.push(membership_start) }
+        if (membership_end !== undefined) { neonUpdateFields.push(`membership_end = $${neonParamIndex++}`); neonParams.push(membership_end) }
+        
+        neonUpdateFields.push(`updated_at = $${neonParamIndex++}`)
+        neonParams.push(now)
+        neonParams.push(id)
+        
+        if (neonUpdateFields.length === 1) {
+          // 只有updated_at被更新，直接返回当前用户
+          return this.findById(id)
+        }
+        
+        const neonUpdateSql = `
+          UPDATE users 
+          SET ${neonUpdateFields.join(', ')} 
+          WHERE id = $${neonParamIndex - 1}
+          RETURNING *
+        `
+        
+        const neonUpdateResult = await db.query(neonUpdateSql, neonParams)
+        return neonUpdateResult.result.rows[0]
         
       default:
         throw new Error(`不支持的数据库类型: ${config.dbType}`)

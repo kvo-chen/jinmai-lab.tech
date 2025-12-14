@@ -19,129 +19,9 @@ const categories = [
   '全部', '国潮设计', '纹样设计', '品牌设计', '非遗传承', '插画设计', '工艺创新', '老字号品牌', 'IP设计', '包装设计'
 ];
 
-// 中文注释：为探索页追加一批“视频作品”，用于丰富内容展示
-mockWorks.push(
-  {
-    id: 200,
-    title: '狗不理品牌·短片包装片头',
-    creator: '动效设计师小谷',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&h=338&fit=crop',
-    likes: 356,
-    comments: 41,
-    views: 1986,
-    category: '动效与视频',
-    tags: ['狗不理', '视频', '动效'],
-    featured: true,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    duration: '02:10',
-  },
-  {
-    id: 201,
-    title: '桂发祥·联名宣传短视频',
-    creator: '视频导演阿宁',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=338&fit=crop',
-    likes: 289,
-    comments: 26,
-    views: 1438,
-    category: '老字号品牌',
-    tags: ['桂发祥', '联名', '视频'],
-    featured: false,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    duration: '01:35',
-  },
-  {
-    id: 202,
-    title: '同仁堂·草本文化品牌片',
-    creator: '视频设计师小药',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600&h=338&fit=crop',
-    likes: 318,
-    comments: 28,
-    views: 1672,
-    category: '品牌设计',
-    tags: ['同仁堂', '视频', '品牌片'],
-    featured: true,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    duration: '02:45',
-  },
-  {
-    id: 203,
-    title: '海河城市·纪念片段剪辑',
-    creator: '剪辑师小河',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=338&fit=crop',
-    likes: 244,
-    comments: 21,
-    views: 1206,
-    category: '品牌设计',
-    tags: ['海河', '纪念', '视频'],
-    featured: false,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    duration: '00:15',
-  },
-  {
-    id: 204,
-    title: '耳朵眼炸糕·制作工艺记录片',
-    creator: '纪录片导演小耳',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=338&fit=crop',
-    likes: 267,
-    comments: 23,
-    views: 1350,
-    category: '老字号品牌',
-    tags: ['耳朵眼', '纪录片', '工艺'],
-    featured: false,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    duration: '00:20',
-  },
-  {
-    id: 205,
-    title: '泥人张·IP角色动画短片',
-    creator: '动画师小张',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=600&h=338&fit=crop',
-    likes: 302,
-    comments: 32,
-    views: 1580,
-    category: 'IP设计',
-    tags: ['泥人张', '动画', 'IP'],
-    featured: true,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    duration: '00:21',
-  },
-  {
-    id: 206,
-    title: '果仁张·新产品宣传视频',
-    creator: '广告导演小果',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=600&h=338&fit=crop',
-    likes: 258,
-    comments: 20,
-    views: 1270,
-    category: '老字号品牌',
-    tags: ['果仁张', '广告', '宣传'],
-    featured: false,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    duration: '00:15',
-  },
-  {
-    id: 207,
-    title: '杨柳青年画·数字动画展示',
-    creator: '数字艺术家小杨',
-    creatorAvatar: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop',
-    thumbnail: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600&h=338&fit=crop',
-    likes: 321,
-    comments: 35,
-    views: 1650,
-    category: '插画设计',
-    tags: ['杨柳青年画', '数字动画', '展示'],
-    featured: true,
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-    duration: '00:19',
-  }
-);
+// 移除视频作品追加，减少初始数据量，提高页面加载速度
+// 视频作品数据将在后续通过异步方式加载，或者放在单独的页面中展示
+// 这样可以减少初始加载时间，提高页面跳转速度
 
 export default function Explore() {
   const { theme } = useTheme();
@@ -175,29 +55,14 @@ export default function Explore() {
   // 优化分页大小，增加每次加载的作品数量，减少滚动时的加载频率
   const pageSize = 18; // 从12调整为18
   
-  // 计算标签计数
-  const tagCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    mockWorks.forEach(work => {
-      work.tags.forEach(tag => {
-        counts[tag] = (counts[tag] || 0) + 1;
-      });
-    });
-    return counts;
+  // 简化标签处理逻辑，减少计算复杂度
+  // 移除复杂的标签计数和排序逻辑
+  const popularTags = useMemo(() => {
+    // 直接返回固定的热门标签，减少计算复杂度
+    return ['老字号品牌', '国潮设计', '非遗传承', 'IP设计', '品牌设计', '插画设计', '工艺创新', '纹样设计', '包装设计', '共创'];
   }, []);
   
-  // 获取所有标签并按使用频率排序
-  const allTags = useMemo(() => {
-    const tags = Array.from(new Set(mockWorks.flatMap(work => work.tags)));
-    return tags.sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0));
-  }, [tagCounts]);
-  
-  // 热门标签（前20个）
-  const popularTags = useMemo(() => {
-    return allTags.slice(0, 20);
-  }, [allTags]);
-  
-  // AI标签推荐（模拟数据）
+  // 简化AI标签推荐，直接返回固定数据
   const aiTagRecommendations = useMemo(() => {
     return {
       hits: ['老字号品牌', '国潮设计', '非遗传承'],
@@ -205,19 +70,12 @@ export default function Explore() {
     };
   }, []);
   
-  // 显示的热门标签
-  const popularTagsDisplay = useMemo(() => {
+  // 合并热门标签和所有标签的显示逻辑，减少重复计算
+  const filteredTags = useMemo(() => {
     if (!tagQuery) return popularTags;
     const query = tagQuery.toLowerCase();
     return popularTags.filter(tag => tag.toLowerCase().includes(query));
   }, [popularTags, tagQuery]);
-  
-  // 显示的所有标签
-  const displayTagList = useMemo(() => {
-    if (!tagQuery) return allTags;
-    const query = tagQuery.toLowerCase();
-    return allTags.filter(tag => tag.toLowerCase().includes(query));
-  }, [allTags, tagQuery]);
   
   // 加载收藏标签
   useEffect(() => {
@@ -407,17 +265,8 @@ export default function Explore() {
     window.history.replaceState({}, '', url.toString());
   };
 
-  // 优化滚动性能，添加滚动事件监听
-  useEffect(() => {
-    const handleScroll = () => {
-      // 可以添加一些滚动优化逻辑
-    };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  // 移除空的滚动事件监听，减少不必要的事件绑定
+  
   
   // 处理作品点击
   const handleWorkClick = (id: number) => {
@@ -505,105 +354,52 @@ export default function Explore() {
     <div className="min-h-screen bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
       {/* 顶部红色框 - 优化版 */}
       <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-red-700 py-12 px-8 rounded-3xl mx-4 mt-4 shadow-2xl">
-        {/* 动态装饰性背景元素 */}
-        <motion.div 
-          className="absolute top-0 right-0 w-48 h-48 bg-white/15 rounded-full blur-3xl -mr-24 -mt-24"
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.5, 0.3],
-            x: [0, 10, 0],
-            y: [0, -10, 0]
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-0 left-0 w-36 h-36 bg-white/15 rounded-full blur-3xl -ml-18 -mb-18"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.4, 0.2],
-            x: [0, -15, 0],
-            y: [0, 15, 0]
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        ></motion.div>
-        {/* 新增中心装饰元素 */}
+        {/* 静态装饰性背景元素 */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/15 rounded-full blur-3xl -mr-24 -mt-24"></div>
+        <div className="absolute bottom-0 left-0 w-36 h-36 bg-white/15 rounded-full blur-3xl -ml-18 -mb-18"></div>
+        {/* 中心装饰元素 */}
         <div className="absolute top-1/2 left-1/2 w-[150%] h-[150%] bg-gradient-to-r from-red-500/20 to-pink-500/20 blur-3xl -translate-x-1/2 -translate-y-1/2 rotate-45"></div>
         
         <div className="container mx-auto relative z-10">
-          {/* 标题和副标题 - 增强动画效果 */}
-          <motion.div 
-            className="mb-12 text-center md:text-left"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <motion.h1 
+          {/* 标题和副标题 - 简化动画 */}
+          <div className="mb-12 text-center md:text-left">
+            <h1 
               className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg leading-tight"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
             >
               探索中国传统品牌新创意
-            </motion.h1>
-            <motion.p 
+            </h1>
+            <p 
               className="text-white/95 mt-4 text-base md:text-lg max-w-2xl mx-auto md:mx-0 leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
             >
               发现来自全国各地的品牌设计作品，感受传统与现代的完美融合
-            </motion.p>
-          </motion.div>
+            </p>
+          </div>
           
-          {/* 标签区 - 优化版 */}
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-          >
+          {/* 标签区 - 简化动画 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { title: '精选', subtitle: '优选', category: '全部', icon: '✨' },
               { title: '风格', subtitle: '融合', category: '国潮设计', icon: '🎨' },
               { title: '效率', subtitle: '提升', category: '工艺创新', icon: '⚡' },
               { title: '协作', subtitle: '共创', category: 'IP设计', icon: '🤝' }
             ].map((item, index) => (
-              <motion.button
+              <button
                 key={index}
-                whileHover={{ 
-                  scale: 1.06, 
-                  y: -6,
-                  boxShadow: "0 12px 30px -10px rgba(220, 38, 38, 0.5)"
-                }}
-                whileTap={{ scale: 0.98 }}
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: 0.7 + index * 0.1, 
-                  ease: "easeOut",
-                  whileHover: { duration: 0.3 },
-                  whileTap: { duration: 0.1 }
-                }}
-                className="px-6 py-5 bg-gradient-to-r from-red-700/95 to-red-800/95 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-red-900/30 hover:border-red-800/50 transform hover:bg-red-600/90 backdrop-blur-sm group"
+                className="px-6 py-5 bg-gradient-to-r from-red-700/95 to-red-800/95 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-red-900/30 hover:border-red-800/50 hover:bg-red-600/90 backdrop-blur-sm group"
                 onClick={() => setSelectedCategory(item.category)}
                 aria-label={`查看${item.category}作品`}
               >
-                {/* 新增图标 */}
-                <motion.div 
-                  className="text-xl mb-2"
-                  whileHover={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
-                  transition={{ duration: 0.5 }}
-                >
+                {/* 图标 */}
+                <div className="text-xl mb-2">
                   {item.icon}
-                </motion.div>
+                </div>
                 <div className="font-semibold text-lg">{item.title}</div>
                 <div className="text-xs opacity-90 mt-1">{item.subtitle}</div>
-                {/* 新增底部渐变光效 */}
+                {/* 底部渐变光效 */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </motion.button>
+              </button>
             ))}
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -613,12 +409,7 @@ export default function Explore() {
           <div className="flex-1 max-w-2xl">
             <div className="relative">
               {showSearchBar ? (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="flex"
-                >
+                <div className="flex">
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -650,7 +441,7 @@ export default function Explore() {
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
-                </motion.div>
+                </div>
               ) : (
                 <button
                   onClick={() => setShowSearchBar(true)}
@@ -718,13 +509,11 @@ export default function Explore() {
           <div className="relative overflow-hidden">
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {featuredWorks.map((work) => (
-                <motion.div
-                  key={work.id}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex-shrink-0 w-full sm:w-96 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all cursor-pointer"
-                  onClick={() => navigate(`/explore/${work.id}`)}
-                >
+                <div
+                key={work.id}
+                className="flex-shrink-0 w-full sm:w-96 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all cursor-pointer"
+                onClick={() => navigate(`/explore/${work.id}`)}
+              >
                   <div className="relative">
                     {work.videoUrl ? (
                       <div className="relative">
@@ -806,9 +595,9 @@ export default function Explore() {
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                </div>
+                ))}
+              </div>
           </div>
         </div>
 
@@ -871,10 +660,7 @@ export default function Explore() {
           
           {/* 标签筛选面板 */}
           {tagsOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+            <div
               className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-700 p-4 border border-gray-300 dark:border-gray-700"
               ref={tagsContainerRef}
             >
@@ -928,7 +714,7 @@ export default function Explore() {
               <div className="mb-4">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">热门标签</h4>
                 <div className="flex flex-wrap gap-2">
-                  {popularTagsDisplay.map(tag => (
+                  {filteredTags.map(tag => (
                     <div key={`pop-${tag}`} className="inline-flex items-center gap-1">
                       <button
                         onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
@@ -938,7 +724,7 @@ export default function Explore() {
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
-                        {renderHighlightedTag(tag, tagQuery)}<span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({tagCounts[tag] ?? 0})</span>
+                        {renderHighlightedTag(tag, tagQuery)}
                       </button>
                       <button onClick={() => toggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
                         <i className="far fa-star"></i>
@@ -984,23 +770,23 @@ export default function Explore() {
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">所有标签</h4>
                 <div className="max-h-48 overflow-y-auto pr-2">
                   <div className="flex flex-wrap gap-2">
-                    {displayTagList.map(tag => (
-                      <div key={`all-${tag}`} className="inline-flex items-center gap-1">
-                        <button
-                          onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                          className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                            selectedTags.includes(tag)
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {renderHighlightedTag(tag, tagQuery)}<span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({tagCounts[tag] ?? 0})</span>
-                        </button>
-                        <button onClick={() => toggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
-                          <i className="far fa-star"></i>
-                        </button>
-                      </div>
-                    ))}
+                    {filteredTags.map(tag => (
+                    <div key={`all-${tag}`} className="inline-flex items-center gap-1">
+                      <button
+                        onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          selectedTags.includes(tag)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {renderHighlightedTag(tag, tagQuery)}
+                      </button>
+                      <button onClick={() => toggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
+                        <i className="far fa-star"></i>
+                      </button>
+                    </div>
+                  ))}
                   </div>
                 </div>
               </div>
@@ -1019,9 +805,9 @@ export default function Explore() {
                   完成
                 </button>
               </div>
-            </motion.div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
 
         {/* 作品网格 */}
         <div id="works-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1068,11 +854,8 @@ export default function Explore() {
           ) : (
             // 作品列表
             pagedWorks.map((work, index) => (
-              <motion.div
+              <div
                 key={work.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
                 className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md dark:shadow-gray-700 hover:shadow-lg dark:hover:shadow-gray-600 transition-all duration-300 cursor-pointer"
                 onClick={() => navigate(`/explore/${work.id}`)}
               >
@@ -1224,7 +1007,7 @@ export default function Explore() {
                     应用到创作中心
                   </button>
                 </div>
-              </motion.div>
+              </div>
             ))
           )}
         </div>

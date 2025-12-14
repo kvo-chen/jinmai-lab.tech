@@ -5,6 +5,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 // 定义粒子行为类型
 type ParticleBehavior = 'spiral' | 'explosion' | 'wave' | 'orbit' | 'chaos' | 'default';
 
+// 定义交互模式类型
+type InteractionMode = 'attract' | 'repel' | 'vortex' | 'gather';
+
 // 定义粒子系统属性接口
 export interface ParticleSystemProps {
   model?: 'heart' | 'flower' | 'saturn' | 'buddha' | 'firework' | 'baozi';
@@ -139,12 +142,15 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
   const [isTouching, setIsTouching] = useState(false);
   const [mouse3DPosition, setMouse3DPosition] = useState(new THREE.Vector3());
   const [bloomScale, setBloomScale] = useState(1.0); // 绽放收缩缩放比例
+  const [interactionMode, setInteractionMode] = useState<InteractionMode>('attract'); // 交互模式：吸引、排斥、漩涡、聚集
   const particlesRef = useRef<THREE.Points>(null);
   const raycaster = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
   const bloomSpeed = 0.05; // 绽放收缩速度
   const mouseVelocityRef = useRef(new THREE.Vector3()); // 鼠标速度
   const prevMouse3DPositionRef = useRef(new THREE.Vector3()); // 上一帧鼠标位置
+  const mouseVelocityHistoryRef = useRef<THREE.Vector3[]>([]); // 鼠标速度历史，用于加权平均
+  const maxVelocityHistoryLength = 5; // 速度历史最大长度
   const particleVelocitiesRef = useRef<Float32Array>(new Float32Array(particleCount * 3)); // 粒子速度
   const animationFrameRef = useRef<number>(0); // 动画帧ID引用
   const performanceStatsRef = useRef({
@@ -153,6 +159,7 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     particleCount: 0,
     lastUpdate: Date.now()
   }); // 性能统计
+  const gatherPositionRef = useRef<THREE.Vector3 | null>(null); // 聚集模式下的目标位置
   
   // 统一的指针位置处理函数
   const updatePointerPosition = (clientX: number, clientY: number) => {
@@ -179,6 +186,34 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     // 鼠标事件处理
     const handleMouseDown = (event: MouseEvent) => {
       setIsMouseDown(true);
+      // 点击切换交互模式（吸引 → 排斥 → 漩涡 → 聚集 → 吸引）
+      if (event.button === 0) { // 左键点击
+        setInteractionMode(prevMode => {
+          switch (prevMode) {
+            case 'attract': return 'repel';
+            case 'repel': return 'vortex';
+            case 'vortex': return 'gather';
+            case 'gather':
+              // 聚集模式：记录点击位置
+              const rect = gl.domElement.getBoundingClientRect();
+              const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+              const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+              
+              mouseRef.current.x = x;
+              mouseRef.current.y = y;
+              
+              raycaster.current.setFromCamera(mouseRef.current, camera);
+              const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+              const intersectPoint = new THREE.Vector3();
+              
+              if (raycaster.current.ray.intersectPlane(plane, intersectPoint)) {
+                gatherPositionRef.current = intersectPoint;
+              }
+              return 'attract';
+            default: return 'attract';
+          }
+        });
+      }
     };
     
     const handleMouseMove = (event: MouseEvent) => {
@@ -354,7 +389,7 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     
     // 重新初始化粒子速度数组
     particleVelocitiesRef.current = new Float32Array(optimizedParticleCount * 3);
-  }, [model, color, optimizedParticleCount, shapeIntensity, colorVariation, baseColor]);
+  }, [model, optimizedParticleCount, shapeIntensity, colorVariation, baseColor]);
   
   // 粒子几何体
   const particlesGeometry = useMemo(() => {
@@ -370,7 +405,7 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     return geometry;
   }, [positions, colors, optimizedParticleCount]);
   
-  // 粒子材质 - 进一步优化以减少闪烁和提高性能
+  // 粒子材质 - 优化以减少闪烁和提高性能，支持鼠标悬停效果
   const particlesMaterial = useMemo(() => {
     // 降低所有设备的材质复杂度，减少闪烁
     const isLowPerformance = devicePerformance.isLowEndDevice || devicePerformance.isMediumEndDevice;
@@ -380,7 +415,7 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
       ? 0.05 + (particleSize - 0.5) * (0.2 / 2.5) // 粒子艺术页面使用更大的粒子
       : 0.01 + (particleSize - 0.5) * (0.1 / 2.5); // 其他场景保持较小粒子
     
-    // 性能优先的材质设置
+    // 性能优先的材质设置，支持粒子大小衰减
     const material = new THREE.PointsMaterial({
       size: mappedSize,
       vertexColors: true,
@@ -459,7 +494,11 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     const particleSystem = particlesRef.current;
     const geometry = particleSystem.geometry as THREE.BufferGeometry;
     const positionAttribute = geometry.attributes.position as THREE.BufferAttribute;
+    const sizeAttribute = geometry.attributes.size as THREE.BufferAttribute;
+    const colorAttribute = geometry.attributes.color as THREE.BufferAttribute;
     const positions = positionAttribute.array as Float32Array;
+    const sizes = sizeAttribute.array as Float32Array;
+    const colors = colorAttribute.array as Float32Array;
     const time = state.clock.elapsedTime;
     
     // 调整旋转速度，根据性能动态调整
@@ -472,7 +511,26 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     // 只在鼠标按下或触摸时更新鼠标速度，减少计算量
     const isInteracting = isMouseDown || isTouching;
     if (isInteracting) {
-      mouseVelocityRef.current.subVectors(mouse3DPosition, prevMouse3DPositionRef.current).divideScalar(delta);
+      // 计算当前鼠标速度
+      const currentVelocity = new THREE.Vector3().subVectors(mouse3DPosition, prevMouse3DPositionRef.current).divideScalar(delta);
+      
+      // 将当前速度添加到历史记录
+      mouseVelocityHistoryRef.current.push(currentVelocity);
+      
+      // 保持历史记录长度
+      if (mouseVelocityHistoryRef.current.length > maxVelocityHistoryLength) {
+        mouseVelocityHistoryRef.current.shift();
+      }
+      
+      // 使用加权平均计算平滑速度（最近的速度权重更高）
+      mouseVelocityRef.current.set(0, 0, 0);
+      const totalWeight = mouseVelocityHistoryRef.current.length * (mouseVelocityHistoryRef.current.length + 1) / 2;
+      
+      mouseVelocityHistoryRef.current.forEach((vel, index) => {
+        const weight = (index + 1) / totalWeight;
+        mouseVelocityRef.current.add(vel.clone().multiplyScalar(weight));
+      });
+      
       prevMouse3DPositionRef.current.copy(mouse3DPosition);
     }
     
@@ -520,32 +578,74 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
       positions[index + 1] += (scaledY - y) * scaleSmoothness;
       positions[index + 2] += (scaledZ - z) * scaleSmoothness;
       
-      // 3. 鼠标/触摸交互效果 - 优化计算
-      if (isInteracting) {
-        // 计算粒子到鼠标位置的距离平方（避免开方运算）
-        const dx = x - mouseVector.x;
-        const dy = y - mouseVector.y;
-        const dz = z - mouseVector.z;
-        const distanceSquared = dx * dx + dy * dy + dz * dz;
-        
-        // 鼠标引力效果 - 粒子被鼠标吸引
-        if (distanceSquared < mouseInfluenceDistanceSquared) {
-          // 简化的引力计算，避免使用向量对象
-          const distance = Math.sqrt(distanceSquared);
-          const normalizedX = dx / distance;
-          const normalizedY = dy / distance;
-          const normalizedZ = dz / distance;
+      // 3. 鼠标/触摸交互效果 - 支持多种交互模式
+        if (isInteracting || interactionMode === 'gather' && gatherPositionRef.current) {
+          let targetPos = mouseVector;
           
-          const attractionForce = devicePerformance.isLowEndDevice ? 0.02 : 0.03; // 低性能设备减小引力
-          const forceX = -normalizedX * attractionForce * animationSpeed * delta * 60;
-          const forceY = -normalizedY * attractionForce * animationSpeed * delta * 60;
-          const forceZ = -normalizedZ * attractionForce * animationSpeed * delta * 60;
+          // 聚集模式：使用固定的聚集位置
+          if (interactionMode === 'gather' && gatherPositionRef.current) {
+            targetPos = gatherPositionRef.current;
+          }
           
-          positions[index] += forceX;
-          positions[index + 1] += forceY;
-          positions[index + 2] += forceZ;
+          // 计算粒子到目标位置的距离平方（避免开方运算）
+          const dx = x - targetPos.x;
+          const dy = y - targetPos.y;
+          const dz = z - targetPos.z;
+          const distanceSquared = dx * dx + dy * dy + dz * dz;
+          
+          if (distanceSquared < mouseInfluenceDistanceSquared) {
+            // 简化的力计算，避免使用向量对象
+            const distance = Math.sqrt(distanceSquared);
+            const normalizedX = dx / distance;
+            const normalizedY = dy / distance;
+            const normalizedZ = dz / distance;
+            
+            let forceX = 0, forceY = 0, forceZ = 0;
+            const baseForce = devicePerformance.isLowEndDevice ? 0.02 : 0.03; // 基础力强度
+            const forceScale = animationSpeed * delta * 60;
+            
+            switch (interactionMode) {
+              case 'attract':
+                // 吸引模式：粒子被目标吸引
+                forceX = -normalizedX * baseForce * forceScale;
+                forceY = -normalizedY * baseForce * forceScale;
+                forceZ = -normalizedZ * baseForce * forceScale;
+                break;
+                
+              case 'repel':
+                // 排斥模式：粒子被目标排斥
+                forceX = normalizedX * baseForce * forceScale * 1.5; // 排斥力更强
+                forceY = normalizedY * baseForce * forceScale * 1.5;
+                forceZ = normalizedZ * baseForce * forceScale * 1.5;
+                break;
+                
+              case 'vortex':
+                // 漩涡模式：粒子围绕目标旋转
+                const vortexForce = baseForce * 2.0 * forceScale;
+                // 计算垂直于粒子到目标连线的力
+                forceX = normalizedY * vortexForce;
+                forceY = -normalizedX * vortexForce;
+                // 添加轻微的吸引力，使粒子保持在漩涡中
+                forceX -= normalizedX * baseForce * 0.5 * forceScale;
+                forceY -= normalizedY * baseForce * 0.5 * forceScale;
+                forceZ -= normalizedZ * baseForce * 0.5 * forceScale;
+                break;
+                
+              case 'gather':
+                // 聚集模式：粒子快速向目标位置聚集
+                const gatherForce = baseForce * 2.5 * forceScale;
+                forceX = -normalizedX * gatherForce;
+                forceY = -normalizedY * gatherForce;
+                forceZ = -normalizedZ * gatherForce;
+                break;
+            }
+            
+            // 应用力到粒子
+            positions[index] += forceX;
+            positions[index + 1] += forceY;
+            positions[index + 2] += forceZ;
+          }
         }
-      }
       
       // 4. 鼠标速度惯性效果 - 根据性能调整
       if (!devicePerformance.isLowEndDevice && mouseVelocity.length() > 0.15) { // 提高阈值，减少计算量
@@ -568,6 +668,46 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
           particleAges[i] = 0;
           particleLifespans[i] = 2 + Math.random() * 3; // 延长生命周期，减少重置频率
         }
+      }
+      
+      // 6. 鼠标悬停效果 - 粒子靠近鼠标时放大并高亮
+      const hoverDistanceThreshold = 1.5; // 悬停检测距离
+      const dx = x - mouseVector.x;
+      const dy = y - mouseVector.y;
+      const dz = z - mouseVector.z;
+      const distanceToMouse = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      
+      if (distanceToMouse < hoverDistanceThreshold) {
+        // 靠近鼠标：放大粒子并高亮
+        const hoverIntensity = 1.0 - distanceToMouse / hoverDistanceThreshold;
+        const targetSize = 1.0 + hoverIntensity * 2.0; // 最大放大3倍
+        const targetBrightness = 1.0 + hoverIntensity * 0.5; // 提高亮度50%
+        
+        // 平滑过渡大小
+        sizes[i] += (targetSize - sizes[i]) * 0.1;
+        
+        // 平滑过渡颜色亮度
+        const colorIndex = i * 3;
+        const originalColor = new THREE.Color(
+          colors[colorIndex] / targetBrightness,
+          colors[colorIndex + 1] / targetBrightness,
+          colors[colorIndex + 2] / targetBrightness
+        );
+        
+        colors[colorIndex] = Math.min(1.0, originalColor.r * targetBrightness);
+        colors[colorIndex + 1] = Math.min(1.0, originalColor.g * targetBrightness);
+        colors[colorIndex + 2] = Math.min(1.0, originalColor.b * targetBrightness);
+      } else {
+        // 远离鼠标：恢复原始大小和颜色
+        const originalSize = 0.8 + Math.random() * 0.4;
+        sizes[i] += (originalSize - sizes[i]) * 0.1;
+        
+        // 恢复原始颜色亮度 - 使用baseColor作为原始颜色
+        const colorIndex = i * 3;
+        const colorVariationFactor = (Math.random() - 0.5) * 0.2; // 使用小的颜色变化
+        colors[colorIndex] = Math.max(0, Math.min(1, baseColor.r + colorVariationFactor));
+        colors[colorIndex + 1] = Math.max(0, Math.min(1, baseColor.g + colorVariationFactor));
+        colors[colorIndex + 2] = Math.max(0, Math.min(1, baseColor.b + colorVariationFactor));
       }
       
       // 6. 简化的粒子行为，减少动画复杂度
@@ -620,10 +760,18 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({
     }
     
     // 衰减鼠标速度，创建平滑的惯性效果
-    mouseVelocityRef.current.multiplyScalar(devicePerformance.isLowEndDevice ? 0.85 : 0.9); // 低性能设备更快衰减
+    // 降低衰减率，延长惯性运动时间
+    mouseVelocityRef.current.multiplyScalar(devicePerformance.isLowEndDevice ? 0.92 : 0.95); // 低性能设备更快衰减，高性能设备延长惯性
     
-    // 更新几何体
+    // 清空速度历史记录，避免影响下一次交互
+    if (!isInteracting) {
+      mouseVelocityHistoryRef.current.length = 0;
+    }
+    
+    // 更新几何体属性
     positionAttribute.needsUpdate = true;
+    sizeAttribute.needsUpdate = true; // 更新粒子大小属性
+    colorAttribute.needsUpdate = true; // 更新粒子颜色属性
   });
   
   return (

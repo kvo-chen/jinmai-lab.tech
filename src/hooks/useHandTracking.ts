@@ -66,9 +66,11 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
     setIsLoading(true);
     setError(null);
 
-    try {
+    // 保存原始console.log到ref以便恢复
+    if (!originalConsoleLogRef.current) {
+      originalConsoleLogRef.current = console.log;
+      
       // 临时拦截console.log，过滤WebAssembly内存地址日志
-      const originalConsoleLog = console.log;
       console.log = function(...args) {
         // 过滤掉看起来像内存地址的日志
         let isMemoryAddressLog = false;
@@ -76,88 +78,83 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
         // 将所有参数转换为字符串，便于统一检查
         const allArgsString = args.map(arg => String(arg)).join(' ');
         
-        // 1. 检查是否是包含多个内存地址的数组字符串，如：[0xc00b795760 0xc00b795790 ...]
-        const bracketedMemoryAddressPattern = /^\[(\s*0x[0-9a-f]{8,}\s*){3,}\]$/i;
+        // 优化的正则表达式，匹配各种格式的内存地址日志
+        const memoryAddressRegex = /0x[0-9a-f]{8,}/gi;
+        const bracketedMemoryAddressRegex = /^\[(\s*0x[0-9a-f]{8,}\s*)+\]$/i;
+        const pureMemoryAddressRegex = /^0x[0-9a-f]{8,}$/i;
         
-        // 2. 检查是否是纯内存地址格式，如：0xc00b795760
-        const pureMemoryAddressPattern = /^0x[0-9a-f]{8,}$/i;
+        // 检查字符串中是否包含多个内存地址
+        const memoryAddressCount = (allArgsString.match(memoryAddressRegex) || []).length;
+        if (memoryAddressCount >= 2) {
+          isMemoryAddressLog = true;
+        }
         
-        // 3. 检查是否是多个独立的内存地址参数
-        const multipleMemoryAddresses = args.length >= 3 && args.every(arg => {
-          const argStr = String(arg);
-          return pureMemoryAddressPattern.test(argStr);
-        });
+        // 检查是否是括号包裹的内存地址数组
+        if (bracketedMemoryAddressRegex.test(allArgsString)) {
+          isMemoryAddressLog = true;
+        }
         
         // 检查每个参数
         for (const arg of args) {
           const argStr = String(arg);
           
-          // 检查字符串形式的内存地址数组
-          if (bracketedMemoryAddressPattern.test(argStr)) {
-            isMemoryAddressLog = true;
-            break;
-          }
-          
           // 检查纯内存地址字符串
-          if (pureMemoryAddressPattern.test(argStr)) {
+          if (pureMemoryAddressRegex.test(argStr)) {
             isMemoryAddressLog = true;
             break;
           }
           
           // 检查实际的数组参数，可能包含多个内存地址
           if (Array.isArray(arg)) {
-            // 如果数组长度大于等于3，且所有元素都是内存地址，过滤
-            if (arg.length >= 3) {
-              const allAreMemoryAddresses = arg.every(item => {
-                const itemStr = String(item);
-                return pureMemoryAddressPattern.test(itemStr) || 
-                       (typeof item === 'number' && item > 0 && item.toString(16).length >= 8);
-              });
-              if (allAreMemoryAddresses) {
-                isMemoryAddressLog = true;
-                break;
+            // 如果数组包含多个内存地址，过滤
+            let arrayMemoryAddressCount = 0;
+            for (const item of arg) {
+              if (pureMemoryAddressRegex.test(String(item)) || 
+                  (typeof item === 'number' && item > 0 && item.toString(16).length >= 8)) {
+                arrayMemoryAddressCount++;
               }
+            }
+            if (arrayMemoryAddressCount >= 2) {
+              isMemoryAddressLog = true;
+              break;
             }
           }
           
           // 检查对象中是否包含大量内存地址
           if (typeof arg === 'object' && arg !== null) {
-            const objStr = JSON.stringify(arg);
-            const memoryAddressCount = (objStr.match(/0x[0-9a-f]{8,}/gi) || []).length;
-            if (memoryAddressCount >= 3) {
-              isMemoryAddressLog = true;
-              break;
+            try {
+              const objStr = JSON.stringify(arg);
+              const objMemoryAddressCount = (objStr.match(memoryAddressRegex) || []).length;
+              if (objMemoryAddressCount >= 2) {
+                isMemoryAddressLog = true;
+                break;
+              }
+            } catch (e) {
+              // 忽略JSON.stringify错误
             }
           }
         }
         
         // 检查是否是多个独立的内存地址参数
+        const multipleMemoryAddresses = args.length >= 2 && args.every(arg => {
+          const argStr = String(arg);
+          return pureMemoryAddressRegex.test(argStr);
+        });
         if (multipleMemoryAddresses) {
           isMemoryAddressLog = true;
         }
         
-        // 检查字符串中是否包含3个以上内存地址
-        const memoryAddressCount = (allArgsString.match(/0x[0-9a-f]{8,}/gi) || []).length;
-        if (memoryAddressCount >= 3) {
-          isMemoryAddressLog = true;
-        }
-        
-        // 检查是否是特定格式的MediaPipe内存地址日志
-        if (/^\[(\s*0x[0-9a-f]{16,}\s*)+\]$/i.test(allArgsString)) {
-          isMemoryAddressLog = true;
-        }
-        
-        if (!isMemoryAddressLog) {
-          originalConsoleLog.apply(console, args);
+        if (!isMemoryAddressLog && originalConsoleLogRef.current) {
+          // 使用原始console.log输出
+          originalConsoleLogRef.current.apply(console, args);
         }
       };
-      // 保存原始console.log到ref以便在stopTracking中恢复
-      originalConsoleLogRef.current = originalConsoleLog;
+    }
 
+    try {
       // 动态导入MediaPipe Hands
       const { Hands } = await import('@mediapipe/hands');
-      const Camera = (await import('@mediapipe/camera_utils')).default;
-
+      
       // 检查摄像头权限
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       stream.getTracks().forEach(track => track.stop());
@@ -221,7 +218,6 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
         } else if (fingerCount === 1) {
           // 检查是拇指还是其他手指
           const thumbTip = landmarks[4];
-          const indexTip = landmarks[8];
           if (thumbTip.y < landmarks[2].y) {
             return GestureType.THUMBS_UP;
           } else if (thumbTip.y > landmarks[2].y) {
@@ -324,7 +320,7 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
 
       // 初始化摄像头
       if (videoRef.current) {
-        // 使用手动帧处理，不使用Camera类
+        // 使用手动帧处理
         const startCamera = async () => {
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
@@ -369,10 +365,8 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
 
   // 停止手势跟踪
   const stopTracking = useCallback(() => {
-    if (!isActive) return;
-
     try {
-      // 恢复原始console.log
+      // 恢复原始console.log，无论isActive状态如何
       if (originalConsoleLogRef.current) {
         console.log = originalConsoleLogRef.current;
         originalConsoleLogRef.current = null;
@@ -397,7 +391,7 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
     } catch (err) {
       console.error('Error stopping hand tracking:', err);
     }
-  }, [isActive]);
+  }, []);
 
   // 启动/停止跟踪
   useEffect(() => {

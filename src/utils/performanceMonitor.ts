@@ -3,6 +3,49 @@
  * 用于跟踪和分析应用性能，包括自定义性能指标和定期审计功能
  */
 
+// Web Vitals相关类型定义
+declare interface LargestContentfulPaint {
+  renderTime: number;
+  loadTime: number;
+  size: number;
+  element?: Element;
+}
+
+declare interface LayoutShift {
+  value: number;
+  hadRecentInput: boolean;
+}
+
+declare interface FirstInputDelay {
+  startTime: number;
+  processingStart: number;
+  target?: Element;
+  type: string;
+}
+
+declare interface InteractionToNextPaint {
+  duration: number;
+  target?: Element;
+  type: string;
+}
+
+declare interface PerformanceLongTaskTiming {
+  duration: number;
+  attribution: Array<{
+    entryType: string;
+    name: string;
+    duration: number;
+  }>;
+}
+
+declare interface PerformanceNavigationTiming {
+  responseStart: number;
+  domContentLoadedEventEnd: number;
+  loadEventEnd: number;
+  startTime: number;
+  navigationStart?: number;
+}
+
 /**
  * 自定义性能指标类型
  */
@@ -12,6 +55,45 @@ export type PerformanceMetric = {
   unit: 'ms' | 'bytes' | 'count' | 'percentage';
   description?: string;
   timestamp: number;
+  category?: string; // 新增：指标分类
+  metadata?: Record<string, any>; // 新增：附加元数据
+};
+
+/**
+ * 网络请求性能指标类型
+ */
+export type NetworkRequestMetric = {
+  url: string;
+  method: string;
+  duration: number;
+  status: number;
+  size: number;
+  timestamp: number;
+  fromCache: boolean;
+  retries: number;
+  error?: string;
+};
+
+/**
+ * 组件渲染性能指标类型
+ */
+export type ComponentRenderMetric = {
+  componentName: string;
+  renderTime: number;
+  timestamp: number;
+  renderCount: number;
+  propsSize?: number;
+  isInitialRender: boolean;
+};
+
+/**
+ * 内存使用指标类型
+ */
+export type MemoryUsageMetric = {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+  timestamp: number;
 };
 
 /**
@@ -19,8 +101,13 @@ export type PerformanceMetric = {
  */
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = [];
-  private observer: PerformanceObserver | null = null;
+  private networkRequests: NetworkRequestMetric[] = [];
+  private componentRenders: ComponentRenderMetric[] = [];
+  private memoryUsage: MemoryUsageMetric[] = [];
+  private observers: PerformanceObserver[] = [];
   private isInitialized = false;
+  private memoryMonitoringInterval: NodeJS.Timeout | null = null;
+  private componentRenderCounts: Map<string, number> = new Map();
 
   /**
    * 初始化性能监控
@@ -37,9 +124,31 @@ class PerformanceMonitor {
     // 监听资源加载性能 - 只在开发环境启用，避免生产环境开销
     if (isDev) {
       this.setupResourceObserver();
+      this.setupNavigationObserver();
+      this.setupMemoryMonitoring();
+      this.setupLongTaskObserver();
     }
     
     this.isInitialized = true;
+  }
+
+  /**
+   * 清理性能监控资源
+   */
+  cleanup() {
+    // 断开所有观察者连接
+    for (const observer of this.observers) {
+      observer.disconnect();
+    }
+    this.observers = [];
+    
+    // 清除内存监控定时器
+    if (this.memoryMonitoringInterval) {
+      clearInterval(this.memoryMonitoringInterval);
+      this.memoryMonitoringInterval = null;
+    }
+    
+    this.isInitialized = false;
   }
 
   /**
@@ -48,9 +157,9 @@ class PerformanceMonitor {
   private setupWebVitalsObserver() {
     if ('PerformanceObserver' in window) {
       try {
-        this.observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver((list) => {
           list.getEntries().forEach((entry) => {
-            // 只处理测量类型的条目
+            // 处理测量类型的条目
             if (entry.entryType === 'measure') {
               const measureEntry = entry as PerformanceMeasure;
               // 记录核心 Web Vitals
@@ -61,16 +170,85 @@ class PerformanceMonitor {
                   unit: 'ms',
                   description: this.getWebVitalDescription(measureEntry.name),
                   timestamp: Date.now(),
+                  category: 'web-vitals',
                 });
               }
+            }
+            // 处理 LCP 条目
+            else if (entry.entryType === 'largest-contentful-paint') {
+              const lcpEntry = entry as LargestContentfulPaint;
+              this.recordMetric({
+                name: 'LCP',
+                value: lcpEntry.renderTime || lcpEntry.loadTime || 0,
+                unit: 'ms',
+                description: 'Largest Contentful Paint',
+                timestamp: Date.now(),
+                category: 'web-vitals',
+                metadata: {
+                  element: lcpEntry.element?.tagName,
+                  size: lcpEntry.size,
+                },
+              });
+            }
+            // 处理 CLS 条目
+            else if (entry.entryType === 'layout-shift') {
+              const clsEntry = entry as LayoutShift;
+              if (!clsEntry.hadRecentInput) {
+                this.recordMetric({
+                  name: 'CLS',
+                  value: clsEntry.value,
+                  unit: 'count',
+                  description: 'Cumulative Layout Shift',
+                  timestamp: Date.now(),
+                  category: 'web-vitals',
+                });
+              }
+            }
+            // 处理 FID 条目
+            else if (entry.entryType === 'first-input') {
+              const fidEntry = entry as FirstInputDelay;
+              this.recordMetric({
+                name: 'FID',
+                value: fidEntry.processingStart - fidEntry.startTime,
+                unit: 'ms',
+                description: 'First Input Delay',
+                timestamp: Date.now(),
+                category: 'web-vitals',
+                metadata: {
+                  target: fidEntry.target?.tagName,
+                  type: fidEntry.type,
+                },
+              });
+            }
+            // 处理 INP 条目
+            else if (entry.entryType === 'event') {
+              const inpEntry = entry as InteractionToNextPaint;
+              this.recordMetric({
+                name: 'INP',
+                value: inpEntry.duration,
+                unit: 'ms',
+                description: 'Interaction to Next Paint',
+                timestamp: Date.now(),
+                category: 'web-vitals',
+                metadata: {
+                  target: inpEntry.target?.tagName,
+                  type: inpEntry.type,
+                },
+              });
             }
           });
         });
 
         // 监听 Web Vitals 指标
-        this.observer.observe({ type: 'measure', buffered: true });
+        observer.observe({ type: 'measure', buffered: true });
+        observer.observe({ type: 'largest-contentful-paint', buffered: true });
+        observer.observe({ type: 'layout-shift', buffered: true });
+        observer.observe({ type: 'first-input', buffered: true });
+        observer.observe({ type: 'event', buffered: true });
+        
+        this.observers.push(observer);
       } catch (error) {
-        console.error('Failed to initialize performance observer:', error);
+        console.error('Failed to initialize Web Vitals observer:', error);
       }
     }
   }
@@ -81,7 +259,7 @@ class PerformanceMonitor {
   private setupResourceObserver() {
     if ('PerformanceObserver' in window) {
       try {
-        const resourceObserver = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver((list) => {
           const entries = list.getEntries() as PerformanceResourceTiming[];
           entries.forEach((entry) => {
             // 记录资源加载时间
@@ -91,14 +269,159 @@ class PerformanceMonitor {
               unit: 'ms',
               description: `${entry.initiatorType} resource load time`,
               timestamp: Date.now(),
+              category: 'resource',
+              metadata: {
+                url: entry.name,
+                initiatorType: entry.initiatorType,
+                transferSize: entry.transferSize,
+                encodedBodySize: entry.encodedBodySize,
+                decodedBodySize: entry.decodedBodySize,
+              },
             });
           });
         });
 
-        resourceObserver.observe({ type: 'resource', buffered: true });
+        observer.observe({ type: 'resource', buffered: true });
+        this.observers.push(observer);
       } catch (error) {
         console.error('Failed to initialize resource observer:', error);
       }
+    }
+  }
+
+  /**
+   * 设置导航性能观察者
+   */
+  private setupNavigationObserver() {
+    if ('PerformanceObserver' in window) {
+      try {
+        const observer = new PerformanceObserver((list) => {
+          const entries = list.getEntries() as PerformanceNavigationTiming[];
+          entries.forEach((entry) => {
+            // 记录导航性能指标
+            this.recordMetric({
+              name: 'TTFB',
+              value: entry.responseStart,
+              unit: 'ms',
+              description: 'Time to First Byte',
+              timestamp: Date.now(),
+              category: 'navigation',
+            });
+            
+            this.recordMetric({
+              name: 'DOMContentLoaded',
+              value: entry.domContentLoadedEventEnd - entry.startTime,
+              unit: 'ms',
+              description: 'DOM Content Loaded Time',
+              timestamp: Date.now(),
+              category: 'navigation',
+            });
+            
+            this.recordMetric({
+              name: 'LoadEvent',
+              value: entry.loadEventEnd - entry.startTime,
+              unit: 'ms',
+              description: 'Load Event Time',
+              timestamp: Date.now(),
+              category: 'navigation',
+            });
+          });
+        });
+
+        observer.observe({ type: 'navigation', buffered: true });
+        this.observers.push(observer);
+      } catch (error) {
+        console.error('Failed to initialize navigation observer:', error);
+      }
+    }
+  }
+
+  /**
+   * 设置长任务观察者
+   */
+  private setupLongTaskObserver() {
+    if ('PerformanceObserver' in window) {
+      try {
+        const observer = new PerformanceObserver((list) => {
+          const entries = list.getEntries() as PerformanceLongTaskTiming[];
+          entries.forEach((entry) => {
+            // 记录长任务
+            if (entry.duration > 50) {
+              this.recordMetric({
+                name: 'LongTask',
+                value: entry.duration,
+                unit: 'ms',
+                description: 'Long Task Duration',
+                timestamp: Date.now(),
+                category: 'long-task',
+                metadata: {
+                  sources: entry.attribution.map(attribution => ({
+                    type: attribution.entryType,
+                    name: attribution.name,
+                    duration: attribution.duration,
+                  })),
+                },
+              });
+            }
+          });
+        });
+
+        observer.observe({ type: 'longtask', buffered: true });
+        this.observers.push(observer);
+      } catch (error) {
+        console.error('Failed to initialize long task observer:', error);
+      }
+    }
+  }
+
+  /**
+   * 设置内存使用监控
+   */
+  private setupMemoryMonitoring() {
+    if ('performance' in window && 'memory' in performance) {
+      // 立即记录一次内存使用情况
+      this.recordMemoryUsage();
+      
+      // 定期记录内存使用情况（每30秒）
+      this.memoryMonitoringInterval = setInterval(() => {
+        this.recordMemoryUsage();
+      }, 30000);
+    }
+  }
+
+  /**
+   * 记录内存使用情况
+   */
+  private recordMemoryUsage() {
+    if ('performance' in window && 'memory' in performance) {
+      const memoryInfo = (performance as any).memory;
+      const metric: MemoryUsageMetric = {
+        usedJSHeapSize: memoryInfo.usedJSHeapSize,
+        totalJSHeapSize: memoryInfo.totalJSHeapSize,
+        jsHeapSizeLimit: memoryInfo.jsHeapSizeLimit,
+        timestamp: Date.now(),
+      };
+      this.memoryUsage.push(metric);
+      
+      // 限制内存使用记录数量
+      if (this.memoryUsage.length > 100) {
+        this.memoryUsage = this.memoryUsage.slice(-50);
+      }
+      
+      // 同时记录为通用指标
+      this.recordMetric({
+        name: 'MemoryUsage',
+        value: memoryInfo.usedJSHeapSize,
+        unit: 'bytes',
+        description: 'Used JavaScript Heap Size',
+        timestamp: Date.now(),
+        category: 'memory',
+        metadata: {
+          totalJSHeapSize: memoryInfo.totalJSHeapSize,
+          jsHeapSizeLimit: memoryInfo.jsHeapSizeLimit,
+          usagePercentage: (memoryInfo.usedJSHeapSize / memoryInfo.jsHeapSizeLimit) * 100,
+        },
+      });
     }
   }
 
@@ -142,6 +465,80 @@ class PerformanceMonitor {
   }
 
   /**
+   * 记录网络请求性能
+   */
+  recordNetworkRequest(metric: NetworkRequestMetric) {
+    // 优化：只在开发环境记录完整的网络请求指标
+    const isDev = import.meta.env.DEV;
+    if (!isDev) return;
+    
+    this.networkRequests.push(metric);
+    
+    // 限制网络请求记录数量
+    if (this.networkRequests.length > 200) {
+      this.networkRequests = this.networkRequests.slice(-100);
+    }
+    
+    // 同时记录为通用指标
+    this.recordMetric({
+      name: `network-${metric.method}-${metric.url.split('/').pop()}`,
+      value: metric.duration,
+      unit: 'ms',
+      description: `${metric.method} request to ${metric.url}`,
+      timestamp: metric.timestamp,
+      category: 'network',
+      metadata: {
+        url: metric.url,
+        method: metric.method,
+        status: metric.status,
+        size: metric.size,
+        fromCache: metric.fromCache,
+        retries: metric.retries,
+      },
+    });
+  }
+
+  /**
+   * 记录组件渲染性能
+   */
+  recordComponentRender(metric: ComponentRenderMetric) {
+    // 优化：只在开发环境记录完整的组件渲染指标
+    const isDev = import.meta.env.DEV;
+    if (!isDev) return;
+    
+    // 更新组件渲染计数
+    const renderCount = this.componentRenderCounts.get(metric.componentName) || 0;
+    this.componentRenderCounts.set(metric.componentName, renderCount + 1);
+    
+    const updatedMetric = {
+      ...metric,
+      renderCount: renderCount + 1,
+    };
+    
+    this.componentRenders.push(updatedMetric);
+    
+    // 限制组件渲染记录数量
+    if (this.componentRenders.length > 200) {
+      this.componentRenders = this.componentRenders.slice(-100);
+    }
+    
+    // 同时记录为通用指标
+    this.recordMetric({
+      name: `component-${metric.componentName}`,
+      value: metric.renderTime,
+      unit: 'ms',
+      description: `${metric.componentName} render time`,
+      timestamp: metric.timestamp,
+      category: 'component',
+      metadata: {
+        componentName: metric.componentName,
+        isInitialRender: metric.isInitialRender,
+        renderCount: updatedMetric.renderCount,
+      },
+    });
+  }
+
+  /**
    * 获取所有性能指标
    */
   getMetrics(): PerformanceMetric[] {
@@ -149,10 +546,144 @@ class PerformanceMonitor {
   }
 
   /**
+   * 获取网络请求指标
+   */
+  getNetworkRequests(): NetworkRequestMetric[] {
+    return [...this.networkRequests];
+  }
+
+  /**
+   * 获取组件渲染指标
+   */
+  getComponentRenders(): ComponentRenderMetric[] {
+    return [...this.componentRenders];
+  }
+
+  /**
+   * 获取内存使用指标
+   */
+  getMemoryUsage(): MemoryUsageMetric[] {
+    return [...this.memoryUsage];
+  }
+
+  /**
    * 清除所有性能指标
    */
   clearMetrics() {
     this.metrics = [];
+    this.networkRequests = [];
+    this.componentRenders = [];
+    this.memoryUsage = [];
+    this.componentRenderCounts.clear();
+  }
+
+  /**
+   * 清除网络请求指标
+   */
+  clearNetworkRequests() {
+    this.networkRequests = [];
+  }
+
+  /**
+   * 清除组件渲染指标
+   */
+  clearComponentRenders() {
+    this.componentRenders = [];
+    this.componentRenderCounts.clear();
+  }
+
+  /**
+   * 清除内存使用指标
+   */
+  clearMemoryUsage() {
+    this.memoryUsage = [];
+  }
+
+  /**
+   * 获取组件渲染统计信息
+   */
+  getComponentRenderStats() {
+    const stats = new Map<string, {
+      renderCount: number;
+      averageRenderTime: number;
+      minRenderTime: number;
+      maxRenderTime: number;
+      initialRenderTime: number | null;
+    }>();
+    
+    for (const metric of this.componentRenders) {
+      if (!stats.has(metric.componentName)) {
+        stats.set(metric.componentName, {
+          renderCount: 0,
+          averageRenderTime: 0,
+          minRenderTime: Infinity,
+          maxRenderTime: 0,
+          initialRenderTime: metric.isInitialRender ? metric.renderTime : null,
+        });
+      }
+      
+      const current = stats.get(metric.componentName)!;
+      current.renderCount++;
+      current.averageRenderTime = (current.averageRenderTime * (current.renderCount - 1) + metric.renderTime) / current.renderCount;
+      current.minRenderTime = Math.min(current.minRenderTime, metric.renderTime);
+      current.maxRenderTime = Math.max(current.maxRenderTime, metric.renderTime);
+      if (metric.isInitialRender) {
+        current.initialRenderTime = metric.renderTime;
+      }
+    }
+    
+    return Object.fromEntries(stats);
+  }
+
+  /**
+   * 获取网络请求统计信息
+   */
+  getNetworkRequestStats() {
+    const stats = {
+      totalRequests: this.networkRequests.length,
+      averageDuration: 0,
+      averageSize: 0,
+      cacheHitRate: 0,
+      successRate: 0,
+      methods: new Map<string, number>(),
+      statusCodes: new Map<number, number>(),
+    };
+    
+    if (stats.totalRequests === 0) return stats;
+    
+    let cacheHits = 0;
+    let successfulRequests = 0;
+    let totalDuration = 0;
+    let totalSize = 0;
+    
+    for (const request of this.networkRequests) {
+      // 方法统计
+      stats.methods.set(request.method, (stats.methods.get(request.method) || 0) + 1);
+      
+      // 状态码统计
+      stats.statusCodes.set(request.status, (stats.statusCodes.get(request.status) || 0) + 1);
+      
+      // 缓存命中率
+      if (request.fromCache) cacheHits++;
+      
+      // 成功率
+      if (request.status >= 200 && request.status < 300) successfulRequests++;
+      
+      // 总时长和总大小
+      totalDuration += request.duration;
+      totalSize += request.size;
+    }
+    
+    stats.averageDuration = totalDuration / stats.totalRequests;
+    stats.averageSize = totalSize / stats.totalRequests;
+    stats.cacheHitRate = cacheHits / stats.totalRequests;
+    stats.successRate = successfulRequests / stats.totalRequests;
+    
+    return {
+      ...stats,
+      methods: Object.fromEntries(stats.methods),
+      statusCodes: Object.fromEntries(stats.statusCodes),
+    };
   }
 
   /**
@@ -215,6 +746,7 @@ class PerformanceMonitor {
     // 获取性能数据
     const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
     const resourceEntries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+    const longTaskEntries = performance.getEntriesByType('longtask') as PerformanceLongTaskTiming[];
     
     // 计算审计结果
     const auditResult: PerformanceAuditResult = {
@@ -233,6 +765,22 @@ class PerformanceMonitor {
         // 资源统计
         totalResources: resourceEntries.length,
         totalResourceSize: resourceEntries.reduce((sum, entry) => sum + (entry.transferSize || 0), 0),
+        // 长任务统计
+        longTasks: longTaskEntries.length,
+        totalLongTaskDuration: longTaskEntries.reduce((sum, entry) => sum + entry.duration, 0),
+        // 网络请求统计
+        networkRequests: this.networkRequests.length,
+        averageRequestDuration: this.getNetworkRequestStats().averageDuration,
+        cacheHitRate: this.getNetworkRequestStats().cacheHitRate,
+        // 组件渲染统计
+        componentRenders: this.componentRenders.length,
+        averageComponentRenderTime: this.componentRenders.length > 0 
+          ? this.componentRenders.reduce((sum, entry) => sum + entry.renderTime, 0) / this.componentRenders.length 
+          : 0,
+        // 内存使用
+        memoryUsage: this.memoryUsage.length > 0 
+          ? this.memoryUsage[this.memoryUsage.length - 1].usedJSHeapSize 
+          : 0,
         // 自定义指标
         customMetrics: this.metrics,
       },
@@ -240,6 +788,12 @@ class PerformanceMonitor {
       score: this.calculatePerformanceScore(),
       // 优化建议
       suggestions: this.generateOptimizationSuggestions(),
+      // 新增：详细统计信息
+      detailedStats: {
+        network: this.getNetworkRequestStats(),
+        components: this.getComponentRenderStats(),
+        memory: this.memoryUsage.length > 0 ? this.memoryUsage[this.memoryUsage.length - 1] : undefined,
+      },
     };
     
     return auditResult;
@@ -333,6 +887,18 @@ export type PerformanceAuditResult = {
     // 资源统计
     totalResources: number;
     totalResourceSize: number;
+    // 长任务统计
+    longTasks: number;
+    totalLongTaskDuration: number;
+    // 网络请求统计
+    networkRequests: number;
+    averageRequestDuration: number;
+    cacheHitRate: number;
+    // 组件渲染统计
+    componentRenders: number;
+    averageComponentRenderTime: number;
+    // 内存使用
+    memoryUsage: number;
     // 自定义指标
     customMetrics: PerformanceMetric[];
   };
@@ -340,6 +906,12 @@ export type PerformanceAuditResult = {
   score: number;
   // 优化建议
   suggestions: string[];
+  // 详细统计信息
+  detailedStats?: {
+    network: ReturnType<PerformanceMonitor['getNetworkRequestStats']>;
+    components: ReturnType<PerformanceMonitor['getComponentRenderStats']>;
+    memory?: MemoryUsageMetric;
+  };
 };
 
 // 导出单例实例
@@ -353,10 +925,22 @@ export function initPerformanceMonitor() {
 // 导出便捷函数
 export const { 
   recordMetric, 
+  recordNetworkRequest,
+  recordComponentRender,
   getMetrics, 
+  getNetworkRequests,
+  getComponentRenders,
+  getMemoryUsage,
+  getComponentRenderStats,
+  getNetworkRequestStats,
   clearMetrics, 
+  clearNetworkRequests,
+  clearComponentRenders,
+  clearMemoryUsage,
   measureExecutionTime, 
   startMeasure, 
   endMeasure,
-  runAudit 
+  runAudit,
+  init,
+  cleanup
 } = performanceMonitor;

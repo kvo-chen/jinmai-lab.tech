@@ -28,9 +28,28 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // 收集更详细的错误上下文信息
+    const context = {
+      componentStack: errorInfo.componentStack,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      referrer: document.referrer,
+      timestamp: Date.now(),
+      deviceMemory: (navigator as any).deviceMemory || 4,
+      hardwareConcurrency: navigator.hardwareConcurrency || 4,
+      connection: (navigator as any).connection?.effectiveType || 'unknown',
+      // 尝试获取用户信息（如果有）
+      userId: localStorage.getItem('userId') || sessionStorage.getItem('userId') || undefined
+    };
+    
     // 记录错误信息
-    errorService.logError(error, {
-      componentStack: errorInfo.componentStack
+    const errorInfoObj = errorService.logError(error, context);
+    
+    // 上报错误到远程服务器
+    errorService.reportErrorToServer(errorInfoObj).catch(err => {
+      console.warn('错误上报失败:', err);
     });
   }
 

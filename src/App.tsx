@@ -1,32 +1,48 @@
-import { Routes, Route, Outlet, useLocation } from "react-router-dom";
-import { Suspense, lazy, useState, useEffect } from 'react'
-import { smartPrefetch } from './services/prefetch';
+import { Routes, Route, Outlet, useLocation, useNavigationType, Link, Navigate } from "react-router-dom";
+import { useState, useEffect, Suspense, lazy, useRef, useMemo } from 'react'
 
+// 核心页面保持同步加载，减少导航延迟
+// 对于高频访问的页面，使用同步加载可以减少导航跳转时间
+import Home from "@/pages/Home";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Dashboard from "@/pages/Dashboard";
+import Explore from "@/pages/Explore";
+import WorkDetail from "@/pages/WorkDetail";
+import Create from "@/pages/Create";
+import Tools from "@/pages/Tools";
+import About from "@/pages/About";
+import Square from "@/pages/Square";
+import Community from "@/pages/Community";
+import Neo from "@/pages/Neo";
 
-// 路由组件惰性加载
-const Home = lazy(() => import("@/pages/Home"));
-const Login = lazy(() => import("@/pages/Login"));
-const Register = lazy(() => import("@/pages/Register"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Explore = lazy(() => import("@/pages/Explore"));
-const WorkDetail = lazy(() => import("@/pages/WorkDetail"));
-const Create = lazy(() => import("@/pages/Create"));
+// 大型组件和低频访问页面使用懒加载
+// 对于大型组件和低频访问的页面，使用懒加载可以减少初始加载时间
+const LazyComponent = ({ children }: { children: React.ReactNode }) => {
+  // 优化的加载骨架屏，提升用户体验
+  const SimpleLoadingSkeleton = () => (
+    <div className="min-h-[200px] bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg transition-all duration-300"></div>
+  );
+  
+  return (
+    <Suspense fallback={<SimpleLoadingSkeleton />}>
+      {children}
+    </Suspense>
+  );
+};
+
+// 使用lazy实现组件懒加载
 const Admin = lazy(() => import("@/pages/admin/Admin"));
 const ErrorMonitoringDashboard = lazy(() => import("@/components/ErrorMonitoringDashboard"));
-const Tools = lazy(() => import("@/pages/Tools"));
-const About = lazy(() => import("@/pages/About"));
 const Terms = lazy(() => import("@/pages/Terms"));
 const Help = lazy(() => import("@/pages/Help"));
 const BrandGuide = lazy(() => import("@/pages/BrandGuide"));
 const InputHub = lazy(() => import("@/pages/InputHub"));
 const Generation = lazy(() => import("@/pages/Generation"));
 const Authenticity = lazy(() => import("@/pages/Authenticity"));
-const Square = lazy(() => import("@/pages/Square"));
-const Community = lazy(() => import("@/pages/Community"));
 const Incentives = lazy(() => import("@/pages/Incentives"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const Wizard = lazy(() => import("@/pages/Wizard"));
-const Neo = lazy(() => import("@/pages/Neo"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const UserCollection = lazy(() => import("@/pages/UserCollection"));
@@ -45,6 +61,69 @@ const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
 const ParticleArt = lazy(() => import("@/pages/ParticleArt"));
 const Games = lazy(() => import("@/pages/Games"));
 const CollaborationDemo = lazy(() => import("@/pages/CollaborationDemo"));
+const ImageTest = lazy(() => import("@/pages/ImageTest"));
+const CulturalNewsPage = lazy(() => import("@/pages/CulturalNewsPage"));
+// 会员相关页面
+const Membership = lazy(() => import("@/pages/Membership"));
+const MembershipPayment = lazy(() => import("@/pages/MembershipPayment"));
+const MembershipBenefits = lazy(() => import("@/pages/MembershipBenefits"));
+
+// 路由预加载组件
+const RoutePreloader = () => {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  
+  // 核心页面预加载列表
+  const corePages = [
+    { path: '/dashboard', component: () => import('@/pages/Dashboard') },
+    { path: '/explore', component: () => import('@/pages/Explore') },
+    { path: '/create', component: () => import('@/pages/Create') },
+    { path: '/tools', component: () => import('@/pages/Tools') },
+  ];
+  
+  // 预加载逻辑
+  useEffect(() => {
+    // 仅在用户浏览时预加载，避免初始加载时过度消耗资源
+    if (navigationType === 'POP') return;
+    
+    // 预加载核心页面
+    corePages.forEach(({ path, component }) => {
+      if (location.pathname !== path) {
+        // 使用低优先级预加载
+        component().catch(() => {
+          // 预加载失败不影响用户体验，静默处理
+        });
+      }
+    });
+  }, [location.pathname, navigationType]);
+  
+  return null;
+};
+
+// 路由缓存组件
+const RouteCache = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const cacheRef = useRef<Map<string, React.ReactNode>>(new Map());
+  
+  // 仅缓存核心页面
+  const cacheableRoutes = ['/', '/dashboard', '/explore', '/tools', '/about'];
+  
+  // 检查当前路由是否可缓存
+  const isCacheable = cacheableRoutes.includes(location.pathname);
+  
+  // 如果可缓存且已存在缓存，则使用缓存
+  if (isCacheable && cacheRef.current.has(location.pathname)) {
+    return cacheRef.current.get(location.pathname) as React.ReactNode;
+  }
+  
+  // 否则渲染新内容并缓存
+  const childrenNode = <>{children}</>;
+  if (isCacheable) {
+    cacheRef.current.set(location.pathname, childrenNode);
+  }
+  
+  return childrenNode;
+};
 
 // 布局组件
 import SidebarLayout from '@/components/SidebarLayout';
@@ -82,56 +161,9 @@ export default function App() {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // 智能预取 - 基于当前路由预测并预加载可能访问的路由
-  useEffect(() => {
-    // 预加载函数，动态导入指定路由的组件
-    const preloadRoute = (path: string) => {
-      switch (path) {
-        case '/home':
-        case '/':
-          import('@/pages/Home');
-          break;
-        case '/explore':
-          import('@/pages/Explore');
-          break;
-        case '/explore/example':
-          import('@/pages/WorkDetail');
-          break;
-        case '/create':
-          import('@/pages/Create');
-          break;
-        case '/community':
-          import('@/pages/Community');
-          break;
-        case '/community/example':
-          import('@/pages/Community');
-          break;
-        case '/dashboard':
-          import('@/pages/Dashboard');
-          break;
-        case '/settings':
-          import('@/pages/Settings');
-          break;
-        case '/collection':
-          import('@/pages/UserCollection');
-          break;
-        case '/analytics':
-          import('@/pages/Analytics');
-          break;
-        case '/drafts':
-          import('@/pages/Drafts');
-          break;
-        case '/neo':
-          import('@/pages/Neo');
-          break;
-        default:
-          break;
-      }
-    };
-
-    // 调用智能预取函数
-    smartPrefetch(location.pathname, preloadRoute);
-  }, [location.pathname]);
+  // 移除智能预取逻辑，减少不必要的预加载请求
+  // 预加载会增加初始加载时间和内存消耗，对于低性能设备来说可能会导致卡顿
+  // 导航跳转速度的提升应该通过优化组件渲染和减少不必要的资源加载来实现
 
   // 右侧内容组件
   const RightContent = () => (
@@ -176,16 +208,6 @@ export default function App() {
     </aside>
   );
 
-  // 带有页面切换动画的组件
-  const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
-    const location = useLocation();
-    return (
-      <div key={location.pathname} className="animate-page-transition">
-        {children}
-      </div>
-    );
-  };
-
   // 全局加载骨架屏
   const GlobalLoadingSkeleton = () => (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -203,154 +225,148 @@ export default function App() {
     </div>
   );
 
+  // 带有页面切换动画的组件
+  const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
+    const location = useLocation();
+    return (
+      <div 
+        key={location.pathname} 
+        className="animate-page-transition transition-all duration-300 ease-in-out"
+        style={{
+          opacity: 0,
+          transform: 'translateY(10px)',
+          animation: 'fadeInUp 0.3s ease-out forwards'
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
+  
+  // 全局CSS动画
+  useEffect(() => {
+    // 添加全局动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes fadeOutDown {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+      
+      .animate-page-transition {
+        animation-duration: 0.3s;
+        animation-fill-mode: both;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  
   return (
     <div className="relative">
-      <CreatorDashboard />
-      <Suspense fallback={<GlobalLoadingSkeleton />}>
-        <Routes>
-          {/* 不需要布局的页面 */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+      {/* 添加路由预加载组件 */}
+      <RoutePreloader />
+      
+      <Routes>
+        {/* 不需要布局的页面 */}
+        <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
+        <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
+        
+        {/* 使用布局的页面 */}
+        <Route element={
+          isMobile ? (
+            <MobileLayout>
+              <Outlet />
+            </MobileLayout>
+          ) : (
+            <SidebarLayout>
+              <Outlet />
+            </SidebarLayout>
+          )
+        }>
+          {/* 核心页面直接渲染，无需懒加载，添加缓存和动画 */}
+          <Route path="/" element={<RouteCache><AnimatedPage><Home /></AnimatedPage></RouteCache>} />
+          <Route path="/explore" element={<RouteCache><AnimatedPage><Explore /></AnimatedPage></RouteCache>} />
+          <Route path="/explore/:id" element={<AnimatedPage><WorkDetail /></AnimatedPage>} />
+          <Route path="/tools" element={<RouteCache><AnimatedPage><Tools /></AnimatedPage></RouteCache>} />
+          <Route path="/about" element={<RouteCache><AnimatedPage><About /></AnimatedPage></RouteCache>} />
+          <Route path="/neo" element={<AnimatedPage><Neo /></AnimatedPage>} />
+          <Route path="/square" element={<AnimatedPage><PrivateRoute component={Square} /></AnimatedPage>} />
+          <Route path="/square/:id" element={<AnimatedPage><PrivateRoute component={Square} /></AnimatedPage>} />
+          <Route path="/community" element={<AnimatedPage><PrivateRoute component={Community} /></AnimatedPage>} />
+          <Route path="/dashboard" element={<RouteCache><AnimatedPage><PrivateRoute component={Dashboard} /></AnimatedPage></RouteCache>} />
+          <Route path="/create" element={<AnimatedPage><PrivateRoute component={Create} /></AnimatedPage>} />
           
-          {/* 使用布局的页面 */}
-          <Route element={
-            isMobile ? (
-              <MobileLayout>
-                <AnimatedPage>
-                  <Outlet />
-                </AnimatedPage>
-              </MobileLayout>
-            ) : (
-              <SidebarLayout>
-                <AnimatedPage>
-                  <Outlet />
-                </AnimatedPage>
-              </SidebarLayout>
-            )
-          }>
-            <Route path="/" element={<Home />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/explore/:id" element={<WorkDetail />} />
-            <Route path="/particle-art" element={<ParticleArt />} />
-            <Route path="/tools" element={<Tools />} />
-            <Route path="/collaboration" element={<CollaborationDemo />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/neo" element={<Neo />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/games" element={<Games />} />
-            <Route path="/lab" element={<PrivateRoute component={Lab} />} />
-            <Route path="/wizard" element={<PrivateRoute component={Wizard} />} />
-            <Route path="/brand" element={<PrivateRoute component={BrandGuide} />} />
-            <Route path="/input" element={<PrivateRoute component={InputHub} />} />
-            <Route path="/generate" element={<PrivateRoute component={Generation} />} />
-            <Route path="/authenticity" element={<PrivateRoute component={Authenticity} />} />
-            <Route path="/square" element={<PrivateRoute component={Square} />} />
-            <Route path="/square/:id" element={<PrivateRoute component={Square} />} />
-            <Route path="/community" element={<PrivateRoute component={Community} />} />
-            <Route path="/incentives" element={<PrivateRoute component={Incentives} />} />
-
-            <Route 
-              path="/dashboard" 
-              element={<PrivateRoute component={Dashboard} />} 
-            />
-
-            <Route 
-              path="/create" 
-              element={<PrivateRoute component={Create} />} 
-            />
-
-            <Route 
-              path="/drafts" 
-              element={<PrivateRoute component={Drafts} />} 
-            />
-
-            <Route 
-              path="/settings" 
-              element={<PrivateRoute component={Settings} />} 
-            />
-            
-            <Route 
-              path="/analytics" 
-              element={<PrivateRoute component={Analytics} />} 
-            />
-            
-            <Route 
-              path="/collection" 
-              element={<PrivateRoute component={UserCollection} />} 
-            />
-            
-            <Route 
-              path="/knowledge" 
-              element={<PrivateRoute component={CulturalKnowledge} />} 
-            />
-            <Route 
-              path="/tianjin" 
-              element={<Tianjin />} 
-            />
-            <Route 
-              path="/events" 
-              element={<CulturalEvents />} 
-            />
-            
-            <Route 
-              path="/knowledge/:type/:id" 
-              element={<PrivateRoute component={CulturalKnowledge} />} 
-            />
-            
-            {/* 创新功能路由 */}
-            <Route 
-              path="/daily-checkin" 
-              element={<PrivateRoute component={DailyCheckin} />} 
-            />
-            
-            <Route 
-              path="/creative-matchmaking" 
-              element={<PrivateRoute component={CreativeMatchmaking} />} 
-            />
-            
-            <Route 
-              path="/ip-incubation" 
-              element={<PrivateRoute component={IPIncubationCenter} />} 
-            />
-            
-            <Route 
-              path="/cross-device-sync" 
-              element={<PrivateRoute component={CrossDeviceSync} />} 
-            />
-            
-            <Route 
-              path="/achievement-museum" 
-              element={<PrivateRoute component={AchievementMuseum} />} 
-            />
-            
-            <Route 
-              path="/blind-box" 
-              element={<PrivateRoute component={BlindBoxShop} />} 
-            />
-            
-            {/* 管理员路由 */}
-            <Route 
-              path="/admin" 
-              element={<AdminRoute component={Admin} />} 
-            />
-            <Route 
-              path="/errors" 
-              element={<AdminRoute component={ErrorMonitoringDashboard} />} 
-            />
-            <Route 
-              path="/admin-analytics" 
-              element={<AdminRoute component={AdminAnalytics} />} 
-            />
-          </Route>
+          {/* 大型组件和低频访问页面使用懒加载，添加动画 */}
+          <Route path="/particle-art" element={<AnimatedPage><LazyComponent><ParticleArt /></LazyComponent></AnimatedPage>} />
+          <Route path="/collaboration" element={<AnimatedPage><LazyComponent><CollaborationDemo /></LazyComponent></AnimatedPage>} />
+          <Route path="/terms" element={<AnimatedPage><LazyComponent><Terms /></LazyComponent></AnimatedPage>} />
+          <Route path="/help" element={<AnimatedPage><LazyComponent><Help /></LazyComponent></AnimatedPage>} />
+          <Route path="/leaderboard" element={<AnimatedPage><LazyComponent><Leaderboard /></LazyComponent></AnimatedPage>} />
+          <Route path="/games" element={<AnimatedPage><LazyComponent><Games /></LazyComponent></AnimatedPage>} />
+          <Route path="/lab" element={<AnimatedPage><LazyComponent><PrivateRoute component={Lab} /></LazyComponent></AnimatedPage>} />
+          <Route path="/image-test" element={<AnimatedPage><LazyComponent><ImageTest /></LazyComponent></AnimatedPage>} />
+          <Route path="/wizard" element={<AnimatedPage><LazyComponent><PrivateRoute component={Wizard} /></LazyComponent></AnimatedPage>} />
+          <Route path="/brand" element={<AnimatedPage><LazyComponent><PrivateRoute component={BrandGuide} /></LazyComponent></AnimatedPage>} />
+          <Route path="/input" element={<AnimatedPage><LazyComponent><PrivateRoute component={InputHub} /></LazyComponent></AnimatedPage>} />
+          <Route path="/generate" element={<AnimatedPage><LazyComponent><PrivateRoute component={Generation} /></LazyComponent></AnimatedPage>} />
+          <Route path="/authenticity" element={<AnimatedPage><LazyComponent><PrivateRoute component={Authenticity} /></LazyComponent></AnimatedPage>} />
+          <Route path="/incentives" element={<AnimatedPage><LazyComponent><PrivateRoute component={Incentives} /></LazyComponent></AnimatedPage>} />
+          <Route path="/drafts" element={<AnimatedPage><LazyComponent><PrivateRoute component={Drafts} /></LazyComponent></AnimatedPage>} />
+          <Route path="/settings" element={<AnimatedPage><LazyComponent><PrivateRoute component={Settings} /></LazyComponent></AnimatedPage>} />
+          <Route path="/analytics" element={<AnimatedPage><LazyComponent><PrivateRoute component={Analytics} /></LazyComponent></AnimatedPage>} />
+          <Route path="/collection" element={<AnimatedPage><LazyComponent><PrivateRoute component={UserCollection} /></LazyComponent></AnimatedPage>} />
+          <Route path="/knowledge" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
+          <Route path="/news" element={<AnimatedPage><LazyComponent><CulturalNewsPage /></LazyComponent></AnimatedPage>} />
+          <Route path="/tianjin" element={<AnimatedPage><LazyComponent><Tianjin /></LazyComponent></AnimatedPage>} />
+          <Route path="/events" element={<AnimatedPage><LazyComponent><CulturalEvents /></LazyComponent></AnimatedPage>} />
+          <Route path="/knowledge/:type/:id" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
+          
+          {/* 创新功能路由 - 懒加载，添加动画 */}
+          <Route path="/daily-checkin" element={<AnimatedPage><LazyComponent><PrivateRoute component={DailyCheckin} /></LazyComponent></AnimatedPage>} />
+          <Route path="/creative-matchmaking" element={<AnimatedPage><LazyComponent><PrivateRoute component={CreativeMatchmaking} /></LazyComponent></AnimatedPage>} />
+          <Route path="/ip-incubation" element={<AnimatedPage><LazyComponent><PrivateRoute component={IPIncubationCenter} /></LazyComponent></AnimatedPage>} />
+          <Route path="/cross-device-sync" element={<AnimatedPage><LazyComponent><PrivateRoute component={CrossDeviceSync} /></LazyComponent></AnimatedPage>} />
+          <Route path="/achievement-museum" element={<AnimatedPage><LazyComponent><PrivateRoute component={AchievementMuseum} /></LazyComponent></AnimatedPage>} />
+          <Route path="/blind-box" element={<AnimatedPage><LazyComponent><PrivateRoute component={BlindBoxShop} /></LazyComponent></AnimatedPage>} />
+          
+          {/* 会员相关路由 - 懒加载，添加动画 */}
+          <Route path="/membership" element={<AnimatedPage><LazyComponent><Membership /></LazyComponent></AnimatedPage>} />
+          <Route path="/membership/payment" element={<AnimatedPage><LazyComponent><PrivateRoute component={MembershipPayment} /></LazyComponent></AnimatedPage>} />
+          <Route path="/membership/benefits" element={<AnimatedPage><LazyComponent><MembershipBenefits /></LazyComponent></AnimatedPage>} />
+          <Route path="/membership/upgrade" element={<AnimatedPage><LazyComponent><PrivateRoute component={Membership} /></LazyComponent></AnimatedPage>} />
+          
+          {/* 管理员路由 - 懒加载，添加动画 */}
+          <Route path="/admin" element={<AnimatedPage><LazyComponent><AdminRoute component={Admin} /></LazyComponent></AnimatedPage>} />
+          <Route path="/errors" element={<AnimatedPage><LazyComponent><AdminRoute component={ErrorMonitoringDashboard} /></LazyComponent></AnimatedPage>} />
+          <Route path="/admin-analytics" element={<AnimatedPage><LazyComponent><AdminRoute component={AdminAnalytics} /></LazyComponent></AnimatedPage>} />
+        </Route>
       </Routes>
-    </Suspense>
-    {/* PWA 安装按钮 */}
-    <PWAInstallButton />
-    {/* 首次启动引导 */}
-    <FirstLaunchGuide />
-
-  </div>
+      
+      {/* PWA 安装按钮 */}
+      <PWAInstallButton />
+      {/* 移除FirstLaunchGuide组件，减少不必要的渲染 */}
+      {/* <FirstLaunchGuide /> */}
+    </div>
 );
 }

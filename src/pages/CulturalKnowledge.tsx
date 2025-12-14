@@ -1772,6 +1772,14 @@ export default function CulturalKnowledge() {
   const { id, type } = useParams();
   
   const [activeTab, setActiveTab] = useState<TabType>('stories');
+  
+  // 从location.state中获取activeTab参数，用于左侧导航直接切换到文化资讯
+  useEffect(() => {
+    const state = location.state as { activeTab?: string };
+    if (state && state.activeTab) {
+      setActiveTab(state.activeTab as TabType);
+    }
+  }, [location.state]);
   const [selectedStory, setSelectedStory] = useState<any>(null);
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [selectedElement, setSelectedElement] = useState<any>(null);
@@ -2191,7 +2199,6 @@ export default function CulturalKnowledge() {
                   { id: 'elements', name: '文化元素' },
                   { id: 'encyclopedia', name: '工艺百科' },
                   { id: 'figures', name: '传承人物' },
-                  { id: 'activities', name: '文化资讯' },
                   { id: 'assets', name: '文化资产' }
                 ].map((tab) => (
                   <button
@@ -2463,13 +2470,6 @@ export default function CulturalKnowledge() {
                       </div>
                     </motion.div>
                   ))}
-                </div>
-              )}
-
-              {/* 文化资讯 */}
-              {activeTab === 'activities' && (
-                <div className="mt-8">
-                  <CulturalNews />
                 </div>
               )}
 

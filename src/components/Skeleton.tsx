@@ -1,7 +1,12 @@
 import clsx from 'clsx';
 
-// 骨架屏动画样式
-const skeletonAnimation = 'animate-pulse';
+// 骨架屏动画样式 - 优化为更平滑的动画
+const skeletonAnimation = 'animate-pulse transition-all duration-300';
+
+// 统一的骨架屏颜色方案
+const skeletonColor = 'bg-gray-200 dark:bg-gray-700';
+const skeletonRounded = 'rounded-md';
+const skeletonRoundedFull = 'rounded-full';
 
 interface SkeletonProps {
   className?: string;
@@ -45,10 +50,10 @@ export function SkeletonBox({
   return (
     <div
       className={clsx(
-        'bg-gray-200 dark:bg-gray-700',
+        skeletonColor,
         skeletonAnimation,
-        rounded && 'rounded-md',
-        circle && 'rounded-full',
+        rounded && skeletonRounded,
+        circle && skeletonRoundedFull,
         className
       )}
       style={{
@@ -77,14 +82,15 @@ export function SkeletonText({
         <Line
           key={index}
           className={clsx(
-            'bg-gray-200 dark:bg-gray-700',
+            skeletonColor,
             skeletonAnimation,
             'inline-block',
-            'rounded-md',
+            skeletonRounded,
             'mb-2',
             variant === 'p' && 'h-4',
             variant.startsWith('h') && `h-${variant.slice(1)}`,
-            'last:mb-0'
+            'last:mb-0',
+            'transition-all duration-300'
           )}
           style={{
             width: typeof lineWidth === 'number' ? `${lineWidth}px` : lineWidth,
@@ -107,7 +113,7 @@ export function SkeletonCard({
   className = '',
 }: SkeletonCardProps) {
   return (
-    <div className={clsx('bg-white dark:bg-gray-800 rounded-lg shadow-md p-4', className)}>
+    <div className={clsx('bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-all duration-300 hover:shadow-lg', className)}>
       {image && (
         <div className="mb-4">
           <SkeletonBox width="100%" height="160px" rounded />
@@ -147,7 +153,7 @@ export function SkeletonAvatar({
       height={size}
       rounded={rounded}
       circle={!rounded}
-      className={className}
+      className={clsx('transition-all duration-300', className)}
     />
   );
 }
@@ -159,7 +165,7 @@ export function SkeletonListItem({
   className = '',
 }: SkeletonProps) {
   return (
-    <div className={clsx('flex items-center gap-3 py-3 border-b border-gray-200 dark:border-gray-700', className)}>
+    <div className={clsx('flex items-center gap-3 py-3 border-b border-gray-200 dark:border-gray-700 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-800', className)}>
       <SkeletonAvatar size={48} />
       <div className="flex-1">
         <SkeletonText lines={1} width="70%" variant="h4" />
@@ -185,7 +191,7 @@ export function SkeletonButton({
       height={height}
       rounded={rounded}
       circle={false}
-      className={className}
+      className={clsx('transition-all duration-300', className)}
     />
   );
 }

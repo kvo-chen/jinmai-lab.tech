@@ -408,13 +408,11 @@ class ImageService {
     // 处理图片生成API的URL，检查代理路径或原始域名
     if (url.includes('/api/proxy/trae-api') || url.includes('trae-api-sg.mchost.guru')) {
       try {
-        console.log('处理图片生成API URL:', url.substring(0, 100) + '...');
         // 确保URL是完整的
         const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, window.location.origin);
         
         // 注意：AI生成API返回302重定向，不要添加额外参数，否则可能导致重定向失败
         // 直接返回原始URL，让浏览器处理重定向
-        console.log('AI生成API URL，直接返回原始URL:', urlObj.toString());
         return urlObj.toString();
       } catch (error) {
         console.error('Error processing image URL:', error);
@@ -429,13 +427,11 @@ class ImageService {
     // 处理图片生成API的URL，检查代理路径或原始域名
     if (url.includes('/api/proxy/trae-api') || url.includes('trae-api-sg.mchost.guru')) {
       try {
-        console.log('处理低质量占位图URL:', url.substring(0, 100) + '...');
         // 确保URL是完整的
         const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, window.location.origin);
         
         // 注意：AI生成API返回302重定向，不要添加额外参数，否则可能导致重定向失败
         // 直接返回原始URL
-        console.log('AI生成API URL，直接返回原始URL作为低质量URL:', urlObj.toString());
         return urlObj.toString();
       } catch (error) {
         console.error('Error processing low quality image URL:', error);
@@ -447,20 +443,8 @@ class ImageService {
 
   // 生成备用图片URL - 根据alt文本生成不同的备用图片
   public getFallbackUrl(alt: string): string {
-    // 为不同的alt文本提供不同的备用图片
-    const fallbackImages = [
-      `https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=600&h=400&fit=crop`,
-      `https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=600&h=400&fit=crop`,
-      `https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&h=400&fit=crop`,
-      `https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=400&fit=crop`,
-      `https://images.unsplash.com/photo-1536375370228-1c5044945458?w=600&h=400&fit=crop`
-    ];
-    
-    // 根据alt文本的哈希值选择不同的备用图片
-    const hash = alt.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const index = hash % fallbackImages.length;
-    
-    return fallbackImages[index];
+    // 返回本地占位图，避免使用可能被ORB策略阻止的外部URL
+    return '/images/placeholder-image.jpg';
   }
 
   // 检查URL是否为有效图片URL

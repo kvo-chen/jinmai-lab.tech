@@ -1,15 +1,35 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLoader, useThree } from '@react-three/fiber';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { useGesture } from '@use-gesture/react';
 
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 import * as THREE from 'three';
 import ParticleSystem from './ParticleSystem';
 import LazyImage from './LazyImage';
+
+// 动态导入3D模型加载器的工具函数
+const loadModelLoader = async (type: 'gltf' | 'fbx' | 'obj' | 'collada') => {
+  switch (type) {
+    case 'gltf':
+      const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+      return new GLTFLoader();
+    case 'fbx':
+      const { FBXLoader } = await import('three/examples/jsm/loaders/FBXLoader.js');
+      return new FBXLoader();
+    case 'obj':
+      const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader.js');
+      return new OBJLoader();
+    case 'collada':
+      const { ColladaLoader } = await import('three/examples/jsm/loaders/ColladaLoader.js');
+      return new ColladaLoader();
+    default:
+      throw new Error(`Unsupported model type: ${type}`);
+  }
+};
 
 // 导入作品类型
 import type { Work } from '@/mock/works';
@@ -111,58 +131,134 @@ const ARModelPlacer: React.FC<{
     
     let hitTestSource: any = null;
     let hitTestSourceRequested = false;
+    let session: any = null;
+    let isCleanedUp = false;
+    
+    // 日志记录函数
+    const logSessionEvent = (eventName: string, details?: any) => {
+      console.log(`[AR Session] ${eventName}`, details || '');
+    };
+    
+    // 错误处理函数
+    const handleSessionError = (error: any, context: string) => {
+      console.error(`[AR Session] Error in ${context}:`, error);
+      // 可以在这里添加错误上报逻辑
+    };
     
     // 请求hit-test源
-    const requestHitTestSource = (session: any) => {
-      if (session.isImmersive && session.visibilityState === 'visible') {
-        session.requestReferenceSpace('viewer')
-          .then((viewerSpace: any) => {
-            return session.requestHitTestSource({
-              space: viewerSpace,
-              offsetRay: new XRRay(new DOMPoint(0, 0, 0), new DOMPoint(0, 0, -1))
-            });
-          })
-          .then((source: any) => {
-            hitTestSource = source;
-            hitTestSourceRequested = true;
-          })
-          .catch((error: any) => {
-            console.error('Error requesting hit test source:', error);
-            hitTestSourceRequested = false;
+    const requestHitTestSource = async (session: any) => {
+      if (isCleanedUp) return;
+      
+      try {
+        if (session.isImmersive && session.visibilityState === 'visible') {
+          logSessionEvent('Requesting hit test source');
+          
+          const viewerSpace = await session.requestReferenceSpace('viewer');
+          const source = await session.requestHitTestSource({
+            space: viewerSpace,
+            offsetRay: new XRRay(new DOMPoint(0, 0, 0), new DOMPoint(0, 0, -1))
           });
+          
+          if (isCleanedUp) {
+            source.cancel();
+            return;
+          }
+          
+          hitTestSource = source;
+          hitTestSourceRequested = true;
+          logSessionEvent('Hit test source acquired successfully');
+        }
+      } catch (error) {
+        handleSessionError(error, 'requestHitTestSource');
+        hitTestSourceRequested = false;
       }
     };
     
     // 处理XR会话事件
     const handleSessionStart = (event: any) => {
-      const session = event.session;
+      if (isCleanedUp) return;
+      
+      session = event.session;
+      logSessionEvent('Session started', { sessionId: session.id, mode: session.mode });
+      
+      // 请求hit-test源
       requestHitTestSource(session);
       
+      // 添加会话事件监听器
       session.addEventListener('end', handleSessionEnd);
-      session.addEventListener('visibilitychange', () => {
-        if (session.visibilityState === 'visible' && !hitTestSourceRequested) {
-          requestHitTestSource(session);
-        }
-      });
+      session.addEventListener('visibilitychange', handleSessionVisibilityChange);
+      session.addEventListener('inputsourceschange', handleInputsChange);
+      session.addEventListener('select', handleSelect);
     };
     
     const handleSessionEnd = () => {
+      logSessionEvent('Session ended', { sessionId: session?.id });
+      
+      // 清理hit-test源
       if (hitTestSource) {
         hitTestSource.cancel();
         hitTestSource = null;
       }
       hitTestSourceRequested = false;
+      
+      // 清理会话引用
+      if (session) {
+        session.removeEventListener('end', handleSessionEnd);
+        session.removeEventListener('visibilitychange', handleSessionVisibilityChange);
+        session.removeEventListener('inputsourceschange', handleInputsChange);
+        session.removeEventListener('select', handleSelect);
+        session = null;
+      }
+      
+      // 重置状态
+      setIsPlaneDetected(false);
+      setHitResults([]);
+      setHitPose(null);
+    };
+    
+    // 处理会话可见性变化
+    const handleSessionVisibilityChange = () => {
+      if (!session || isCleanedUp) return;
+      
+      logSessionEvent('Session visibility changed', { visibility: session.visibilityState });
+      
+      if (session.visibilityState === 'visible') {
+        // 会话变为可见，请求hit-test源
+        if (!hitTestSourceRequested) {
+          requestHitTestSource(session);
+        }
+      } else if (session.visibilityState === 'hidden') {
+        // 会话变为隐藏，清理hit-test源以节省资源
+        if (hitTestSource) {
+          hitTestSource.cancel();
+          hitTestSource = null;
+          hitTestSourceRequested = false;
+          logSessionEvent('Hit test source canceled due to hidden visibility');
+        }
+      }
+    };
+    
+    // 处理输入源变化
+    const handleInputsChange = (event: any) => {
+      logSessionEvent('Input sources changed', { added: event.added.length, removed: event.removed.length });
+    };
+    
+    // 处理选择事件（如点击、触摸）
+    const handleSelect = (event: any) => {
+      logSessionEvent('Select event received', { inputSource: event.inputSource });
     };
     
     // 处理frame事件，获取hit-test结果
     const handleFrame = (event: any) => {
-      if (!hitTestSource) return;
+      if (!hitTestSource || isCleanedUp) return;
       
       const frame = event.frame;
       const session = frame.session;
       
       session.requestReferenceSpace('local')
         .then((referenceSpace: any) => {
+          if (isCleanedUp) return;
+          
           const hitTestResults = frame.getHitTestResults(hitTestSource);
           
           if (hitTestResults.length > 0) {
@@ -200,15 +296,49 @@ const ARModelPlacer: React.FC<{
           }
         })
         .catch((error: any) => {
-          console.error('Error getting hit test results:', error);
+          handleSessionError(error, 'handleFrame');
         });
     };
     
-    // 添加事件监听器 - 仅监听sessionstart事件
+    // 添加事件监听器
     xr.addEventListener('sessionstart', handleSessionStart);
+    (xr as any).addEventListener('frame', handleFrame);
+    xr.addEventListener('sessionend', handleSessionEnd);
+    
+    logSessionEvent('Event listeners added');
     
     return () => {
+      logSessionEvent('Cleaning up WebXR hit-test resources');
+      isCleanedUp = true;
+      
+      // 移除事件监听器
       xr.removeEventListener('sessionstart', handleSessionStart);
+      (xr as any).removeEventListener('frame', handleFrame);
+      xr.removeEventListener('sessionend', handleSessionEnd);
+      
+      // 清理hit-test源
+      if (hitTestSource) {
+        hitTestSource.cancel();
+        hitTestSource = null;
+      }
+      
+      // 清理会话引用
+      if (session) {
+        session.removeEventListener('end', handleSessionEnd);
+        session.removeEventListener('visibilitychange', handleSessionVisibilityChange);
+        session.removeEventListener('inputsourceschange', handleInputsChange);
+        session.removeEventListener('select', handleSelect);
+        session = null;
+      }
+      
+      hitTestSourceRequested = false;
+      
+      // 重置状态
+      setIsPlaneDetected(false);
+      setHitResults([]);
+      setHitPose(null);
+      
+      logSessionEvent('Cleanup completed');
     };
   }, [isARMode, xr, isPlaced, onPositionChange]);
   
@@ -534,74 +664,150 @@ const CanvasContent: React.FC<{
   const settings = renderSettings || defaultRenderSettings;
   const deviceInfo = devicePerformance || defaultDevicePerformance;
   
-  // 根据cameraView切换相机位置 - 基于设备性能调整
+  // 根据cameraView切换相机位置 - 基于设备性能调整，添加平滑过渡
   useEffect(() => {
     if (camera) {
       // 桌面设备使用更远的视角，增强3D效果
       const distance = deviceInfo.isDesktop ? 10 : 8;
       
-      // 非AR模式下设置相机位置
+      // 非AR模式下设置相机位置，添加平滑过渡
       if (!isARMode) {
+        // 目标位置
+        let targetPosition = new THREE.Vector3();
+        
         switch (cameraView) {
           case 'perspective':
-            camera.position.set(distance, distance, distance);
+            targetPosition.set(distance, distance, distance);
             break;
           case 'top':
-            camera.position.set(0, distance, 0);
+            targetPosition.set(0, distance, 0);
             break;
           case 'front':
-            camera.position.set(0, 0, distance);
+            targetPosition.set(0, 0, distance);
             break;
           case 'side':
-            camera.position.set(distance, 0, 0);
+            targetPosition.set(distance, 0, 0);
             break;
         }
+        
+        // 平滑过渡效果
+        const startPosition = camera.position.clone();
+        const duration = 500; // 过渡时间（毫秒）
+        const startTime = Date.now();
+        
+        const animateCamera = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // 使用缓动函数实现平滑过渡
+          const easedProgress = 1 - Math.pow(1 - progress, 3); // 缓出效果
+          
+          // 线性插值计算当前位置
+          camera.position.lerpVectors(startPosition, targetPosition, easedProgress);
+          
+          // 确保相机始终看向原点
+          camera.lookAt(0, 0, 0);
+          
+          // 更新投影矩阵
+          camera.updateProjectionMatrix();
+          
+          if (progress < 1) {
+            requestAnimationFrame(animateCamera);
+          }
+        };
+        
+        animateCamera();
       }
-      
-      // 确保相机始终看向原点
-      camera.lookAt(0, 0, 0);
-      
-      // 确保相机始终处于活动状态
-      camera.updateProjectionMatrix();
     }
   }, [camera, cameraView, isARMode, deviceInfo.isDesktop]);
+  
+  // AR模式下的相机抖动补偿
+  useEffect(() => {
+    if (!camera || !isARMode) return;
+    
+    // 保存原始投影矩阵
+    const originalProjectionMatrix = camera.projectionMatrix.clone();
+    
+    // 相机位置平滑化参数
+    const smoothingFactor = 0.1;
+    const previousPosition = new THREE.Vector3();
+    const smoothedPosition = camera.position.clone();
+    
+    // 相机旋转平滑化参数
+    const rotationSmoothingFactor = 0.15;
+    const previousRotation = new THREE.Euler();
+    const smoothedRotation = camera.rotation.clone();
+    
+    // 防抖函数
+    const debounce = (func: Function, wait: number) => {
+      let timeout: NodeJS.Timeout;
+      return function executedFunction(...args: any[]) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    };
+    
+    // 相机更新事件处理函数
+    const handleCameraUpdate = debounce(() => {
+      // 平滑处理相机位置
+      smoothedPosition.lerp(camera.position, smoothingFactor);
+      previousPosition.copy(camera.position);
+      
+      // 平滑处理相机旋转
+      (smoothedRotation as any).lerp(camera.rotation, rotationSmoothingFactor);
+      previousRotation.copy(camera.rotation);
+      
+      // 应用平滑后的位置和旋转
+      camera.position.copy(smoothedPosition);
+      camera.rotation.copy(smoothedRotation);
+      
+      // 更新投影矩阵
+      camera.updateProjectionMatrix();
+    }, 16); // 约60fps
+    
+    // 监听相机更新事件
+    (camera as any).addEventListener('update', handleCameraUpdate);
+    
+    return () => {
+      // 移除事件监听器
+      (camera as any).removeEventListener('update', handleCameraUpdate);
+      
+      // 恢复原始投影矩阵
+      camera.projectionMatrix.copy(originalProjectionMatrix);
+    };
+  }, [camera, isARMode]);
   
   // 性能优化：根据设备性能和模式调整渲染质量
   useEffect(() => {
     if (gl) {
       // 根据设备性能动态调整渲染设置
-      gl.shadowMap.enabled = settings.shadowMapEnabled && !isARMode;
-      gl.shadowMap.type = isARMode ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+      const isHighEndDevice = deviceInfo.isHighEndDevice;
+      const isMediumEndDevice = deviceInfo.isMediumEndDevice;
       
-      // 优化渲染设置
-      (gl as any).sampleAlphaToCoverage = false;
-      (gl as any).stencilTest = settings.shadowMapEnabled && !isARMode;
-      (gl as any).depthTest = true;
-      (gl as any).depthWrite = true;
+      // 阴影映射设置
+      gl.shadowMap.enabled = settings.shadowMapEnabled && !isARMode && (isHighEndDevice || isMediumEndDevice);
+      gl.shadowMap.type = isARMode ? THREE.BasicShadowMap : 
+                        isHighEndDevice ? THREE.PCFSoftShadowMap : 
+                        THREE.PCFShadowMap;
       
-      // 确保渲染缓冲区稳定 - 保持与Canvas配置一致，避免黑屏
-      (gl as any).preserveDrawingBuffer = true;
-      (gl as any).alpha = true;
-      (gl as any).antialias = settings.antialias;
-      (gl as any).premultipliedAlpha = true;
+      // 调整曝光 - 根据设备性能和AR模式调整
+      gl.toneMappingExposure = isARMode ? 1.2 : 1.0;
       
-      // 根据设备性能和模式调整高级特性
-      (gl as any).maxAnisotropy = isARMode ? 1 : (deviceInfo.isDesktop ? 4 : 1);
+      // Three.js会自动管理渲染状态，不需要手动调用WebGL函数
+      // 移除了所有无效的直接WebGL调用，保留Three.js原生支持的属性设置
       
-      // 调整曝光 - 增加曝光度，确保场景明亮
-      gl.toneMappingExposure = 1.0;
       
-      // AR模式下进一步优化渲染
-      if (isARMode) {
-        // 确保AR模式下的渲染设置正确
-        (gl as any).alpha = true; // 保持透明背景
-        (gl as any).antialias = true; // 保持抗锯齿
-        (gl as any).preserveDrawingBuffer = true; // 确保渲染缓冲区稳定
-      }
+      // 优化渲染管线 - 移除无效的WebGL直接调用
+      // Three.js会自动管理这些状态，不需要手动调用WebGL函数
+      
     }
-  }, [gl, isARMode, settings, deviceInfo.isDesktop, isPlaced]);
+  }, [gl, isARMode, settings, deviceInfo.isHighEndDevice, deviceInfo.isMediumEndDevice, isPlaced]);
   
-  // 优化场景设置 - 基于设备性能的动态设置
+  // 优化场景设置 - 基于设备性能的动态设置，提升渲染质量
   useEffect(() => {
     if (scene) {
       if (isARMode) {
@@ -610,19 +816,52 @@ const CanvasContent: React.FC<{
         scene.background = null; // 设置背景为透明，显示真实环境
       } else {
         // 非AR模式下根据设备性能调整
-        if (deviceInfo.isDesktop) {
-          // 桌面设备使用更丰富的背景效果
-          scene.background = new THREE.Color(config.backgroundColor || '#1a1a2e');
-          // 桌面设备添加环境雾效，增强3D感
-          scene.fog = new THREE.Fog(config.backgroundColor || '#1a1a2e', 10, 50);
+        const isHighEndDevice = deviceInfo.isHighEndDevice;
+        const isMediumEndDevice = deviceInfo.isMediumEndDevice;
+        
+        // 设置背景颜色
+        const bgColor = new THREE.Color(config.backgroundColor || '#1a1a2e');
+        scene.background = bgColor;
+        
+        // 根据设备性能调整雾效
+        if (isHighEndDevice) {
+          // 高端设备使用更丰富的雾效
+          scene.fog = new THREE.FogExp2(bgColor, 0.02); // 指数雾，增强3D深度感
+        } else if (isMediumEndDevice) {
+          // 中端设备使用线性雾
+          scene.fog = new THREE.Fog(bgColor, 10, 60);
         } else {
-          // 移动设备简化设置
+          // 低端设备禁用雾效，提升性能
           scene.fog = null;
-          scene.background = new THREE.Color(config.backgroundColor || '#0a0a10');
         }
+        
+        // 根据设备性能调整环境光强度
+        const ambientLight = scene.children.find(child => child instanceof THREE.AmbientLight) as THREE.AmbientLight;
+        if (ambientLight) {
+          ambientLight.intensity = isHighEndDevice ? 1.2 : isMediumEndDevice ? 1.0 : 0.8;
+        }
+        
+        // 根据设备性能调整方向光强度和阴影
+        scene.children.forEach(child => {
+          if (child instanceof THREE.DirectionalLight) {
+            const dirLight = child as THREE.DirectionalLight;
+            dirLight.intensity = isHighEndDevice ? 1.5 : isMediumEndDevice ? 1.0 : 0.8;
+            
+            // 仅在高端设备上启用阴影
+            dirLight.castShadow = isHighEndDevice;
+            if (isHighEndDevice) {
+              // 优化阴影质量
+              dirLight.shadow.mapSize.width = 2048;
+              dirLight.shadow.mapSize.height = 2048;
+              dirLight.shadow.camera.near = 0.5;
+              dirLight.shadow.camera.far = 50;
+              dirLight.shadow.bias = -0.0001;
+            }
+          }
+        });
       }
     }
-  }, [scene, isARMode, config.backgroundColor, deviceInfo.isDesktop]);
+  }, [scene, isARMode, config.backgroundColor, deviceInfo.isHighEndDevice, deviceInfo.isMediumEndDevice]);
   
   // 确保AR模式下渲染缓冲区稳定
   useEffect(() => {
@@ -894,11 +1133,11 @@ const CanvasContent: React.FC<{
           model="flower"
           color={particleEffect.color}
           // 仅高端设备渲染粒子，减少卡屏
-          particleCount={20}
+          particleCount={15} // 进一步减少粒子数量
           particleSize={particleEffect.particleSize}
-          animationSpeed={particleEffect.animationSpeed * 0.5}
-          rotationSpeed={particleEffect.rotationSpeed * 0.5}
-          colorVariation={0.2}
+          animationSpeed={particleEffect.animationSpeed * 0.3} // 降低动画速度
+          rotationSpeed={particleEffect.rotationSpeed * 0.3} // 降低旋转速度
+          colorVariation={0.15} // 减少颜色变化计算
           showTrails={false}
           behavior={particleEffect.type}
         />
@@ -936,16 +1175,23 @@ const getDevicePerformance = () => {
   let webGLVersion = 0;
   let hasWebGL = false;
   
-  // 6. AR支持检测 - 更全面的检测
-  const isARSupported = 'xr' in navigator && 
-                        typeof (navigator as any).xr.requestSession === 'function' && 
-                        // 只在移动设备上检测AR支持，桌面设备一般不支持
-                        (isMobile || isTablet);
+  // 6. 增强的WebXR支持检测
+  let isWebXRSupported = false;
+  let isARWebXRSupported = false;
+  let webXRFeatures: string[] = [];
   
-  // 7. 设备性能API检测
+  // 7. ARCore/ARKit支持检测
+  let hasARCore = false;
+  let hasARKit = false;
+  let arPlatform = '';
+  
+  // 8. AR会话模式支持检测
+  let supportedARSessionModes: string[] = [];
+  
+  // 9. 设备性能API检测
   const hasPerformanceAPI = 'performance' in window && 'getEntriesByType' in window.performance;
   
-  // 8. 检测设备刷新率
+  // 10. 检测设备刷新率
   const maxRefreshRate = (window.screen as any).refreshRate || 60;
   
   try {
@@ -1011,6 +1257,69 @@ const getDevicePerformance = () => {
     hasWebGL = false;
   }
   
+  // 增强的AR支持检测
+  try {
+    // 检测WebXR支持
+    if ('xr' in navigator) {
+      isWebXRSupported = true;
+      
+      // 检测AR WebXR支持
+      (navigator.xr as any).isSessionSupported('immersive-ar').then((supported: boolean) => {
+        isARWebXRSupported = supported;
+      }).catch(() => {
+        isARWebXRSupported = false;
+      });
+      
+      // 检测其他AR会话模式支持
+      const sessionModes = ['immersive-ar', 'inline-ar', 'viewer-ar'];
+      sessionModes.forEach(mode => {
+        (navigator.xr as any).isSessionSupported(mode).then((supported: boolean) => {
+          if (supported) {
+            supportedARSessionModes.push(mode);
+          }
+        }).catch(() => {
+          // 忽略不支持的模式
+        });
+      });
+    }
+  } catch (e) {
+    // WebXR检测失败，继续执行
+    isWebXRSupported = false;
+    isARWebXRSupported = false;
+  }
+  
+  // ARCore/ARKit支持检测
+  try {
+    if (isMobile) {
+      // 检测ARCore（Android）
+      if (/Android/i.test(userAgent)) {
+        hasARCore = typeof (navigator as any).xr !== 'undefined' && 
+                   navigator.userAgent.includes('ARCore') || 
+                   (navigator as any).isARCoreSupported === true;
+        if (hasARCore) {
+          arPlatform = 'arcore';
+        }
+      }
+      
+      // 检测ARKit（iOS）
+      if (/iPhone|iPad/i.test(userAgent)) {
+        hasARKit = typeof (navigator as any).xr !== 'undefined' && 
+                  (navigator as any).webkit !== undefined && 
+                  (navigator as any).webkit.messageHandlers !== undefined;
+        if (hasARKit) {
+          arPlatform = 'arkit';
+        }
+      }
+    }
+  } catch (e) {
+    // ARCore/ARKit检测失败，继续执行
+    hasARCore = false;
+    hasARKit = false;
+  }
+  
+  // 综合AR支持检测
+  const isARSupported = isARWebXRSupported && (hasARCore || hasARKit || isMobile);
+  
   // 综合性能评估 - 优化版算法，增强AR模式下的性能评估准确性
   // 计算综合性能得分
   let totalScore = 0;
@@ -1026,6 +1335,19 @@ const getDevicePerformance = () => {
   
   // WebGL版本得分（1-2分）
   totalScore += webGLVersion;
+  
+  // WebXR支持得分（0-5分）
+  if (isWebXRSupported) {
+    totalScore += 2;
+    if (isARWebXRSupported) {
+      totalScore += 3;
+    }
+  }
+  
+  // AR平台得分（0-3分）
+  if (hasARCore || hasARKit) {
+    totalScore += 3;
+  }
   
   // 设备类型调整（不同设备类型有不同的性能基准）
   if (isDesktop) {
@@ -1099,6 +1421,13 @@ const getDevicePerformance = () => {
     isDesktop,
     deviceType,
     isARSupported,
+    isWebXRSupported,
+    isARWebXRSupported,
+    webXRFeatures,
+    hasARCore,
+    hasARKit,
+    arPlatform,
+    supportedARSessionModes,
     isLowPerformanceBrowser,
     hasWebGL,
     maxRefreshRate,
@@ -1402,7 +1731,7 @@ const ThreeDPreviewContent: React.FC<{
   onPositionChange?: (position: { x: number; y: number; z: number }) => void;
   renderSettings: RenderSettings;
   devicePerformance: ReturnType<typeof getDevicePerformance>;
-}> = React.memo(({ config, scale, rotation, position, isARMode, particleEffect, clickInteraction, cameraView, isPlaced, onLoadingComplete, onProgress, onPositionChange, renderSettings, devicePerformance }) => {
+}> = (React.memo ? React.memo : (Component) => Component)(({ config, scale, rotation, position, isARMode, particleEffect, clickInteraction, cameraView, isPlaced, onLoadingComplete, onProgress, onPositionChange, renderSettings, devicePerformance }) => {
   // 使用useState和useEffect手动加载纹理，避免useLoader的硬性错误
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
   // 初始化为false，避免不必要的加载状态显示
@@ -1410,6 +1739,11 @@ const ThreeDPreviewContent: React.FC<{
   const [textureError, setTextureError] = useState(false);
   const [textureRetryCount, setTextureRetryCount] = useState(0);
   const maxTextureRetries = 3;
+  
+  // AR会话状态管理
+  const [xrSession, setXRSession] = useState<any>(null);
+  const [sessionState, setSessionState] = useState<'idle' | 'running' | 'paused' | 'ended'>('idle');
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   // 组件初始化时检查是否有资源需要加载
   useEffect(() => {
@@ -1435,6 +1769,117 @@ const ThreeDPreviewContent: React.FC<{
       }
     }
   }, [config.type, config.imageUrl, config.modelUrl, onLoadingComplete, onProgress]);
+  
+  // 会话暂停和恢复功能
+  useEffect(() => {
+    if (!isARMode) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && xrSession && sessionState === 'running') {
+        // 页面变为隐藏，暂停会话
+        xrSession.suspend()
+          .then(() => {
+            setSessionState('paused');
+            console.log('[AR Session] Session paused due to visibility change');
+          })
+          .catch((error: any) => {
+            console.error('[AR Session] Failed to pause session:', error);
+            setSessionError(`Failed to pause session: ${error.message}`);
+          });
+      } else if (document.visibilityState === 'visible' && xrSession && sessionState === 'paused') {
+        // 页面变为可见，恢复会话
+        xrSession.resume()
+          .then(() => {
+            setSessionState('running');
+            console.log('[AR Session] Session resumed due to visibility change');
+          })
+          .catch((error: any) => {
+            console.error('[AR Session] Failed to resume session:', error);
+            setSessionError(`Failed to resume session: ${error.message}`);
+          });
+      }
+    };
+    
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isARMode, xrSession, sessionState]);
+  
+  // 监听XR会话状态变化
+  useEffect(() => {
+    if (!isARMode) return;
+    
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    
+    const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+    if (!gl || !('xr' in gl)) return;
+    
+    const xr = gl.xr;
+    
+    const handleSessionStart = (event: any) => {
+      setXRSession(event.session);
+      setSessionState('running');
+      setSessionError(null);
+      console.log('[AR Session] Session started');
+    };
+    
+    const handleSessionEnd = (event: any) => {
+      setXRSession(null);
+      setSessionState('ended');
+      setSessionError(null);
+      console.log('[AR Session] Session ended');
+    };
+    
+    const handleSessionSuspend = (event: any) => {
+      setSessionState('paused');
+      console.log('[AR Session] Session suspended');
+    };
+    
+    const handleSessionResume = (event: any) => {
+      setSessionState('running');
+      console.log('[AR Session] Session resumed');
+    };
+    
+    const handleSessionError = (event: any) => {
+      setSessionError(`Session error: ${event.error.message}`);
+      console.error('[AR Session] Session error:', event.error);
+    };
+    
+    // 添加XR事件监听器
+    (xr as any).addEventListener('sessionstart', handleSessionStart);
+    (xr as any).addEventListener('sessionend', handleSessionEnd);
+    (xr as any).addEventListener('sessionsuspend', handleSessionSuspend);
+    (xr as any).addEventListener('sessionresume', handleSessionResume);
+    (xr as any).addEventListener('sessionerror', handleSessionError);
+    
+    return () => {
+      // 移除XR事件监听器
+      (xr as any).removeEventListener('sessionstart', handleSessionStart);
+      (xr as any).removeEventListener('sessionend', handleSessionEnd);
+      (xr as any).removeEventListener('sessionsuspend', handleSessionSuspend);
+      (xr as any).removeEventListener('sessionresume', handleSessionResume);
+      (xr as any).removeEventListener('sessionerror', handleSessionError);
+    };
+  }, [isARMode]);
+  
+  // 组件卸载时清理会话
+  useEffect(() => {
+    return () => {
+      if (xrSession && sessionState !== 'ended') {
+        xrSession.end()
+          .then(() => {
+            console.log('[AR Session] Session ended on component unmount');
+          })
+          .catch((error: any) => {
+            console.error('[AR Session] Failed to end session on unmount:', error);
+          });
+      }
+    };
+  }, [xrSession, sessionState]);
 
   // 优化的纹理加载逻辑，使用requestIdleCallback和高效的缓存机制
   useEffect(() => {
@@ -1795,9 +2240,15 @@ const ThreeDPreviewContent: React.FC<{
   const [model, setModel] = useState<THREE.Group | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
   const [modelError, setModelError] = useState(false);
+  const [modelRetryCount, setModelRetryCount] = useState(0);
+  const [modelRetryDelay, setModelRetryDelay] = useState(1000);
+  const [modelErrorMessage, setModelErrorMessage] = useState<string | null>(null);
+  const [isModelRetrying, setIsModelRetrying] = useState(false);
+  const maxModelRetries = 3;
   
   // 加载进度
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState<'idle' | 'cache-check' | 'downloading' | 'processing' | 'complete'>('idle');
   
   // 设备性能状态 - 从props获取，避免重复声明
     // 组件外部已经声明了devicePerformance，直接使用从props传入的值
@@ -1812,12 +2263,36 @@ const ThreeDPreviewContent: React.FC<{
     // AR模式下完全禁用粒子效果，非AR模式下根据设备性能调整
     enabled: !isARMode,
     particleCount: isARMode ? 0 : 
-                   devicePerformance.isLowEndDevice ? Math.min(particleEffect.particleCount, 15) : 
-                   devicePerformance.isMediumEndDevice ? Math.min(particleEffect.particleCount, 30) : 
-                   Math.min(particleEffect.particleCount, 50),
-    particleSize: devicePerformance.isLowEndDevice ? Math.max(particleEffect.particleSize, 0.15) : particleEffect.particleSize,
-    animationSpeed: devicePerformance.isLowEndDevice ? particleEffect.animationSpeed * 0.5 : particleEffect.animationSpeed,
-    showTrails: !devicePerformance.isLowEndDevice && !isARMode
+                   devicePerformance.isLowEndDevice ? Math.min(particleEffect.particleCount, 10) : 
+                   devicePerformance.isMediumEndDevice ? Math.min(particleEffect.particleCount, 20) : 
+                   Math.min(particleEffect.particleCount, 40),
+    particleSize: devicePerformance.isLowEndDevice ? Math.max(particleEffect.particleSize, 0.2) : particleEffect.particleSize,
+    animationSpeed: devicePerformance.isLowEndDevice ? particleEffect.animationSpeed * 0.3 : 
+                   devicePerformance.isMediumEndDevice ? particleEffect.animationSpeed * 0.7 : 
+                   particleEffect.animationSpeed,
+    showTrails: !devicePerformance.isLowEndDevice && !isARMode,
+    rotationSpeed: devicePerformance.isLowEndDevice ? particleEffect.rotationSpeed * 0.5 : particleEffect.rotationSpeed
+  };
+  
+  // 根据设备性能动态调整渲染设置
+  const dynamicRenderSettings = {
+    ...renderSettings,
+    // 根据设备性能调整渲染质量
+    pixelRatio: devicePerformance.isLowEndDevice ? Math.min(window.devicePixelRatio, 1.0) : 
+               devicePerformance.isMediumEndDevice ? Math.min(window.devicePixelRatio, 1.5) : 
+               Math.min(window.devicePixelRatio, 2.0),
+    // 根据设备性能和AR模式调整抗锯齿
+    antialias: !isARMode && devicePerformance.isHighEndDevice,
+    // 仅在非AR模式且高端设备上启用阴影映射
+    shadowMapEnabled: !isARMode && devicePerformance.isHighEndDevice,
+    // 根据设备性能调整高级效果
+    showAdvancedEffects: !isARMode && !devicePerformance.isLowEndDevice,
+    // 根据设备性能调整粒子数量
+    particleCount: devicePerformance.isLowEndDevice ? 20 : 
+                  devicePerformance.isMediumEndDevice ? 40 : 
+                  60,
+    // 仅在非AR模式且高端设备上启用高级光照
+    advancedLighting: !isARMode && devicePerformance.isHighEndDevice
   };
 
   // 图像加载降级策略 - 获取备选图像URL
@@ -1838,11 +2313,10 @@ const ThreeDPreviewContent: React.FC<{
         return urlObj.toString();
       }
       
-      // 处理Unsplash等CDN URL，调整查询参数或返回默认图片
+      // 处理Unsplash等CDN URL，通过代理加载
       if (urlObj.hostname.includes('unsplash.com') || urlObj.hostname.includes('images.unsplash.com')) {
-        // Unsplash图片可能失效，返回默认占位图
-        console.warn('Unsplash URL detected, returning placeholder image due to potential 404 error');
-        return '/images/placeholder-image.jpg';
+        // 使用代理加载Unsplash图片，避免ORB错误
+        return `/api/proxy/unsplash${urlObj.pathname}${urlObj.search}`;
       }
       
       // 处理其他带有查询参数的URL
@@ -2220,10 +2694,21 @@ const ThreeDPreviewContent: React.FC<{
     };
   }, [config.imageUrl, config.type, textureRetryCount, retryLoadTexture, validateImageUrl, getFallbackImageUrl, devicePerformance, detectErrorType]);
   
-  // 加载3D模型 - 优化版本：使用增强缓存机制和requestIdleCallback
+  // 检测模型文件格式
+  const detectModelFormat = (url: string): 'gltf' | 'glb' | 'fbx' | 'obj' | 'dae' | 'unknown' => {
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.endsWith('.gltf')) return 'gltf';
+    if (lowerUrl.endsWith('.glb')) return 'glb';
+    if (lowerUrl.endsWith('.fbx')) return 'fbx';
+    if (lowerUrl.endsWith('.obj')) return 'obj';
+    if (lowerUrl.endsWith('.dae')) return 'dae';
+    return 'unknown';
+  };
+  
+  // 加载3D模型 - 优化版本：支持多种格式，使用增强缓存机制和requestIdleCallback
   useEffect(() => {
-    let loader: GLTFLoader | null = null;
-    let gltfScene: THREE.Group | null = null;
+    let loader: GLTFLoader | FBXLoader | OBJLoader | ColladaLoader | null = null;
+    let loadedModel: THREE.Group | null = null;
     let isMounted = true;
     let idleCallbackId: number | null = null;
     
@@ -2250,129 +2735,381 @@ const ThreeDPreviewContent: React.FC<{
       setModelError(false);
       setLoadingProgress(50);
       
+      // 检测模型格式
+      const modelFormat = detectModelFormat(config.modelUrl);
+      
+      // 优化模型几何数据
+      const optimizeGeometry = (object: any) => {
+        // 优化几何数据
+        if (object.geometry) {
+          // 简化几何体，降低面数
+          if (object.geometry.attributes.position) {
+            // AR模式下进一步简化模型
+            if (isARMode) {
+              // 使用非索引几何体，减少绘制调用
+              object.geometry = object.geometry.toNonIndexed();
+              
+              // 注意：保留法线属性，某些材质需要法线才能正确渲染
+              // 仅移除uv2和切线属性，减少内存占用
+              if (object.geometry.attributes.uv2) {
+                object.geometry.deleteAttribute('uv2');
+              }
+              if (object.geometry.attributes.tangent) {
+                object.geometry.deleteAttribute('tangent');
+              }
+            }
+          }
+        }
+      };
+      
+      // 优化模型材质
+      const optimizeMaterial = (object: any) => {
+        // 优化材质设置
+        if (object.material) {
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          materials.forEach((material: any) => {
+            if (material instanceof THREE.MeshStandardMaterial) {
+              // 降低材质复杂度
+              material.roughnessMap = null;
+              material.metalnessMap = null;
+              material.normalMap = null;
+              material.displacementMap = null;
+              material.alphaMap = null;
+              material.envMap = null;
+              material.lightMap = null;
+              material.aoMap = null;
+              
+              // AR模式下进一步简化
+              if (isARMode) {
+                material.metalness = 0.0;
+                material.roughness = 0.5;
+                material.emissiveIntensity = 0.0;
+              }
+            }
+          });
+        }
+      };
+      
+      // 优化模型设置
+      const optimizeModel = (model: THREE.Group) => {
+        model.traverse((object: any) => {
+          optimizeGeometry(object);
+          optimizeMaterial(object);
+          
+          // 关闭模型阴影，AR模式下进一步优化
+          object.castShadow = false;
+          object.receiveShadow = false;
+          
+          // AR模式下关闭不必要的功能
+          if (isARMode) {
+            object.frustumCulled = true; // 启用视锥体剔除，减少绘制调用
+            object.visible = true; // 确保对象可见
+          }
+        });
+      };
+      
       // 使用requestIdleCallback在空闲时加载模型，减少主线程阻塞
       const loadModel = () => {
-        loader = new GLTFLoader();
-        loader.load(
-          config.modelUrl as string,
-          (gltf: any) => {
-            if (!isMounted) return;
-            
-            gltfScene = gltf.scene as THREE.Group;
-            
-            // 优化模型渲染设置，根据设备性能和AR模式调整
-            gltfScene.traverse((object: any) => {
-              // 优化几何数据
-              if (object.geometry) {
-                // 简化几何体，降低面数
-                if (object.geometry.attributes.position) {
-                  // AR模式下进一步简化模型
-                  if (isARMode) {
-                    // 使用非索引几何体，减少绘制调用
-                    object.geometry = object.geometry.toNonIndexed();
-                    
-                    // 注意：保留法线属性，某些材质需要法线才能正确渲染
-            // 仅移除uv2和切线属性，减少内存占用
-            if (object.geometry.attributes.uv2) {
-              object.geometry.deleteAttribute('uv2');
-            }
-            if (object.geometry.attributes.tangent) {
-              object.geometry.deleteAttribute('tangent');
-            }
+        // 根据模型格式选择合适的加载器
+        switch (modelFormat) {
+          case 'gltf':
+          case 'glb':
+            loader = new GLTFLoader();
+            (loader as GLTFLoader).load(
+              config.modelUrl as string,
+              (gltf: any) => {
+                if (!isMounted) return;
+                
+                const gltfScene = gltf.scene as THREE.Group;
+                loadedModel = gltfScene;
+                
+                // 优化模型
+                optimizeModel(gltfScene);
+                
+                // 处理动画（如果有）
+                if (gltf.animations && gltf.animations.length > 0 && config.animations) {
+                  console.log('Model has animations:', gltf.animations.length);
+                }
+                
+                // 计算模型大小（MB）
+                const modelSizeMB = calculateResourceSize.model(gltfScene);
+                
+                // 添加到缓存
+                if (config.modelUrl) {
+                  const cacheEntry: CachedResource<THREE.Group> = {
+                    resource: gltfScene,
+                    timestamp: Date.now(),
+                    size: modelSizeMB,
+                    usageCount: 1,
+                    lastUsed: Date.now()
+                  };
+                  
+                  resourceCache.models.set(config.modelUrl, cacheEntry);
+                }
+                
+                // 清理超出限制的资源
+                resourceCache.config.cleanupExcess();
+                
+                if (isMounted) {
+                  setModel(gltfScene);
+                  setModelLoading(false);
+                  setModelError(false);
+                  setLoadingProgress(100);
+                  
+                  // 通知父组件加载完成
+                  if (onLoadingComplete) {
+                    onLoadingComplete();
                   }
                 }
+              },
+              (progress: ProgressEvent) => {
+                if (!isMounted) return;
+                // 更新加载进度
+                if (progress.total > 0) {
+                  const progressPercent = 50 + Math.round((progress.loaded / progress.total) * 50);
+                  setLoadingProgress(progressPercent);
+                  
+                  // 通知父组件进度更新
+                  if (onProgress) {
+                    onProgress(progressPercent);
+                  }
+                }
+              },
+              (error: unknown) => {
+                console.error('Error loading GLTF/GLB model:', error);
+                if (isMounted) {
+                  setModel(null);
+                  setModelLoading(false);
+                  setModelError(true);
+                  setLoadingProgress(100);
+                }
               }
-              
-              // 优化材质设置
-              if (object.material) {
-                const materials = Array.isArray(object.material) ? object.material : [object.material];
-                materials.forEach((material: any) => {
-                  if (material instanceof THREE.MeshStandardMaterial) {
-                    // 降低材质复杂度
-                    material.roughnessMap = null;
-                    material.metalnessMap = null;
-                    material.normalMap = null;
-                    material.displacementMap = null;
-                    material.alphaMap = null;
-                    material.envMap = null;
-                    material.lightMap = null;
-                    material.aoMap = null;
-                    
-                    // AR模式下进一步简化
-                    if (isARMode) {
-                      material.metalness = 0.0;
-                      material.roughness = 0.5;
-                      material.emissiveIntensity = 0.0;
-                    }
+            );
+            break;
+            
+          case 'fbx':
+            loader = new FBXLoader();
+            (loader as FBXLoader).load(
+              config.modelUrl as string,
+              (fbxScene: THREE.Group) => {
+                if (!isMounted) return;
+                
+                loadedModel = fbxScene;
+                
+                // 优化模型
+                optimizeModel(fbxScene);
+                
+                // 计算模型大小（MB）
+                const modelSizeMB = calculateResourceSize.model(fbxScene);
+                
+                // 添加到缓存
+                if (config.modelUrl) {
+                  const cacheEntry: CachedResource<THREE.Group> = {
+                    resource: fbxScene,
+                    timestamp: Date.now(),
+                    size: modelSizeMB,
+                    usageCount: 1,
+                    lastUsed: Date.now()
+                  };
+                  
+                  resourceCache.models.set(config.modelUrl, cacheEntry);
+                }
+                
+                // 清理超出限制的资源
+                resourceCache.config.cleanupExcess();
+                
+                if (isMounted) {
+                  setModel(fbxScene);
+                  setModelLoading(false);
+                  setModelError(false);
+                  setLoadingProgress(100);
+                  
+                  // 通知父组件加载完成
+                  if (onLoadingComplete) {
+                    onLoadingComplete();
+                  }
+                }
+              },
+              (progress: ProgressEvent) => {
+                if (!isMounted) return;
+                // 更新加载进度
+                if (progress.total > 0) {
+                  const progressPercent = 50 + Math.round((progress.loaded / progress.total) * 50);
+                  setLoadingProgress(progressPercent);
+                  
+                  // 通知父组件进度更新
+                  if (onProgress) {
+                    onProgress(progressPercent);
+                  }
+                }
+              },
+              (error: unknown) => {
+                console.error('Error loading FBX model:', error);
+                if (isMounted) {
+                  setModel(null);
+                  setModelLoading(false);
+                  setModelError(true);
+                  setLoadingProgress(100);
+                }
+              }
+            );
+            break;
+            
+          case 'obj':
+            loader = new OBJLoader();
+            (loader as OBJLoader).load(
+              config.modelUrl as string,
+              (objScene: THREE.Group) => {
+                if (!isMounted) return;
+                
+                loadedModel = objScene;
+                
+                // 为OBJ模型添加默认材质
+                objScene.traverse((object: any) => {
+                  if (object.isMesh && !object.material) {
+                    object.material = new THREE.MeshStandardMaterial({ color: 0xcccccc });
                   }
                 });
+                
+                // 优化模型
+                optimizeModel(objScene);
+                
+                // 计算模型大小（MB）
+                const modelSizeMB = calculateResourceSize.model(objScene);
+                
+                // 添加到缓存
+                if (config.modelUrl) {
+                  const cacheEntry: CachedResource<THREE.Group> = {
+                    resource: objScene,
+                    timestamp: Date.now(),
+                    size: modelSizeMB,
+                    usageCount: 1,
+                    lastUsed: Date.now()
+                  };
+                  
+                  resourceCache.models.set(config.modelUrl, cacheEntry);
+                }
+                
+                // 清理超出限制的资源
+                resourceCache.config.cleanupExcess();
+                
+                if (isMounted) {
+                  setModel(objScene);
+                  setModelLoading(false);
+                  setModelError(false);
+                  setLoadingProgress(100);
+                  
+                  // 通知父组件加载完成
+                  if (onLoadingComplete) {
+                    onLoadingComplete();
+                  }
+                }
+              },
+              (progress: ProgressEvent) => {
+                if (!isMounted) return;
+                // 更新加载进度
+                if (progress.total > 0) {
+                  const progressPercent = 50 + Math.round((progress.loaded / progress.total) * 50);
+                  setLoadingProgress(progressPercent);
+                  
+                  // 通知父组件进度更新
+                  if (onProgress) {
+                    onProgress(progressPercent);
+                  }
+                }
+              },
+              (error: unknown) => {
+                console.error('Error loading OBJ model:', error);
+                if (isMounted) {
+                  setModel(null);
+                  setModelLoading(false);
+                  setModelError(true);
+                  setLoadingProgress(100);
+                }
               }
-              
-              // 关闭模型阴影，AR模式下进一步优化
-              object.castShadow = false;
-              object.receiveShadow = false;
-              
-              // AR模式下关闭不必要的功能
-              if (isARMode) {
-                object.frustumCulled = true; // 启用视锥体剔除，减少绘制调用
-                object.visible = true; // 确保对象可见
+            );
+            break;
+            
+          case 'dae':
+            loader = new ColladaLoader();
+            (loader as ColladaLoader).load(
+              config.modelUrl as string,
+              (collada: any) => {
+                if (!isMounted) return;
+                
+                const colladaScene = collada.scene as THREE.Group;
+                loadedModel = colladaScene;
+                
+                // 优化模型
+                optimizeModel(colladaScene);
+                
+                // 计算模型大小（MB）
+                const modelSizeMB = calculateResourceSize.model(colladaScene);
+                
+                // 添加到缓存
+                if (config.modelUrl) {
+                  const cacheEntry: CachedResource<THREE.Group> = {
+                    resource: colladaScene,
+                    timestamp: Date.now(),
+                    size: modelSizeMB,
+                    usageCount: 1,
+                    lastUsed: Date.now()
+                  };
+                  
+                  resourceCache.models.set(config.modelUrl, cacheEntry);
+                }
+                
+                // 清理超出限制的资源
+                resourceCache.config.cleanupExcess();
+                
+                if (isMounted) {
+                  setModel(colladaScene);
+                  setModelLoading(false);
+                  setModelError(false);
+                  setLoadingProgress(100);
+                  
+                  // 通知父组件加载完成
+                  if (onLoadingComplete) {
+                    onLoadingComplete();
+                  }
+                }
+              },
+              (progress: ProgressEvent) => {
+                if (!isMounted) return;
+                // 更新加载进度
+                if (progress.total > 0) {
+                  const progressPercent = 50 + Math.round((progress.loaded / progress.total) * 50);
+                  setLoadingProgress(progressPercent);
+                  
+                  // 通知父组件进度更新
+                  if (onProgress) {
+                    onProgress(progressPercent);
+                  }
+                }
+              },
+              (error: unknown) => {
+                console.error('Error loading Collada model:', error);
+                if (isMounted) {
+                  setModel(null);
+                  setModelLoading(false);
+                  setModelError(true);
+                  setLoadingProgress(100);
+                }
               }
-            });
+            );
+            break;
             
-            // 计算模型大小（MB）
-            const modelSizeMB = calculateResourceSize.model(gltfScene);
-            
-            // 添加到缓存
-            if (config.modelUrl) {
-              const cacheEntry: CachedResource<THREE.Group> = {
-                resource: gltfScene,
-                timestamp: Date.now(),
-                size: modelSizeMB,
-                usageCount: 1,
-                lastUsed: Date.now()
-              };
-              
-              resourceCache.models.set(config.modelUrl, cacheEntry);
-            }
-            
-            // 清理超出限制的资源
-            resourceCache.config.cleanupExcess();
-            
-            if (isMounted) {
-              setModel(gltfScene);
-              setModelLoading(false);
-              setModelError(false);
-              setLoadingProgress(100);
-              
-              // 通知父组件加载完成
-              if (onLoadingComplete) {
-                onLoadingComplete();
-              }
-            }
-          },
-          (progress: ProgressEvent) => {
-            if (!isMounted) return;
-            // 更新加载进度
-            if (progress.total > 0) {
-              const progressPercent = 50 + Math.round((progress.loaded / progress.total) * 50);
-              setLoadingProgress(progressPercent);
-              
-              // 通知父组件进度更新
-              if (onProgress) {
-                onProgress(progressPercent);
-              }
-            }
-          },
-          (error: unknown) => {
-            console.error('Error loading model:', error);
+          default:
+            console.error('Unsupported model format:', modelFormat);
             if (isMounted) {
               setModel(null);
               setModelLoading(false);
               setModelError(true);
               setLoadingProgress(100);
+              toast.error(`不支持的模型格式: ${modelFormat}`);
             }
-          }
-        );
+            return;
+        }
       };
       
       // 使用requestIdleCallback在浏览器空闲时加载模型
@@ -2396,9 +3133,9 @@ const ThreeDPreviewContent: React.FC<{
         }
       }
       // 清理模型资源（仅当不在缓存中时）
-      if (gltfScene && config.modelUrl && !resourceCache.models.has(config.modelUrl)) {
+      if (loadedModel && config.modelUrl && !resourceCache.models.has(config.modelUrl)) {
         // 递归清理模型的几何体和材质
-        gltfScene.traverse((object: any) => {
+        loadedModel.traverse((object: any) => {
           if (object.geometry) {
             object.geometry.dispose();
           }
@@ -2412,7 +3149,7 @@ const ThreeDPreviewContent: React.FC<{
         });
       }
     };
-  }, [config.modelUrl, config.type, onLoadingComplete, onProgress, isARMode, devicePerformance]);
+  }, [config.modelUrl, config.type, config.animations, onLoadingComplete, onProgress, isARMode, devicePerformance]);
   
   // 组件卸载时清理资源
   useEffect(() => {
@@ -2423,71 +3160,354 @@ const ThreeDPreviewContent: React.FC<{
     };
   }, []);
 
+  // AR引导状态管理
+  const [showARGuidance, setShowARGuidance] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
+  
+  // AR引导步骤
+  const arGuidanceSteps = [
+    {
+      title: '欢迎使用AR功能',
+      description: 'AR功能允许您将3D模型放置在真实环境中查看。请按照以下步骤操作：',
+      image: 'https://via.placeholder.com/300x200?text=AR+Introduction',
+      tips: ['确保设备支持ARCore（Android）或ARKit（iOS）', '使用最新版本的Chrome或Safari浏览器', '在光线充足的环境中使用']
+    },
+    {
+      title: '步骤1：准备环境',
+      description: '1. 找到一个平坦的表面，如桌面、地板或墙壁',
+      image: 'https://via.placeholder.com/300x200?text=Prepare+Environment',
+      tips: ['确保表面有足够的纹理，便于设备识别', '避免反光或透明表面', '保持环境光线充足']
+    },
+    {
+      title: '步骤2：扫描表面',
+      description: '2. 将设备摄像头对准表面，缓慢移动设备，直到看到蓝色的检测点',
+      image: 'https://via.placeholder.com/300x200?text=Scan+Surface',
+      tips: ['缓慢移动设备，覆盖整个表面', '保持设备稳定，避免抖动', '耐心等待检测点出现']
+    },
+    {
+      title: '步骤3：放置模型',
+      description: '3. 点击屏幕上的检测点，将模型放置在真实环境中',
+      image: 'https://via.placeholder.com/300x200?text=Place+Model',
+      tips: ['选择合适的位置放置模型', '模型会自动调整大小和方向', '可以通过手势调整模型']
+    },
+    {
+      title: '步骤4：交互操作',
+      description: '4. 放置后，您可以：',
+      image: 'https://via.placeholder.com/300x200?text=Interact',
+      tips: ['双指缩放调整模型大小', '单指旋转调整模型方向', '单指拖动移动模型位置', '点击模型查看详细信息']
+    },
+    {
+      title: '完成！',
+      description: '现在您可以尽情体验AR功能了！如果遇到问题，请查看常见问题解答。',
+      image: 'https://via.placeholder.com/300x200?text=Complete',
+      tips: ['尝试不同的模型和环境', '与朋友分享您的AR体验', '定期更新应用以获得最佳体验']
+    }
+  ];
+  
+  // 常见问题
+  const faqs = [
+    {
+      question: '为什么检测不到平面？',
+      answer: '请确保在光线充足的环境中，表面有足够的纹理，并且您正在缓慢移动设备扫描表面。'
+    },
+    {
+      question: '模型放置后不稳定怎么办？',
+      answer: '请尝试在更平坦、纹理更丰富的表面上放置模型，避免反光或透明表面。'
+    },
+    {
+      question: '如何调整模型大小和方向？',
+      answer: '使用双指缩放调整大小，单指旋转调整方向，单指拖动移动位置。'
+    },
+    {
+      question: 'AR功能消耗电量快吗？',
+      answer: 'AR功能需要使用摄像头和传感器，会消耗一定电量。建议在使用时保持设备充电。'
+    }
+  ];
+  
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* 设备不支持AR提示 */}
+      {isARMode && !devicePerformance.isARSupported && (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/30 p-6 animate-fade-in">
+          <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 shadow-lg">
+            <i className="fas fa-mobile-alt text-6xl text-blue-500"></i>
+          </div>
+          <h3 className="text-2xl font-bold mb-3 text-blue-700 dark:text-blue-300">您的设备不支持AR功能</h3>
+          <p className="text-center text-blue-600 dark:text-blue-400 mb-6 max-w-md">
+            很抱歉，您的设备当前不支持WebXR AR功能。请尝试在支持ARCore（Android）或ARKit（iOS）的移动设备上体验。
+          </p>
+          
+          {/* 设备兼容性详情 */}
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-6 py-4 rounded-lg text-sm text-blue-700 dark:text-blue-300 max-w-md shadow-lg mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <i className="fas fa-info-circle"></i>
+              设备兼容性检测结果
+            </h4>
+            <ul className="space-y-2">
+              <li className="flex justify-between items-center">
+                <span>WebXR支持:</span>
+                <span className={devicePerformance.isWebXRSupported ? "text-green-500" : "text-red-500"}>
+                  {devicePerformance.isWebXRSupported ? "✅ 支持" : "❌ 不支持"}
+                </span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span>AR WebXR支持:</span>
+                <span className={devicePerformance.isARWebXRSupported ? "text-green-500" : "text-red-500"}>
+                  {devicePerformance.isARWebXRSupported ? "✅ 支持" : "❌ 不支持"}
+                </span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span>ARCore/ARKit:</span>
+                <span className={(devicePerformance.hasARCore || devicePerformance.hasARKit) ? "text-green-500" : "text-red-500"}>
+                  {(devicePerformance.hasARCore || devicePerformance.hasARKit) ? "✅ 支持" : "❌ 不支持"}
+                </span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span>WebGL支持:</span>
+                <span className={devicePerformance.hasWebGL ? "text-green-500" : "text-red-500"}>
+                  {devicePerformance.hasWebGL ? "✅ 支持" : "❌ 不支持"}
+                </span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span>设备类型:</span>
+                <span>{devicePerformance.deviceType === 'desktop' ? '桌面设备' : devicePerformance.deviceType === 'tablet' ? '平板设备' : '移动设备'}</span>
+              </li>
+            </ul>
+          </div>
+          
+          {/* 解决方案建议 */}
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-6 py-4 rounded-lg text-sm text-blue-700 dark:text-blue-300 max-w-md shadow-lg mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <i className="fas fa-lightbulb"></i>
+              解决方案
+            </h4>
+            <ul className="space-y-2 pl-5 list-disc text-left">
+              <li>使用支持ARCore的Android设备</li>
+              <li>使用支持ARKit的iOS设备（iPhone 6s及以上，iPad Pro及以上）</li>
+              <li>确保设备系统版本为最新</li>
+              <li>使用Chrome或Safari最新版本浏览器</li>
+              <li>在光线充足的环境中使用AR功能</li>
+            </ul>
+          </div>
+          
+          {/* 切换到非AR模式按钮 */}
+          <button
+            onClick={() => toast.info('已切换到3D预览模式')}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+          >
+            <i className="fas fa-eye"></i>
+            切换到3D预览模式
+          </button>
+        </div>
+      )}
+      
       {/* Canvas配置 - 基于设备性能的动态配置 */}
-      <Canvas
-        camera={{ 
-          position: devicePerformance.isDesktop ? [10, 10, 10] : [8, 8, 8], // 桌面设备使用更远的视角
-          fov: devicePerformance.isDesktop ? 50 : 60 // 桌面设备使用更小的视野，增强3D效果
-        }}
-        gl={{ 
-          // 优化渲染设置，确保3D模型能清晰可见
-          antialias: true, // 始终启用抗锯齿，提升视觉效果
-          powerPreference: 'high-performance',
-          preserveDrawingBuffer: true, // 保留绘制缓冲区，确保渲染稳定
-          alpha: true, // 始终启用alpha通道，确保模型能正常显示
-          stencil: true, // 启用stencil，确保模型能正常渲染
-          // 优化WebGL配置，提升性能并减少闪烁
-          premultipliedAlpha: true,
-          depth: true,
-          // 使用mediump精度，确保模型清晰可见
-          precision: 'mediump',
-          // 确保所有模式下配置一致，避免黑屏
-          ...(isARMode && {
-            alpha: true, // AR模式下启用透明背景
-            antialias: true, // AR模式下启用抗锯齿
-            preserveDrawingBuffer: true, // 确保AR模式下渲染缓冲区稳定
-            depth: true, // 确保深度测试启用
-            stencil: true // 确保模板测试启用
-          })
-        }}
-        shadows={false} // AR模式下完全禁用阴影，减少渲染计算
-        performance={{ 
-          min: 0.01, // 降低性能阈值，减少性能监控的影响
-          debounce: 1000, // 增加防抖时间，减少性能波动
-          // 禁用自动帧率调节，减少不必要的计算
-        }}
-        style={{ flex: 1, width: '100%', height: '100%' }} // 优化图像渲染
-        // 只有在AR模式下才需要sessionInit配置
-        {...(isARMode && {
-          sessionInit: {
-            requiredFeatures: ['hit-test', 'anchors'],
-            optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar'],
-            domOverlay: { root: document.body }
-          } as any // 添加类型断言，确保配置正确
-        })}
-      >
-        {/* Canvas内部内容 */}
-        <CanvasContent
-                config={config}
-                scale={scale}
-                rotation={rotation}
-                position={position}
-                isARMode={isARMode}
-                particleEffect={optimizedParticleEffect}
-                texture={texture}
-                textureError={textureError}
-                model={model}
-                modelLoading={modelLoading}
-                modelError={modelError}
-                cameraView={cameraView}
-                isPlaced={isPlaced}
-                onPositionChange={onPositionChange}
-                renderSettings={renderSettings}
-                devicePerformance={devicePerformance}
-              />
-      </Canvas>
+      {!(isARMode && !devicePerformance.isARSupported) && (
+        <>
+          <Canvas
+            camera={{ 
+              position: devicePerformance.isDesktop ? [10, 10, 10] : [8, 8, 8], // 桌面设备使用更远的视角
+              fov: devicePerformance.isDesktop ? 50 : 60 // 桌面设备使用更小的视野，增强3D效果
+            }}
+            gl={{ 
+              // 优化渲染设置，确保3D模型能清晰可见
+              antialias: true, // 始终启用抗锯齿，提升视觉效果
+              powerPreference: 'high-performance',
+              preserveDrawingBuffer: true, // 保留绘制缓冲区，确保渲染稳定
+              alpha: true, // 始终启用alpha通道，确保模型能正常显示
+              stencil: true, // 启用stencil，确保模型能正常渲染
+              // 优化WebGL配置，提升性能并减少闪烁
+              premultipliedAlpha: true,
+              depth: true,
+              // 使用mediump精度，确保模型清晰可见
+              precision: 'mediump',
+              // 确保所有模式下配置一致，避免黑屏
+              ...(isARMode && {
+                alpha: true, // AR模式下启用透明背景
+                antialias: true, // AR模式下启用抗锯齿
+                preserveDrawingBuffer: true, // 确保AR模式下渲染缓冲区稳定
+                depth: true, // 确保深度测试启用
+                stencil: true // 确保模板测试启用
+              })
+            }}
+            shadows={false} // AR模式下完全禁用阴影，减少渲染计算
+            performance={{ 
+              min: 0.01, // 降低性能阈值，减少性能监控的影响
+              debounce: 1000, // 增加防抖时间，减少性能波动
+              // 禁用自动帧率调节，减少不必要的计算
+            }}
+            style={{ flex: 1, width: '100%', height: '100%' }} // 优化图像渲染
+            // 只有在AR模式下才需要sessionInit配置
+            {...(isARMode && {
+              sessionInit: {
+                requiredFeatures: ['hit-test', 'anchors'],
+                optionalFeatures: ['dom-overlay', 'dom-overlay-for-handheld-ar'],
+                domOverlay: { root: document.body }
+              } as any // 添加类型断言，确保配置正确
+            })}
+          >
+            {/* Canvas内部内容 */}
+            <CanvasContent
+                  config={config}
+                  scale={scale}
+                  rotation={rotation}
+                  position={position}
+                  isARMode={isARMode}
+                  particleEffect={optimizedParticleEffect}
+                  texture={texture}
+                  textureError={textureError}
+                  model={model}
+                  modelLoading={modelLoading}
+                  modelError={modelError}
+                  cameraView={cameraView}
+                  isPlaced={isPlaced}
+                  onPositionChange={onPositionChange}
+                  renderSettings={dynamicRenderSettings}
+                  devicePerformance={devicePerformance}
+                />
+          </Canvas>
+          
+          {/* AR模式引导界面 */}
+          {isARMode && showARGuidance && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-30 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* 引导标题栏 */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <i className="fas fa-robot"></i>
+                    AR使用指南
+                  </h2>
+                  <button
+                    onClick={() => setShowARGuidance(false)}
+                    className="text-white hover:text-gray-200 transition-colors duration-200"
+                    title="关闭指南"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+                
+                {/* 引导内容 */}
+                <div className="p-6">
+                  {/* 步骤指示器 */}
+                  <div className="flex justify-center mb-6">
+                    {arGuidanceSteps.map((step, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm mr-4 ${index === currentStep ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+                          {index + 1}
+                        </div>
+                        {index < arGuidanceSteps.length - 1 && (
+                          <div className={`flex-1 h-1 mx-2 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* 当前步骤内容 */}
+                  <div className="text-center mb-6 animate-fade-in">
+                    <h3 className="text-xl font-bold mb-3 text-gray-800 dark:text-gray-200">
+                      {arGuidanceSteps[currentStep].title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      {arGuidanceSteps[currentStep].description}
+                    </p>
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                      <img 
+                        src={arGuidanceSteps[currentStep].image} 
+                        alt={arGuidanceSteps[currentStep].title} 
+                        className="mx-auto rounded-lg shadow-md max-h-48 object-contain"
+                      />
+                    </div>
+                    
+                    {/* 提示信息 */}
+                    <div className="text-left bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+                      <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-2">
+                        <i className="fas fa-lightbulb"></i>
+                        小贴士
+                      </h4>
+                      <ul className="space-y-1 text-sm text-blue-600 dark:text-blue-400 pl-5 list-disc">
+                        {arGuidanceSteps[currentStep].tips.map((tip, index) => (
+                          <li key={index}>{tip}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  {/* 导航按钮 */}
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                      disabled={currentStep === 0}
+                      className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${currentStep === 0 ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl'}`}
+                    >
+                      <i className="fas fa-arrow-left"></i>
+                      上一步
+                    </button>
+                    
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {currentStep + 1} / {arGuidanceSteps.length}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        if (currentStep === arGuidanceSteps.length - 1) {
+                          setShowARGuidance(false);
+                          toast.success('AR引导已完成，祝您体验愉快！');
+                        } else {
+                          setCurrentStep(currentStep + 1);
+                        }
+                      }}
+                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2"
+                    >
+                      {currentStep === arGuidanceSteps.length - 1 ? (
+                        <>
+                          <i className="fas fa-check"></i>
+                          完成
+                        </>
+                      ) : (
+                        <>
+                          下一步
+                          <i className="fas fa-arrow-right"></i>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 常见问题 */}
+                <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <i className="fas fa-question-circle"></i>
+                    常见问题
+                  </h3>
+                  <div className="space-y-3">
+                    {faqs.slice(0, 3).map((faq, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">
+                          {faq.question}
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {faq.answer}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* AR引导触发按钮 */}
+          {isARMode && !showARGuidance && (
+            <button
+              onClick={() => setShowARGuidance(true)}
+              className="absolute bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 active:scale-95 z-20"
+              title="查看AR使用指南"
+            >
+              <i className="fas fa-question-circle text-xl"></i>
+            </button>
+          )}
+        </>
+      )}
       
       {/* 统一的资源加载状态提示 - 仅在有实际资源需要加载时显示 */}
       {(() => {
@@ -3036,10 +4056,10 @@ const ARPreview: React.FC<{
     if (newConfig.imageUrl) {
       try {
         const urlObj = new URL(newConfig.imageUrl);
-        // 如果是Unsplash URL，直接替换为默认占位图
+        // 如果是Unsplash URL，使用代理加载以避免ORB错误
         if (urlObj.hostname.includes('unsplash.com') || urlObj.hostname.includes('images.unsplash.com')) {
-          console.info(`Unsplash URL detected: ${newConfig.imageUrl}, replacing with placeholder image`);
-          newConfig.imageUrl = '/images/placeholder-image.jpg';
+          console.info(`Unsplash URL detected: ${newConfig.imageUrl}, using proxy for loading`);
+          newConfig.imageUrl = `/api/proxy/unsplash${urlObj.pathname}${urlObj.search}`;
         }
       } catch (error) {
         // URL无效，替换为默认占位图

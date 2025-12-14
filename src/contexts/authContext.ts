@@ -13,6 +13,11 @@ export interface User {
   isAdmin?: boolean;
   age?: number;
   tags?: string[];
+  // 会员相关字段
+  membershipLevel: 'free' | 'premium' | 'vip';
+  membershipStart?: string;
+  membershipEnd?: string;
+  membershipStatus: 'active' | 'expired' | 'pending';
 }
 
 // AuthContext 类型定义
@@ -26,6 +31,10 @@ interface AuthContextType {
   quickLogin: (provider: 'wechat' | 'phone' | 'alipay' | 'qq' | 'weibo') => Promise<boolean>;
   // 中文注释：更新用户信息（例如更换头像），会自动持久化
   updateUser: (partial: Partial<User>) => void;
+  // 会员相关方法
+  updateMembership: (membershipData: Partial<User>) => Promise<boolean>;
+  checkMembershipStatus: () => boolean;
+  getMembershipBenefits: () => string[];
 }
 
 // AuthProvider 组件属性类型
@@ -43,6 +52,9 @@ export const AuthContext = createContext<AuthContextType>({
   setIsAuthenticated: () => {},
   quickLogin: async () => false,
   updateUser: () => {},
+  updateMembership: async () => false,
+  checkMembershipStatus: () => false,
+  getMembershipBenefits: () => [],
 });
 
 // AuthProvider 组件
@@ -55,7 +67,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 从本地存储获取用户信息
   const [user, setUser] = useState<User | null>(() => {
     const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData) : null;
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      // 添加默认会员信息
+      return {
+        ...parsedUser,
+        membershipLevel: parsedUser.membershipLevel || 'free',
+        membershipStatus: parsedUser.membershipStatus || 'active',
+        membershipStart: parsedUser.membershipStart || new Date().toISOString(),
+      };
+    }
+    return null;
   });
 
   // 定义API响应类型
@@ -72,7 +94,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         try {
           const response = await apiClient.get<{ user: User }>('/api/auth/me');
           if (response.ok && response.data && response.data.user) {
-            setUser(response.data.user);
+            // 添加默认会员信息
+            const userWithMembership = {
+              ...response.data.user,
+              membershipLevel: response.data.user.membershipLevel || 'free',
+              membershipStatus: response.data.user.membershipStatus || 'active',
+              membershipStart: response.data.user.membershipStart || new Date().toISOString(),
+            };
+            setUser(userWithMembership);
             setIsAuthenticated(true);
           } else {
             // 令牌无效，清除本地存储
@@ -103,13 +132,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
       
       if (response.ok && response.data && response.data.token && response.data.user) {
+        // 添加默认会员信息
+        const userWithMembership = {
+          ...response.data.user,
+          membershipLevel: response.data.user.membershipLevel || 'free',
+          membershipStatus: response.data.user.membershipStatus || 'active',
+          membershipStart: response.data.user.membershipStart || new Date().toISOString(),
+        };
+        
         // 存储令牌和用户信息
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(userWithMembership));
         
         // 更新状态
         setIsAuthenticated(true);
-        setUser(response.data.user);
+        setUser(userWithMembership);
         
         return true;
       } else {
@@ -138,13 +175,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // console.log('AuthContext.register: 3. Response received:', { ok: response.ok, status: response.status, data: response.data, error: response.error });
       
       if (response.ok && response.data && response.data.token && response.data.user) {
+        // 添加默认会员信息
+        const userWithMembership = {
+          ...response.data.user,
+          membershipLevel: response.data.user.membershipLevel || 'free',
+          membershipStatus: response.data.user.membershipStatus || 'active',
+          membershipStart: response.data.user.membershipStart || new Date().toISOString(),
+        };
+        
         // 存储令牌和用户信息
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(userWithMembership));
         
         // 更新状态
         setIsAuthenticated(true);
-        setUser(response.data.user);
+        setUser(userWithMembership);
         
         return true;
       } else {
@@ -166,6 +211,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           email: `${provider}-${Date.now()}@example.com`,
           avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar",
           tags: ['国潮爱好者'],
+          // 初始会员信息
+          membershipLevel: 'free',
+          membershipStart: new Date().toISOString(),
+          membershipStatus: 'active',
         };
         setIsAuthenticated(true);
         setUser(baseUser);
@@ -199,6 +248,85 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
   };
 
+  // 更新会员信息
+  const updateMembership = async (membershipData: Partial<User>): Promise<boolean> => {
+    try {
+      // 调用API更新会员信息
+      const response = await apiClient.post<{ user: User }>('/api/membership/update', membershipData);
+      
+      if (response.ok && response.data && response.data.user) {
+        // 更新本地用户信息
+        updateUser(response.data.user);
+        return true;
+      } else {
+        // 如果API调用失败，直接更新本地信息
+        updateUser(membershipData);
+        return true;
+      }
+    } catch (error) {
+      console.error('更新会员信息失败:', error);
+      // 即使API调用失败，也尝试更新本地信息
+      updateUser(membershipData);
+      return false;
+    }
+  };
+
+  // 检查会员状态是否有效
+  const checkMembershipStatus = (): boolean => {
+    if (!user) return false;
+    
+    // 免费会员永远有效
+    if (user.membershipLevel === 'free') return true;
+    
+    // 检查会员状态和过期时间
+    if (user.membershipStatus !== 'active') return false;
+    
+    if (user.membershipEnd) {
+      const now = new Date();
+      const endDate = new Date(user.membershipEnd);
+      return now <= endDate;
+    }
+    
+    return true;
+  };
+
+  // 获取会员权益
+  const getMembershipBenefits = (): string[] => {
+    if (!user) return [];
+    
+    switch (user.membershipLevel) {
+      case 'vip':
+        return [
+          '无限AI生成次数',
+          '高级AI模型访问',
+          '高清作品导出',
+          '优先处理队列',
+          '专属模板库',
+          '去除水印',
+          '专属AI训练模型',
+          '一对一设计师服务',
+          '商业授权',
+          '专属活动邀请'
+        ];
+      case 'premium':
+        return [
+          '无限AI生成次数',
+          '高级AI模型访问',
+          '高清作品导出',
+          '优先处理队列',
+          '专属模板库',
+          '去除水印'
+        ];
+      default:
+        return [
+          '基础AI创作功能',
+          '每天限量生成次数',
+          '基础社区功能',
+          '基础作品存储'
+        ];
+    }
+  };
+
   // 提供Context值
   const contextValue: AuthContextType = {
     isAuthenticated,
@@ -208,7 +336,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     logout,
     setIsAuthenticated,
     quickLogin,
-    updateUser
+    updateUser,
+    updateMembership,
+    checkMembershipStatus,
+    getMembershipBenefits
   };
 
   // 返回Provider组件

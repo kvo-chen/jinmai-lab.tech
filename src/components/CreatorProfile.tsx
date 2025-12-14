@@ -2,6 +2,9 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+import { PointsRecord, PointsSourceStats } from '@/services/achievementService';
 
 interface CreatorProfileProps {
   creatorData: {
@@ -34,6 +37,13 @@ interface CreatorProfileProps {
       date: string;
       revenue?: string;
     }>;
+    pointsStats?: {
+      currentPoints: number;
+      availablePoints: number;
+      totalPossiblePoints: number;
+      sourceStats: PointsSourceStats;
+      recentRecords: PointsRecord[];
+    };
   };
   isDark: boolean;
 }
@@ -65,6 +75,94 @@ const CreatorProfile: React.FC<CreatorProfileProps> = ({ creatorData, isDark }) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* 左侧：成就与奖励 */}
         <div className="space-y-6">
+          {/* 积分统计 */}
+          {creatorData.pointsStats && (
+            <div>
+              <h3 className="font-medium mb-3">积分统计</h3>
+              
+              {/* 积分概览 */}
+              <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'} mb-4`}>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-xs opacity-70 mb-1">总积分</p>
+                    <p className="text-xl font-bold">{creatorData.pointsStats.currentPoints}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-70 mb-1">已获取</p>
+                    <p className="text-xl font-bold text-green-600">{creatorData.pointsStats.currentPoints}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-70 mb-1">可获取</p>
+                    <p className="text-xl font-bold text-yellow-600">{creatorData.pointsStats.availablePoints}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 积分来源分布 */}
+              <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'} mb-4`}>
+                <h4 className="text-sm font-medium mb-3">积分来源</h4>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(creatorData.pointsStats.sourceStats).map(([name, value]) => ({
+                          name,
+                          value
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {Object.entries(creatorData.pointsStats.sourceStats).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value, name) => [`${value} 积分`, name === 'achievement' ? '成就' : name === 'task' ? '任务' : name === 'daily' ? '每日' : '其他']}
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                          borderColor: isDark ? '#374151' : '#e5e7eb',
+                          borderRadius: '0.5rem',
+                          color: isDark ? '#ffffff' : '#000000'
+                        }} 
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center space-x-4 mt-2">
+                  {Object.entries(creatorData.pointsStats.sourceStats).map(([name, value], index) => (
+                    <div key={name} className="flex items-center text-xs">
+                      <div className="w-3 h-3 rounded-full mr-1" style={{ backgroundColor: ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'][index] }}></div>
+                      <span>{name === 'achievement' ? '成就' : name === 'task' ? '任务' : name === 'daily' ? '每日' : '其他'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 最近积分记录 */}
+              <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <h4 className="text-sm font-medium mb-3">最近获得积分</h4>
+                <div className="space-y-3">
+                  {creatorData.pointsStats.recentRecords.map((record) => (
+                    <div key={record.id} className="flex justify-between items-center text-sm">
+                      <div className="flex items-center">
+                        <i className={`fas fa-${record.type === 'achievement' ? 'trophy' : record.type === 'task' ? 'check-circle' : record.type === 'daily' ? 'calendar-day' : 'gift'} mr-2 text-xs text-yellow-500`}></i>
+                        <div>
+                          <p className="font-medium">{record.source}</p>
+                          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{record.date}</p>
+                        </div>
+                      </div>
+                      <p className="font-medium text-green-600">+{record.points}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 成就徽章 */}
           <div>
             <h3 className="font-medium mb-3">我的成就</h3>
@@ -103,9 +201,7 @@ const CreatorProfile: React.FC<CreatorProfileProps> = ({ creatorData, isDark }) 
                         {reward.description}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      isDark ? 'bg-gray-600' : 'bg-gray-100'
-                    }`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
                       {reward.requirement}
                     </span>
                   </div>

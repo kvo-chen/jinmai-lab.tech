@@ -114,10 +114,18 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
     setShowSearch(false)
   }, [search, navigate])
 
-  // 预取路由
+  // 预取路由 - 使用防抖和空闲回调，避免阻塞点击事件
   const prefetchRoute = useCallback((path: string) => {
-    if (path === location.pathname || isPrefetched(path)) return
-    markPrefetched(path)
+    // 仅预加载高频访问路由，减少预加载数量
+    const highFrequencyRoutes = ['/', '/explore', '/tools', '/neo', '/wizard'];
+    if (path === location.pathname || isPrefetched(path) || !highFrequencyRoutes.includes(path)) return
+    
+    // 只在浏览器空闲时进行预取，避免阻塞点击事件
+    const idleCallback = (window as any).requestIdleCallback || ((fn: Function) => setTimeout(fn, 100))
+    
+    idleCallback(() => {
+      markPrefetched(path)
+    })
   }, [location.pathname])
 
   return (
@@ -334,6 +342,19 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                         个人中心
                       </NavLink>
                       <NavLink
+                        to="/membership"
+                        onTouchStart={() => prefetchRoute('/membership')}
+                        className={clsx(
+                          'block px-4 py-2 text-sm transition-colors duration-200',
+                          isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                          theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                          'text-gray-900 hover:bg-gray-100'
+                        )}
+                      >
+                        <i className="fas fa-crown mr-2"></i>
+                        会员中心
+                      </NavLink>
+                      <NavLink
                         to="/create"
                         onTouchStart={() => prefetchRoute('/create')}
                         className={clsx(
@@ -471,10 +492,6 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
               <i className="fas fa-bolt mr-2"></i>
               灵感引擎
             </NavLink>
-            <NavLink to="/lab" title="新窗口实验室" onTouchStart={() => prefetchRoute('/lab')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
-              <i className="fas fa-window-restore mr-2"></i>
-              新窗口实验室
-            </NavLink>
             <NavLink to="/wizard" title="共创向导" onTouchStart={() => prefetchRoute('/wizard')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
               <i className="fas fa-hat-wizard mr-2"></i>
               共创向导
@@ -511,9 +528,17 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
               <i className="fas fa-calendar-alt mr-2"></i>
               文化活动
             </NavLink>
+            <NavLink to="/lab" title="新窗口实验室" onTouchStart={() => prefetchRoute('/lab')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-window-restore mr-2"></i>
+              新窗口实验室
+            </NavLink>
             <NavLink to="/brand" title="品牌合作" onTouchStart={() => prefetchRoute('/brand')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
               <i className="fas fa-handshake mr-2"></i>
               品牌合作
+            </NavLink>
+            <NavLink to="/membership" title="会员中心" onTouchStart={() => prefetchRoute('/membership')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
+              <i className="fas fa-crown mr-2"></i>
+              会员中心
             </NavLink>
             <NavLink to="/about" title="关于我们" onTouchStart={() => prefetchRoute('/about')} className={({ isActive }) => `${isDark ? 'text-gray-300 hover:bg-gray-800' : theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 'text-gray-900 hover:bg-gray-200'} flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-200 font-semibold' : 'bg-gray-200 font-semibold') : ''}`} onClick={() => setShowSidebarDrawer(false)}>
               <i className="fas fa-info-circle mr-2"></i>

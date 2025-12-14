@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef, useMemo } from 'react';
+import { useState, useEffect, useContext, useRef, useMemo, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -55,7 +55,7 @@ interface TraditionalBrand {
   popularity: number;
 }
 
-export default function TianjinCreativeActivities() {
+export default memo(function TianjinCreativeActivities() {
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
@@ -1390,7 +1390,7 @@ export default function TianjinCreativeActivities() {
       
       {/* 主题活动内容 */}
       {activeTab === 'activities' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredActivities.map((activity) => (
             <motion.div
               key={activity.id}
@@ -1475,7 +1475,7 @@ export default function TianjinCreativeActivities() {
       
       {/* 地域模板内容 */}
       {activeTab === 'templates' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
           {filteredTemplates.map((template) => (
             <motion.div
               key={template.id}
@@ -1530,7 +1530,7 @@ export default function TianjinCreativeActivities() {
       
       {/* 线下体验内容 */}
       {activeTab === 'offline' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredExperiences.map((experience) => (
             <motion.div
               key={experience.id}
@@ -1590,7 +1590,7 @@ export default function TianjinCreativeActivities() {
       
       {/* 老字号联名内容 */}
       {activeTab === 'brands' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
           {pagedBrands.map((brand) => (
             <motion.div
               key={brand.id}
@@ -2011,4 +2011,4 @@ export default function TianjinCreativeActivities() {
 
       </motion.div>
   );
-}
+});

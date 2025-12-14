@@ -769,7 +769,9 @@ export default function Admin() {
                     <th className="px-4 py-3 text-left text-sm font-medium">年龄</th>
                     <th className="px-4 py-3 text-left text-sm font-medium">兴趣标签</th>
                     <th className="px-4 py-3 text-left text-sm font-medium">注册时间</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">状态</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">会员等级</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">会员状态</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">到期时间</th>
                     <th className="px-4 py-3 text-left text-sm font-medium">操作</th>
                   </tr>
                 </thead>
@@ -828,9 +830,17 @@ export default function Admin() {
                           {new Date(user.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs bg-green-100 text-green-600`}>
-                            活跃
+                          <span className={`px-2 py-1 rounded-full text-xs ${user.membership_level === 'free' ? 'bg-gray-100 text-gray-600' : user.membership_level === 'premium' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                            {user.membership_level === 'free' ? '免费会员' : user.membership_level === 'premium' ? '高级会员' : 'VIP会员'}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${user.membership_status === 'active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {user.membership_status === 'active' ? '有效' : user.membership_status === 'expired' ? '已过期' : '待处理'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {user.membership_end ? new Date(user.membership_end).toLocaleDateString() : '-'}  
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex space-x-2">

@@ -77,28 +77,42 @@ export function smartPrefetch(
   currentPath: string,
   preloadFn: (path: string) => void
 ) {
-  // 获取预测的路由列表
-  const predictedRoutes = ROUTE_PREDICTIONS[currentPath] || []
+  // 仅预加载高频访问路由，减少预加载数量
+  const highFrequencyRoutes = ['/', '/explore', '/tools', '/neo', '/wizard'];
   
-  // 按优先级预加载
-  predictedRoutes.forEach((route, index) => {
-    // 替换动态路由参数
-    const normalizedRoute = route.replace(/:\w+/g, 'example')
-    
-    // 只预加载未预取的路由
-    if (!isPrefetched(normalizedRoute)) {
-      // 设置不同的优先级，当前路由后紧跟的路由优先级更高
-      const priority = PRIORITY_LEVELS.HIGH - Math.floor(index / 2)
+  // 获取预测的路由列表，只取前1个最可能访问的路由，减少预加载数量
+  const predictedRoutes = (ROUTE_PREDICTIONS[currentPath] || [])
+    .slice(0, 1)
+    .filter(route => {
+      // 只预加载高频访问路由
+      const normalizedRoute = route.replace(/:\w+/g, 'example')
+      return highFrequencyRoutes.includes(normalizedRoute)
+    })
+  
+  // 如果没有预测的路由，直接返回
+  if (predictedRoutes.length === 0) return
+  
+  // 只在浏览器空闲时进行预加载，避免阻塞主线程
+  const idleCallback = (window as any).requestIdleCallback || ((fn: Function) => setTimeout(fn, 200))
+  
+  idleCallback(() => {
+    // 按优先级预加载
+    predictedRoutes.forEach((route, index) => {
+      // 替换动态路由参数
+      const normalizedRoute = route.replace(/:\w+/g, 'example')
       
-      // 延迟预加载，避免阻塞主线程
-      setTimeout(() => {
-        preloadFn(normalizedRoute)
-        markPrefetched(normalizedRoute, {
-          priority,
-          preloaded: true,
-        })
-      }, index * 100) // 错开预加载时间，避免同时发起过多请求
-    }
+      // 只预加载未预取的路由
+      if (!isPrefetched(normalizedRoute)) {
+        // 延迟预加载，避免阻塞主线程
+        setTimeout(() => {
+          preloadFn(normalizedRoute)
+          markPrefetched(normalizedRoute, {
+            priority: PRIORITY_LEVELS.MEDIUM,
+            preloaded: true,
+          })
+        }, index * 100) // 减少延迟时间，提高预加载效率
+      }
+    })
   })
 }
 

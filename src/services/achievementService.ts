@@ -35,6 +35,24 @@ export interface CreatorLevelInfo {
   levelProgress: number; // 0-100%
 }
 
+// 积分记录类型定义
+export interface PointsRecord {
+  id: number;
+  source: string;
+  type: 'achievement' | 'task' | 'daily' | 'other';
+  points: number;
+  date: string;
+  description: string;
+}
+
+// 积分来源统计类型定义
+export interface PointsSourceStats {
+  achievement: number;
+  task: number;
+  daily: number;
+  other: number;
+}
+
 // 成就服务类
 class AchievementService {
   // 创作者等级数据
@@ -126,6 +144,50 @@ class AchievementService {
       progress: 0,
       isUnlocked: false,
       points: 300
+    }
+  ];
+
+  // 模拟积分记录数据
+  private pointsRecords: PointsRecord[] = [
+    {
+      id: 1,
+      source: '初次创作',
+      type: 'achievement',
+      points: 10,
+      date: '2025-11-01',
+      description: '完成第一篇创作作品'
+    },
+    {
+      id: 2,
+      source: '活跃创作者',
+      type: 'achievement',
+      points: 20,
+      date: '2025-11-07',
+      description: '连续登录7天'
+    },
+    {
+      id: 3,
+      source: '完成新手引导',
+      type: 'task',
+      points: 50,
+      date: '2025-11-01',
+      description: '完成平台新手引导'
+    },
+    {
+      id: 4,
+      source: '发布第一篇作品',
+      type: 'task',
+      points: 100,
+      date: '2025-11-01',
+      description: '在平台发布第一篇作品'
+    },
+    {
+      id: 5,
+      source: '每日签到',
+      type: 'daily',
+      points: 5,
+      date: '2025-11-08',
+      description: '每日签到奖励'
     }
   ];
 
@@ -296,6 +358,62 @@ class AchievementService {
     }
     
     return level;
+  }
+
+  // 获取积分来源统计
+  getPointsSourceStats(): PointsSourceStats {
+    const stats = {
+      achievement: 0,
+      task: 0,
+      daily: 0,
+      other: 0
+    };
+
+    this.pointsRecords.forEach(record => {
+      stats[record.type] += record.points;
+    });
+
+    return stats;
+  }
+
+  // 获取最近积分记录
+  getRecentPointsRecords(limit: number = 5): PointsRecord[] {
+    return [...this.pointsRecords]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit);
+  }
+
+  // 计算可获取的积分
+  calculateAvailablePoints(): number {
+    // 计算未解锁成就的积分
+    const lockedAchievementsPoints = this.achievements
+      .filter(achievement => !achievement.isUnlocked)
+      .reduce((total, achievement) => total + achievement.points, 0);
+
+    // 模拟任务可获取积分
+    const availableTaskPoints = 300; // 邀请好友150 + 参与主题活动200
+
+    // 模拟每日可获取积分（假设每天5分）
+    const dailyPoints = 5;
+
+    return lockedAchievementsPoints + availableTaskPoints + dailyPoints;
+  }
+
+  // 获取积分统计信息
+  getPointsStats() {
+    const currentPoints = this.calculateUserPoints();
+    const availablePoints = this.calculateAvailablePoints();
+    const totalPossiblePoints = currentPoints + availablePoints;
+    const sourceStats = this.getPointsSourceStats();
+    const recentRecords = this.getRecentPointsRecords();
+
+    return {
+      currentPoints,
+      availablePoints,
+      totalPossiblePoints,
+      sourceStats,
+      recentRecords
+    };
   }
 }
 
