@@ -41,6 +41,26 @@ export function processImageUrl(url: string): string {
       return url;
     }
     
+    // 处理 https://jinmalab.tech/proxy?url=... 格式的URL
+    if (urlObj.hostname === 'jinmalab.tech' && urlObj.pathname === '/proxy') {
+      // 提取查询参数中的真实图片URL
+      const realUrl = urlObj.searchParams.get('url');
+      if (realUrl) {
+        try {
+          const realUrlObj = new URL(realUrl);
+          // 根据真实URL的主机名选择合适的代理路径
+          if (realUrlObj.hostname.includes('unsplash.com') || realUrlObj.hostname.includes('images.unsplash.com')) {
+            return `/api/proxy/unsplash${realUrlObj.pathname}${realUrlObj.search}`;
+          }
+          // 对于其他URL，直接返回真实URL
+          return realUrl;
+        } catch (error) {
+          console.warn('Invalid real URL in proxy format:', realUrl, error);
+          return '';
+        }
+      }
+    }
+    
     // 其他URL保持不变
     return url;
   } catch (error) {
