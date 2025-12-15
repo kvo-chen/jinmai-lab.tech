@@ -63,6 +63,7 @@ const Games = lazy(() => import("@/pages/Games"));
 const CollaborationDemo = lazy(() => import("@/pages/CollaborationDemo"));
 const ImageTest = lazy(() => import("@/pages/ImageTest"));
 const CulturalNewsPage = lazy(() => import("@/pages/CulturalNewsPage"));
+const NewsDetail = lazy(() => import("@/pages/NewsDetail"));
 // 会员相关页面
 const Membership = lazy(() => import("@/pages/Membership"));
 const MembershipPayment = lazy(() => import("@/pages/MembershipPayment"));
@@ -368,6 +369,7 @@ export default function App() {
           <Route path="/collection" element={<AnimatedPage><LazyComponent><PrivateRoute component={UserCollection} /></LazyComponent></AnimatedPage>} />
           <Route path="/knowledge" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
           <Route path="/news" element={<AnimatedPage><LazyComponent><CulturalNewsPage /></LazyComponent></AnimatedPage>} />
+          <Route path="/news/:id" element={<AnimatedPage><LazyComponent><NewsDetail /></LazyComponent></AnimatedPage>} />
           <Route path="/tianjin" element={<AnimatedPage><LazyComponent><Tianjin /></LazyComponent></AnimatedPage>} />
           <Route path="/events" element={<AnimatedPage><LazyComponent><CulturalEvents /></LazyComponent></AnimatedPage>} />
           <Route path="/knowledge/:type/:id" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
