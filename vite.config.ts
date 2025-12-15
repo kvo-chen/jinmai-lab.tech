@@ -155,7 +155,7 @@ export default defineConfig({
     // 启用更高效的压缩算法
     brotliSize: false, // 禁用brotli大小报告，减少构建时间
     // 优化 CSS 构建
-    cssMinify: 'lightningcss', // 使用更快的CSS压缩
+    cssMinify: 'esbuild', // 使用默认的CSS压缩，确保构建成功
     // 启用CSS代码分割
     cssCodeSplit: true,
     // 生成 sourcemap（生产环境可关闭）
