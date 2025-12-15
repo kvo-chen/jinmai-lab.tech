@@ -153,19 +153,19 @@ export default defineConfig({
     // 优化构建输出
     minify: 'terser',
     // 启用更高效的压缩算法
-    brotliSize: true,
+    brotliSize: false, // 禁用brotli大小报告，减少构建时间
     // 优化 CSS 构建
-    cssMinify: 'csso', // 使用更高效的CSS压缩
+    cssMinify: 'lightningcss', // 使用更快的CSS压缩
     // 启用CSS代码分割
     cssCodeSplit: true,
     // 生成 sourcemap（生产环境可关闭）
     sourcemap: false,
     // 设置 chunk 大小警告阈值（单位：KB）
-    chunkSizeWarningLimit: 100, // 调整为更合理的阈值，减少不必要的警告
+    chunkSizeWarningLimit: 500, // 调整为更合理的阈值，减少不必要的警告
     // 启用资产预加载
     preloadAssets: true,
     // 生成构建报告
-    reportCompressedSize: true,
+    reportCompressedSize: false, // 禁用构建报告，减少构建时间
     // 调整资产内联限制，进一步减少HTTP请求
     assetsInlineLimit: 4096, // 4KB以下的资源内联
     // 禁用动态导入 polyfill，减少不必要的代码
@@ -176,15 +176,15 @@ export default defineConfig({
     ssr: false,
     // 优化构建目标，使用更现代的ES版本
     target: 'es2022',
-    // 优化 terser 配置，进一步压缩代码
+    // 优化 terser 配置，减少压缩时间
     terserOptions: {
       compress: {
         drop_console: true, // 始终移除控制台日志
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.warn', 'console.error', 'console.debug', 'console.info', 'console.trace', 'console.dir', 'console.table'],
         pure_getters: true,
-        passes: 6, // 增加压缩次数
-        // 更激进的压缩选项
+        passes: 3, // 减少压缩次数，加快构建速度
+        // 更安全的压缩选项，减少构建时间
         collapse_vars: true,
         reduce_vars: true,
         dead_code: true,
@@ -195,16 +195,16 @@ export default defineConfig({
         join_vars: true,
         side_effects: true,
         evaluate: true,
-        unsafe: true,
-        unsafe_comps: true,
-        unsafe_math: true,
-        unsafe_symbols: true,
-        unsafe_undefined: true,
+        // 禁用不安全的优化，减少构建时间
+        unsafe: false,
+        unsafe_comps: false,
+        unsafe_math: false,
+        unsafe_symbols: false,
+        unsafe_undefined: false,
         keep_classnames: false,
         keep_fargs: false,
         keep_fnames: false,
         keep_infinity: false,
-        // 新增压缩选项
         sequences: true,
         properties: true,
         comparisons: true,
@@ -265,252 +265,97 @@ export default defineConfig({
         chunkFileNames: 'chunks/[name]-[hash:8].js',
         entryFileNames: 'entries/[name]-[hash:8].js',
         // 启用代码分割，优化chunk大小
-        experimentalMinChunkSize: 5000, // 最小chunk大小5KB，减少小chunk数量
+        experimentalMinChunkSize: 10000, // 增大最小chunk大小到10KB，减少小chunk数量
         // 启用动态导入支持
         dynamicImportInCjs: true,
-        // 优化代码分割策略
+        // 简化代码分割策略，减少构建时间
         manualChunks(id) {
-          // 优先使用手动 chunk 配置，优化chunk数量
-          const manualChunkNames = {
+          // 只分割大型库，减少chunk数量
+          if (id.includes('node_modules')) {
             // React核心库 - 合并为一个chunk
-            'react': 'vendor-react',
-            'react-dom/client': 'vendor-react',
-            'react-dom': 'vendor-react',
-            'react-router-dom': 'vendor-react',
-            
-            // 工具库 - 合并为一个chunk
-            'clsx': 'utils-core',
-            'tailwind-merge': 'utils-core',
-            
-            // 动画库
-            'framer-motion': 'animation-framer',
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
             
             // Three.js相关库 - 合并为更少的chunk
-            'three': 'three-core',
-            'three/src/Three': 'three-core',
-            'three/src/renderers': 'three-core',
-            'three/src/scenes': 'three-core',
-            'three/src/cameras': 'three-core',
-            'three/src/objects': 'three-core',
-            'three/src/geometries': 'three-core',
-            'three/src/materials': 'three-core',
-            'three/src/loaders': 'three-core',
-            '@react-three/fiber': 'three-react',
-            '@react-three/drei': 'three-react',
+            if (id.includes('three') || id.includes('@react-three')) {
+              return 'three-core';
+            }
+            
+            // 动画库
+            if (id.includes('framer-motion')) {
+              return 'animation-framer';
+            }
             
             // 图表库
-            'recharts': 'charts-recharts',
+            if (id.includes('recharts')) {
+              return 'charts-recharts';
+            }
             
             // UI库
-            'sonner': 'ui-sonner',
-            
-            // 辅助库 - 合并为一个chunk
-            'zod': 'helpers-core',
-            'jsonwebtoken': 'helpers-core',
-            'bcryptjs': 'helpers-core',
+            if (id.includes('sonner')) {
+              return 'ui-sonner';
+            }
             
             // 手势识别库 - 合并为一个chunk
-            '@mediapipe/hands': 'gesture-media-pipe',
-            '@mediapipe/camera_utils': 'gesture-media-pipe',
-            '@mediapipe/control_utils': 'gesture-media-pipe',
-            '@mediapipe/drawing_utils': 'gesture-media-pipe',
-            '@tensorflow/tfjs-core': 'gesture-tensorflow',
-            '@tensorflow/tfjs-backend-webgl': 'gesture-tensorflow',
-            '@tensorflow/tfjs': 'gesture-tensorflow',
-          };
-          
-          // 精确匹配three.js相关依赖，确保正确分割
-          if (id.includes('three') && !id.includes('@react-three')) {
-            return 'three-core';
-          }
-          
-          if (id.includes('@react-three')) {
-            return 'three-react';
-          }
-          
-          // 优先匹配精确的库名
-          for (const [lib, chunkName] of Object.entries(manualChunkNames)) {
-            if (id.includes(lib)) {
-              return chunkName;
-            }
-          }
-          
-          // 自动分割大型node_modules依赖
-          if (id.includes('node_modules') && !id.includes('.css')) {
-            // 进一步细分vendor依赖
-            if (id.includes('lodash')) {
-              return 'utils-lodash';
-            } else if (id.includes('date-fns')) {
-              return 'utils-date-fns';
-            } else if (id.includes('uuid')) {
-              return 'utils-uuid';
-            } else if (id.includes('axios')) {
-              return 'network-axios';
-            } else if (id.includes('@fortawesome')) {
-              return 'icons-fontawesome';
-            } else if (id.includes('@vercel/analytics')) {
-              return 'analytics-vercel';
-            } else if (id.includes('@vercel/speed-insights')) {
-              return 'analytics-speed-insights';
-            } else if (id.includes('react-window')) {
-              return 'utils-react-window';
-            } else if (id.includes('zustand')) {
-              return 'state-zustand';
+            if (id.includes('@mediapipe') || id.includes('@tensorflow')) {
+              return 'gesture-ml';
             }
             
-            // 其他第三方库
+            // 其他第三方库合并为一个chunk，减少构建时间
             return 'vendor-other';
           }
           
-          // 按页面分割代码 - 更细粒度的页面分割
+          // 按页面分割代码，只分割大型页面
           if (id.includes('src/pages/')) {
-            // 精确到具体页面文件
-            const pagePath = id.split('src/pages/')[1].replace('.tsx', '').replace('.ts', '');
-            return `page-${pagePath}`;
+            return 'pages';
           }
           
-          // 按组件分割大型组件 - 扩展更多大型组件
+          // 大型组件合并为一个chunk
           if (id.includes('src/components/') && id.includes('.tsx')) {
-            const componentName = id.split('src/components/')[1].split('.')[0];
-            // 分割更多大型组件
-            const largeComponents = [
-              'ARPreview', 'ThreeDPreview', 'ModelViewer', 'ErrorMonitoringDashboard',
-              'AICollaborationPanel', 'AICreativeAssistant', 'CollaborationPanel',
-              'CulturalKnowledgeBase', 'CulturalPuzzleGame', 'EventCalendar',
-              'ParticleSystem', 'AdminRoute', 'PrivateRoute', 'MobileLayout',
-              'SidebarLayout', 'UserProfile', 'CreatorDashboard', 'Leaderboard',
-              'TianjinCreativeActivities', 'TianjinCulturalAssets', 'CulturalNews',
-              'ChallengeCenter', 'IPIncubationCenter', 'GestureControl', 'LazyImage'
-            ];
-            
-            if (largeComponents.includes(componentName)) {
-              return `component-${componentName}`;
-            }
-          }
-          
-          // 服务层代码分割
-          if (id.includes('src/services/')) {
-            const serviceName = id.split('src/services/')[1].split('.')[0];
-            return `service-${serviceName}`;
-          }
-          
-          // 上下文层代码分割
-          if (id.includes('src/contexts/')) {
-            const contextName = id.split('src/contexts/')[1].split('.')[0];
-            return `context-${contextName}`;
-          }
-          
-          // 钩子层代码分割
-          if (id.includes('src/hooks/')) {
-            const hookName = id.split('src/hooks/')[1].split('.')[0];
-            return `hook-${hookName}`;
+            return 'components';
           }
         },
       },
       // 优化插件配置
       plugins: [
-        // 构建分析插件 - rollup-plugin-visualizer
+        // 只在ANALYZE模式下启用构建分析插件
         process.env.ANALYZE === 'true' && visualizer({
           filename: 'bundle-visualizer.html',
           open: true,
           gzipSize: true,
-          brotliSize: true,
           template: 'sunburst', // 更直观的可视化模板
           sourcemap: false,
         }),
-        // 自定义构建分析插件
-        process.env.ANALYZE === 'true' && {
-          name: 'build-analyzer',
-          generateBundle(outputOptions, bundle) {
-            const fs = require('fs');
-            const path = require('path');
-            const bundleStats = {
-              totalSize: 0,
-              chunks: [],
-              assets: []
-            };
-            
-            for (const [name, chunk] of Object.entries(bundle)) {
-              if (chunk.type === 'chunk') {
-                const size = chunk.code.length;
-                bundleStats.totalSize += size;
-                bundleStats.chunks.push({
-                  name,
-                  size,
-                  sizeFormatted: formatBytes(size),
-                  modules: chunk.modules ? Object.keys(chunk.modules).length : 0
-                });
-              } else if (chunk.type === 'asset') {
-                const size = chunk.source.length;
-                bundleStats.totalSize += size;
-                bundleStats.assets.push({
-                  name,
-                  size,
-                  sizeFormatted: formatBytes(size)
-                });
-              }
-            }
-            
-            bundleStats.chunks.sort((a, b) => b.size - a.size);
-            bundleStats.assets.sort((a, b) => b.size - a.size);
-            
-            const outputPath = path.resolve(process.cwd(), 'bundle-stats.json');
-            fs.writeFileSync(outputPath, JSON.stringify(bundleStats, null, 2));
-            
-            console.log('\n=== Bundle Analysis ===');
-            console.log(`Total size: ${formatBytes(bundleStats.totalSize)}`);
-            console.log('\nTop 10 chunks:');
-            bundleStats.chunks.slice(0, 10).forEach((chunk, index) => {
-              console.log(`${index + 1}. ${chunk.name}: ${chunk.sizeFormatted} (${chunk.modules} modules)`);
-            });
-            console.log('\nTop 10 assets:');
-            bundleStats.assets.slice(0, 10).forEach((asset, index) => {
-              console.log(`${index + 1}. ${asset.name}: ${asset.sizeFormatted}`);
-            });
-            console.log('\nFull stats saved to bundle-stats.json');
-            console.log('Visualizer report generated at bundle-visualizer.html');
-            console.log('======================\n');
-          }
-        },
-        // 优化CSS输出
-        {
-          name: 'css-optimizer',
-          transform(code, id) {
-            // 优化CSS导入，移除重复导入
-            if (id.endsWith('.css')) {
-              // 简单的CSS去重（实际项目中可能需要更复杂的处理）
-              return { code, map: null };
-            }
-            return null;
-          },
-        },
       ].filter(Boolean)
     },
   },
-  // 优化开发体验
+  // 优化开发体验和构建速度
   optimizeDeps: {
-    // 预构建依赖 - 添加react和react-dom确保正确处理
+    // 预构建依赖 - 只包含核心依赖，减少预构建时间
     include: [
       'react', 'react-dom', 'react-router-dom', 
       'clsx', 'tailwind-merge', 
-      'framer-motion',
-      '@react-three/fiber', '@react-three/drei'
+      'framer-motion'
     ],
-    // 禁用预构建的依赖，包括数据库依赖和可能存在兼容性问题的XR库
+    // 禁用预构建的依赖，包括数据库依赖和可能存在兼容性问题的库
     exclude: [
       'better-sqlite3', 'mongodb', 'pg', '@neondatabase/serverless',
-      '@mediapipe/hands', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl'
+      '@mediapipe/hands', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl',
+      'three', '@react-three/fiber', '@react-three/drei' // Three.js相关库不预构建
     ],
-    // 优化依赖构建
+    // 优化依赖构建，增加并发数
     esbuildOptions: {
-      target: 'es2020',
+      target: 'es2022', // 使用更现代的ES版本
       // 优化大型依赖的构建
       treeShaking: true,
       // 优化 esbuild 配置
-      minify: true,
-      minifySyntax: true,
-      minifyIdentifiers: true,
-      minifyWhitespace: true,
+      minify: false, // 禁用预构建时的压缩，加快预构建速度
+      minifySyntax: false,
+      minifyIdentifiers: false,
+      minifyWhitespace: false,
+      // 增加预构建并发数
+      parallel: true,
       // 启用更严格的 tree-shaking
       pure: process.env.NODE_ENV === 'production' ? ['console.log', 'console.warn', 'console.error'] : [],
     },
