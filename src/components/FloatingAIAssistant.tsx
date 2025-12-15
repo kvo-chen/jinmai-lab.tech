@@ -21,6 +21,15 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 预设问题列表
+  const presetQuestions = [
+    '平台上如何创作',
+    '如何使用AI生成功能',
+    '如何分享我的作品',
+    '如何查看创作数据',
+    '如何参与社区活动'
+  ];
+
   // 添加初始欢迎消息
   useEffect(() => {
     const initialMessage: Message = {
@@ -78,6 +87,12 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }
   };
 
+  // 处理预设问题点击
+  const handlePresetQuestionClick = (question: string) => {
+    setInputMessage(question);
+    handleSendMessage();
+  };
+
   // 处理键盘事件
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -109,22 +124,22 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             transition={{ duration: 0.2 }}
-            className={`w-80 sm:w-96 h-[500px] rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}
+            className={`w-80 sm:w-96 h-[550px] rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} overflow-hidden`}
           >
             {/* 聊天头部 */}
-            <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+            <div className={`p-4 border-b ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} flex justify-between items-center shadow-sm`}>
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-blue-600' : 'bg-blue-500'} text-white`}>
-                  <i className="fas fa-robot"></i>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-500'} text-white shadow-md`}>
+                  <i className="fas fa-robot text-xl"></i>
                 </div>
-                <h3 className="font-semibold text-lg">AI助手</h3>
+                <h3 className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI助手</h3>
               </div>
               <button
                 onClick={toggleAssistant}
-                className={`p-2 rounded-full transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`p-2 rounded-full transition-all ${isDark ? 'hover:bg-gray-700 hover:scale-110' : 'hover:bg-gray-100 hover:scale-110'} transform`}
                 aria-label="关闭"
               >
-                <i className="fas fa-times"></i>
+                <i className={`fas fa-times ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
               </button>
             </div>
 
@@ -138,61 +153,98 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
               }}
             >
               {messages.map((message, index) => (
-                <div
+                <motion.div
                   key={index}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
                   <div
-                    className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user' ? 
-                      (isDark ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : 
-                      (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800')
-                    }`}
+                    className={`max-w-[85%] p-4 rounded-xl ${message.role === 'user' ? 
+                      (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg' : 'bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg') : 
+                      (isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200')
+                    } transition-all hover:shadow-xl`}
                   >
-                    <div className="text-sm whitespace-pre-wrap">
+                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
                       {message.content}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
 
               {/* 正在生成指示器 */}
               {isGenerating && (
                 <div className="flex justify-start">
-                  <div className={`max-w-[80%] p-3 rounded-lg ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
+                  <div className={`max-w-[85%] p-4 rounded-xl ${isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200'}`}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-blue-500"
+                        animate={{ y: [-5, 5, -5] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                      ></motion.div>
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-purple-500"
+                        animate={{ y: [-5, 5, -5] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                      ></motion.div>
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-pink-500"
+                        animate={{ y: [-5, 5, -5] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                      ></motion.div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
+            {/* 预设问题 */}
+            {messages.length <= 1 && !isGenerating && (
+              <div className={`px-4 pb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>快速提问</p>
+                <div className="flex flex-wrap gap-2">
+                  {presetQuestions.map((question, index) => (
+                    <motion.button
+                      key={index}
+                      onClick={() => handlePresetQuestionClick(question)}
+                      className={`px-3 py-1.5 text-xs rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'} transition-all transform hover:scale-105`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {question}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 输入区域 */}
-            <div className={`p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <div className="flex gap-2">
+            <div className={`p-4 border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} shadow-inner`}>
+              <div className="flex gap-2 items-center">
                 <input
                   ref={inputRef}
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="输入消息..."
+                  placeholder="输入你的问题..."
                   disabled={isGenerating}
-                  className={`flex-1 px-4 py-2 rounded-full border ${isDark ? 'border-gray-700 bg-gray-800 text-white placeholder-gray-500' : 'border-gray-300 bg-white text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                  className={`flex-1 px-4 py-3 rounded-full border ${isDark ? 'border-gray-700 bg-gray-800 text-white placeholder-gray-500 focus:border-blue-500' : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm`}
                 />
-                <button
+                <motion.button
                   onClick={handleSendMessage}
                   disabled={isGenerating || !inputMessage.trim()}
-                  className={`p-2 rounded-full transition-all ${isGenerating || !inputMessage.trim() ? 
+                  className={`p-3 rounded-full transition-all shadow-md ${isGenerating || !inputMessage.trim() ? 
                     (isDark ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed') : 
-                    (isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white')
+                    (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white')
                   }`}
+                  whileHover={{ scale: isGenerating || !inputMessage.trim() ? 1 : 1.1 }}
+                  whileTap={{ scale: isGenerating || !inputMessage.trim() ? 1 : 0.95 }}
                   aria-label="发送"
                 >
                   <i className="fas fa-paper-plane"></i>
-                </button>
+                </motion.button>
               </div>
             </div>
           </motion.div>
@@ -201,14 +253,31 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
 
       {/* 悬浮按钮 */}
       <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
         onClick={toggleAssistant}
-        className={`fixed ${positionClasses[position]} w-14 h-14 rounded-full flex items-center justify-center shadow-lg z-50 transition-all duration-300 transform hover:scale-110 ${isDark ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
+        className={`fixed ${positionClasses[position]} w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50 transition-all duration-300 transform hover:scale-125 ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white`}
         aria-label="AI助手"
+        whileHover={{ scale: 1.25, boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)' }}
+        whileTap={{ scale: 1.1 }}
       >
-        <i className={`fas fa-robot text-xl ${isOpen ? 'rotate-90' : ''}`}></i>
+        <motion.i 
+          className="fas fa-robot text-2xl" 
+          animate={isOpen ? { rotate: 90 } : { rotate: 0 }}
+          transition={{ duration: 0.3 }}
+        ></motion.i>
+        {/* 消息数量提示 */}
+        {messages.length > 1 && (
+          <motion.div
+            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+          >
+            {messages.length - 1}
+          </motion.div>
+        )}
       </motion.button>
     </div>
   );

@@ -182,12 +182,12 @@ const CreatorDashboard: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="relative">
       {/* 切换按钮 */}
       <button
         ref={toggleBtnRef}
         onClick={() => setIsVisible(!isVisible)}
-        className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105"
+        className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
         title="查看创作者仪表盘"
       >
         <i className="fas fa-chart-line"></i>
@@ -197,7 +197,7 @@ const CreatorDashboard: React.FC = () => {
       {isVisible && (
         <div 
           ref={dashboardRef}
-          className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 max-w-xs animate-fadeIn"
+          className="absolute right-0 mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 max-w-xs animate-fadeIn z-50"
         >
           <h3 className="text-lg font-bold mb-3 text-gray-800 dark:text-white flex items-center">
             <i className="fas fa-rocket mr-2 text-purple-500"></i>

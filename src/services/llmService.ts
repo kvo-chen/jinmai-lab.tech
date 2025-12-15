@@ -201,8 +201,8 @@ export const DEFAULT_ROLES: ModelRole[] = [
   {
     id: 'default',
     name: '默认助手',
-    description: '帮助创作者进行设计构思与文化融合的助手',
-    system_prompt: '你是一个帮助创作者进行设计构思与文化融合的助手。',
+    description: '帮助创作者进行设计构思、文化融合和平台使用的全能助手',
+    system_prompt: '你是一个帮助创作者进行设计构思、文化融合和平台使用的全能助手。请提供详细、具体、有用的回答，帮助用户解决在平台使用过程中遇到的各种问题，包括创作、上传、编辑、分享、推广、数据分析、账户设置等方面。你的回答应该友好、专业、易于理解，并且提供清晰的步骤和建议。',
     temperature: 0.7,
     top_p: 0.9,
     presence_penalty: 0,
@@ -210,13 +210,13 @@ export const DEFAULT_ROLES: ModelRole[] = [
     is_default: true,
     created_at: Date.now(),
     updated_at: Date.now(),
-    tags: ['默认', '创意']
+    tags: ['默认', '创意', '帮助']
   },
   {
     id: 'designer',
     name: '设计专家',
     description: '专注于设计领域的专家，提供专业的设计建议和创意',
-    system_prompt: '你是一位资深的设计专家，专注于视觉设计、UI/UX设计和创意设计。请提供专业、详细的设计建议和创意构思。',
+    system_prompt: '你是一位资深的设计专家，专注于视觉设计、UI/UX设计、创意设计、文化融合设计和传统元素创新应用。请提供专业、详细、实用的设计建议和创意构思，包括色彩搭配、排版设计、元素运用、风格定位等方面。你的回答应该具体、可操作，并且结合最新的设计趋势和传统美学。',
     temperature: 0.8,
     top_p: 0.95,
     presence_penalty: 0.1,
@@ -224,13 +224,13 @@ export const DEFAULT_ROLES: ModelRole[] = [
     is_default: false,
     created_at: Date.now(),
     updated_at: Date.now(),
-    tags: ['设计', '创意']
+    tags: ['设计', '创意', '文化']
   },
   {
     id: 'coder',
     name: '代码助手',
     description: '帮助编写和优化代码的助手',
-    system_prompt: '你是一位资深的软件开发工程师，擅长多种编程语言和技术栈。请提供准确、高效的代码解决方案和优化建议。',
+    system_prompt: '你是一位资深的软件开发工程师，擅长多种编程语言和技术栈。请提供准确、高效、安全的代码解决方案和优化建议。你的回答应该包括完整的代码示例、详细的解释和最佳实践。对于问题，要先理解需求，然后提供清晰、可运行的代码，并解释代码的工作原理和优化点。',
     temperature: 0.3,
     top_p: 0.8,
     presence_penalty: 0,
@@ -238,13 +238,13 @@ export const DEFAULT_ROLES: ModelRole[] = [
     is_default: false,
     created_at: Date.now(),
     updated_at: Date.now(),
-    tags: ['编程', '技术']
+    tags: ['编程', '技术', '代码']
   },
   {
     id: 'writer',
     name: '文案专家',
     description: '专注于文案创作的专家，提供吸引人的文案建议',
-    system_prompt: '你是一位资深的文案专家，擅长创作各种类型的文案，包括广告文案、营销文案、社交媒体文案等。请提供吸引人、有创意的文案内容。',
+    system_prompt: '你是一位资深的文案专家，擅长创作各种类型的文案，包括广告文案、营销文案、社交媒体文案、产品描述、品牌故事等。请提供吸引人、有创意、符合品牌调性的文案内容。你的回答应该结合目标受众、传播渠道和营销目标，提供具体、可直接使用的文案示例，并解释文案的创作思路和效果预期。',
     temperature: 0.9,
     top_p: 0.95,
     presence_penalty: 0.2,
@@ -252,13 +252,13 @@ export const DEFAULT_ROLES: ModelRole[] = [
     is_default: false,
     created_at: Date.now(),
     updated_at: Date.now(),
-    tags: ['文案', '创作']
+    tags: ['文案', '创作', '营销']
   },
   {
     id: 'teacher',
     name: '教育导师',
     description: '提供详细解释和指导的教育导师',
-    system_prompt: '你是一位耐心、详细的教育导师，擅长将复杂的概念简单化，帮助学习者理解各种知识。请提供清晰、详细的解释和指导。',
+    system_prompt: '你是一位耐心、详细的教育导师，擅长将复杂的概念简单化，帮助学习者理解各种知识。请提供清晰、详细、循序渐进的解释和指导。你的回答应该包括基本概念、核心原理、实际应用和练习建议，使用通俗易懂的语言和生动的例子，帮助学习者建立完整的知识体系。',
     temperature: 0.6,
     top_p: 0.85,
     presence_penalty: 0,
@@ -266,7 +266,7 @@ export const DEFAULT_ROLES: ModelRole[] = [
     is_default: false,
     created_at: Date.now(),
     updated_at: Date.now(),
-    tags: ['教育', '学习']
+    tags: ['教育', '学习', '指导']
   }
 ];
 
@@ -1225,11 +1225,34 @@ class LLMService {
           });
         }
         
-        const fallback = this.getFallbackResponse(modelId, errorMessage);
-        const aiMessage: Message = { role: 'assistant', content: fallback, timestamp: Date.now() };
+        // 生成更有用的模拟响应，而不是简单的错误消息
+        const generateMockResponse = (prompt: string): string => {
+          // 模拟回答生成逻辑 - 简洁高效版
+          const questions = {
+            '平台上如何创作': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
+            '如何使用AI生成功能': 'AI生成：1. 创作中心→"AI生成" 2. 输入创作提示 3. 选择模型和参数 4. 生成→编辑→保存/发布',
+            '如何分享我的作品': '分享方式：1. 作品详情页→"分享"生成链接/二维码 2. 复制链接 3. 分享到社交平台 4. 邀请他人加入',
+            '如何查看创作数据': '查看数据：1. 头像→个人中心→"创作数据" 2. 查看浏览量、点赞数等',
+            '如何参与社区活动': '参与活动：1. 进入"社区"页面 2. 浏览活动 3. 点击感兴趣的活动查看详情 4. 提交作品/参与互动 5. 等待结果'
+          };
+          
+          // 查找匹配的问题
+          for (const [key, value] of Object.entries(questions)) {
+            if (prompt.includes(key)) {
+              return value;
+            }
+          }
+          
+          // 默认模拟响应 - 简洁版
+          return `已收到你的问题："${prompt}"\n\n建议：\n1. 查看平台帮助文档或教程\n2. 联系客服\n3. 参与社区讨论\n\n需要更具体解答？请提供更多细节！`;
+        };
+        
+        // 生成模拟响应
+        const mockResponse = generateMockResponse(prompt);
+        const aiMessage: Message = { role: 'assistant', content: mockResponse, timestamp: Date.now() };
         this.addToHistory(aiMessage);
         this.recordPerformance(modelId, startTime, false, errorMessage);
-        resolve(fallback);
+        resolve(mockResponse);
       };
 
       // 构建带有多模态支持的请求
@@ -1309,6 +1332,29 @@ class LLMService {
           response = this.generateDoubaoResponse(prompt);
         } else if (this.currentModel.id === 'wenxinyiyan') {
           response = this.generateWenxinResponse(prompt);
+        } else {
+          // 为所有其他模型添加默认模拟响应
+          // 生成更有用的模拟响应，而不是简单的错误消息
+          const questions = {
+            '平台上如何创作': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
+            '如何使用AI生成功能': 'AI生成：1. 创作中心→"AI生成" 2. 输入创作提示 3. 选择模型和参数 4. 生成→编辑→保存/发布',
+            '如何分享我的作品': '分享方式：1. 作品详情页→"分享"生成链接/二维码 2. 复制链接 3. 分享到社交平台 4. 邀请他人加入',
+            '如何查看创作数据': '查看数据：1. 头像→个人中心→"创作数据" 2. 查看浏览量、点赞数等',
+            '如何参与社区活动': '参与活动：1. 进入"社区"页面 2. 浏览活动 3. 点击感兴趣的活动查看详情 4. 提交作品/参与互动 5. 等待结果'
+          };
+          
+          // 查找匹配的问题
+          for (const [key, value] of Object.entries(questions)) {
+            if (prompt.includes(key)) {
+              response = value;
+              break;
+            }
+          }
+          
+          // 如果没有匹配到问题，使用默认模拟响应
+          if (!response) {
+            response = `已收到你的问题："${prompt}"\n\n建议：\n1. 查看平台帮助文档或教程\n2. 联系客服\n3. 参与社区讨论\n\n需要更具体解答？请提供更多细节！`;
+          }
         }
         
         // 设置连接状态为已连接（模拟响应）
@@ -2590,13 +2636,13 @@ class LLMService {
     const lowerPrompt = prompt.toLowerCase();
     
     if (lowerPrompt.includes('青花瓷') || lowerPrompt.includes('纹样')) {
-      return '已为您生成融合青花瓷纹样的设计方案。这种纹样源自明代永宣时期，以其典雅的蓝色调和流畅的线条著称。设计中结合了传统青花瓷的经典元素和现代简约风格，既保留了文化底蕴，又符合当代审美。您可以继续调整色彩或添加其他文化元素。';
+      return '已生成融合青花瓷纹样的设计方案，源自明代永宣时期，蓝调典雅，线条流畅，结合传统元素与现代简约风格，保留文化底蕴，符合当代审美。可继续调整色彩或添加其他文化元素。';
     } else if (lowerPrompt.includes('中秋') || lowerPrompt.includes('节日')) {
-      return '为您设计了一套中秋主题的国潮风格方案。方案融合了传统中秋元素（如月饼、玉兔、桂花）与现代设计语言，色彩以喜庆的红色和金色为主，传达团圆美满的节日氛围。建议添加传统纹样如云纹或回纹作为装饰元素，增强文化感。';
+      return '已设计中秋主题国潮方案，融合传统元素（月饼、玉兔、桂花）与现代设计，色彩以红金为主，传达团圆氛围。建议添加云纹或回纹增强文化感。';
     } else if (lowerPrompt.includes('调整') || lowerPrompt.includes('修改')) {
-      return '已根据您的要求调整设计。颜色已从红色调改为靛蓝色，这种颜色在传统中国文化中象征着宁静和智慧，与您的设计主题非常契合。同时优化了元素布局，使其更加平衡和谐。您可以继续提出调整建议。';
+      return '已调整设计：颜色改为靛蓝色（象征宁静智慧），优化元素布局，更加平衡和谐。可继续提出调整建议。';
     } else {
-      return '根据您的描述，我为您生成了一个融合传统与现代的设计方案。方案注重文化元素的合理运用，同时保持了现代设计的简洁美感。您可以提出具体的修改意见，或添加更多细节要求，我会进一步优化方案。';
+      return '已生成融合传统与现代的设计方案，注重文化元素合理运用，保持现代简洁美感。可提出具体修改意见或添加细节要求，进一步优化。';
     }
   }
 
@@ -2607,13 +2653,13 @@ class LLMService {
     const lowerPrompt = prompt.toLowerCase();
     
     if (lowerPrompt.includes('创新') || lowerPrompt.includes('现代')) {
-      return '为您打造了一款充满现代感的创新设计。设计采用了大胆的几何形状和鲜明的色彩对比，同时巧妙融入了传统元素，实现了传统与现代的完美平衡。这种风格特别适合吸引年轻消费群体，展现品牌的活力与创新精神。';
+      return '已打造现代感创新设计：大胆几何形状+鲜明色彩对比，巧妙融入传统元素，实现传统与现代平衡，适合吸引年轻群体，展现品牌活力与创新精神。';
     } else if (lowerPrompt.includes('年轻化') || lowerPrompt.includes('潮流')) {
-      return '根据您的需求，我设计了一套年轻化的国潮方案。方案结合了当下流行的设计趋势，使用了明亮活泼的色彩和有趣的图形元素，同时保留了足够的文化识别度。这种设计能够有效吸引Z世代消费者的关注，提升品牌在年轻群体中的影响力。';
+      return '已设计年轻化国潮方案：结合流行趋势，明亮活泼色彩+有趣图形元素，保留文化识别度，有效吸引Z世代，提升品牌年轻群体影响力。';
     } else if (lowerPrompt.includes('优化') || lowerPrompt.includes('改进')) {
-      return '已对您的设计进行了优化。主要改进了视觉层次和信息传达效率，使设计更加清晰易懂。同时调整了色彩搭配，使其更加和谐统一。您可以继续提出具体的优化方向，我会进一步完善方案。';
+      return '已优化设计：提升视觉层次和信息传达效率，使设计更清晰易懂，调整色彩搭配更和谐统一。可继续提出具体优化方向。';
     } else {
-      return '基于您的需求，我为您生成了一个富有创意的设计方案。这个方案注重视觉冲击力和情感表达，能够有效传达品牌信息和文化内涵。您可以告诉我您对方案的看法，或提出具体的调整要求，我会根据您的反馈进一步优化。';
+      return '已生成富有创意的设计方案，注重视觉冲击力和情感表达，有效传达品牌信息和文化内涵。可提出看法或调整要求，进一步优化。';
     }
   }
 
@@ -2624,13 +2670,13 @@ class LLMService {
     const lowerPrompt = prompt.toLowerCase();
     
     if (lowerPrompt.includes('文化') || lowerPrompt.includes('传统')) {
-      return '为您生成了一个深度融合传统文化元素的设计方案。方案参考了多个历史时期的艺术风格，将传统纹样、色彩和构图原则与现代设计需求相结合，创造出既有文化底蕴又符合当代审美的作品。这种设计能够有效传达品牌的文化价值和历史传承。';
+      return '已生成深度融合传统文化元素的设计方案，参考多个历史时期艺术风格，结合传统纹样、色彩和构图原则与现代需求，既有文化底蕴又符合当代审美，有效传达品牌文化价值和历史传承。';
     } else if (lowerPrompt.includes('多模态') || lowerPrompt.includes('综合')) {
-      return '根据您的需求，我为您创建了一个多模态设计方案。这个方案结合了视觉、文字和互动元素，提供了丰富的用户体验。设计中融入了多种文化符号和表现手法，能够在不同场景下有效传达信息。您可以告诉我您对方案的具体看法。';
+      return '已创建多模态设计方案，结合视觉、文字和互动元素，提供丰富用户体验，融入多种文化符号和表现手法，可在不同场景有效传达信息。';
     } else if (lowerPrompt.includes('建议') || lowerPrompt.includes('指导')) {
-      return '根据您的创作内容，我提供以下建议：1. 可以增加一些传统纹样作为装饰元素，增强文化识别度；2. 考虑调整色彩搭配，使其更加和谐统一；3. 优化元素布局，提升整体视觉效果。这些调整将有助于提升作品的文化内涵和艺术表现力。';
+      return '建议：1. 增加传统纹样增强文化识别度 2. 调整色彩搭配更和谐 3. 优化元素布局提升视觉效果。这些调整将提升作品文化内涵和艺术表现力。';
     } else {
-      return '基于您的描述，我为您生成了一个富有文化内涵的设计方案。这个方案注重文化元素的准确运用和创意表达，能够有效传达品牌的文化价值和理念。您可以提出具体的修改意见，我会根据您的反馈进一步完善方案。';
+      return '已生成富有文化内涵的设计方案，注重文化元素准确运用和创意表达，有效传达品牌文化价值和理念。可提出具体修改意见，进一步完善。';
     }
   }
 

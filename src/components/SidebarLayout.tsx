@@ -6,6 +6,7 @@ import { AuthContext } from '@/contexts/authContext'
 import { markPrefetched, isPrefetched } from '@/services/prefetch'
 import ErrorFeedback from '@/components/ErrorFeedback'
 import { toast } from 'sonner'
+import CreatorDashboard from './CreatorDashboard'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -658,12 +659,14 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                       <div className="flex items-center space-x-2">
                         <button
                           className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
-                          onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
-                        >全部已读</button>
+                          onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}>
+                          全部已读
+                        </button>
                         <button
                           className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
-                          onClick={() => setNotifications([])}
-                        >清空</button>
+                          onClick={() => setNotifications([])}>
+                          清空
+                        </button>
                       </div>
                     </div>
                     <ul className="max-h-80 overflow-auto">
@@ -694,12 +697,16 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                     <div className={`px-4 py-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} text-right`}>
                       <button
                         className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
-                        onClick={() => setShowNotifications(false)}
-                      >关闭</button>
+                        onClick={() => setShowNotifications(false)}>
+                        关闭
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
+              
+              {/* 创作者仪表盘 */}
+              <CreatorDashboard />
               {isAuthenticated ? (
                 <div className="relative" ref={userMenuRef}>
                   <button

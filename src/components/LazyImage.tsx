@@ -43,8 +43,8 @@ export default function LazyImage({
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   
-  // 默认fallback图片
-  const defaultFallbackSrc = 'https://via.placeholder.com/600x600?text=Image+Not+Available';
+  // 默认fallback图片 - 使用本地占位图，避免ORB策略阻止
+  const defaultFallbackSrc = '/images/placeholder-image.jpg';
   
   // 图片加载完成处理
   const handleLoad = () => {
@@ -60,7 +60,14 @@ export default function LazyImage({
     console.warn('Image failed to load:', currentSrc, 'Retry count:', retryCount);
     const maxRetries = 2;
     
-    if (retryCount < maxRetries) {
+    // 检查是否已经是fallback图片
+    const finalFallback = fallbackSrc || defaultFallbackSrc;
+    const isFallback = currentSrc === finalFallback;
+    
+    // 如果当前URL为空或无效，直接使用fallback图片，不进行重试
+    const isEmptyOrInvalid = !currentSrc || currentSrc === '';
+    
+    if (!isFallback && !isEmptyOrInvalid && retryCount < maxRetries) {
       // 重试机制：增加重试次数，延迟后重试
       setRetryCount(prev => prev + 1);
       // 可以添加随机延迟避免所有图片同时重试
@@ -69,29 +76,46 @@ export default function LazyImage({
       setTimeout(() => {
         const retrySrc = processImageUrl(src);
         console.log('Retrying with URL:', retrySrc);
-        setCurrentSrc(retrySrc); // 重试原始URL，通过代理
+        setCurrentSrc(retrySrc); // 重试原始URL
       }, delay);
-    } else {
-      // 重试失败，使用fallback图片
-      const finalFallback = fallbackSrc || defaultFallbackSrc;
+    } else if (!isFallback) {
+      // 重试失败或URL为空，使用fallback图片
       console.log('Using fallback image:', finalFallback);
-      if (currentSrc !== finalFallback) {
-        setCurrentSrc(finalFallback);
-      } else {
-        // fallback也失败了
-        console.error('Fallback image also failed:', finalFallback);
-        setIsError(true);
-        if (onError) {
-          onError();
-        }
+      // 重置加载状态，确保fallback图片能够显示
+      setIsLoaded(false);
+      setIsError(false);
+      setRetryCount(0);
+      setCurrentSrc(finalFallback);
+    } else {
+      // fallback也失败了
+      console.error('Fallback image also failed:', finalFallback);
+      setIsError(true);
+      setIsLoaded(false);
+      if (onError) {
+        onError();
       }
     }
   };
   
+  // 当URL为空或无效时，直接使用fallback图片
+  useEffect(() => {
+    const finalFallback = fallbackSrc || defaultFallbackSrc;
+    if (!currentSrc || currentSrc === '') {
+      setCurrentSrc(finalFallback);
+    }
+  }, [currentSrc, fallbackSrc]);
+  
   // 当src prop变化时更新currentSrc
   useEffect(() => {
     const processedSrc = processImageUrl(src);
-    setCurrentSrc(processedSrc);
+    console.log('LazyImage src changed:', src, 'processed to:', processedSrc);
+    
+    // 如果处理后的URL为空，直接使用fallback图片
+    const finalFallback = fallbackSrc || defaultFallbackSrc;
+    const effectiveSrc = processedSrc || finalFallback;
+    
+    console.log('Effective src:', effectiveSrc);
+    setCurrentSrc(effectiveSrc);
     setIsLoaded(false);
     setIsError(false);
     setRetryCount(0);
@@ -99,24 +123,24 @@ export default function LazyImage({
   
   // 观察图片是否进入视口
   useEffect(() => {
+    // 立即设置为可见，确保图片能够加载
+    setIsVisible(true);
+    
     // 优先级高的图片立即加载，不使用懒加载
     if (priority) {
-      setIsVisible(true);
       return;
     }
     
-    // 如果浏览器不支持IntersectionObserver，则立即加载图片
+    // 如果浏览器不支持IntersectionObserver，则直接返回
     if (!('IntersectionObserver' in window)) {
-      setIsVisible(true);
       return;
     }
     
-    // 创建IntersectionObserver实例
+    // 创建IntersectionObserver实例 - 仅用于监控可见性，不影响初始加载
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
-          setIsVisible(true);
           // 图片进入视口后，停止观察
           if (observerRef.current) {
             observerRef.current.unobserve(entry.target);
@@ -133,7 +157,7 @@ export default function LazyImage({
       }
     );
     
-    // 开始观察图片容器元素，而不是img元素
+    // 开始观察图片容器元素
     if (containerRef.current) {
       observerRef.current.observe(containerRef.current);
     }
