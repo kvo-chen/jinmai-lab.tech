@@ -176,35 +176,35 @@ const Membership: React.FC = () => {
         {/* 会员套餐 */}
         <section className="mb-10" aria-labelledby="upgrade-title">
           <h2 id="upgrade-title" className="text-2xl font-bold mb-6 text-center text-primary">升级会员</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-6">
             {membershipPlans.map((plan) => (
               <article 
                 key={plan.id} 
-                className={`rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${plan.popular ? 'border-2 border-primary' : 'border border-gray-200'} sm:mx-auto sm:max-w-md`}
+                className={`rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${plan.popular ? 'border-2 border-primary' : 'border border-gray-200'} w-full`}
                 aria-labelledby={`plan-title-${plan.id}`}
               >
                 {plan.popular && (
-                  <div className="bg-primary text-white text-center py-2 font-medium" aria-label="最受欢迎套餐">
+                  <div className="bg-primary text-white text-center py-1.5 font-medium" aria-label="最受欢迎套餐">
                     最受欢迎
                   </div>
                 )}
-                <div className="p-6">
-                  <h3 id={`plan-title-${plan.id}`} className="text-xl font-bold mb-2 text-primary">{plan.name}</h3>
-                  <div className="text-3xl font-bold mb-4 text-primary">
+                <div className="p-5">
+                  <h3 id={`plan-title-${plan.id}`} className="text-lg font-bold mb-2 text-primary">{plan.name}</h3>
+                  <div className="text-2xl font-bold mb-3 text-primary">
                     ¥{plan.price}
                     <span className="text-sm font-normal text-gray-500">/{plan.period}</span>
                   </div>
-                  <p className="text-gray-600 mb-6">{plan.description}</p>
-                  <ul className="mb-8">
+                  <p className="text-gray-600 mb-4">{plan.description}</p>
+                  <ul className="mb-5 space-y-2">
                     {plan.features.map((feature: string, index: number) => (
-                      <li key={index} className="flex items-start space-x-3 mb-3">
-                        <span className="text-primary mt-1">✓</span>
-                        <span className="text-gray-700">{feature}</span>
+                      <li key={index} className="flex items-start space-x-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span className="text-gray-700 text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <button
-                    className={`w-full py-3 rounded-full font-medium transition-colors ${user.membershipLevel === plan.id ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-white'}`}
+                    className={`w-full py-2.5 rounded-full font-medium transition-colors ${user.membershipLevel === plan.id ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-white'}`}
                     onClick={() => handleUpgrade(plan.id)}
                     disabled={user.membershipLevel === plan.id}
                     aria-label={`${user.membershipLevel === plan.id ? '当前会员' : '立即升级'}${plan.name}`}

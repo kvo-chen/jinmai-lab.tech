@@ -1227,14 +1227,25 @@ class LLMService {
         
         // 生成更有用的模拟响应，而不是简单的错误消息
         const generateMockResponse = (prompt: string): string => {
+          // 处理常见问候语
+          const greetings = ['你好', '您好', 'hi', 'hello', '嗨', '早上好', '下午好', '晚上好'];
+          for (const greeting of greetings) {
+            if (prompt.includes(greeting)) {
+              return `你好！我是你的AI助手，很高兴为你服务。你可以问我关于平台使用、创作技巧、文化知识等方面的问题，我会尽力为你解答。`;
+            }
+          }
+          
           // 模拟回答生成逻辑 - 简洁高效版
           const questions = {
-            '平台上如何创作': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
-            '如何使用AI生成功能': 'AI生成：1. 创作中心→"AI生成" 2. 输入创作提示 3. 选择模型和参数 4. 生成→编辑→保存/发布',
-            '如何分享我的作品': '分享方式：1. 作品详情页→"分享"生成链接/二维码 2. 复制链接 3. 分享到社交平台 4. 邀请他人加入',
-            '如何查看创作数据': '查看数据：1. 头像→个人中心→"创作数据" 2. 查看浏览量、点赞数等',
-            '如何参与社区活动': '参与活动：1. 进入"社区"页面 2. 浏览活动 3. 点击感兴趣的活动查看详情 4. 提交作品/参与互动 5. 等待结果'
-          };
+          '平台上如何创作': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
+          '如何使用AI生成功能': 'AI生成：1. 创作中心→"AI生成" 2. 输入创作提示 3. 选择模型和参数 4. 生成→编辑→保存/发布',
+          '如何分享我的作品': '分享方式：1. 作品详情页→"分享"生成链接/二维码 2. 复制链接 3. 分享到社交平台 4. 邀请他人加入',
+          '如何查看创作数据': '查看数据：1. 头像→个人中心→"创作数据" 2. 查看浏览量、点赞数等',
+          '如何参与社区活动': '参与活动：1. 进入"社区"页面 2. 浏览活动 3. 点击感兴趣的活动查看详情 4. 提交作品/参与互动 5. 等待结果',
+          '我想创作作品': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
+          '创作作品': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
+          '创作': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布'
+        };
           
           // 查找匹配的问题
           for (const [key, value] of Object.entries(questions)) {
@@ -1320,57 +1331,12 @@ class LLMService {
         return;
       }
 
-      setTimeout(() => {
-        clearTimeout(timeoutId);
-        
-        let response = '';
-        
-        // 根据当前模型生成不同风格的响应
-        if (this.currentModel.id === 'deepseek') {
-          response = this.generateDeepSeekResponse(prompt);
-        } else if (this.currentModel.id === 'doubao') {
-          response = this.generateDoubaoResponse(prompt);
-        } else if (this.currentModel.id === 'wenxinyiyan') {
-          response = this.generateWenxinResponse(prompt);
-        } else {
-          // 为所有其他模型添加默认模拟响应
-          // 生成更有用的模拟响应，而不是简单的错误消息
-          const questions = {
-            '平台上如何创作': '创作流程：1. 顶部导航栏→"创作"→进入创作中心 2. 选择创作类型 3. 填写信息 4. 发布',
-            '如何使用AI生成功能': 'AI生成：1. 创作中心→"AI生成" 2. 输入创作提示 3. 选择模型和参数 4. 生成→编辑→保存/发布',
-            '如何分享我的作品': '分享方式：1. 作品详情页→"分享"生成链接/二维码 2. 复制链接 3. 分享到社交平台 4. 邀请他人加入',
-            '如何查看创作数据': '查看数据：1. 头像→个人中心→"创作数据" 2. 查看浏览量、点赞数等',
-            '如何参与社区活动': '参与活动：1. 进入"社区"页面 2. 浏览活动 3. 点击感兴趣的活动查看详情 4. 提交作品/参与互动 5. 等待结果'
-          };
-          
-          // 查找匹配的问题
-          for (const [key, value] of Object.entries(questions)) {
-            if (prompt.includes(key)) {
-              response = value;
-              break;
-            }
-          }
-          
-          // 如果没有匹配到问题，使用默认模拟响应
-          if (!response) {
-            response = `已收到你的问题："${prompt}"\n\n建议：\n1. 查看平台帮助文档或教程\n2. 联系客服\n3. 参与社区讨论\n\n需要更具体解答？请提供更多细节！`;
-          }
-        }
-        
-        // 设置连接状态为已连接（模拟响应）
-        this.setConnectionStatus(modelId, 'connected');
-        
-        // 添加AI响应到历史
-        const aiMessage: Message = {
-          role: 'assistant',
-          content: response,
-          timestamp: Date.now()
-        };
-        this.addToHistory(aiMessage);
-        
-        this.recordPerformance(modelId, startTime, true);
-        resolve(response);
-      }, Math.random() * 1500 + 500);
+      // 如果没有匹配到任何模型，返回错误
+      clearTimeout(timeoutId);
+      const error = new Error('未配置任何可用模型');
+      this.setConnectionStatus(modelId, 'error', error.message);
+      this.recordPerformance(modelId, startTime, false, error.message);
+      reject(error);
     });
   }
   

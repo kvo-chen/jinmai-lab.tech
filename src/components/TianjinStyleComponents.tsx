@@ -606,6 +606,8 @@ export const TianjinImage: React.FC<{
   quality?: 'low' | 'medium' | 'high';
   // 是否禁用fallback机制，始终使用原始URL
   disableFallback?: boolean;
+  // 默认图片URL，当原始图片加载失败时使用
+  fallbackSrc?: string;
   // 图片加载事件
   onLoad?: () => void;
   onError?: () => void;
@@ -624,6 +626,7 @@ export const TianjinImage: React.FC<{
   priority = false,
   quality = 'medium',
   disableFallback = false,
+  fallbackSrc,
   onLoad,
   onError,
 }) => {
@@ -663,6 +666,7 @@ export const TianjinImage: React.FC<{
         onLoad={onLoad}
         onError={onError}
         disableFallback={disableFallback}
+        fallbackSrc={fallbackSrc}
       />
       
       {badge && (

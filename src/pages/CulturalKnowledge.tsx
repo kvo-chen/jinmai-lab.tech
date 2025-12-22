@@ -357,71 +357,7 @@ const historicalStories = [
 在时尚与博物馆叙事中具有强烈的视觉辨识度。`,
     tags: ['金工', '民族文化', '饰品']
   },
-  // 中文注释：新增更多“工艺百科”条目，丰富主页面内容
-  {
-    id: 13,
-    title: '景泰蓝掐丝珐琅',
-    category: '金工',
-    description: '以金属胎与掐丝填珐琅呈现绚丽色彩与金属光泽。',
-    content: '工序包含制胎、掐丝、点蓝、烧焙与磨光，适合器物与陈设。',
-    image: 'https://picsum.photos/1920/1080?random=4'
-  },
-  {
-    id: 14,
-    title: '宣纸制作',
-    category: '纸艺',
-    description: '以植物纤维与水道漂洗制成适宜书画的纸张。',
-    content: '包含制浆、捞纸、压榨与晾晒，具吸水性与柔韧度。',
-    image: 'https://picsum.photos/1920/1080?random=5'
-  },
-  {
-    id: 15,
-    title: '竹编结构',
-    category: '编织',
-    description: '以竹篾编织形成立体与纹理，结构轻而韧。',
-    content: '分细割、篾片处理与编织，常用于器具、灯具与装饰。',
-    image: 'https://picsum.photos/1920/1080?random=6'
-  },
-  {
-    id: 16,
-    title: '木版年画',
-    category: '版画',
-    description: '以木版刻印呈节庆图像，色彩质朴与民俗意味。',
-    content: '刻版、分色套印与印制流程，体现传统文化的图像表达。',
-    image: 'https://picsum.photos/1920/1080?random=7'
-  },
-  {
-    id: 17,
-    title: '蜡染技法',
-    category: '染织',
-    description: '以蜡防染形成分割与纹理，呈现柔和的色阶效果。',
-    content: '画蜡、染色、退蜡的流程，适合纺织与纸艺的图案表现。',
-    image: 'https://picsum.photos/1920/1080?random=8'
-  },
-  {
-    id: 18,
-    title: '香云纱染整',
-    category: '染织',
-    description: '以植物染与泥染叠加获得独特铜褐光泽与手感。',
-    content: '榄仁叶染与河泥捣染结合，日晒与抛光形成细腻质感。',
-    image: 'https://picsum.photos/1920/1080?random=9'
-  },
-  {
-    id: 19,
-    title: '金银错工艺',
-    category: '金工',
-    description: '以金银嵌条在铁器表面形成纹样，对比强烈。',
-    content: '锻打、嵌条与打磨流程，常用于器物装饰与陈设件。',
-    image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Gold%20silver%20inlay%20Chinese%20metal%20craft%20close-up'
-  },
-  {
-    id: 20,
-    title: '砖雕工艺',
-    category: '建筑装饰',
-    description: '以泥坯雕刻与烧成形成立体纹样，适用于门楼壁面。',
-    content: '模制与雕刻结合，强调层次与光影，常见于传统建筑。',
-    image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Chinese%20brick%20carving%20temple%20ornament%20workshop'
-  }
+
 ];
 // 中文注释：继续扩充“老字号故事”内容，增强类别与地域平衡
 historicalStories.push(
@@ -1671,6 +1607,54 @@ const encyclopediaEntriesMore = [
     description: '以金箔贴覆在器物或建筑细部形成尊贵光泽。',
     content: '强调底材平整与黏着介质控制，适用于佛像、家具与建筑细部的装饰。',
     image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Gold%20leaf%20gilding%20application%20craft'
+  },
+  {
+    id: 63,
+    title: '宣纸制作',
+    category: '纸艺',
+    description: '以植物纤维与水道漂洗制成适宜书画的纸张。',
+    content: '包含制浆、捞纸、压榨与晾晒，具吸水性与柔韧度。',
+    image: 'https://picsum.photos/1920/1080?random=5'
+  },
+  {
+    id: 64,
+    title: '竹编结构',
+    category: '编织',
+    description: '以竹篾编织形成立体与纹理，结构轻而韧。',
+    content: '分细割、篾片处理与编织，常用于器具、灯具与装饰。',
+    image: 'https://picsum.photos/1920/1080?random=6'
+  },
+  {
+    id: 65,
+    title: '蜡染技法',
+    category: '染织',
+    description: '以蜡防染形成分割与纹理，呈现柔和的色阶效果。',
+    content: '画蜡、染色、退蜡的流程，适合纺织与纸艺的图案表现。',
+    image: 'https://picsum.photos/1920/1080?random=8'
+  },
+  {
+    id: 66,
+    title: '香云纱染整',
+    category: '染织',
+    description: '以植物染与泥染叠加获得独特铜褐光泽与手感。',
+    content: '榄仁叶染与河泥捣染结合，日晒与抛光形成细腻质感。',
+    image: 'https://picsum.photos/1920/1080?random=9'
+  },
+  {
+    id: 67,
+    title: '金银错工艺',
+    category: '金工',
+    description: '以金银嵌条在铁器表面形成纹样，对比强烈。',
+    content: '锻打、嵌条与打磨流程，常用于器物装饰与陈设件。',
+    image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Gold%20silver%20inlay%20Chinese%20metal%20craft%20close-up'
+  },
+  {
+    id: 68,
+    title: '砖雕工艺',
+    category: '建筑装饰',
+    description: '以泥坯雕刻与烧成形成立体纹样，适用于门楼壁面。',
+    content: '模制与雕刻结合，强调层次与光影，常见于传统建筑。',
+    image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=1920x1080&prompt=Chinese%20brick%20carving%20temple%20ornament%20workshop'
   }
 ];
 // 中文注释：继续扩充“传承人物”，增强地域与工艺多样性（将扩充放在数组声明之后）
@@ -2228,7 +2212,7 @@ export default function CulturalKnowledge() {
               {activeTab === 'stories' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* 过滤天津相关内容 */}
-                  {(isTianjin ? historicalStories.filter(story => story.tags?.includes('天津')) : historicalStories).map((story) => (
+                  {(isTianjin ? historicalStories.filter(story => story.tags?.includes('天津')) : historicalStories).sort((a, b) => a.id - b.id).map((story) => (
                     <motion.div
                       key={story.id}
                       className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl`}
@@ -2501,7 +2485,7 @@ export default function CulturalKnowledge() {
             {selectedStory && (
               <div>
                 <img 
-                  src={selectedStory.thumbnail} 
+                  src={selectedStory.thumbnail.includes('/api/proxy/trae-api') ? 'https://picsum.photos/800/600?random=' + selectedStory.id : selectedStory.thumbnail} 
                   alt={selectedStory.title} 
                   className="w-full h-64 object-cover rounded-xl mb-6"
                 />
@@ -2594,7 +2578,7 @@ export default function CulturalKnowledge() {
                   ) : (
                     <>
                       <img 
-                        src={selectedVideo.thumbnail} 
+                        src={selectedVideo.thumbnail.includes('/api/proxy/trae-api') ? 'https://picsum.photos/800/600?random=' + selectedVideo.id : selectedVideo.thumbnail} 
                         alt={selectedVideo.title} 
                         className="w-full h-full object-cover opacity-70"
                       />
@@ -2695,8 +2679,8 @@ export default function CulturalKnowledge() {
               <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <img 
-                    src={selectedElement.image} 
-                    alt={selectedElement.name} 
+                  src={selectedElement.image.includes('/api/proxy/trae-api') ? 'https://picsum.photos/800/600?random=' + selectedElement.id : selectedElement.image} 
+                  alt={selectedElement.name} 
                     className="w-full h-64 object-cover rounded-xl"
                   />
                   

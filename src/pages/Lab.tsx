@@ -9,12 +9,24 @@ export default function Lab() {
   const [recent, setRecent] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem('LAB_RECENT')
-      if (raw) return JSON.parse(raw)
-    } catch {}
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        // 确保返回的是字符串数组
+        if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+          return parsed
+        }
+      }
+    } catch (error) {
+      console.error('Failed to parse LAB_RECENT from localStorage:', error)
+      // 清除损坏的数据
+      localStorage.removeItem('LAB_RECENT')
+    }
     return []
   })
   useEffect(() => {
-    try { localStorage.setItem('LAB_RECENT', JSON.stringify(recent.slice(0, 10))) } catch {}
+    try { localStorage.setItem('LAB_RECENT', JSON.stringify(recent.slice(0, 10))) } catch (error) {
+      console.error('Failed to save LAB_RECENT to localStorage:', error)
+    }
   }, [recent])
 
   // 中文注释：窗口管理清单（记录打开时间与来源），支持一键重开与清空
@@ -22,12 +34,29 @@ export default function Lab() {
   const [openedLog, setOpenedLog] = useState<OpenLogItem[]>(() => {
     try {
       const raw = localStorage.getItem('LAB_OPENED_LOG')
-      if (raw) return JSON.parse(raw)
-    } catch {}
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        // 确保返回的是符合OpenLogItem接口的数组
+        if (Array.isArray(parsed) && parsed.every(item => {
+          return typeof item === 'object' && 
+                 typeof item.url === 'string' && 
+                 typeof item.source === 'string' && 
+                 typeof item.openedAt === 'number'
+        })) {
+          return parsed
+        }
+      }
+    } catch (error) {
+      console.error('Failed to parse LAB_OPENED_LOG from localStorage:', error)
+      // 清除损坏的数据
+      localStorage.removeItem('LAB_OPENED_LOG')
+    }
     return []
   })
   useEffect(() => {
-    try { localStorage.setItem('LAB_OPENED_LOG', JSON.stringify(openedLog.slice(0, 50))) } catch {}
+    try { localStorage.setItem('LAB_OPENED_LOG', JSON.stringify(openedLog.slice(0, 50))) } catch (error) {
+      console.error('Failed to save LAB_OPENED_LOG to localStorage:', error)
+    }
   }, [openedLog])
 
   // 中文注释：是否携带上下文（从最近记录中匹配相同路由的查询参数并合并）

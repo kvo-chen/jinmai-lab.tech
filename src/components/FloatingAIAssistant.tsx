@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+import { useNavigate, useLocation } from 'react-router-dom';
 import llmService, { Message } from '@/services/llmService';
 
 interface FloatingAIAssistantProps {
@@ -18,8 +19,12 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [currentPage, setCurrentPage] = useState<string>('');
+  const [currentPath, setCurrentPath] = useState<string>('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // 预设问题列表
   const presetQuestions = [
@@ -30,15 +35,34 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     '如何参与社区活动'
   ];
 
+  // 监听路由变化，更新当前页面信息
+  useEffect(() => {
+    // 解析当前路径，获取页面名称
+    const path = location.pathname;
+    setCurrentPath(path);
+    
+    // 简单的路径到页面名称映射
+    const pathToPage: Record<string, string> = {
+      '/': '首页',
+      '/cultural-knowledge': '文化知识',
+      '/creation-workshop': '创作工坊',
+      '/marketplace': '文创市集',
+      '/community': '社区',
+      '/my-works': '我的作品'
+    };
+    
+    setCurrentPage(pathToPage[path] || '未知页面');
+  }, [location.pathname]);
+  
   // 添加初始欢迎消息
   useEffect(() => {
     const initialMessage: Message = {
       role: 'assistant',
-      content: '你好！我是你的AI助手，有什么可以帮助你的吗？',
+      content: `你好！我是你的AI助手，当前你正在浏览「${currentPage}」页面，有什么可以帮助你的吗？`,
       timestamp: Date.now()
     };
     setMessages([initialMessage]);
-  }, []);
+  }, [currentPage]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -62,8 +86,82 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     setIsGenerating(true);
 
     try {
-      // 调用LLM服务生成响应
-      const response = await llmService.generateResponse(userMessage.content);
+      // 简单的数字映射回答和页面跳转
+      let response = '';
+      const message = inputMessage.trim();
+      
+      // 处理常见问候语
+      const greetings = ['你好', '您好', 'hi', 'hello', '嗨', '早上好', '下午好', '晚上好'];
+      let isGreeting = false;
+      for (const greeting of greetings) {
+        if (message.includes(greeting)) {
+          isGreeting = true;
+          response = `你好！我是你的AI助手，很高兴为你服务。你现在在「${currentPage}」页面，有什么可以帮助你的吗？你可以问我关于平台使用、创作技巧、文化知识等方面的问题，我会尽力为你解答。`;
+          break;
+        }
+      }
+      
+      if (!isGreeting) {
+        // 检查页面跳转关键词
+        const navigationKeywords: Record<string, { path: string; name: string }> = {
+          '首页': { path: '/', name: '首页' },
+          '文化知识': { path: '/cultural-knowledge', name: '文化知识' },
+          '创作工坊': { path: '/creation-workshop', name: '创作工坊' },
+          '文创市集': { path: '/marketplace', name: '文创市集' },
+          '社区': { path: '/community', name: '社区' },
+          '我的作品': { path: '/my-works', name: '我的作品' }
+        };
+        
+        let navigationTarget = null;
+        for (const [keyword, target] of Object.entries(navigationKeywords)) {
+          if (message.includes(keyword)) {
+            navigationTarget = target;
+            break;
+          }
+        }
+        
+        if (navigationTarget) {
+          // 执行页面跳转
+          response = `正在为你跳转到「${navigationTarget.name}」页面...`;
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: response,
+            timestamp: Date.now()
+          }]);
+          setIsGenerating(false);
+          
+          // 延迟跳转，让用户看到反馈
+          setTimeout(() => {
+            navigate(navigationTarget.path);
+          }, 1000);
+          return;
+        }
+        
+        // 检查是否为纯数字或数字相关问题
+        const numericMatch = message.match(/^\s*([0-9]+)\s*$/);
+        if (numericMatch) {
+          const num = parseInt(numericMatch[1]);
+          
+          // 根据数字提供不同回答
+          const numberResponses: Record<number, string> = {
+            1: '1 代表了开始与创新，正如我们平台鼓励用户开启创作之旅。你可以在创作工坊中尝试各种非遗技艺的数字化创作，或者参与社区讨论分享你的创意灵感。',
+            2: '2 象征着合作与平衡。在我们平台上，你可以与其他创作者合作完成作品，也可以在传承与创新之间找到平衡，将传统非遗文化以现代方式呈现。',
+            3: '3 意味着多样性与丰富性。我们的平台涵盖了多种非遗技艺类型，包括陶瓷、刺绣、木雕等。你可以探索不同的文化元素，丰富你的创作素材库。',
+            4: '4 代表着稳定与结构。创作需要坚实的基础，你可以通过平台的教程视频学习非遗基础知识，掌握创作技巧，构建自己的创作体系。',
+            5: '5 象征着活力与探索。我们鼓励用户不断探索新的创作方式，尝试将AI生成技术与传统技艺结合，创造出既有文化底蕴又具现代美感的作品。',
+            6: '6 代表着和谐与完美。在创作过程中，你可以注重作品的整体协调性，将各种元素有机结合，创造出和谐统一的视觉效果。',
+            7: '7 象征着神秘与深度。非遗文化蕴含着深厚的历史底蕴和文化内涵，你可以深入挖掘其背后的故事，为你的作品增添深度和内涵。',
+            8: '8 意味着发展与繁荣。我们希望通过平台的发展，推动非遗文化的繁荣传承，让更多人了解和喜爱传统技艺。',
+            9: '9 代表着智慧与成就。通过不断学习和实践，你可以在非遗创作领域取得成就，成为传承和创新的使者。',
+            10: '10 象征着圆满与开始。每一次创作都是一个新的开始，也是对传统文化的一次圆满传承。'          
+          };
+          
+          response = numberResponses[num] || `你输入的数字是 ${num}。在我们的平台上，每个数字都可以成为创作的灵感来源。你可以尝试将数字元素融入你的作品中，创造出独特的视觉效果。`;
+        } else {
+          // 调用LLM服务生成响应
+          response = await llmService.generateResponse(userMessage.content);
+        }
+      }
       
       const assistantMessage: Message = {
         role: 'assistant',
