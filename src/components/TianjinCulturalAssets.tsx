@@ -330,7 +330,7 @@ function DialectCard({ dialect, isDark, onOpenModal, isFavorite, toggleFavorite 
   );
 }
 
-export default function TianjinCulturalAssets() {
+export default function TianjinCulturalAssets({ searchQuery: externalSearchQuery = '' }) {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<'heritage' | 'symbols' | 'dialect'>('heritage');
   const [isLoading, setIsLoading] = useState(true);
@@ -965,7 +965,6 @@ export default function TianjinCulturalAssets() {
   ];
   
   // 搜索和筛选状态管理
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   
   // 获取非遗技艺分类列表 - 使用useMemo缓存
@@ -981,32 +980,32 @@ export default function TianjinCulturalAssets() {
   // 过滤非遗技艺数据 - 使用useMemo缓存
   const filteredHeritages = useMemo(() => {
     return intangibleHeritages.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = item.name.toLowerCase().includes(externalSearchQuery.toLowerCase()) || 
+                           item.description.toLowerCase().includes(externalSearchQuery.toLowerCase());
       const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [intangibleHeritages, searchQuery, filterCategory]);
+  }, [intangibleHeritages, externalSearchQuery, filterCategory]);
   
   // 过滤地域符号数据 - 使用useMemo缓存
   const filteredSymbols = useMemo(() => {
     return tianjinSymbols.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = item.name.toLowerCase().includes(externalSearchQuery.toLowerCase()) || 
+                           item.description.toLowerCase().includes(externalSearchQuery.toLowerCase());
       const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [tianjinSymbols, searchQuery, filterCategory]);
+  }, [tianjinSymbols, externalSearchQuery, filterCategory]);
   
   // 过滤方言数据 - 使用useMemo缓存
   const filteredDialects = useMemo(() => {
     return tianjinDialects.filter(item => {
-      const matchesSearch = item.phrase.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           item.meaning.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           item.usage.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = item.phrase.toLowerCase().includes(externalSearchQuery.toLowerCase()) || 
+                           item.meaning.toLowerCase().includes(externalSearchQuery.toLowerCase()) ||
+                           item.usage.toLowerCase().includes(externalSearchQuery.toLowerCase());
       return matchesSearch;
     });
-  }, [tianjinDialects, searchQuery]);
+  }, [tianjinDialects, externalSearchQuery]);
   
   // 骨架屏加载状态
   if (isLoading) {
@@ -1065,30 +1064,8 @@ export default function TianjinCulturalAssets() {
         ))}
       </div>
       
-      {/* 搜索和筛选区域 */}
+      {/* 筛选区域 */}
       <div className="mb-6">
-        {/* 搜索输入框 */}
-        <div className="mb-4">
-          <div className={`relative rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-            <i className={`fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}></i>
-            <input
-              type="text"
-              placeholder={`搜索${activeTab === 'heritage' ? '非遗技艺' : activeTab === 'symbols' ? '地域符号' : '天津方言'}`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-12 pr-4 py-3 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500'}`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            )}
-          </div>
-        </div>
-        
         {/* 分类筛选 */}
         {activeTab !== 'dialect' && (
           <div className="flex space-x-2 overflow-x-auto scrollbar-hide">

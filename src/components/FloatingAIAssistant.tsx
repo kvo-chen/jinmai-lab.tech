@@ -21,8 +21,13 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPage, setCurrentPage] = useState<string>('');
   const [currentPath, setCurrentPath] = useState<string>('');
+  const [positionStyle, setPositionStyle] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -199,10 +204,89 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }
   };
 
+  // 初始化位置
+  useEffect(() => {
+    // 根据预设位置设置初始坐标
+    const buttonSize = 64; // w-16 = 64px
+    const margin = 24; // 24px margin
+    
+    const initialPosition = {
+      'bottom-right': { x: window.innerWidth - buttonSize - margin, y: window.innerHeight - buttonSize - margin },
+      'bottom-left': { x: margin, y: window.innerHeight - buttonSize - margin },
+      'top-right': { x: window.innerWidth - buttonSize - margin, y: margin },
+      'top-left': { x: margin, y: margin }
+    };
+    setPositionStyle(initialPosition[position]);
+  }, [position]);
+
   // 切换AI助手显示/隐藏
   const toggleAssistant = () => {
     setIsOpen(prev => !prev);
   };
+
+  // 处理拖动开始
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDragging(true);
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      });
+    }
+  };
+
+  // 处理拖动中
+  const handleDrag = (e: MouseEvent | TouchEvent) => {
+    if (!isDragging) return;
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    const buttonWidth = 64; // w-16 = 64px
+    const buttonHeight = 64;
+    
+    // 计算新位置，确保按钮不会超出视窗
+    let newX = clientX - dragOffset.x;
+    let newY = clientY - dragOffset.y;
+    
+    // 边界检查
+    newX = Math.max(0, Math.min(newX, window.innerWidth - buttonWidth));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - buttonHeight));
+    
+    setPositionStyle({ x: newX, y: newY });
+  };
+
+  // 处理拖动结束
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // 添加全局拖动事件监听
+  useEffect(() => {
+    if (isDragging) {
+      const handleMouseMove = (e: MouseEvent) => handleDrag(e);
+      const handleMouseUp = () => handleDragEnd();
+      const handleTouchMove = (e: TouchEvent) => handleDrag(e);
+      const handleTouchEnd = () => handleDragEnd();
+      
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isDragging, dragOffset]);
 
   // 位置类
   const positionClasses = {
@@ -213,7 +297,15 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   };
 
   return (
-    <div className={`fixed z-50 ${positionClasses[position]}`}>
+    <div 
+      ref={containerRef}
+      className="fixed z-50"
+      style={{
+        left: `${positionStyle.x}px`,
+        top: `${positionStyle.y}px`,
+        transform: 'translate(0, 0)'
+      }}
+    >
       {/* 聊天界面 */}
       <AnimatePresence>
         {isOpen && (
@@ -351,14 +443,22 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
 
       {/* 悬浮按钮 */}
       <motion.button
+        ref={buttonRef}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
         onClick={toggleAssistant}
-        className={`fixed ${positionClasses[position]} w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50 transition-all duration-300 transform hover:scale-125 ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white`}
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
+        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50 transition-all duration-300 transform hover:scale-125 ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white cursor-${isDragging ? 'grabbing' : 'grab'}`}
         aria-label="AI助手"
         whileHover={{ scale: 1.25, boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)' }}
         whileTap={{ scale: 1.1 }}
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0
+        }}
       >
         <motion.i 
           className="fas fa-robot text-2xl" 

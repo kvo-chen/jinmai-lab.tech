@@ -2211,8 +2211,17 @@ export default function CulturalKnowledge() {
               {/* 老字号故事 */}
               {activeTab === 'stories' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* 过滤天津相关内容 */}
-                  {(isTianjin ? historicalStories.filter(story => story.tags?.includes('天津')) : historicalStories).sort((a, b) => a.id - b.id).map((story) => (
+                  {/* 过滤天津相关内容和搜索词 */}
+                  {(isTianjin ? historicalStories.filter(story => story.tags?.includes('天津')) : historicalStories)
+                    .filter(story => 
+                      !searchTerm || 
+                      story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      story.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      story.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (story.tags && story.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+                    )
+                    .sort((a, b) => a.id - b.id)
+                    .map((story) => (
                     <motion.div
                       key={story.id}
                       className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl`}
@@ -2256,7 +2265,7 @@ export default function CulturalKnowledge() {
               {/* 非遗教程 */}
               {activeTab === 'tutorials' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* 过滤天津相关内容 */}
+                  {/* 过滤天津相关内容和搜索词 */}
                   {(isTianjin ? tutorialVideos.filter(video => 
                     video.title.includes('天津') || 
                     video.title.includes('杨柳青') || 
@@ -2266,7 +2275,13 @@ export default function CulturalKnowledge() {
                     video.description.includes('杨柳青') || 
                     video.description.includes('泥人张') || 
                     video.description.includes('相声')
-                  ) : tutorialVideos).map((video) => (
+                  ) : tutorialVideos)
+                    .filter(video => 
+                      !searchTerm || 
+                      video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      video.description.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map((video) => (
                     <motion.div
                       key={video.id}
                       className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl`}
@@ -2327,7 +2342,7 @@ export default function CulturalKnowledge() {
               {/* 文化元素 */}
               {activeTab === 'elements' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* 过滤天津相关内容 */}
+                  {/* 过滤天津相关内容和搜索词 */}
                   {(isTianjin ? culturalElements.filter(element => 
                     element.name.includes('杨柳青') || 
                     element.name.includes('泥人张') || 
@@ -2337,7 +2352,16 @@ export default function CulturalKnowledge() {
                     element.description.includes('天津') ||
                     element.description.includes('相声') ||
                     element.description.includes('海河')
-                  ) : culturalElements).map((element) => (
+                  ) : culturalElements)
+                    .filter(element => 
+                      !searchTerm || 
+                      element.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      element.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      element.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (element.history && element.history.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (element.usage && element.usage.toLowerCase().includes(searchTerm.toLowerCase()))
+                    )
+                    .map((element) => (
                     <motion.div
                       key={element.id}
                       className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl`}
@@ -2388,6 +2412,12 @@ export default function CulturalKnowledge() {
                     entry.description.includes('杨柳青') || 
                     entry.description.includes('泥人张') || 
                     entry.description.includes('相声')
+                  ).filter(entry => 
+                    !searchTerm || 
+                    entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    entry.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    entry.category.toLowerCase().includes(searchTerm.toLowerCase())
                   ).map((entry) => (
                     <motion.div
                       key={entry.id}
@@ -2429,6 +2459,11 @@ export default function CulturalKnowledge() {
                     fig.bio.includes('杨柳青') || 
                     fig.bio.includes('泥人张') || 
                     fig.bio.includes('相声')
+                  ).filter(fig => 
+                    !searchTerm || 
+                    fig.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    fig.field.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    fig.bio.toLowerCase().includes(searchTerm.toLowerCase())
                   ).map((fig) => (
                     <motion.div
                       key={fig.id}
@@ -2460,7 +2495,7 @@ export default function CulturalKnowledge() {
               {/* 文化资产 */}
               {activeTab === 'assets' && (
                 <div className="mt-8">
-                  <TianjinCulturalAssets />
+                  <TianjinCulturalAssets searchQuery={searchTerm} />
                 </div>
               )}
             </motion.div>
