@@ -290,8 +290,8 @@ const getBaseUrl = () => {
       const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
       const isFile = protocol === 'file:'
       const isDev = isLocalHost || isFile
-      // 中文注释：当前端端口不是 3001（避免自指），使用后端端口 3001
-      if (isDev && port !== '3001') return 'http://localhost:3001'
+      // 中文注释：当前端端口不是 3007（避免自指），使用后端端口 3007
+      if (isDev && port !== '3007') return 'http://localhost:3007'
     }
   } catch {}
   // 中文注释：默认返回空字符串，使用相对路径（生产环境由同源后端提供路由）
@@ -446,6 +446,9 @@ export async function apiRequest<TResp, TBody = unknown>(
         
         // 记录请求开始时间
         const startTime = performance.now()
+        
+        console.log(`API Client: 开始请求 ${method} ${target}`)
+        console.log(`API Client: 请求参数`, options.body)
         
         const fetchPromise = fetch(target, {
           method,

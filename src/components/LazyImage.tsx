@@ -18,6 +18,8 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fit?: 'cover' | 'contain';
   // 默认图片URL，当原始图片加载失败时使用
   fallbackSrc?: string;
+  // 是否禁用fallback机制
+  disableFallback?: boolean;
 }
 
 export default function LazyImage({ 
@@ -166,7 +168,7 @@ export default function LazyImage({
           ref={imgRef}
           src={currentSrc}
           alt={alt}
-          className={`w-full h-full object-${fit} transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-100'}`}
+          className={`w-full h-full object-${fit} transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={handleLoad}
           onError={handleError}
           {...rest}

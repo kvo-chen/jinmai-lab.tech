@@ -85,7 +85,7 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
   useEffect(() => {
     if (selectedLevel && gameState === 'playing') {
       const totalPairs = selectedLevel.cards.length / 2;
-      if (matchedPairs >= totalPairs) {
+      if (matchedPairs === totalPairs) {
         handleCompleteLevel();
       }
     }
@@ -125,12 +125,9 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
       )
     );
 
-    const newFlippedCard = { ...card, isFlipped: true };
-    setFlippedCards(prev => [...prev, newFlippedCard]);
-
     // 检查是否匹配
     setFlippedCards(prev => {
-      const newFlippedCards = [...prev, newFlippedCard];
+      const newFlippedCards = [...prev, { ...card, isFlipped: true }];
       
       if (newFlippedCards.length === 2) {
         setIsChecking(true);
@@ -144,7 +141,7 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
             if (isMatch) {
               // 匹配成功
               const matchedCards = prevCards.map(c => 
-                c.pairId === card1.pairId ? { ...c, isMatched: true } : c
+                c.pairId === card1.pairId ? { ...c, isMatched: true, isFlipped: true } : c
               );
               setMatchedPairs(prev => prev + 1);
               toast.success('配对成功！');

@@ -181,6 +181,22 @@ const CreatorDashboard: React.FC = () => {
     }
   };
 
+  // 获取活动图标颜色
+  const getActivityIconColor = (type: RecentActivity['type']) => {
+    switch (type) {
+      case 'like':
+        return 'bg-red-500';
+      case 'comment':
+        return 'bg-blue-500';
+      case 'message':
+        return 'bg-green-500';
+      case 'follow':
+        return 'bg-purple-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
   return (
     <div className="relative">
       {/* 切换按钮 */}
@@ -197,63 +213,133 @@ const CreatorDashboard: React.FC = () => {
       {isVisible && (
         <div 
           ref={dashboardRef}
-          className="absolute right-0 mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 max-w-xs animate-fadeIn z-50"
+          className="absolute right-0 mt-2 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl border dark:border-gray-700 w-full sm:w-80 md:w-96 z-50 overflow-hidden"
+          style={{ 
+            animation: 'slideInRight 0.3s ease-out forwards',
+            opacity: 0,
+            transform: 'translateX(20px)',
+            maxWidth: 'calc(100vw - 1rem)' // 确保在小屏幕上不超出视口
+          }}
         >
-          <h3 className="text-lg font-bold mb-3 text-gray-800 dark:text-white flex items-center">
+          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-white flex items-center">
             <i className="fas fa-rocket mr-2 text-purple-500"></i>
             创作者仪表盘
           </h3>
           
           {/* 作品概览 */}
-          <div className="mb-4">
-            <h4 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">作品概览</h4>
+          <div className="mb-4 bg-gray-50 dark:bg-gray-750 rounded-xl p-4 shadow-sm">
+            <h4 className="text-sm font-semibold mb-3 text-gray-600 dark:text-gray-400">作品概览</h4>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
-                <p className="text-xs text-gray-500 dark:text-gray-400">总作品</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalWorks}</p>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">总作品</p>
+                  <i className="fas fa-image text-purple-500 text-xs"></i>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">{workStats.totalWorks}</p>
+                  <span className="text-xs text-green-500 flex items-center">
+                    <i className="fas fa-arrow-up mr-0.5"></i>
+                    12.5%
+                  </span>
+                </div>
               </div>
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
-                <p className="text-xs text-gray-500 dark:text-gray-400">总点赞</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalLikes}</p>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">总点赞</p>
+                  <i className="fas fa-heart text-red-500 text-xs"></i>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">{workStats.totalLikes}</p>
+                  <span className="text-xs text-green-500 flex items-center">
+                    <i className="fas fa-arrow-up mr-0.5"></i>
+                    8.2%
+                  </span>
+                </div>
               </div>
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
-                <p className="text-xs text-gray-500 dark:text-gray-400">总浏览</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalViews}</p>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">总浏览</p>
+                  <i className="fas fa-eye text-blue-500 text-xs"></i>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">{workStats.totalViews.toLocaleString()}</p>
+                  <span className="text-xs text-green-500 flex items-center">
+                    <i className="fas fa-arrow-up mr-0.5"></i>
+                    15.7%
+                  </span>
+                </div>
               </div>
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg hover:shadow-md transition-shadow">
-                <p className="text-xs text-gray-500 dark:text-gray-400">总评论</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{workStats.totalComments}</p>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">总评论</p>
+                  <i className="fas fa-comment text-yellow-500 text-xs"></i>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-2xl font-bold text-gray-800 dark:text-white">{workStats.totalComments}</p>
+                  <span className="text-xs text-red-500 flex items-center">
+                    <i className="fas fa-arrow-down mr-0.5"></i>
+                    2.1%
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* 创作进度 */}
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
+          <div className="mb-4 bg-gray-50 dark:bg-gray-750 rounded-xl p-4 shadow-sm">
+            <div className="flex justify-between items-center mb-3">
               <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400">创作进度</h4>
-              <span className="text-xs text-purple-600 dark:text-purple-400">
+              <span className="text-xs text-purple-600 dark:text-purple-400 flex items-center">
+                <i className="fas fa-file-alt mr-1"></i>
                 {workStats.draftCount} 个草稿
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-              <div 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 h-2.5 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((workStats.totalWorks / 20) * 100, 100)}%` }}
-              ></div>
+            <div className="space-y-3">
+              <div className="relative">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3.5 overflow-hidden shadow-inner">
+                  <div 
+                    className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 h-3.5 rounded-full transition-all duration-1500 ease-out shadow-lg relative"
+                    style={{ width: `${Math.min((workStats.totalWorks / 20) * 100, 100)}%` }}
+                  >
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white dark:bg-gray-800 rounded-full border-2 border-purple-500 shadow-md animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="absolute top-0 right-0 transform translate-y-1/2 translate-x-1/2 bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full text-xs font-medium text-purple-600 dark:text-purple-400 shadow-md">
+                  {Math.min(Math.round((workStats.totalWorks / 20) * 100), 100)}%
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  已完成 <span className="font-semibold text-gray-700 dark:text-gray-300">{workStats.totalWorks}</span> 个作品
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  目标 <span className="font-semibold text-gray-700 dark:text-gray-300">20</span> 个作品
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-gray-600 dark:text-gray-400">本周新增 2 个</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span className="text-gray-600 dark:text-gray-400">进度提升 10%</span>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              完成 {workStats.totalWorks} / 20 个作品目标
-            </p>
           </div>
 
           {/* 近期活动 */}
-          <div className="mb-4">
-            <h4 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">近期活动</h4>
-            <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+          <div className="mb-4 bg-gray-50 dark:bg-gray-750 rounded-xl p-4 shadow-sm">
+            <h4 className="text-sm font-semibold mb-3 text-gray-600 dark:text-gray-400 flex items-center">
+              <i className="fas fa-bell text-purple-500 mr-2"></i>
+              近期活动
+            </h4>
+            <div className="space-y-3 max-h-36 sm:max-h-44 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent scroll-smooth">
               {recentActivities.map(activity => (
                 <div 
                   key={activity.id} 
-                  className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 cursor-pointer transform hover:translate-x-1 border border-gray-100 dark:border-gray-700"
                   onClick={() => {
                     if (activity.workId) {
                       navigate(`/explore/${activity.workId}`);
@@ -265,38 +351,53 @@ const CreatorDashboard: React.FC = () => {
                   }}
                 >
                   <div className="flex-shrink-0">
-                    <img 
-                      src={activity.userAvatar} 
-                      alt={activity.user} 
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
+                    <div className="relative">
+                      <img 
+                        src={activity.userAvatar} 
+                        alt={activity.user} 
+                        className="w-7 h-7 rounded-full object-cover ring-2 ring-purple-100 dark:ring-purple-900"
+                      />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${getActivityIconColor(activity.type)}`}></div>
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-800 dark:text-gray-200 truncate">
+                    <p className="text-xs text-gray-800 dark:text-gray-200 leading-relaxed">
                       <span className="font-medium">{activity.user}</span> 
                       <span className="text-gray-600 dark:text-gray-400">{activity.content}</span>
                       {activity.workTitle && (
-                        <span className="text-purple-600 dark:text-purple-400 ml-1 hover:underline">{activity.workTitle}</span>
+                        <span className="text-purple-600 dark:text-purple-400 ml-1 hover:underline font-medium">{activity.workTitle}</span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 flex items-center">
+                      <i className="far fa-clock mr-1"></i>
                       {formatTime(activity.timestamp)}
                     </p>
                   </div>
-                  <i className={`${getActivityIcon(activity.type)} text-sm flex-shrink-0 mt-0.5`}></i>
+                  <div className="flex-shrink-0">
+                    <i className={`${getActivityIcon(activity.type)} text-sm flex-shrink-0 mt-0.5 opacity-80`}></i>
+                  </div>
                 </div>
               ))}
+              {recentActivities.length === 0 && (
+                <div className="text-center py-6 text-xs text-gray-500 dark:text-gray-400">
+                  <i className="fas fa-inbox mb-2 text-2xl opacity-50"></i>
+                  <p>暂无近期活动</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* 社群消息 */}
-          <div className="mb-4">
-            <h4 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">社群消息</h4>
-            <div className="space-y-3 max-h-32 overflow-y-auto pr-2">
+          <div className="mb-4 bg-gray-50 dark:bg-gray-750 rounded-xl p-4 shadow-sm">
+            <h4 className="text-sm font-semibold mb-3 text-gray-600 dark:text-gray-400 flex items-center">
+              <i className="fas fa-comments text-blue-500 mr-2"></i>
+              社群消息
+            </h4>
+            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent scroll-smooth">
               {communityMessages.map(message => (
                 <div 
                   key={message.id} 
-                  className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-750 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 cursor-pointer transform hover:translate-x-1 border border-gray-100 dark:border-gray-700"
                   onClick={() => {
                     navigate('/community');
                     setIsVisible(false); // 关闭面板
@@ -306,52 +407,149 @@ const CreatorDashboard: React.FC = () => {
                     <img 
                       src={message.senderAvatar} 
                       alt={message.sender} 
-                      className="w-6 h-6 rounded-full object-cover"
+                      className="w-7 h-7 rounded-full object-cover ring-2 ring-blue-100 dark:ring-blue-900"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-800 dark:text-gray-200 truncate">
-                      <span className="font-medium text-purple-600 dark:text-purple-400 hover:underline">{message.社群名称}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-purple-600 dark:text-purple-400 font-medium truncate">
+                        {message.社群名称}
+                      </p>
+                      <span className="text-xs text-green-500">
+                        <i className="fas fa-circle text-[6px]"></i>
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate leading-relaxed mb-1">
+                      <span className="font-medium text-gray-800 dark:text-gray-200">{message.sender}:</span> {message.content}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">
-                      {message.content}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center">
+                      <i className="far fa-clock mr-1"></i>
                       {formatTime(message.timestamp)}
                     </p>
                   </div>
                 </div>
               ))}
+              {communityMessages.length === 0 && (
+                <div className="text-center py-6 text-xs text-gray-500 dark:text-gray-400">
+                  <i className="fas fa-comments-slash mb-2 text-2xl opacity-50"></i>
+                  <p>暂无社群消息</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* 快速操作 */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                navigate('/create');
-                setIsVisible(false); // 关闭面板
-              }}
-              className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm rounded-lg hover:from-purple-600 hover:to-purple-700 transition-colors flex items-center justify-center gap-1 hover:shadow-md transform hover:-translate-y-0.5 active:scale-95"
-              title="创建新作品"
-            >
-              <i className="fas fa-plus text-xs"></i>
-              <span>创作</span>
-            </button>
-            <button
-              onClick={() => {
-                navigate('/dashboard');
-                setIsVisible(false); // 关闭面板
-              }}
-              className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1 hover:shadow-md transform hover:-translate-y-0.5 active:scale-95"
-              title="查看作品管理"
-            >
-              <i className="fas fa-images text-xs"></i>
-              <span>作品</span>
-            </button>
+          <div className="bg-gray-50 dark:bg-gray-750 rounded-xl p-4 shadow-sm">
+            <h4 className="text-sm font-semibold mb-3 text-gray-600 dark:text-gray-400">快速操作</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  navigate('/create');
+                  setIsVisible(false); // 关闭面板
+                }}
+                className="group px-3 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-1 hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95"
+                title="创建新作品"
+              >
+                <i className="fas fa-plus text-sm group-hover:rotate-90 transition-transform duration-300"></i>
+                <span className="text-xs sm:text-sm">创作</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/dashboard');
+                  setIsVisible(false); // 关闭面板
+                }}
+                className="group px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-1 hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 border border-gray-100 dark:border-gray-700"
+                title="查看作品管理"
+              >
+                <i className="fas fa-images text-sm text-purple-500 group-hover:scale-125 transition-transform duration-300"></i>
+                <span className="text-xs sm:text-sm">作品</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/dashboard/stats');
+                  setIsVisible(false); // 关闭面板
+                }}
+                className="group px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-1 hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 border border-gray-100 dark:border-gray-700"
+                title="查看数据分析"
+              >
+                <i className="fas fa-chart-line text-sm text-blue-500 group-hover:scale-125 transition-transform duration-300"></i>
+                <span className="text-xs sm:text-sm">数据</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/community');
+                  setIsVisible(false); // 关闭面板
+                }}
+                className="group px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-1 hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 border border-gray-100 dark:border-gray-700"
+                title="查看社群消息"
+              >
+                <i className="fas fa-comments text-sm text-green-500 group-hover:scale-125 transition-transform duration-300"></i>
+                <span className="text-xs sm:text-sm">社群</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      {/* 动画样式 */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes slideInRight {
+              from {
+                opacity: 0;
+                transform: translateX(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+            
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+                transform: translateY(10px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            
+            .animate-fadeIn {
+              animation: fadeIn 0.3s ease-out forwards;
+            }
+            
+            /* 自定义滚动条 */
+            ::-webkit-scrollbar {
+              width: 4px;
+            }
+            
+            ::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+              background-color: rgba(156, 163, 175, 0.5);
+              border-radius: 20px;
+            }
+            
+            ::-webkit-scrollbar-thumb:hover {
+              background-color: rgba(156, 163, 175, 0.8);
+            }
+            
+            /* 深色模式滚动条 */
+            .dark ::-webkit-scrollbar-thumb {
+              background-color: rgba(75, 85, 99, 0.5);
+            }
+            
+            .dark ::-webkit-scrollbar-thumb:hover {
+              background-color: rgba(75, 85, 99, 0.8);
+            }
+          `
+        }}
+      />
     </div>
   );
 };

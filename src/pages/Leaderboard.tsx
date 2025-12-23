@@ -359,93 +359,92 @@ const Leaderboard: React.FC = () => {
   };
 
   const getRankColor = (index: number) => {
-    if (index === 0) return 'text-amber-500 font-bold';
-    if (index === 1) return 'text-gray-400 font-bold';
-    if (index === 2) return 'text-amber-700 font-bold';
-    return 'text-gray-600 font-medium';
+    if (index === 0) return 'text-amber-600 dark:text-amber-400 font-bold';
+    if (index === 1) return 'text-gray-600 dark:text-gray-300 font-bold';
+    if (index === 2) return 'text-amber-700 dark:text-amber-500 font-bold';
+    return 'text-gray-500 dark:text-gray-400 font-medium';
   };
 
   const getRankBadge = (index: number) => {
     if (index === 0) {
       return (
-        <div className="relative">
-          <span className="text-3xl font-bold text-amber-500 drop-shadow-lg">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30">
+          <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
             {index + 1}
           </span>
-          <div className="absolute -top-3 -right-3 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            🏆
-          </div>
         </div>
       );
     }
     if (index === 1) {
       return (
-        <div className="relative">
-          <span className="text-3xl font-bold text-gray-400 drop-shadow-lg">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700">
+          <span className="text-xl font-bold text-gray-600 dark:text-gray-300">
             {index + 1}
           </span>
-          <div className="absolute -top-3 -right-3 w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            🥈
-          </div>
         </div>
       );
     }
     if (index === 2) {
       return (
-        <div className="relative">
-          <span className="text-3xl font-bold text-amber-700 drop-shadow-lg">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-800/30">
+          <span className="text-xl font-bold text-amber-700 dark:text-amber-500">
             {index + 1}
           </span>
-          <div className="absolute -top-3 -right-3 w-5 h-5 bg-amber-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            🥉
-          </div>
         </div>
       );
     }
     return (
-      <span className={`text-2xl font-medium ${getRankColor(index)}`}>
-        {index + 1}
-      </span>
+      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800">
+        <span className={`text-lg font-medium ${getRankColor(index)}`}>
+          {index + 1}
+        </span>
+      </div>
     );
   };
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-8">
-      <GradientHero 
-        title="设计师排行榜"
-        subtitle="发现平台上最受欢迎的设计师和作品"
-        theme="blue"
-        stats={[
-          { label: '类型', value: leaderboardType === 'posts' ? '热门帖子' : '热门创作者' },
-          { label: '时间', value: timeRange === 'day' ? '今日' : timeRange === 'week' ? '本周' : timeRange === 'month' ? '本月' : '总榜' },
-          { label: '排序', value: sortBy === 'likes_count' ? '点赞数' : sortBy === 'views' ? '浏览量' : sortBy === 'comments_count' ? '评论数' : '作品数量' },
-          { label: '数据', value: (leaderboardType === 'posts' ? posts.length : users.length).toString() }
-        ]}
-        pattern={true}
-        size="md"
-      />
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">设计师排行榜</h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">发现平台上最受欢迎的设计师和作品</p>
+        
+        <div className="flex flex-wrap gap-3 text-sm">
+          <span className="bg-gray-100 dark:bg-gray-700/50 px-3 py-1 rounded-full text-gray-700 dark:text-gray-300">
+            <span className="font-medium">类型:</span> {leaderboardType === 'posts' ? '热门帖子' : '热门创作者'}
+          </span>
+          <span className="bg-gray-100 dark:bg-gray-700/50 px-3 py-1 rounded-full text-gray-700 dark:text-gray-300">
+            <span className="font-medium">时间:</span> {timeRange === 'day' ? '今日' : timeRange === 'week' ? '本周' : timeRange === 'month' ? '本月' : '总榜'}
+          </span>
+          <span className="bg-gray-100 dark:bg-gray-700/50 px-3 py-1 rounded-full text-gray-700 dark:text-gray-300">
+            <span className="font-medium">排序:</span> {sortBy === 'likes_count' ? '点赞数' : sortBy === 'views' ? '浏览量' : sortBy === 'comments_count' ? '评论数' : '作品数量'}
+          </span>
+          <span className="bg-gray-100 dark:bg-gray-700/50 px-3 py-1 rounded-full text-gray-700 dark:text-gray-300">
+            <span className="font-medium">数据:</span> {(leaderboardType === 'posts' ? posts.length : users.length).toString()}
+          </span>
+        </div>
+      </div>
 
       {/* 筛选选项 */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700"
+        transition={{ duration: 0.3 }}
+        className="bg-white dark:bg-gray-800 rounded-lg p-5 mb-8 shadow-sm border border-gray-200 dark:border-gray-700"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8">
           {/* 排行榜类型 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">排行榜类型</label>
             <div className="flex space-x-2 flex-wrap">
               <button
                 onClick={() => setLeaderboardType('posts')}
-                className={`flex-1 min-w-[120px] px-3 py-2 text-sm rounded-lg font-medium transition-all ${leaderboardType === 'posts' ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                className={`flex-1 min-w-[120px] px-3 py-2 text-sm rounded-lg font-medium transition-all ${leaderboardType === 'posts' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
               >
                 热门帖子
               </button>
               <button
                 onClick={() => setLeaderboardType('users')}
-                className={`flex-1 min-w-[120px] px-3 py-2 text-sm rounded-lg font-medium transition-all ${leaderboardType === 'users' ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                className={`flex-1 min-w-[120px] px-3 py-2 text-sm rounded-lg font-medium transition-all ${leaderboardType === 'users' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
               >
                 热门创作者
               </button>
@@ -460,7 +459,7 @@ const Leaderboard: React.FC = () => {
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`flex-1 min-w-[70px] px-3 py-1.5 rounded-full text-sm font-medium transition-all ${timeRange === range ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                  className={`flex-1 min-w-[70px] px-3 py-1.5 rounded-full text-sm font-medium transition-all ${timeRange === range ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                 >
                   {range === 'day' && '今日'}
                   {range === 'week' && '本周'}
@@ -524,41 +523,36 @@ const Leaderboard: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {leaderboardType === 'posts' ? (
             posts.map((post, index) => (
               <motion.div 
-                key={post.id} 
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ 
-                  duration: 0.5, 
-                  ease: "easeOut",
-                  delay: index * 0.05
-                }}
-                whileHover={{ 
-                  y: -10, 
-                  scale: 1.04, 
-                  boxShadow: "0 25px 50px rgba(0, 0, 0, 0.4)",
-                  transition: { duration: 0.3 }
-                }}
-                className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:-translate-y-3"
+              key={post.id} 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.4, 
+                ease: "easeOut",
+                delay: index * 0.02
+              }}
+              whileHover={{ 
+                y: -2, 
+                transition: { duration: 0.2 }
+              }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer"
                 onClick={() => handlePostClick(post.id)}
               >
-                {/* 顶部渐变装饰条 */}
-                <div className="h-1 bg-gradient-to-r from-amber-500 via-pink-500 to-blue-500"></div>
-                
                 <div className="p-6">
-                  <div className="flex items-start gap-5 mb-4">
+                  <div className="flex items-start gap-4 mb-6">
                     <div className="relative flex-shrink-0">
                       <div className="relative z-10">
                         {getRankBadge(index)}
                       </div>
-                      <div className={`absolute -inset-1 rounded-full opacity-30 blur-sm animate-pulse ${index === 0 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : index === 1 ? 'bg-gradient-to-r from-gray-500 to-gray-400' : index === 2 ? 'bg-gradient-to-r from-amber-700 to-amber-600' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}></div>
+                      {/* 移除复杂的脉冲动画背景 */}
                     </div>
                     
                     <div className="flex-1">
-                      <h3 className="font-bold text-2xl text-white mb-3 line-clamp-2 hover:text-blue-400 transition-colors group-hover:text-blue-300">
+                      <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3 line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                         {post.title}
                       </h3>
                       
@@ -567,180 +561,146 @@ const Leaderboard: React.FC = () => {
                           <img
                             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(post.username)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&size=32`}
                             alt={post.username}
-                            className="w-8 h-8 rounded-full border-2 border-blue-500/30 object-cover hover:border-blue-500/60 transition-all duration-300"
+                            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 object-cover"
                             width={32}
                             height={32}
                             loading="lazy"
                           />
                         )}
-                        <span className="text-sm text-gray-400">{post.username || '未知用户'}</span>
-                        <span className="text-gray-600">•</span>
-                        <span className="text-sm text-gray-500">{new Date(post.created_at).toLocaleDateString()}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{post.username || '未知用户'}</span>
+                        <span className="text-gray-400 dark:text-gray-600">•</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{new Date(post.created_at).toLocaleDateString()}</span>
                       </div>
                       
-                      <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">
                         {post.content}
                       </p>
                       
-                      <div className="flex justify-between items-center text-sm pt-4 border-t border-gray-700/50">
-                        <div className="flex space-x-6">
-                          <motion.span 
-                            whileHover={{ scale: 1.1 }} 
-                            className="flex items-center text-blue-400 hover:text-blue-300 cursor-pointer transition-colors"
-                          >
-                            <svg className="w-5 h-5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="flex justify-between items-center text-sm pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex space-x-5">
+                          <span className="flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
+                            <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                               <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"></path>
                             </svg>
                             {post.views}
-                          </motion.span>
+                          </span>
                           
-                          <motion.span 
-                            whileHover={{ scale: 1.1 }} 
-                            className="flex items-center text-purple-400 hover:text-purple-300 cursor-pointer transition-colors"
-                          >
-                            <svg className="w-5 h-5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                          <span className="flex items-center text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer transition-colors">
+                            <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"></path>
                             </svg>
                             {post.likes_count}
-                          </motion.span>
+                          </span>
                           
-                          <motion.span 
-                            whileHover={{ scale: 1.1 }} 
-                            className="flex items-center text-pink-400 hover:text-pink-300 cursor-pointer transition-colors"
-                          >
-                            <svg className="w-5 h-5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                          <span className="flex items-center text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 cursor-pointer transition-colors">
+                            <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
                             </svg>
                             {post.comments_count}
-                          </motion.span>
+                          </span>
                         </div>
                         
-                        <motion.div
-                          whileHover={{ scale: 1.1, rotate: 5 }}
-                          className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 p-2 rounded-full cursor-pointer transition-all duration-300"
-                        >
+                        <div className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors">
                           <i className="fas fa-arrow-right text-sm"></i>
-                        </motion.div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                {/* 底部装饰 */}
-                <div className="h-1 bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
               </motion.div>
             ))
           ) : (
             users.map((user, index) => (
               <motion.div 
                 key={user.id} 
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ 
-                  duration: 0.5, 
+                  duration: 0.4, 
                   ease: "easeOut",
-                  delay: index * 0.05
+                  delay: index * 0.02
                 }}
                 whileHover={{ 
-                  y: -10, 
-                  scale: 1.04, 
-                  boxShadow: "0 25px 50px rgba(0, 0, 0, 0.4)",
-                  transition: { duration: 0.3 }
+                  y: -2, 
+                  transition: { duration: 0.2 }
                 }}
-                className="bg-gradient-to-br from-gray-800 via-gray-850 to-gray-900 rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden transition-all duration-500 transform hover:-translate-y-3"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all duration-300"
               >
-                {/* 顶部渐变装饰条 */}
-                <div className="h-1 bg-gradient-to-r from-amber-500 via-pink-500 to-blue-500"></div>
-                
                 <div className="p-6">
-                  <div className="flex items-center gap-5">
+                  <div className="flex items-center gap-4">
                     <div className="relative">
                       <div className="relative z-10">
                         {getRankBadge(index)}
                       </div>
-                      <div className={`absolute -inset-1 rounded-full opacity-30 blur-sm animate-pulse ${index === 0 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : index === 1 ? 'bg-gradient-to-r from-gray-500 to-gray-400' : index === 2 ? 'bg-gradient-to-r from-amber-700 to-amber-600' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}></div>
+                      {/* 移除复杂的脉冲动画背景 */}
                     </div>
                     
                     {/* 使用DiceBear生成美观的头像 */}
                     <div className="relative">
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <img
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.username)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
-                          alt={user.username}
-                          className="w-20 h-20 rounded-full border-4 border-blue-500/30 shadow-xl object-cover"
-                          width={80}
-                          height={80}
-                          loading="lazy"
-                        />
-                      </motion.div>
-                      {/* 头像边框动画效果 */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-spin-slow opacity-70 blur-md"></div>
+                      <img
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.username)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`}
+                        alt={user.username}
+                        className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-gray-600 object-cover"
+                        width={64}
+                        height={64}
+                        loading="lazy"
+                      />
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-2xl text-white drop-shadow-sm truncate">{user.username}</h3>
-                      <p className="text-sm text-gray-400 mt-1 flex items-center gap-1 truncate">
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white truncate">{user.username}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1 truncate">
                         <i className="fas fa-envelope text-xs opacity-70"></i>
                         {user.email}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="mt-8 grid grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50/15 to-blue-100/20 rounded-xl p-5 border border-blue-500/30 backdrop-blur-md hover:bg-blue-50/20 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-lg">
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-blue-400 font-medium uppercase tracking-wider flex items-center gap-1.5">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium flex items-center gap-1.5">
                           <i className="fas fa-image text-xs opacity-80"></i>
                           作品数量
                         </p>
-                        <span className="text-xs text-blue-300 opacity-70">✦</span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-300 drop-shadow-sm">{user.posts_count || 0}</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">{user.posts_count || 0}</p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-purple-50/15 to-purple-100/20 rounded-xl p-5 border border-purple-500/30 backdrop-blur-md hover:bg-purple-50/20 transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 hover:shadow-lg">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-purple-400 font-medium uppercase tracking-wider flex items-center gap-1.5">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium flex items-center gap-1.5">
                           <i className="fas fa-heart text-xs opacity-80"></i>
                           总点赞数
                         </p>
-                        <span className="text-xs text-purple-300 opacity-70">✦</span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-300 drop-shadow-sm">{user.total_likes || 0}</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">{user.total_likes || 0}</p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-pink-50/15 to-pink-100/20 rounded-xl p-5 border border-pink-500/30 backdrop-blur-md hover:bg-pink-50/20 transition-all duration-300 hover:-translate-y-1 hover:border-pink-500/50 hover:shadow-lg">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-pink-400 font-medium uppercase tracking-wider flex items-center gap-1.5">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium flex items-center gap-1.5">
                           <i className="fas fa-eye text-xs opacity-80"></i>
                           总浏览量
                         </p>
-                        <span className="text-xs text-pink-300 opacity-70">✦</span>
                       </div>
-                      <p className="text-2xl font-bold text-pink-300 drop-shadow-sm">{user.total_views || 0}</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">{user.total_views || 0}</p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-green-50/15 to-green-100/20 rounded-xl p-5 border border-green-500/30 backdrop-blur-md hover:bg-green-50/20 transition-all duration-300 hover:-translate-y-1 hover:border-green-500/50 hover:shadow-lg">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-green-400 font-medium uppercase tracking-wider flex items-center gap-1.5">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium flex items-center gap-1.5">
                           <i className="fas fa-calendar-alt text-xs opacity-80"></i>
                           加入时间
                         </p>
-                        <span className="text-xs text-green-300 opacity-70">✦</span>
                       </div>
-                      <p className="text-lg font-bold text-green-300 drop-shadow-sm">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {new Date(user.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                 </div>
-                
-                {/* 底部装饰 */}
-                <div className="h-1 bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
               </motion.div>
             ))
           )}
