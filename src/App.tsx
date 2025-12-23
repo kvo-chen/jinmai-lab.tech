@@ -1,5 +1,8 @@
 import { Routes, Route, Outlet, useLocation, useNavigationType, Link, Navigate } from "react-router-dom";
 import { useState, useEffect, Suspense, lazy, useRef, useMemo } from 'react'
+// Vercel 分析和速度洞察
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // 核心页面保持同步加载，减少导航延迟
 // 对于高频访问的页面，使用同步加载可以减少导航跳转时间
@@ -337,6 +340,10 @@ export default function App() {
   
   return (
     <div className="relative">
+      {/* Vercel 分析和速度洞察 */}
+      <Analytics />
+      <SpeedInsights />
+      
       <Routes>
         {/* 不需要布局的页面 */}
         <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
