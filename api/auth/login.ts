@@ -60,12 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: user.id.toString(),
         username: user.username,
         email: user.email,
-        phone: user.phone || null,
-        avatar_url: user.avatar_url || null,
-        interests: user.interests ? JSON.parse(user.interests) : null,
         age: user.age || null,
-        tags: user.tags ? JSON.parse(user.tags) : null,
-        isAdmin: user.email === 'testuser789@example.com' || user.isAdmin
+        tags: user.tags ? JSON.parse(user.tags) : null
       }
     })
   } catch (e: any) {

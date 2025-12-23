@@ -1,9 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { createClient } from '@supabase/supabase-js'
 const { verifyToken } = require('../../server/jwt.mjs')
 const { sendErrorResponse, sendSuccessResponse, API_ERRORS } = require('../../server/api-error-handler.mjs')
 
-// 模拟帖子数据，后续会替换为数据库操作
-const posts = [
+// 初始化Supabase客户端
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || ''
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Supabase环境变量未配置完整')
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// 模拟帖子数据，保留用于展示和测试
+const mockPosts = [
   {
     id: 1,
     title: '国潮设计的崛起与发展',
@@ -11,11 +22,12 @@ const posts = [
     user_id: 1,
     category_id: 1,
     status: 'published',
-    views: 120,
-    likes_count: 25,
-    comments_count: 10,
+    view_count: 120,
+    like_count: 25,
+    comment_count: 10,
     created_at: Date.now(),
-    updated_at: Date.now()
+    updated_at: Date.now(),
+    visibility: 'public'
   },
   {
     id: 2,
@@ -24,11 +36,12 @@ const posts = [
     user_id: 2,
     category_id: 2,
     status: 'published',
-    views: 95,
-    likes_count: 18,
-    comments_count: 7,
+    view_count: 95,
+    like_count: 18,
+    comment_count: 7,
     created_at: Date.now(),
-    updated_at: Date.now()
+    updated_at: Date.now(),
+    visibility: 'public'
   }
 ]
 
@@ -72,21 +85,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
     
-    // 查找帖子
-    const postIndex = posts.findIndex(post => post.id === postId)
-    if (postIndex === -1) {
+    let post: any = null
+    let postIndex = -1
+    
+    // 先从模拟数据中查找帖子
+    postIndex = mockPosts.findIndex(p => p.id === postId)
+    if (postIndex !== -1) {
+      post = mockPosts[postIndex]
+    }
+    
+    // 尝试从数据库获取帖子
+    let dbPost: any = null
+    try {
+      const { data, error } = await supabase.from('posts').select('*').eq('id', postId).single()
+      if (data) {
+        dbPost = data
+        post = dbPost // 数据库中的帖子优先
+      }
+    } catch (dbError) {
+      console.warn('从数据库获取帖子失败，使用模拟数据:', dbError.message)
+    }
+    
+    // 如果帖子不存在
+    if (!post) {
       return sendErrorResponse(res, API_ERRORS.POST_NOT_FOUND, {
         message: '帖子不存在'
       })
     }
     
-    const post = posts[postIndex]
-    
     // GET请求 - 获取单个帖子
     if (req.method === 'GET') {
       console.log(`获取帖子: ${postId}`)
+      
       // 增加浏览量
-      post.views++
+      const updatedViews = (post.view_count || 0) + 1
+      
+      // 更新数据库中的浏览量
+      try {
+        await supabase.from('posts').update({ view_count: updatedViews, updated_at: Date.now() }).eq('id', postId)
+        // 同时更新数据库帖子对象
+        if (dbPost) {
+          dbPost.view_count = updatedViews
+          post = dbPost
+        }
+      } catch (dbError) {
+        console.warn('更新浏览量失败:', dbError.message)
+      }
+      
+      // 更新模拟数据中的浏览量
+      if (postIndex !== -1) {
+        mockPosts[postIndex].view_count = updatedViews
+        post = mockPosts[postIndex]
+      }
+      
       return sendSuccessResponse(res, post)
     }
     
@@ -117,25 +168,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       
       // 更新帖子
+      const now = Date.now()
       const updatedPost = {
         ...post,
         title,
         content,
         category_id: category_id || null,
         status: status || 'published',
-        updated_at: Date.now()
+        updated_at: now
       }
       
-      posts[postIndex] = updatedPost
+      // 同步到数据库
+      try {
+        const { data: dbUpdatedPost, error } = await supabase.from('posts').update({
+          title,
+          content,
+          category_id: category_id || null,
+          status: status || 'published',
+          updated_at: now
+        }).eq('id', postId).select().single()
+        if (dbUpdatedPost) {
+          post = dbUpdatedPost // 使用数据库返回的更新后数据
+        }
+      } catch (dbError) {
+        console.error('更新帖子失败，数据库错误:', dbError)
+        // 继续执行，使用模拟数据
+      }
+      
+      // 更新模拟数据
+      if (postIndex !== -1) {
+        mockPosts[postIndex] = updatedPost
+        post = updatedPost
+      }
+      
       console.log(`更新帖子成功: ${postId}`)
-      return sendSuccessResponse(res, updatedPost, {
+      return sendSuccessResponse(res, post, {
         message: '帖子更新成功'
       })
     }
     
     // DELETE请求 - 删除帖子
     if (req.method === 'DELETE') {
-      posts.splice(postIndex, 1)
+      // 从数据库中删除
+      try {
+        await supabase.from('posts').delete().eq('id', postId)
+      } catch (dbError) {
+        console.error('删除帖子失败，数据库错误:', dbError)
+        // 继续执行，从模拟数据中删除
+      }
+      
+      // 从模拟数据中删除
+      if (postIndex !== -1) {
+        mockPosts.splice(postIndex, 1)
+      }
+      
       console.log(`删除帖子成功: ${postId}`)
       return sendSuccessResponse(res, {}, {
         message: '帖子删除成功'

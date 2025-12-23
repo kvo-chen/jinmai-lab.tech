@@ -5,7 +5,7 @@ import { AuthContext } from '@/contexts/authContext';
 import { useContext } from 'react';
 import { toast } from 'sonner';
 import { TianjinImage } from '@/components/TianjinStyleComponents';
-import llmService from '@/services/llmService'
+import { llmService } from '@/services/llmService'
 import voiceService from '@/services/voiceService'
 import { markPrefetched, isPrefetched } from '@/services/prefetch'
 import { mockWorks } from '@/mock/works'
