@@ -10,11 +10,5 @@
         "buildCommand": "pnpm build"
       }
     }
-  ],
-  "rewrites": [
-    {
-      "source": "^/(?!assets|chunks|entries|icons|images|manifest\.webmanifest|sw\.js|workbox-|registerSW\.js|AR|particle-system\.js).*",
-      "destination": "/index.html"
-    }
   ]
 }
