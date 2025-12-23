@@ -144,6 +144,11 @@ function getPlugins() {
 export default defineConfig({
   base: '/',
   plugins: getPlugins(),
+  // 确保正确处理中文编码
+  esbuild: {
+    charset: 'utf8',
+    minifySyntax: true
+  },
   resolve: {
     // 为数据库相关的 Node.js 原生模块创建别名，避免在浏览器环境中打包
     alias: {
