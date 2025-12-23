@@ -41,6 +41,9 @@ createRoot(document.getElementById("root")!).render(
             <WorkflowProvider>
               <App />
               <Toaster />
+              {/* Vercel Analytics and Speed Insights */}
+              <Analytics />
+              <SpeedInsights />
             </WorkflowProvider>
           </AuthProvider>
         </BrowserRouter>
