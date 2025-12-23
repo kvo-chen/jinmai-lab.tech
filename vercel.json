@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "installCommand": "pnpm install",
   "builds": [
     {
       "src": "package.json",
@@ -10,6 +11,7 @@
       }
     }
   ],
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/assets/(.*)",
@@ -46,10 +48,6 @@
     {
       "source": "/api/proxy/unsplash/(.*)",
       "destination": "https://images.unsplash.com/$1"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
     },
     {
       "source": "/(.*)",
