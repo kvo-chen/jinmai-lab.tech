@@ -438,8 +438,9 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
           showSidebarDrawer ? 'translate-x-0' : '-translate-x-full',
           isDark ? 'bg-[#0b0e13] text-white' : 
           theme === 'pink' ? 'bg-pink-50 text-pink-900' : 
-          'bg-white text-gray-900'
-        )}>
+          'bg-white text-gray-900',
+          'z-50 shadow-2xl'
+        )} style={{ width: '85.71%' }}>
           {/* 抽屉头部 */}
           <div className={clsx(
             'p-4 flex items-center justify-between border-b',
