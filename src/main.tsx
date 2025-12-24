@@ -18,6 +18,9 @@ import "./index.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
+// Vercel Analytics and Speed Insights
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 // 性能监控
 import { initPerformanceMonitor } from './utils/performanceMonitor';
 
