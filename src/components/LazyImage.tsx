@@ -22,7 +22,7 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   disableFallback?: boolean;
 }
 
-export default function LazyImage({ 
+const LazyImage: React.FC<LazyImageProps> = React.memo(({ 
   src, 
   alt, 
   placeholder, 
@@ -36,10 +36,9 @@ export default function LazyImage({
   fallbackSrc,
   disableFallback = false,
   ...rest 
-}: LazyImageProps) {
+}) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -51,11 +50,9 @@ export default function LazyImage({
   const currentSrc = useMemo(() => {
     // 如果disableFallback为true，直接使用原始URL，不经过处理
     if (disableFallback) {
-      console.log(`LazyImage: 直接使用原始URL: ${src}`);
       return src;
     }
     const processedSrc = processImageUrl(src);
-    console.log(`LazyImage: 处理前URL: ${src}, 处理后URL: ${processedSrc}`);
     return processedSrc || (fallbackSrc || defaultFallbackSrc);
   }, [src, fallbackSrc, disableFallback]);
   
@@ -70,12 +67,12 @@ export default function LazyImage({
   
   // 图片加载失败处理
   const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.error(`图片加载失败: ${currentSrc}`, event);
     setIsError(true);
     setIsLoaded(false);
     if (onError) {
       onError();
     }
+    event.preventDefault();
   };
   
   // 当src变化时重置加载状态
@@ -87,9 +84,6 @@ export default function LazyImage({
 
   // 观察图片是否进入视口
   useEffect(() => {
-    // 立即设置为可见，确保图片能够加载
-    setIsVisible(true);
-    
     // 优先级高的图片立即加载，不使用懒加载
     if (priority) {
       return;

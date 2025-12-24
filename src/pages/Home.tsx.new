@@ -101,7 +101,7 @@ export default function Home() {
       );
       const oneLine = optimized.split(/\r?\n/).find(s => s.trim()) || optimized;
       const cleaned = oneLine
-        .replace(/^"|"$/g, '')
+        .replace(/^\"|\"$/g, '')
         .replace(/^“|”$/g, '')
         .replace(/^【|】$/g, '')
         .replace(/^提示词[:：]\s*/, '')
@@ -424,7 +424,7 @@ export default function Home() {
           </div>
           
           {/* 功能按钮组 - 第二行 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 w-full mt-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
             <button onClick={handleOptimizeClick} disabled={isOptimizing} className={`px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-lg shadow-gray-500/30' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-lg shadow-gray-200'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 ${isOptimizing ? 'opacity-60 cursor-not-allowed hover:shadow-none hover:-translate-y-0' : ''} flex-1 sm:flex-none`}>
               <i className="fas fa-adjust transition-transform duration-300 hover:scale-110"></i>
               {isOptimizing ? '优化中…' : '优化'}
@@ -658,7 +658,7 @@ export default function Home() {
          >
            <div className="relative aspect-video overflow-hidden rounded-t-2xl">
              <TianjinImage
-                src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=1920&h=1080&fit=crop"
+                src="https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1920&h=1080&fit=crop"
                 alt="天津文化知识库封面"
                 ratio="landscape"
                 fit="cover"
@@ -734,7 +734,7 @@ export default function Home() {
          >
            <div className="relative aspect-video overflow-hidden rounded-t-2xl">
              <TianjinImage
-                src="https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1920&h=1080&fit=crop"
+                src="https://images.unsplash.com/photo-1677442136010-d0ec5b0f073c?w=1920&h=1080&fit=crop"
                 alt="方言指令创作封面"
                 ratio="landscape"
                 fit="cover"
