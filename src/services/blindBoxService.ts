@@ -132,8 +132,8 @@ class BlindBoxService {
     const box = this.getBlindBoxById(boxId);
     if (box && box.available && box.remainingCount > 0) {
       box.remainingCount--;
-      // 再次检查box是否仍然存在，防止竞态条件
-      if (box && box.remainingCount === 0) {
+      // 当剩余数量为0时，标记为不可用
+      if (box.remainingCount === 0) {
         box.available = false;
       }
       return true;
