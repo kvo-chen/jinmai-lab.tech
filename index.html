@@ -25,14 +25,8 @@
     <!-- 3. 预加载关键字体资源 -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
-    <!-- 4. 预加载关键CSS资源 -->
-    <link rel="preload" href="/src/index.css" as="style" />
-    <link rel="preload" href="/src/styles/tianjin.css" as="style" />
-    <link rel="preload" href="/src/styles/neo.css" as="style" />
-    <link rel="preload" href="@fortawesome/fontawesome-free/css/all.min.css" as="style" />
-    
-    <!-- 5. 预加载关键JavaScript资源 -->
-    <link rel="preload" href="/src/main.tsx" as="script" />
+    <!-- 4. 移除构建时可能导致问题的预加载资源 -->
+    <!-- 这些资源会在构建过程中被正确处理，不需要手动预加载 -->
     
     <!-- 6. 预加载关键图片资源 -->
     <link rel="preload" href="./icons/icon-192x192.svg" as="image" type="image/svg+xml" />
