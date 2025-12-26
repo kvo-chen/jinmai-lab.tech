@@ -863,7 +863,7 @@ export default function Home() {
           <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">热门标签</h2>
           <button   onClick={handleExplore} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 hover:shadow-md">查看全部标签</button>
         </div>
-        <div className="flex flex-wrap gap-3 p-8 rounded-2xl ${isDark ? 'bg-gradient-to-br from-gray-800 to-gray-800/90 ring-1 ring-gray-700' : 'bg-gradient-to-br from-white to-gray-50 ring-1 ring-gray-200'}">
+        <div className={`flex flex-wrap gap-3 p-8 rounded-2xl ${isDark ? 'bg-gradient-to-br from-gray-800 to-gray-800/90 ring-1 ring-gray-700' : 'bg-gradient-to-br from-white to-gray-50 ring-1 ring-gray-200'}`}>
           {popularTags.map((tag, idx) => (
             <button
               key={idx}

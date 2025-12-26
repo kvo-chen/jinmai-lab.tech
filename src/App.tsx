@@ -88,18 +88,8 @@ const RouteCache = ({ children }: { children: React.ReactNode }) => {
   // 检查当前路由是否可缓存
   const isCacheable = cacheableRoutes.includes(location.pathname);
   
-  // 如果可缓存且已存在缓存，则使用缓存
-  if (isCacheable && cacheRef.current.has(location.pathname)) {
-    return cacheRef.current.get(location.pathname) as React.ReactNode;
-  }
-  
-  // 否则渲染新内容并缓存
-  const childrenNode = <>{children}</>;
-  if (isCacheable) {
-    cacheRef.current.set(location.pathname, childrenNode);
-  }
-  
-  return childrenNode;
+  // 直接渲染子组件，不使用缓存机制，避免无限重渲染问题
+  return <>{children}</>;
 };
 
 // 布局组件
@@ -284,10 +274,8 @@ export default function App() {
 
   // 带有页面切换动画的组件
   const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
-    const location = useLocation();
     return (
       <div 
-        key={location.pathname} 
         className="animate-page-transition transition-all duration-300 ease-in-out"
         style={{
           opacity: 0,

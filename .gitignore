@@ -64,3 +64,5 @@ fix_simple.py
 fix_syntax.ps1
 fix_syntax.py
 fixed_skeleton.tsx
+.vercel
+.env*.local

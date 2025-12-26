@@ -115,23 +115,23 @@ const Membership: React.FC = () => {
         </header>
 
         {/* 会员状态卡片 */}
-        <section className="bg-white rounded-2xl shadow-md p-6 mb-12" aria-labelledby="member-status-title">
+        <section className="bg-white dark:bg-[var(--bg-secondary)] rounded-2xl shadow-md p-6 mb-12 border border-gray-200 dark:border-[var(--border-primary)]" aria-labelledby="member-status-title">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
-              <h2 id="member-status-title" className="text-2xl font-bold mb-2 text-gray-900">
+              <h2 id="member-status-title" className="text-2xl font-bold mb-2 text-gray-900 dark:text-[var(--text-primary)]">
                 您当前是 {user.membershipLevel === 'free' ? '免费会员' : 
                            user.membershipLevel === 'premium' ? '高级会员' : 'VIP会员'}
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-[var(--text-secondary)] mb-4">
                 会员状态: {isActive ? (
-                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">有效</span>
+                  <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-[var(--color-accent)] px-3 py-1 rounded-full text-sm font-medium">有效</span>
                 ) : (
-                  <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">已过期</span>
+                  <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 px-3 py-1 rounded-full text-sm font-medium">已过期</span>
                 )}
               </p>
               
               {user.membershipEnd && (
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-[var(--text-secondary)]">
                   到期时间: <span className="font-medium">{new Date(user.membershipEnd).toLocaleDateString()}</span>
                 </p>
               )}
@@ -140,7 +140,7 @@ const Membership: React.FC = () => {
             <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-4">
               {user.membershipLevel !== 'free' && (
                 <button
-                  className="bg-gray-100 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors w-full sm:w-auto font-medium"
+                  className="bg-gray-100 dark:bg-[var(--bg-tertiary)] text-gray-800 dark:text-[var(--text-primary)] px-6 py-3 rounded-lg hover:bg-gray-200 dark:hover:bg-[var(--bg-hover)] transition-colors w-full sm:w-auto font-medium border border-gray-200 dark:border-[var(--border-primary)]"
                   onClick={handleRenew}
                   aria-label="续费会员"
                 >
@@ -161,13 +161,13 @@ const Membership: React.FC = () => {
         </section>
 
         {/* 会员权益 */}
-        <section className="bg-white rounded-2xl shadow-md p-6 mb-12" aria-labelledby="member-benefits-title">
-          <h2 id="member-benefits-title" className="text-2xl font-bold mb-6 text-center text-gray-900">您的权益</h2>
+        <section className="bg-white dark:bg-[var(--bg-secondary)] rounded-2xl shadow-md p-6 mb-12 border border-gray-200 dark:border-[var(--border-primary)]" aria-labelledby="member-benefits-title">
+          <h2 id="member-benefits-title" className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-[var(--text-primary)]">您的权益</h2>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto">
             {userBenefits.map((benefit: string, index: number) => (
-              <li key={index} className="flex items-center space-x-3 bg-gray-50 px-4 py-3 rounded-lg">
-                <span className="text-primary">✓</span>
-                <span className="text-gray-700">{benefit}</span>
+              <li key={index} className="flex items-center space-x-3 bg-gray-50 dark:bg-[var(--bg-tertiary)] px-4 py-3 rounded-lg border border-gray-100 dark:border-[var(--border-primary)]">
+                <span className="text-primary dark:text-[var(--color-primary)]">✓</span>
+                <span className="text-gray-700 dark:text-[var(--text-primary)]">{benefit}</span>
               </li>
             ))}
           </ul>
@@ -175,12 +175,12 @@ const Membership: React.FC = () => {
 
         {/* 会员套餐 */}
         <section className="mb-12" aria-labelledby="upgrade-title">
-          <h2 id="upgrade-title" className="text-3xl font-bold mb-8 text-center text-gray-900">升级会员</h2>
+          <h2 id="upgrade-title" className="text-3xl font-bold mb-8 text-center text-gray-900 dark:text-[var(--text-primary)]">升级会员</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {membershipPlans.map((plan) => (
               <article 
                 key={plan.id} 
-                className={`rounded-2xl overflow-hidden transition-all duration-300 flex flex-col ${plan.id === 'vip' ? 'border-2 border-purple-500 shadow-lg hover:shadow-xl bg-gradient-to-b from-white to-purple-50' : plan.popular ? 'border-2 border-primary shadow-md hover:shadow-lg bg-white' : 'border border-gray-200 shadow-sm hover:shadow-md bg-white'}`}
+                className={`rounded-2xl overflow-hidden transition-all duration-300 flex flex-col ${plan.id === 'vip' ? 'border-2 border-purple-500 dark:border-purple-400 shadow-lg hover:shadow-xl bg-gradient-to-b from-white to-purple-50 dark:from-[var(--bg-secondary)] dark:to-purple-900/20' : plan.popular ? 'border-2 border-primary shadow-md hover:shadow-lg bg-white dark:bg-[var(--bg-secondary)]' : 'border border-gray-200 dark:border-[var(--border-primary)] shadow-sm hover:shadow-md bg-white dark:bg-[var(--bg-secondary)]'}`}
                 aria-labelledby={`plan-title-${plan.id}`}
               >
                 {plan.popular && plan.id === 'premium' && (
@@ -189,29 +189,29 @@ const Membership: React.FC = () => {
                   </div>
                 )}
                 {plan.id === 'vip' && (
-                  <div className="bg-purple-600 text-white text-center py-1.5 font-medium" aria-label="顶级会员">
+                  <div className="bg-purple-600 dark:bg-purple-500 text-white text-center py-1.5 font-medium" aria-label="顶级会员">
                     顶级会员
                   </div>
                 )}
                 <div className="p-6 flex-1">
-                  <h3 id={`plan-title-${plan.id}`} className="text-xl font-bold mb-2 text-center text-gray-900">{plan.name}</h3>
+                  <h3 id={`plan-title-${plan.id}`} className="text-xl font-bold mb-2 text-center text-gray-900 dark:text-[var(--text-primary)]">{plan.name}</h3>
                   <div className="flex items-end justify-center mb-4">
-                    <span className={`text-3xl font-bold ${plan.id === 'vip' ? 'text-purple-600' : 'text-primary'}`}>¥{plan.price}</span>
-                    <span className="text-sm font-medium text-gray-500 ml-1">/{plan.period}</span>
+                    <span className={`text-3xl font-bold ${plan.id === 'vip' ? 'text-purple-600 dark:text-purple-400' : 'text-primary'}`}>¥{plan.price}</span>
+                    <span className="text-sm font-medium text-gray-500 dark:text-[var(--text-secondary)] ml-1">/{plan.period}</span>
                   </div>
-                  <p className={`text-center mb-4 ${plan.id === 'vip' ? 'text-purple-600' : 'text-primary'}`}>{plan.description}</p>
+                  <p className={`text-center mb-4 ${plan.id === 'vip' ? 'text-purple-600 dark:text-purple-400' : 'text-primary'}`}>{plan.description}</p>
                   <ul className="space-y-2.5">
                     {plan.features.map((feature: string, index: number) => (
                       <li key={index} className="flex items-center space-x-3 py-1">
-                        <span className={`flex-shrink-0 ${plan.id === 'vip' ? 'text-purple-600' : 'text-primary'}`}>✓</span>
-                        <span className="text-gray-700">{feature}</span>
+                        <span className={`flex-shrink-0 ${plan.id === 'vip' ? 'text-purple-600 dark:text-purple-400' : 'text-primary'}`}>✓</span>
+                        <span className="text-gray-700 dark:text-[var(--text-primary)]">{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="p-6 pt-4">
                   <button
-                    className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-[1.02] ${user.membershipLevel === plan.id ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : plan.id === 'vip' ? 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-lg' : 'bg-primary hover:bg-primary/90 text-white hover:shadow-lg'}`}
+                    className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-[1.02] ${user.membershipLevel === plan.id ? 'bg-gray-100 dark:bg-[var(--bg-tertiary)] text-gray-500 dark:text-[var(--text-secondary)] cursor-not-allowed border border-gray-200 dark:border-[var(--border-primary)]' : plan.id === 'vip' ? 'bg-purple-600 dark:bg-purple-500 hover:bg-purple-700 dark:hover:bg-purple-600 text-white hover:shadow-lg' : 'bg-primary hover:bg-primary/90 text-white hover:shadow-lg'}`}
                     onClick={() => handleUpgrade(plan.id)}
                     disabled={user.membershipLevel === plan.id}
                     aria-label={`${user.membershipLevel === plan.id ? '当前会员' : '立即升级'}${plan.name}`}
@@ -225,36 +225,36 @@ const Membership: React.FC = () => {
         </section>
 
         {/* 常见问题 */}
-        <section className="bg-white rounded-2xl shadow-md p-8 max-w-5xl mx-auto mb-12" aria-labelledby="faq-title">
-          <h2 id="faq-title" className="text-2xl font-bold mb-8 text-center text-gray-900">常见问题</h2>
+        <section className="bg-white dark:bg-[var(--bg-secondary)] rounded-2xl shadow-md p-8 max-w-5xl mx-auto mb-12 border border-gray-200 dark:border-[var(--border-primary)]" aria-labelledby="faq-title">
+          <h2 id="faq-title" className="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-[var(--text-primary)]">常见问题</h2>
           <div className="space-y-5 max-w-3xl mx-auto">
-            <details className="group border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:border-gray-200">
-              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800">
+            <details className="group border border-gray-100 dark:border-[var(--border-primary)] rounded-xl p-4 transition-all duration-300 hover:border-gray-200 dark:hover:border-[var(--border-secondary)] bg-white dark:bg-[var(--bg-tertiary)]">
+              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800 dark:text-[var(--text-primary)]">
                 <span>如何升级会员？</span>
                 <span className="transition-transform duration-300 group-open:rotate-180 text-primary">▼</span>
               </summary>
-              <p className="text-gray-600 pt-3">点击上方的升级按钮，选择您想要的会员套餐，完成支付即可升级。</p>
+              <p className="text-gray-600 dark:text-[var(--text-secondary)] pt-3">点击上方的升级按钮，选择您想要的会员套餐，完成支付即可升级。</p>
             </details>
-            <details className="group border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:border-gray-200">
-              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800">
+            <details className="group border border-gray-100 dark:border-[var(--border-primary)] rounded-xl p-4 transition-all duration-300 hover:border-gray-200 dark:hover:border-[var(--border-secondary)] bg-white dark:bg-[var(--bg-tertiary)]">
+              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800 dark:text-[var(--text-primary)]">
                 <span>会员到期后会自动续费吗？</span>
                 <span className="transition-transform duration-300 group-open:rotate-180 text-primary">▼</span>
               </summary>
-              <p className="text-gray-600 pt-3">目前不会自动续费，到期前我们会提醒您手动续费。</p>
+              <p className="text-gray-600 dark:text-[var(--text-secondary)] pt-3">目前不会自动续费，到期前我们会提醒您手动续费。</p>
             </details>
-            <details className="group border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:border-gray-200">
-              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800">
+            <details className="group border border-gray-100 dark:border-[var(--border-primary)] rounded-xl p-4 transition-all duration-300 hover:border-gray-200 dark:hover:border-[var(--border-secondary)] bg-white dark:bg-[var(--bg-tertiary)]">
+              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800 dark:text-[var(--text-primary)]">
                 <span>可以退款吗？</span>
                 <span className="transition-transform duration-300 group-open:rotate-180 text-primary">▼</span>
               </summary>
-              <p className="text-gray-600 pt-3">会员购买后7天内可以申请退款，超过7天不支持退款。</p>
+              <p className="text-gray-600 dark:text-[var(--text-secondary)] pt-3">会员购买后7天内可以申请退款，超过7天不支持退款。</p>
             </details>
-            <details className="group border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:border-gray-200">
-              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800">
+            <details className="group border border-gray-100 dark:border-[var(--border-primary)] rounded-xl p-4 transition-all duration-300 hover:border-gray-200 dark:hover:border-[var(--border-secondary)] bg-white dark:bg-[var(--bg-tertiary)]">
+              <summary className="font-medium cursor-pointer list-none flex justify-between items-center text-gray-800 dark:text-[var(--text-primary)]">
                 <span>如何使用会员权益？</span>
                 <span className="transition-transform duration-300 group-open:rotate-180 text-primary">▼</span>
               </summary>
-              <p className="text-gray-600 pt-3">升级会员后，您可以直接使用所有会员权益，无需额外操作。</p>
+              <p className="text-gray-600 dark:text-[var(--text-secondary)] pt-3">升级会员后，您可以直接使用所有会员权益，无需额外操作。</p>
             </details>
           </div>
         </section>
