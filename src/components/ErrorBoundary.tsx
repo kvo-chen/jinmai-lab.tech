@@ -66,7 +66,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     const { hasError, error, showFeedback } = this.state;
     const { children, fallbackComponent } = this.props;
-    const theme = this.context as React.ContextType<typeof ThemeContext>;
+    const theme = this.context as React.ContextType<typeof ThemeContext> || { isDark: false };
     const { isDark } = theme;
 
     if (hasError) {
