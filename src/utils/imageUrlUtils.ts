@@ -33,8 +33,8 @@ export function processImageUrl(url: string): string {
     
     // 检查是否为Unsplash图片URL
     if (urlObj.hostname.includes('unsplash.com') || urlObj.hostname.includes('images.unsplash.com')) {
-      // 使用代理URL避免ORB错误
-      return `/api/proxy/unsplash${urlObj.pathname}${urlObj.search}`;
+      // 直接返回原始URL，不使用代理
+      return url;
     }
     
     // 检查是否为已知的代理URL
