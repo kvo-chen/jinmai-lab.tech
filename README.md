@@ -372,11 +372,24 @@ CORS_ALLOW_ORIGIN="*" # 允许的来源
 
 | 部署方式 | 特点 | 适用场景 |
 |----------|------|----------|
-| **Vercel** | 快速部署，Serverless支持 | 个人和小团队快速部署 |
+| **Vercel** | 快速部署，Serverless支持，自动部署 | 个人和小团队快速部署 |
 | **Netlify** | 持续部署，CDN加速 | 中小型项目 |
 | **GitHub Pages** | 免费，适合开源项目 | 开源项目，静态网站 |
 | **自建服务器** | 完全可控，高性能 | 大型项目，企业级应用 |
 | **Docker部署** | 容器化，易于扩展 | 微服务架构，DevOps环境 |
+
+### Vercel自动部署配置
+
+已配置GitHub与Vercel的自动部署流程：
+
+1. 项目已链接到GitHub仓库：`https://github.com/kvo-123456/jinmai-lab`
+2. Vercel项目配置：
+   - 安装命令：`pnpm install`
+   - 构建命令：`pnpm build`
+   - 输出目录：`dist`
+   - 自动部署：已开启，代码提交至GitHub后自动触发构建与部署
+3. 生产部署URL：`https://jinmai-3lqhy32my-kvos-projects.vercel.app`
+4. 预览部署URL：每次PR或分支提交都会生成预览URL
 
 ### CI/CD配置
 
