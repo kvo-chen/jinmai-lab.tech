@@ -19,8 +19,8 @@ export const registerServiceWorker = async (): Promise<void> => {
   }
 
   try {
-    // Vite PWA插件会自动生成service-worker.js文件
-    const registration = await navigator.serviceWorker.register('/service-worker.js', {
+    // Vite PWA插件会自动生成sw.js文件
+    const registration = await navigator.serviceWorker.register('/sw.js', {
       // 添加更新策略配置
       updateViaCache: 'none',
       // 添加作用域配置

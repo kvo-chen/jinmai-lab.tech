@@ -132,7 +132,8 @@ class BlindBoxService {
     const box = this.getBlindBoxById(boxId);
     if (box && box.available && box.remainingCount > 0) {
       box.remainingCount--;
-      if (box.remainingCount === 0) {
+      // 再次检查box是否仍然存在，防止竞态条件
+      if (box && box.remainingCount === 0) {
         box.available = false;
       }
       return true;
@@ -173,7 +174,8 @@ class BlindBoxService {
   // 打开盲盒
   openBlindBox(boxId: string, userId: string): BlindBoxOpeningResult | null {
     const box = this.getBlindBoxById(boxId);
-    if (!box || !box.available) {
+    // 确保box和box.available存在
+    if (!box || typeof box.available === 'undefined') {
       return null;
     }
 
