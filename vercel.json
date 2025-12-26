@@ -5,6 +5,30 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/(api|static)/(.*)",
+      "destination": "/$1/$2"
+    },
+    {
+      "source": "/(.*\.(js|css|png|jpg|jpeg|svg|gif|ico|json|webmanifest|txt|woff|woff2|ttf|eot|mp4|webm|ogg|svg|xml|ico|pdf))$",
+      "destination": "/$1"
+    },
+    {
+      "source": "/icons/(.*)",
+      "destination": "/icons/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/chunks/(.*)",
+      "destination": "/chunks/$1"
+    },
+    {
+      "source": "/entries/(.*)",
+      "destination": "/entries/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
