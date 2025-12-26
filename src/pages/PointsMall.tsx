@@ -17,7 +17,7 @@ const PointsMall: React.FC = () => {
   // 加载商品和积分数据
   useEffect(() => {
     const allProducts = productService.getAllProducts();
-    const records = productService.getUserExchangeRecords('current-user', 10);
+    const records = productService.getUserExchangeRecords('current-user');
     const points = pointsService.getCurrentPoints();
     setProducts(allProducts);
     setFilteredProducts(allProducts);
@@ -122,7 +122,7 @@ const PointsMall: React.FC = () => {
               {/* 商品图片 */}
               <div className="h-48 overflow-hidden">
                 <img
-                  src={product.thumbnail}
+                  src={product.imageUrl}
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                 />

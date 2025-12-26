@@ -1,22 +1,30 @@
 import { useState, useEffect, createContext, ReactNode, useContext, useMemo, useCallback } from 'react';
-
-type Theme = 'light' | 'dark' | 'pink' | 'auto';
+import {
+  Theme,
+  themeConfig,
+  defaultTheme,
+  themeOrder,
+  getAppliedTheme,
+  initializeTheme,
+  saveThemeToLocalStorage,
+  getSystemTheme
+} from '@/config/themeConfig';
 
 interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-  availableThemes: { value: Theme; label: string; icon: string }[];
+  availableThemes: typeof themeConfig;
 }
 
 // 创建 ThemeContext
 export const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
+  theme: defaultTheme,
   isDark: false,
   setTheme: () => {},
   toggleTheme: () => {},
-  availableThemes: []
+  availableThemes: themeConfig
 });
 
 interface ThemeProviderProps {
@@ -25,37 +33,18 @@ interface ThemeProviderProps {
 
 // 创建 ThemeProvider 组件
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
-      return savedTheme;
-    }
-    // 检测是否为移动端设备
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    // 移动端默认使用浅色主题，桌面端默认使用深色主题
-    return isMobile ? 'light' : 'dark';
-  });
+  const [theme, setTheme] = useState<Theme>(initializeTheme);
 
-  // 优化后的主题切换逻辑
+  // 更新主题类到DOM
   const updateThemeClass = useCallback(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const currentTheme = theme === 'auto' 
-      ? mediaQuery.matches ? 'dark' : 'light'
-      : theme;
+    const appliedTheme = getAppliedTheme(theme);
     
-    // 只在主题实际改变时才修改DOM
-    let currentClass = 'light';
-    if (document.documentElement.classList.contains('dark')) {
-      currentClass = 'dark';
-    } else if (document.documentElement.classList.contains('pink')) {
-      currentClass = 'pink';
-    }
+    // 清除所有主题类
+    document.documentElement.classList.remove('light', 'dark', 'pink');
     
-    if (currentClass !== currentTheme) {
-      document.documentElement.classList.remove('light', 'dark', 'pink');
-      if (currentTheme !== 'light') {
-        document.documentElement.classList.add(currentTheme);
-      }
+    // 添加当前主题类（浅色主题不需要添加类，使用默认样式）
+    if (appliedTheme !== 'light') {
+      document.documentElement.classList.add(appliedTheme);
     }
   }, [theme]);
 
@@ -63,43 +52,34 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    const handleChange = () => {
+    const handleSystemThemeChange = () => {
       if (theme === 'auto') {
         updateThemeClass();
       }
     };
     
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
   }, [theme, updateThemeClass]);
 
   // 主题变化时更新类名和localStorage
   useEffect(() => {
     updateThemeClass();
-    localStorage.setItem('theme', theme);
+    saveThemeToLocalStorage(theme);
   }, [theme, updateThemeClass]);
 
-  // 优化toggleTheme函数
+  // 优化toggleTheme函数，使用主题顺序数组
   const toggleTheme = useCallback(() => {
     setTheme(prevTheme => {
-      const themes: Theme[] = ['light', 'dark', 'pink', 'auto'];
-      const currentIndex = themes.indexOf(prevTheme);
-      return themes[(currentIndex + 1) % themes.length];
+      const currentIndex = themeOrder.indexOf(prevTheme);
+      return themeOrder[(currentIndex + 1) % themeOrder.length];
     });
   }, []);
-
-  // 优化availableThemes，避免每次渲染都重新创建数组
-  const availableThemes = useMemo<{ value: Theme; label: string; icon: string }[]>(() => [
-    { value: 'auto', label: '自动', icon: 'fas fa-circle-half-stroke' },
-    { value: 'light', label: '浅色', icon: 'fas fa-sun' },
-    { value: 'dark', label: '深色', icon: 'fas fa-moon' },
-    { value: 'pink', label: '粉色', icon: 'fas fa-heart' }
-  ], []);
 
   // 确定当前是否为深色模式
   const isDark = useMemo(() => {
     if (theme === 'auto') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return getSystemTheme() === 'dark';
     }
     return theme === 'dark';
   }, [theme]);
@@ -110,8 +90,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     isDark,
     toggleTheme,
     setTheme,
-    availableThemes
-  }), [theme, isDark, toggleTheme, setTheme, availableThemes]);
+    availableThemes: themeConfig
+  }), [theme, isDark, toggleTheme, setTheme]);
 
   return (
     <ThemeContext.Provider value={value}>

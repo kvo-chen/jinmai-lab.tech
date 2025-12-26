@@ -186,7 +186,16 @@ const LogViewer: React.FC<LogViewerProps> = ({
           >
             <i className="fas fa-trash-alt text-gray-500"></i>
           </button>
-          <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-500`}></i>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className={`p-1 rounded-full ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} transition-colors`}
+            title={isExpanded ? "收起日志" : "展开日志"}
+          >
+            <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-500`}></i>
+          </button>
         </div>
       </div>
 

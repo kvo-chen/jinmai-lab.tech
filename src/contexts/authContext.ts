@@ -1,6 +1,7 @@
 import React from "react";
 import { createContext, useState, ReactNode, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
+import securityService from "../services/securityService";
 
 // 用户类型定义
 export interface User {
@@ -35,6 +36,11 @@ interface AuthContextType {
   updateMembership: (membershipData: Partial<User>) => Promise<boolean>;
   checkMembershipStatus: () => boolean;
   getMembershipBenefits: () => string[];
+  // 新增：双因素认证相关方法
+  enableTwoFactorAuth: () => Promise<boolean>;
+  verifyTwoFactorCode: (code: string) => Promise<boolean>;
+  // 新增：刷新令牌方法
+  refreshToken: () => Promise<boolean>;
 }
 
 // AuthProvider 组件属性类型
@@ -55,6 +61,9 @@ export const AuthContext = createContext<AuthContextType>({
   updateMembership: async () => false,
   checkMembershipStatus: () => false,
   getMembershipBenefits: () => [],
+  enableTwoFactorAuth: async () => false,
+  verifyTwoFactorCode: async () => false,
+  refreshToken: async () => false,
 });
 
 // AuthProvider 组件
@@ -68,14 +77,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      const parsedUser = JSON.parse(userData);
-      // 添加默认会员信息
-      return {
-        ...parsedUser,
-        membershipLevel: parsedUser.membershipLevel || 'free',
-        membershipStatus: parsedUser.membershipStatus || 'active',
-        membershipStart: parsedUser.membershipStart || new Date().toISOString(),
-      };
+      try {
+        const parsedUser = JSON.parse(userData);
+        // 添加默认会员信息
+        return {
+          ...parsedUser,
+          membershipLevel: parsedUser.membershipLevel || 'free',
+          membershipStatus: parsedUser.membershipStatus || 'active',
+          membershipStart: parsedUser.membershipStart || new Date().toISOString(),
+        };
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+        localStorage.removeItem('user');
+        return null;
+      }
     }
     return null;
   });
@@ -83,6 +98,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 定义API响应类型
   interface AuthResponse {
     token: string;
+    refreshToken: string;
     user: User;
   }
 
@@ -104,15 +120,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setUser(userWithMembership);
             setIsAuthenticated(true);
           } else {
-            // 令牌无效，清除本地存储
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setIsAuthenticated(false);
-            setUser(null);
+            // 令牌无效，尝试刷新令牌
+            await refreshToken();
           }
         } catch (error) {
           console.error('检查认证状态失败:', error);
+          // 令牌无效，清除本地存储
           localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
           setIsAuthenticated(false);
           setUser(null);
@@ -140,8 +155,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           membershipStart: response.data.user.membershipStart || new Date().toISOString(),
         };
         
-        // 存储令牌和用户信息
-        localStorage.setItem('token', response.data.token);
+        // 安全存储令牌和用户信息
+        await securityService.setSecureItem('SECURE_TOKEN', response.data.token);
+        await securityService.setSecureItem('SECURE_REFRESH_TOKEN', response.data.refreshToken);
+        localStorage.setItem('token', response.data.token); // 保留旧的存储方式以便向后兼容
+        localStorage.setItem('refreshToken', response.data.refreshToken); // 保留旧的存储方式以便向后兼容
         localStorage.setItem('user', JSON.stringify(userWithMembership));
         
         // 更新状态
@@ -161,9 +179,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 注册方法
   const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<boolean> => {
     try {
-      // console.log('AuthContext.register: 1. Starting registration');
-      // console.log('AuthContext.register: 2. Request data:', { username, email, password, age, tags });
-      
       const response = await apiClient.post<AuthResponse>('/api/auth/register', {
         username,
         email,
@@ -171,8 +186,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         age: age ? parseInt(age) : null,
         tags
       });
-      
-      // console.log('AuthContext.register: 3. Response received:', { ok: response.ok, status: response.status, data: response.data, error: response.error });
       
       if (response.ok && response.data && response.data.token && response.data.user) {
         // 添加默认会员信息
@@ -183,8 +196,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           membershipStart: response.data.user.membershipStart || new Date().toISOString(),
         };
         
-        // 存储令牌和用户信息
-        localStorage.setItem('token', response.data.token);
+        // 安全存储令牌和用户信息
+        await securityService.setSecureItem('SECURE_TOKEN', response.data.token);
+        await securityService.setSecureItem('SECURE_REFRESH_TOKEN', response.data.refreshToken);
+        localStorage.setItem('token', response.data.token); // 保留旧的存储方式以便向后兼容
+        localStorage.setItem('refreshToken', response.data.refreshToken); // 保留旧的存储方式以便向后兼容
         localStorage.setItem('user', JSON.stringify(userWithMembership));
         
         // 更新状态
@@ -196,7 +212,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return false;
       }
     } catch (error) {
-      // console.error('AuthContext.register: 4. Error occurred:', error);
+      console.error('注册失败:', error);
       return false;
     }
   };
@@ -216,10 +232,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           membershipStart: new Date().toISOString(),
           membershipStatus: 'active',
         };
-        setIsAuthenticated(true);
-        setUser(baseUser);
+        
+        // 生成模拟的token和refreshToken
+        const mockToken = `mock-token-${provider}-${Date.now()}`;
+        const mockRefreshToken = `mock-refresh-token-${provider}-${Date.now()}`;
+        
+        // 安全存储令牌和用户信息
+        securityService.setSecureItem('SECURE_TOKEN', mockToken);
+        securityService.setSecureItem('SECURE_REFRESH_TOKEN', mockRefreshToken);
+        localStorage.setItem('token', mockToken);
+        localStorage.setItem('refreshToken', mockRefreshToken);
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('user', JSON.stringify(baseUser));
+        
+        setIsAuthenticated(true);
+        setUser(baseUser);
         resolve(true);
       }, 500);
     });
@@ -233,8 +260,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     // 清除本地存储
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
+    
+    // 清除安全存储
+    securityService.setSecureItem('SECURE_TOKEN', '');
+    securityService.setSecureItem('SECURE_REFRESH_TOKEN', '');
+    securityService.setSecureItem('SECURE_USER', null);
   };
 
   // 中文注释：更新用户信息并写入本地存储
@@ -243,7 +276,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const next = { ...(prev || {} as User), ...partial } as User;
       try {
         localStorage.setItem('user', JSON.stringify(next));
-      } catch {}
+        // 同时更新安全存储
+        securityService.setSecureItem('SECURE_USER', next);
+      } catch (error) {
+        console.error('Failed to update user information:', error);
+      }
       return next;
     });
   };
@@ -327,6 +364,63 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // 新增：刷新令牌方法
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const refreshToken = await securityService.getSecureItem('SECURE_REFRESH_TOKEN') || localStorage.getItem('refreshToken');
+      
+      if (!refreshToken) {
+        logout();
+        return false;
+      }
+      
+      const response = await apiClient.post<AuthResponse>('/api/auth/refresh', {
+        refreshToken
+      });
+      
+      if (response.ok && response.data && response.data.token && response.data.refreshToken) {
+        // 安全存储新的令牌
+        await securityService.setSecureItem('SECURE_TOKEN', response.data.token);
+        await securityService.setSecureItem('SECURE_REFRESH_TOKEN', response.data.refreshToken);
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        
+        return true;
+      } else {
+        logout();
+        return false;
+      }
+    } catch (error) {
+      console.error('刷新令牌失败:', error);
+      logout();
+      return false;
+    }
+  };
+
+  // 新增：启用双因素认证
+  const enableTwoFactorAuth = async (): Promise<boolean> => {
+    try {
+      const response = await apiClient.post<{ success: boolean }>('/api/auth/two-factor/enable');
+      return response.ok && (response.data?.success ?? false);
+    } catch (error) {
+      console.error('启用双因素认证失败:', error);
+      return false;
+    }
+  };
+
+  // 新增：验证双因素认证代码
+  const verifyTwoFactorCode = async (code: string): Promise<boolean> => {
+    try {
+      const response = await apiClient.post<{ success: boolean }>('/api/auth/two-factor/verify', {
+        code
+      });
+      return response.ok && (response.data?.success ?? false);
+    } catch (error) {
+      console.error('验证双因素认证代码失败:', error);
+      return false;
+    }
+  };
+
   // 提供Context值
   const contextValue: AuthContextType = {
     isAuthenticated,
@@ -339,7 +433,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     updateUser,
     updateMembership,
     checkMembershipStatus,
-    getMembershipBenefits
+    getMembershipBenefits,
+    enableTwoFactorAuth,
+    verifyTwoFactorCode,
+    refreshToken
   };
 
   // 返回Provider组件

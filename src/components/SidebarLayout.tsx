@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import CreatorDashboard from './CreatorDashboard'
 import useLanguage from '@/contexts/LanguageContext'
 import { useTranslation } from 'react-i18next'
+import { navigationGroups } from '@/config/navigationConfig'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -280,6 +281,44 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const { currentLanguage, changeLanguage, languages } = useLanguage()
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
 
+  // 导航项ID到翻译键名的映射
+  const navItemIdToTranslationKey: Record<string, string> = {
+    // 核心导航
+    'home': 'sidebar.home',
+    'explore': 'sidebar.exploreWorks',
+    'create': 'sidebar.creationCenter',
+    'inspiration': 'sidebar.inspirationEngine',
+    'knowledge': 'sidebar.culturalKnowledge',
+    
+    // 共创功能
+    'guide': 'sidebar.coCreationGuide',
+    'square': 'sidebar.coCreationSquare',
+    'community': 'sidebar.coCreationCommunity',
+    'creator-community': 'sidebar.creatorCommunity',
+    
+    // 天津特色
+    'tianjin': 'sidebar.tianjinSpecialZone',
+    'tianjin-map': 'sidebar.tianjinMap',
+    'events': 'sidebar.culturalActivities',
+    'news': 'sidebar.culturalNews',
+    
+    // 更多服务
+    'particle-art': 'sidebar.particleArt',
+    'leaderboard': 'sidebar.popularityRanking',
+    'games': 'sidebar.funGames',
+    'lab': 'sidebar.newWindowLab',
+    'brand': 'sidebar.brandCooperation',
+    'about': 'sidebar.aboutUs'
+  }
+
+  // 导航分组ID到翻译键名的映射
+  const navGroupIdToTranslationKey: Record<string, string> = {
+    'core': 'sidebar.commonFunctions',
+    'cocreation': 'sidebar.coCreation',
+    'tianjin': 'sidebar.tianjinFeatures',
+    'more': 'sidebar.moreServices'
+  }
+
   const title = useMemo(() => {
     const p = location.pathname
     if (p === '/') return t('common.home')
@@ -355,136 +394,28 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
         </div>
 
         <nav className="px-2 pt-2 pb-4 space-y-4">
-          {/* 常用功能 */}
-          <div className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
-            <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
-              <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
-              {t('sidebar.commonFunctions')}
-            </h3>
-            <div className="space-y-1">
-              <NavLink to="/" title={collapsed ? t('sidebar.home') : undefined} onMouseEnter={() => debouncedPrefetch('/') } className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-home mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.home')}
-              </NavLink>
-              <NavLink to="/explore" title={collapsed ? t('sidebar.exploreWorks') : undefined} onMouseEnter={() => debouncedPrefetch('/explore')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-compass mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.exploreWorks')}
-              </NavLink>
-              <NavLink to="/tools" title={collapsed ? t('sidebar.creationCenter') : undefined} onMouseEnter={() => debouncedPrefetch('/tools')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-tools mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.creationCenter')}
-              </NavLink>
-              <NavLink to="/neo" title={collapsed ? t('sidebar.inspirationEngine') : undefined} onMouseEnter={() => debouncedPrefetch('/neo')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-bolt mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.inspirationEngine')}
-              </NavLink>
-              <NavLink to="/knowledge" title={collapsed ? t('sidebar.culturalKnowledge') : undefined} onMouseEnter={() => debouncedPrefetch('/knowledge')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-book mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.culturalKnowledge')}
-              </NavLink>
+          {navigationGroups.map((group) => (
+            <div key={group.id} className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
+              <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
+                <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
+                {t(navGroupIdToTranslationKey[group.id] || group.id)}
+              </h3>
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <NavLink 
+                    key={item.id}
+                    to={item.path}
+                    title={collapsed ? t(navItemIdToTranslationKey[item.id] || item.id) : undefined} 
+                    onMouseEnter={() => debouncedPrefetch(item.path)} 
+                    className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}
+                  > 
+                    <i className={`fas ${item.icon} mr-2`}></i>
+                    {(!collapsed || hovered) && t(navItemIdToTranslationKey[item.id] || item.id)}
+                  </NavLink>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          {/* 共创功能 */}
-          <div className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
-            <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
-              <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
-              {t('sidebar.coCreation')}
-            </h3>
-            <div className="space-y-1">
-              <NavLink 
-                to="/wizard" 
-                title={collapsed ? t('sidebar.coCreationGuide') : undefined} 
-                aria-label={collapsed ? t('sidebar.coCreationGuide') : undefined}
-                data-discover="true"
-                onMouseEnter={() => debouncedPrefetch('/wizard')} 
-                onFocus={() => debouncedPrefetch('/wizard')}
-                onTouchStart={() => debouncedPrefetch('/wizard')}
-                className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}
-              > 
-                <i className="fas fa-hat-wizard mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.coCreationGuide')}
-              </NavLink>
-              <NavLink to="/square" title={collapsed ? t('sidebar.coCreationSquare') : undefined} onMouseEnter={() => debouncedPrefetch('/square')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-th-large mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.coCreationSquare')}
-              </NavLink>
-              <NavLink 
-                to="/community?context=cocreation&tab=joined" 
-                title={collapsed ? t('sidebar.coCreationCommunity') : undefined} 
-                data-discover="true"
-                onMouseEnter={() => debouncedPrefetch('/community')} 
-                className={() => `${navItemClass} ${isCommunityActive('cocreation') ? activeClass : ''}`}
-              >
-                <i className="fas fa-user-friends mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.coCreationCommunity')}
-              </NavLink>
-              <NavLink to="/community?context=creator" title={collapsed ? t('sidebar.creatorCommunity') : undefined} onMouseEnter={() => debouncedPrefetch('/community')} className={() => `${navItemClass} ${isCommunityActive('creator') ? activeClass : ''}`}> 
-                <i className="fas fa-users mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.creatorCommunity')}
-              </NavLink>
-            </div>
-          </div>
-          
-          {/* 天津特色 */}
-          <div className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
-            <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
-              <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
-              {t('sidebar.tianjinFeatures')}
-            </h3>
-            <div className="space-y-1">
-              <NavLink to="/tianjin" end title={collapsed ? t('sidebar.tianjinSpecialZone') : undefined} onMouseEnter={() => debouncedPrefetch('/tianjin')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-landmark mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.tianjinSpecialZone')}
-              </NavLink>
-              <NavLink to="/tianjin/map" title={collapsed ? t('sidebar.tianjinMap') : undefined} onMouseEnter={() => debouncedPrefetch('/tianjin/map')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-map-marked-alt mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.tianjinMap')}
-              </NavLink>
-              <NavLink to="/events" title={collapsed ? t('sidebar.culturalActivities') : undefined} onMouseEnter={() => debouncedPrefetch('/events')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-calendar-alt mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.culturalActivities')}
-              </NavLink>
-              <NavLink to="/news" title={collapsed ? t('sidebar.culturalNews') : undefined} onMouseEnter={() => debouncedPrefetch('/news')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-newspaper mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.culturalNews')}
-              </NavLink>
-            </div>
-          </div>
-          
-          {/* 更多服务 */}
-          <div className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
-            <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
-              <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
-              {t('sidebar.moreServices')}
-            </h3>
-            <div className="space-y-1">
-              <NavLink to="/particle-art" title={collapsed ? t('sidebar.particleArt') : undefined} onMouseEnter={() => debouncedPrefetch('/particle-art')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-palette mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.particleArt')}
-              </NavLink>
-              <NavLink to="/leaderboard" title={collapsed ? t('sidebar.popularityRanking') : undefined} onMouseEnter={() => debouncedPrefetch('/leaderboard')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-chart-line mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.popularityRanking')}
-              </NavLink>
-              <NavLink to="/games" title={collapsed ? t('sidebar.funGames') : undefined} onMouseEnter={() => debouncedPrefetch('/games')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-gamepad mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.funGames')}
-              </NavLink>
-              <NavLink to="/lab" title={collapsed ? t('sidebar.newWindowLab') : undefined} onMouseEnter={() => debouncedPrefetch('/lab')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-window-restore mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.newWindowLab')}
-              </NavLink>
-              <NavLink to="/brand" title={collapsed ? t('sidebar.brandCooperation') : undefined} onMouseEnter={() => debouncedPrefetch('/brand')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-handshake mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.brandCooperation')}
-              </NavLink>
-              <NavLink to="/about" title={collapsed ? t('sidebar.aboutUs') : undefined} onMouseEnter={() => debouncedPrefetch('/about')} className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}> 
-                <i className="fas fa-info-circle mr-2"></i>
-                {(!collapsed || hovered) && t('sidebar.aboutUs')}
-              </NavLink>
-            </div>
-          </div>
+          ))}
         </nav>
 
         {/* 中文注释：侧栏保留预留的社群模块占位，后续再完善 */}

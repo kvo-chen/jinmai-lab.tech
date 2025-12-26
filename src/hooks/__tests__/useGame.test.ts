@@ -1,8 +1,8 @@
 import { renderHook, act } from '@testing-library/react';
-import { useGame } from '../useGame';
+import { useGame, GameLevel } from '../useGame';
 
 // Mock levels data
-const mockLevels = [
+const mockLevels: GameLevel[] = [
   {
     id: 'level-1',
     name: 'Level 1',

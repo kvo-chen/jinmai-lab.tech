@@ -77,6 +77,11 @@ class CheckinService {
   }
 
   /**
+   * 设置今日日期（用于测试）
+   */
+  setTodayDate?(date: string): void;
+
+  /**
    * 计算两个日期之间的天数差
    */
   private calculateDaysDiff(date1: string, date2: string): number {
@@ -252,6 +257,14 @@ class CheckinService {
   }
 
   /**
+   * 重置签到服务状态（用于测试）
+   */
+  reset(): void {
+    this.checkinRecords = [];
+    localStorage.removeItem(this.RECORDS_KEY);
+  }
+
+  /**
    * 计算补签所需积分
    */
   calculate补签Cost(consecutiveDays: number): number {
@@ -264,11 +277,9 @@ class CheckinService {
    */
   补签(userId: string, date: string): { record: CheckinRecord; cost: number } {
     const today = this.getTodayDate();
-    const targetDate = new Date(date);
-    const currentDate = new Date();
     
     // 检查是否为过去的日期
-    if (targetDate >= currentDate) {
+    if (date >= today) {
       throw new Error('只能补签过去的日期');
     }
     

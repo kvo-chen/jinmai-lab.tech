@@ -323,7 +323,7 @@ const CulturalMemoryGame: React.FC<CulturalMemoryGameProps> = ({ isOpen, onClose
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {levels.map((level) => {
                     const isCompleted = gameProgress?.completedLevels.includes(level.id) || false;
-                    const isUnlocked = !user || culturalMemoryGameService.isLevelUnlocked(user.id, level.id);
+                    const isUnlocked = !user || culturalMemoryGameService.isLevelUnlocked(user?.id || '', level.id);
 
                     return (
                       <motion.div

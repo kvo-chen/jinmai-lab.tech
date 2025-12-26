@@ -15,11 +15,17 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   // 图片质量
   quality?: 'high' | 'low' | 'medium';
   // 图片填充方式
-  fit?: 'cover' | 'contain';
+  fit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
   // 默认图片URL，当原始图片加载失败时使用
   fallbackSrc?: string;
   // 是否禁用fallback机制
   disableFallback?: boolean;
+  // 是否启用渐进式加载
+  progressive?: boolean;
+  // 模糊占位符尺寸
+  blurSize?: number;
+  // 加载动画类型
+  loadingAnimation?: 'fade' | 'scale' | 'blur';
 }
 
 const LazyImage: React.FC<LazyImageProps> = React.memo(({ 
@@ -35,10 +41,14 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   quality,
   fallbackSrc,
   disableFallback = false,
+  progressive = true,
+  blurSize = 10,
+  loadingAnimation = 'fade',
   ...rest 
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [isVisible, setIsVisible] = useState(priority);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -91,19 +101,22 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   useEffect(() => {
     // 优先级高的图片立即加载，不使用懒加载
     if (priority) {
+      setIsVisible(true);
       return;
     }
     
     // 如果浏览器不支持IntersectionObserver，则直接返回
     if (!('IntersectionObserver' in window)) {
+      setIsVisible(true);
       return;
     }
     
-    // 创建IntersectionObserver实例 - 仅用于监控可见性，不影响初始加载
+    // 创建IntersectionObserver实例
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting) {
+          setIsVisible(true);
           // 图片进入视口后，停止观察
           if (observerRef.current) {
             observerRef.current.unobserve(entry.target);
@@ -113,10 +126,10 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
         }
       },
       {
-        // 提前100px开始加载
-        rootMargin: '100px 0px',
-        // 当图片10%进入视口时触发
-        threshold: 0.1
+        // 提前150px开始加载，给浏览器更多时间预加载
+        rootMargin: '150px 0px',
+        // 当图片5%进入视口时触发，更早开始加载
+        threshold: 0.05
       }
     );
     
@@ -134,18 +147,56 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     };
   }, [priority]);
   
+  // 加载动画样式
+  const getLoadingAnimationClasses = () => {
+    if (loadingAnimation === 'fade') {
+      return 'transition-opacity duration-500 ease-in-out';
+    } else if (loadingAnimation === 'scale') {
+      return 'transition-all duration-500 ease-in-out transform';
+    } else if (loadingAnimation === 'blur') {
+      return 'transition-all duration-700 ease-in-out';
+    }
+    return 'transition-opacity duration-500 ease-in-out';
+  };
+  
+  // 图片容器样式
+  const getImageClasses = () => {
+    const baseClasses = `w-full h-full object-${fit} ${getLoadingAnimationClasses()}`;
+    
+    if (isLoaded) {
+      if (loadingAnimation === 'fade') {
+        return `${baseClasses} opacity-100`;
+      } else if (loadingAnimation === 'scale') {
+        return `${baseClasses} opacity-100 scale-100`;
+      } else if (loadingAnimation === 'blur') {
+        return `${baseClasses} opacity-100 blur-0`;
+      }
+      return `${baseClasses} opacity-100`;
+    } else if (isError) {
+      return `${baseClasses} opacity-0`;
+    } else {
+      if (loadingAnimation === 'fade') {
+        return `${baseClasses} opacity-0`;
+      } else if (loadingAnimation === 'scale') {
+        return `${baseClasses} opacity-0 scale-95`;
+      } else if (loadingAnimation === 'blur') {
+        return `${baseClasses} opacity-0 blur-${blurSize}`;
+      }
+      return `${baseClasses} opacity-0`;
+    }
+  };
+  
   // 自定义占位符
   const defaultPlaceholder = (
-    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg flex items-center justify-center">
+    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse rounded-lg flex items-center justify-center">
       <i className="fas fa-image text-gray-400 dark:text-gray-500 text-2xl"></i>
     </div>
   );
   
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} ref={containerRef}>
       {/* 图片容器，保持宽高比 */}
       <div 
-        ref={containerRef}
         className="relative overflow-hidden"
         style={{
           width: '100%',
@@ -162,23 +213,24 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
           })
         }}
       >
-        {/* 图片元素 - 始终显示，通过opacity控制加载效果 */}
-        <img
-          ref={imgRef}
-          src={currentSrc}
-          alt={alt}
-          className={`w-full h-full object-${fit} transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${isError ? 'opacity-0' : ''}`}
-          onLoad={handleLoad}
-          onError={handleError}
-          {...rest}
-        />
+        {/* 图片元素 - 只有在可见时才加载 */}
+        {isVisible && (
+          <img
+            ref={imgRef}
+            src={currentSrc}
+            alt={alt}
+            className={getImageClasses()}
+            onLoad={handleLoad}
+            onError={handleError}
+            loading={priority ? 'eager' : 'lazy'}
+            {...rest}
+          />
+        )}
         
         {/* 加载状态 - 显示默认占位符或自定义占位符 */}
         {!isLoaded && !isError && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-            {placeholder || (
-              <i className="fas fa-image text-gray-400 dark:text-gray-500 text-2xl"></i>
-            )}
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
+            {placeholder || defaultPlaceholder}
           </div>
         )}
         

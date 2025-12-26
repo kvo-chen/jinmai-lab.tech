@@ -104,7 +104,7 @@ const PWAInstallButton: React.FC = () => {
     <>
       {/* 安装引导 */}
       {showGuide && isPWASupported() && (
-        <div className="fixed bottom-20 right-6 z-50 max-w-xs">
+        <div className="fixed bottom-20 right-6 z-40 max-w-xs">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-start mb-3">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">安装应用到主屏幕</h3>
@@ -138,7 +138,7 @@ const PWAInstallButton: React.FC = () => {
 
       {/* 安装按钮 */}
       {showInstallButton && isPWASupported() && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-6 left-6 z-40">
           <button
             onClick={handleInstallClick}
             className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
@@ -151,7 +151,7 @@ const PWAInstallButton: React.FC = () => {
 
       {/* 安装状态提示 */}
       {installStatus !== 'idle' && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-6 left-6 z-40">
           <div className={`flex items-center gap-3 px-5 py-3 rounded-full shadow-lg transition-all duration-300 ${installStatus === 'installing' ? 'bg-yellow-100 text-yellow-800' : installStatus === 'installed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             {installStatus === 'installing' && (
               <>

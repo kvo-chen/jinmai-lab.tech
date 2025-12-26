@@ -413,9 +413,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
         toast.error(`连接失败: ${connectionError || '未知错误'}`);
       }
     } catch (e) {
-      // 移除事件监听器
-      window.removeEventListener('llm-connection-status-changed', null);
-      
       // 获取当前模型的连接状态和错误信息
       const error = e instanceof Error ? e.message : String(e);
       toast.error(`连接失败: ${error}`);

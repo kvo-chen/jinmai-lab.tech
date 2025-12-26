@@ -158,28 +158,33 @@ const SimplifiedARPreview: React.FC<{
         textureLoaderRef.current = loader;
 
         await new Promise<void>((resolve, reject) => {
-          loader.load(
-            config.imageUrl,
-            (loadedTexture) => {
-              setTexture(loadedTexture);
-              setLoadingProgress(100);
-              resolve();
-            },
-            (progressEvent) => {
-              // 更新加载进度
-              if (progressEvent.lengthComputable) {
-                const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-                setLoadingProgress(progress);
-              } else {
-                // 无法计算进度时，使用模拟进度
-                setLoadingProgress(prev => Math.min(prev + 10, 90));
+          // 确保imageUrl存在时才调用loader.load
+          if (config.imageUrl) {
+            loader.load(
+              config.imageUrl,
+              (loadedTexture) => {
+                setTexture(loadedTexture);
+                setLoadingProgress(100);
+                resolve();
+              },
+              (progressEvent) => {
+                // 更新加载进度
+                if (progressEvent.lengthComputable) {
+                  const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                  setLoadingProgress(progress);
+                } else {
+                  // 无法计算进度时，使用模拟进度
+                  setLoadingProgress(prev => Math.min(prev + 10, 90));
+                }
+              },
+              (error) => {
+                console.error('Error loading texture:', error);
+                reject(new Error('资源加载失败，请重试'));
               }
-            },
-            (error) => {
-              console.error('Error loading texture:', error);
-              reject(new Error('资源加载失败，请重试'));
-            }
-          );
+            );
+          } else {
+            reject(new Error('缺少图像URL'));
+          }
         });
       } else if (config.type === '3d') {
         // 3D模型加载使用useGLTF，通过状态管理
@@ -213,16 +218,16 @@ const SimplifiedARPreview: React.FC<{
     loadResource();
 
     // 清理函数
-    return () => {
-      // 清理纹理资源
-      if (texture) {
-        texture.dispose();
-      }
-      // 取消正在进行的加载
-      if (textureLoaderRef.current) {
-        textureLoaderRef.current.cancel();
-      }
-    };
+      return () => {
+        // 清理纹理资源
+        if (texture) {
+          texture.dispose();
+        }
+        // 注意：THREE.TextureLoader没有cancel方法，所以移除这个调用
+        // if (textureLoaderRef.current) {
+        //   textureLoaderRef.current.cancel();
+        // }
+      };
   }, [loadResource, texture]);
 
   // 监听重试计数变化，重新加载

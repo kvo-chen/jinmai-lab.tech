@@ -413,19 +413,28 @@ export default function Explore() {
           <div className="flex-1 max-w-2xl">
             <div className="relative">
               {showSearchBar ? (
-                <div className="flex">
+                <div className="flex items-center rounded-full shadow-lg overflow-hidden transition-all duration-300 dark:shadow-gray-700">
+                  {/* 搜索图标 */}
+                  <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  
                   <input
                     ref={searchInputRef}
                     type="text"
                     placeholder="搜索作品、设计师或标签..."
-                    className="flex-1 px-4 py-3 rounded-l-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-3 border-0 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-0"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   />
+                  
+                  {/* 搜索按钮 */}
                   <button
                     onClick={handleSearch}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-r-lg flex items-center gap-2"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-r-full flex items-center gap-2 font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                   >
                     {isSearching ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -433,15 +442,17 @@ export default function Explore() {
                       '搜索'
                     )}
                   </button>
+                  
+                  {/* 清除按钮 */}
                   <button
                     onClick={() => {
                       setShowSearchBar(false);
                       setSearchQuery('');
                       navigate('/explore', { replace: true });
                     }}
-                    className="ml-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 p-3 rounded-lg"
+                    className="ml-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full shadow-md transition-all duration-300 transform hover:scale-110"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700 dark:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -449,12 +460,14 @@ export default function Explore() {
               ) : (
                 <button
                   onClick={() => setShowSearchBar(true)}
-                  className="w-full flex items-center justify-between px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center justify-between px-5 py-4 border-2 border-transparent bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transform hover:-translate-y-0.5"
                 >
-                  <span className="text-gray-500 dark:text-gray-400">搜索作品、设计师或标签...</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">搜索作品、设计师或标签...</span>
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-2.5 rounded-full shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 </button>
               )}
             </div>

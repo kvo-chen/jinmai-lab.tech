@@ -74,7 +74,7 @@ class SecurityService {
   /**
    * 生成数据签名
    */
-  private generateSignature(data: string, timestamp: number): string {
+  generateSignature(data: string, timestamp: number): string {
     const signatureData = `${data}${timestamp}${this.SALT}`;
     return this.hash(signatureData);
   }

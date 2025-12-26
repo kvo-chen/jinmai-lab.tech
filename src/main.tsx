@@ -28,12 +28,70 @@ import { ThemeProvider } from './hooks/useTheme';
 // 性能监控
 import { initPerformanceMonitor } from './utils/performanceMonitor';
 
-// 暂时禁用性能监控，排查问题
-// initPerformanceMonitor();
+// 初始化性能监控，根据环境动态调整监控级别
+initPerformanceMonitor();
 
-// 暂时禁用Service Worker，排查问题
-// import { registerServiceWorker } from './utils/serviceWorker';
-// registerServiceWorker();
+// 全局错误捕获
+import errorService from './services/errorService';
+
+// 1. 捕获全局JavaScript错误
+window.onerror = (message, source, lineno, colno, error) => {
+  if (error) {
+    errorService.logError(error, {
+      type: 'global',
+      source,
+      lineno,
+      colno
+    });
+  } else {
+    const errorObj = new Error(message as string);
+    errorService.logError(errorObj, {
+      type: 'global',
+      source,
+      lineno,
+      colno
+    });
+  }
+  return false; // 允许浏览器继续显示错误
+};
+
+// 2. 捕获未处理的Promise拒绝
+window.onunhandledrejection = (event) => {
+  const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+  errorService.logError(error, {
+    type: 'unhandledrejection',
+    promise: event.promise
+  });
+  event.preventDefault();
+};
+
+// 3. 捕获资源加载错误
+window.addEventListener('error', (event) => {
+  if (event.target instanceof HTMLElement) {
+    errorService.logError(new Error(`Resource failed to load: ${event.target.tagName}`), {
+      type: 'resource',
+      tagName: event.target.tagName,
+      src: event.target instanceof HTMLImageElement ? event.target.src : 
+           event.target instanceof HTMLLinkElement ? event.target.href : 
+           event.target instanceof HTMLScriptElement ? event.target.src : 
+           undefined,
+      outerHTML: event.target.outerHTML
+    });
+  }
+}, true);
+
+// 注销旧的Service Worker，确保没有遗留的Service Worker影响应用
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (const registration of registrations) {
+        registration.unregister().catch(error => {
+          console.error('Failed to unregister service worker:', error);
+        });
+      }
+    });
+  });
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

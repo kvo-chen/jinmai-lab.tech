@@ -7,137 +7,138 @@ import { visualizer } from 'rollup-plugin-visualizer';
 function getPlugins() {
   const plugins = [
     react(), 
-    tsconfigPaths(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: null, // 禁用自动注入registerSW.js
-      includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.svg', 'fonts/*.ttf', 'fonts/*.woff2', 'images/*.png', 'images/*.jpg'],
-      manifest: {
-        name: '津脉智坊 - 津门老字号共创平台',
-        short_name: '津脉智坊',
-        description: '津门老字号共创平台，传承与创新的桥梁',
-        theme_color: '#2563eb',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait',
-        icons: [
-          {
-            src: 'icons/icon-192x192.svg',
-            sizes: '192x192',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          },
-          {
-            src: 'icons/icon-512x512.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
-        ]
-      },
-      workbox: {
-        // 增加最大缓存文件大小限制到8MB，解决大型文件无法缓存的问题
-        maximumFileSizeToCacheInBytes: 8000000,
-        // 预缓存所有生成的资源
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,gif,woff2,ttf}'],
-        // 预缓存资源的缓存策略
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
-        // 添加skipWaiting和clientsClaim选项
-        skipWaiting: true,
-        clientsClaim: true,
-        // 忽略带有no-store头的请求
-        globIgnores: ['**/*.map', '**/node_modules/**'],
-        runtimeCaching: [
-          // API请求缓存 - 使用NetworkFirst策略
-          {
-            urlPattern: /^https?:\/\/.*\/api\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              },
-              // 跳过带有no-store头的请求
-              matchOptions: {
-                ignoreSearch: true,
-                ignoreVary: true
-              }
-            }
-          },
-          // 字体资源缓存 - 长期缓存
-          {
-            urlPattern: /^https?:\/\/.*\.(woff2|woff|ttf|otf|eot)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'font-cache',
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          },
-          // 图片资源缓存 - 增加缓存条目数量
-          {
-            urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|avif)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'image-cache',
-              expiration: {
-                maxEntries: 100, // 增加到100个条目
-                maxAgeSeconds: 60 * 60 * 24 * 60 // 60 days
-              },
-              rangeRequests: true // 支持范围请求，优化大图片加载
-            }
-          },
-          // CSS和JS资源缓存 - 调整缓存策略
-          {
-            urlPattern: /^https?:\/\/.*\.(js|css)$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'static-resources',
-              expiration: {
-                maxEntries: 50, // 增加到50个条目
-                maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // CDN资源缓存
-          {
-            urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'cdn-cache',
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
-          },
-          // 视频资源缓存
-          {
-            urlPattern: /^https?:\/\/.*\.(mp4|webm|ogg)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'video-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              },
-              rangeRequests: true // 支持范围请求
-            }
-          }
-        ]
-      }
-    })
+    tsconfigPaths()
+    // 暂时禁用PWA插件，排查Service Worker导致的问题
+    // VitePWA({
+    //   registerType: 'autoUpdate',
+    //   injectRegister: null, // 禁用自动注入registerSW.js
+    //   includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.svg', 'fonts/*.ttf', 'fonts/*.woff2', 'images/*.png', 'images/*.jpg'],
+    //   manifest: {
+    //     name: '津脉智坊 - 津门老字号共创平台',
+    //     short_name: '津脉智坊',
+    //     description: '津门老字号共创平台，传承与创新的桥梁',
+    //     theme_color: '#2563eb',
+    //     background_color: '#ffffff',
+    //     display: 'standalone',
+    //     orientation: 'portrait',
+    //     icons: [
+    //       {
+    //         src: 'icons/icon-192x192.svg',
+    //         sizes: '192x192',
+    //         type: 'image/svg+xml',
+    //         purpose: 'any maskable'
+    //       },
+    //       {
+    //         src: 'icons/icon-512x512.svg',
+    //         sizes: '512x512',
+    //         type: 'image/svg+xml',
+    //         purpose: 'any maskable'
+    //       }
+    //     ]
+    //   },
+    //   workbox: {
+    //     // 增加最大缓存文件大小限制到8MB，解决大型文件无法缓存的问题
+    //     maximumFileSizeToCacheInBytes: 8000000,
+    //     // 预缓存所有生成的资源
+    //     globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,gif,woff2,ttf}'],
+    //     // 预缓存资源的缓存策略
+    //     navigateFallback: '/index.html',
+    //     navigateFallbackDenylist: [/^\/api\//],
+    //     // 添加skipWaiting和clientsClaim选项
+    //     skipWaiting: true,
+    //     clientsClaim: true,
+    //     // 忽略带有no-store头的请求
+    //     globIgnores: ['**/*.map', '**/node_modules/**'],
+    //     runtimeCaching: [
+    //       // API请求缓存 - 使用NetworkFirst策略
+    //       {
+    //         urlPattern: /^https?:\/\/.*\/api\//,
+    //         handler: 'NetworkFirst',
+    //         options: {
+    //           cacheName: 'api-cache',
+    //           networkTimeoutSeconds: 5,
+    //           expiration: {
+    //             maxEntries: 50,
+    //             maxAgeSeconds: 60 * 60 * 24 // 24 hours
+    //           },
+    //           cacheableResponse: {
+    //             statuses: [0, 200]
+    //           },
+    //           // 跳过带有no-store头的请求
+    //           matchOptions: {
+    //             ignoreSearch: true,
+    //             ignoreVary: true
+    //           }
+    //         }
+    //       },
+    //       // 字体资源缓存 - 长期缓存
+    //       {
+    //         urlPattern: /^https?:\/\/.*\.(woff2|woff|ttf|otf|eot)$/,
+    //         handler: 'CacheFirst',
+    //         options: {
+    //           cacheName: 'font-cache',
+    //           expiration: {
+    //             maxEntries: 20,
+    //             maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+    //           }
+    //         }
+    //       },
+    //       // 图片资源缓存 - 增加缓存条目数量
+    //       {
+    //         urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|avif)$/,
+    //         handler: 'CacheFirst',
+    //         options: {
+    //           cacheName: 'image-cache',
+    //           expiration: {
+    //             maxEntries: 100, // 增加到100个条目
+    //             maxAgeSeconds: 60 * 60 * 24 * 60 // 60 days
+    //           },
+    //           rangeRequests: true // 支持范围请求，优化大图片加载
+    //         }
+    //       },
+    //       // CSS和JS资源缓存 - 调整缓存策略
+    //       {
+    //         urlPattern: /^https?:\/\/.*\.(js|css)$/,
+    //         handler: 'StaleWhileRevalidate',
+    //         options: {
+    //           cacheName: 'static-resources',
+    //           expiration: {
+    //             maxEntries: 50, // 增加到50个条目
+    //             maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
+    //           },
+    //           cacheableResponse: {
+    //             statuses: [0, 200]
+    //           }
+    //         }
+    //       },
+    //       // CDN资源缓存
+    //       {
+    //         urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\//,
+    //         handler: 'CacheFirst',
+    //         options: {
+    //           cacheName: 'cdn-cache',
+    //           expiration: {
+    //             maxEntries: 30,
+    //             maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+    //           }
+    //         }
+    //       },
+    //       // 视频资源缓存
+    //       {
+    //         urlPattern: /^https?:\/\/.*\.(mp4|webm|ogg)$/,
+    //         handler: 'CacheFirst',
+    //         options: {
+    //           cacheName: 'video-cache',
+    //           expiration: {
+    //             maxEntries: 10,
+    //             maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+    //           },
+    //           rangeRequests: true // 支持范围请求
+    //         }
+    //       }
+    //     ]
+    //   }
+    // })
   ];
   return plugins;
 }
@@ -148,7 +149,9 @@ export default defineConfig({
   // 确保正确处理中文编码
   esbuild: {
     charset: 'utf8',
-    minifySyntax: true
+    minifySyntax: true,
+    // 解决React 18+与旧版库的兼容性问题
+    jsx: 'automatic'
   },
   resolve: {
     // 为数据库相关的 Node.js 原生模块创建别名，避免在浏览器环境中打包

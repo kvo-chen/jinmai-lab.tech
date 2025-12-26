@@ -630,7 +630,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
         {children}
       </main>
       
-      {/* 底部导航 */}
+      {/* 底部导航 - 优化交互体验 */}
       <nav className={clsx(
         'fixed bottom-0 inset-x-0 md:hidden z-40 transform transition-all duration-300 ease-in-out shadow-2xl',
         isDark ? 'bg-[#0b0e13]/90 backdrop-blur-xl ring-1 ring-gray-800/70' : 
@@ -644,17 +644,18 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
               onTouchStart={() => prefetchRoute('/')}
               aria-label="首页"
               className="flex-1"
+              end
             >
               {({ isActive }) => {
                 const baseClass = 'flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out relative group transform-gpu';
-                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-300 hover:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900' : 'text-gray-700 hover:text-gray-900');
+                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-400 hover:text-white active:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900 active:text-pink-900' : 'text-gray-600 hover:text-gray-900 active:text-gray-900');
                 const iconClass = isActive ? 'scale-125 text-opacity-100' : 'scale-100 text-opacity-70';
                 const textClass = isActive ? 'font-semibold opacity-100 scale-105' : 'opacity-60 scale-95';
                 const gradientClass = isDark ? 'from-blue-400 to-purple-500' : theme === 'pink' ? 'from-pink-500 to-rose-500' : 'from-red-500 to-orange-500';
                 
                 return (
                   <div className={clsx(baseClass, activeColor)}>
-                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125')}>
+                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125 active:scale-95')}>
                       <i className="fas fa-home text-lg"></i>
                       {isActive && (
                         <>
@@ -679,14 +680,14 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
             >
               {({ isActive }) => {
                 const baseClass = 'flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out relative group transform-gpu';
-                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-300 hover:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900' : 'text-gray-700 hover:text-gray-900');
+                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-400 hover:text-white active:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900 active:text-pink-900' : 'text-gray-600 hover:text-gray-900 active:text-gray-900');
                 const iconClass = isActive ? 'scale-125 text-opacity-100' : 'scale-100 text-opacity-70';
                 const textClass = isActive ? 'font-semibold opacity-100 scale-105' : 'opacity-60 scale-95';
                 const gradientClass = isDark ? 'from-blue-400 to-purple-500' : theme === 'pink' ? 'from-pink-500 to-rose-500' : 'from-red-500 to-orange-500';
                 
                 return (
                   <div className={clsx(baseClass, activeColor)}>
-                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125')}>
+                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125 active:scale-95')}>
                       <i className="fas fa-compass text-lg"></i>
                       {isActive && (
                         <>
@@ -711,15 +712,21 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
             >
               {({ isActive }) => {
                 const baseClass = 'flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out relative group transform-gpu';
-                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-300 hover:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900' : 'text-gray-700 hover:text-gray-900');
+                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-400 hover:text-white active:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900 active:text-pink-900' : 'text-gray-600 hover:text-gray-900 active:text-gray-900');
                 const iconClass = isActive ? 'scale-125 text-opacity-100' : 'scale-100 text-opacity-70';
                 const textClass = isActive ? 'font-semibold opacity-100 scale-105' : 'opacity-60 scale-95';
                 const gradientClass = isDark ? 'from-blue-400 to-purple-500' : theme === 'pink' ? 'from-pink-500 to-rose-500' : 'from-red-500 to-orange-500';
                 
                 return (
                   <div className={clsx(baseClass, activeColor)}>
-                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125')}>
+                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125 active:scale-95')}>
                       <i className="fas fa-comments text-lg"></i>
+                      {/* 未读消息指示器 */}
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold z-10">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
                       {isActive && (
                         <>
                           <span className={clsx('absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-full h-0.5 rounded-full', `bg-gradient-to-r ${gradientClass}`)}></span>
@@ -743,14 +750,19 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
             >
               {({ isActive }) => {
                 const baseClass = 'flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out relative group transform-gpu';
-                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-300 hover:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900' : 'text-gray-700 hover:text-gray-900');
+                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-400 hover:text-white active:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900 active:text-pink-900' : 'text-gray-600 hover:text-gray-900 active:text-gray-900');
                 const iconClass = isActive ? 'scale-130 text-opacity-100' : 'scale-100 text-opacity-70';
                 const textClass = isActive ? 'font-semibold opacity-100 scale-105' : 'opacity-60 scale-95';
                 const gradientClass = isDark ? 'from-blue-400 to-purple-500' : theme === 'pink' ? 'from-pink-500 to-rose-500' : 'from-red-500 to-orange-500';
                 
                 return (
                   <div className={clsx(baseClass, activeColor)}>
-                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-130')}>
+                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-130 active:scale-95')}>
+                      {/* 创作按钮特殊效果 - 脉动背景 */}
+                      <div className={clsx(
+                        'absolute inset-0 rounded-full transition-all duration-500 ease-in-out transform -z-10',
+                        isActive ? (isDark ? 'bg-blue-500/30 scale-150' : theme === 'pink' ? 'bg-pink-500/30 scale-150' : 'bg-orange-500/30 scale-150') : 'scale-0'
+                      )}></div>
                       <i className="fas fa-plus text-xl font-bold"></i>
                       {isActive && (
                         <>
@@ -775,14 +787,14 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
             >
               {({ isActive }) => {
                 const baseClass = 'flex flex-col items-center justify-center py-2 transition-all duration-300 ease-in-out relative group transform-gpu';
-                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-300 hover:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900' : 'text-gray-700 hover:text-gray-900');
+                const activeColor = isActive ? (isDark ? 'text-white' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900') : (isDark ? 'text-gray-400 hover:text-white active:text-white' : theme === 'pink' ? 'text-pink-700 hover:text-pink-900 active:text-pink-900' : 'text-gray-600 hover:text-gray-900 active:text-gray-900');
                 const iconClass = isActive ? 'scale-125 text-opacity-100' : 'scale-100 text-opacity-70';
                 const textClass = isActive ? 'font-semibold opacity-100 scale-105' : 'opacity-60 scale-95';
                 const gradientClass = isDark ? 'from-blue-400 to-purple-500' : theme === 'pink' ? 'from-pink-500 to-rose-500' : 'from-red-500 to-orange-500';
                 
                 return (
                   <div className={clsx(baseClass, activeColor)}>
-                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125')}>
+                    <div className={clsx('relative transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1) transform', iconClass, 'group-hover:scale-125 active:scale-95')}>
                       <i className="fas fa-bolt text-lg"></i>
                       {isActive && (
                         <>
@@ -792,7 +804,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                         </>
                       )}
                     </div>
-                    <span className={clsx('mt-0.5 font-medium transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1)', textClass)}>{t('common.inspiration')}</span>
+                    <span className={clsx('mt-0.5 font-medium transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1)', textClass)}>{t('common.neo')}</span>
                   </div>
                 );
               }}

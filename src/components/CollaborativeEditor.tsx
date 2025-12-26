@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
@@ -35,7 +35,13 @@ interface SelectionRange {
   color: string;
 }
 
-const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
+interface TypingStatus {
+  userId: string;
+  username: string;
+  isTyping: boolean;
+}
+
+const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
   sessionId,
   userId,
   username,
@@ -49,12 +55,20 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [collaborators, setCollaborators] = useState<CursorPosition[]>([]);
   const [selections, setSelections] = useState<SelectionRange[]>([]);
+  const [typingUsers, setTypingUsers] = useState<TypingStatus[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(0);
+  
+  // 撤销/重做功能
+  const [history, setHistory] = useState<string[]>([initialContent]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [isRedoing, setIsRedoing] = useState(false);
   
   const editorRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const userColors = useRef<Map<string, string>>(new Map());
+  const contentChangeTimeoutRef = useRef<NodeJS.Timeout>();
 
   // 生成用户颜色
   const getUserColor = useCallback((userId: string) => {
@@ -145,9 +159,59 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       }
       
       onContentChange?.(newContent);
+      
+      // 更新历史记录（远程编辑）
+      if (newContent !== history[historyIndex]) {
+        updateHistory(newContent);
+      }
+      
       return newContent;
     });
-  }, [userId, onContentChange]);
+  }, [userId, onContentChange, history, historyIndex]);
+
+  // 优化的光标位置计算
+  const getCursorPosition = useCallback((position: number): number => {
+    if (!editorRef.current) return position * 8;
+    
+    const editor = editorRef.current;
+    const textContent = editor.textContent || '';
+    
+    if (position === 0) return 0;
+    if (position >= textContent.length) {
+      // 如果位置超出文本长度，使用最后一个字符的位置
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      const rect = range.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      return rect.left - editorRect.left;
+    }
+    
+    // 创建临时范围来测量位置
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.setStart(editor.firstChild || editor, 0);
+    
+    let currentPos = 0;
+    let node: Node | null = editor.firstChild;
+    
+    while (node && currentPos < position) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textLength = node.textContent?.length || 0;
+        if (currentPos + textLength >= position) {
+          const offset = position - currentPos;
+          range.setStart(node, offset);
+          break;
+        }
+        currentPos += textLength;
+      }
+      node = node.nextSibling;
+    }
+    
+    const rect = range.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    return rect.left - editorRect.left;
+  }, []);
 
   // 处理远程光标移动
   const handleRemoteCursorMove = useCallback((message: any) => {
@@ -198,16 +262,90 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
   // 处理开始输入
   const handleTypingStart = useCallback((message: any) => {
     if (message.userId !== userId) {
-      // 显示其他用户的输入状态
+      setTypingUsers(prev => {
+        const existing = prev.filter(u => u.userId !== message.userId);
+        return [...existing, {
+          userId: message.userId,
+          username: message.username,
+          isTyping: true
+        }];
+      });
     }
   }, [userId]);
 
   // 处理停止输入
   const handleTypingStop = useCallback((message: any) => {
     if (message.userId !== userId) {
-      // 隐藏其他用户的输入状态
+      setTypingUsers(prev => prev.filter(u => u.userId !== message.userId));
     }
   }, [userId]);
+
+  // 撤销操作
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      setIsUndoing(true);
+      const newIndex = historyIndex - 1;
+      const newContent = history[newIndex];
+      setContent(newContent);
+      setHistoryIndex(newIndex);
+      onContentChange?.(newContent);
+      setTimeout(() => setIsUndoing(false), 0);
+    }
+  }, [history, historyIndex, onContentChange]);
+
+  // 重做操作
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setIsRedoing(true);
+      const newIndex = historyIndex + 1;
+      const newContent = history[newIndex];
+      setContent(newContent);
+      setHistoryIndex(newIndex);
+      onContentChange?.(newContent);
+      setTimeout(() => setIsRedoing(false), 0);
+    }
+  }, [history, historyIndex, onContentChange]);
+
+  // 键盘事件处理，添加撤销/重做快捷键
+  const handleGlobalKeyDown = useCallback((event: KeyboardEvent) => {
+    if (readOnly) return;
+    
+    // Ctrl+Z 或 Cmd+Z 撤销
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+      event.preventDefault();
+      handleUndo();
+    }
+    // Ctrl+Y 或 Cmd+Y 重做
+    if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+      event.preventDefault();
+      handleRedo();
+    }
+  }, [readOnly, handleUndo, handleRedo]);
+
+  // 添加/移除全局键盘事件监听
+  useEffect(() => {
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [handleGlobalKeyDown]);
+
+  // 更新历史记录
+  const updateHistory = useCallback((newContent: string) => {
+    if (isUndoing || isRedoing) return;
+    
+    // 清除当前位置之后的历史记录
+    const newHistory = history.slice(0, historyIndex + 1);
+    // 限制历史记录长度
+    const MAX_HISTORY = 50;
+    if (newHistory.length >= MAX_HISTORY) {
+      newHistory.shift();
+      setHistoryIndex(historyIndex - 1);
+    }
+    // 添加新内容到历史记录
+    setHistory([...newHistory, newContent]);
+    setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1));
+  }, [history, historyIndex, isUndoing, isRedoing]);
 
   // 本地文本编辑处理
   const handleTextInput = useCallback((event: React.FormEvent<HTMLDivElement>) => {
@@ -218,6 +356,16 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
     
     setContent(newContent);
     onContentChange?.(newContent);
+    
+    // 更新历史记录（节流处理，避免频繁更新）
+    if (contentChangeTimeoutRef.current) {
+      clearTimeout(contentChangeTimeoutRef.current);
+    }
+    contentChangeTimeoutRef.current = setTimeout(() => {
+      if (newContent !== history[historyIndex]) {
+        updateHistory(newContent);
+      }
+    }, 500);
     
     // 发送输入状态
     if (!isTyping) {
@@ -237,7 +385,7 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       setIsTyping(false);
       websocketService.sendTypingStop();
     }, 1000);
-  }, [readOnly, onContentChange, isTyping]);
+  }, [readOnly, onContentChange, isTyping, content, history, historyIndex, updateHistory]);
 
   // 处理键盘事件
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -394,29 +542,51 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       className={`relative ${className}`}
     >
       {/* 协作状态栏 */}
-      <div className={`flex items-center justify-between mb-3 p-2 rounded-lg text-sm ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span>{isConnected ? '协作已连接' : '协作已断开'}</span>
-          <span className="text-gray-500">•</span>
-          <span>{collaborators.length + 1} 人在线</span>
+      <div className={`flex flex-col mb-3 p-2 rounded-lg text-sm ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+            <span>{isConnected ? '协作已连接' : '协作已断开'}</span>
+            <span className="text-gray-500">•</span>
+            <span>{collaborators.length + 1} 人在线</span>
+          </div>
+          
+          <div className="flex items-center space-x-1">
+            {collaborators.map(collaborator => (
+              <motion.div
+                key={collaborator.userId}
+                className="flex items-center space-x-1 px-2 py-1 rounded text-xs"
+                style={{ backgroundColor: collaborator.color + '20' }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: collaborator.color }}
+                />
+                <span>{collaborator.username}</span>
+              </motion.div>
+            ))}
+          </div>
         </div>
         
-        <div className="flex items-center space-x-1">
-          {collaborators.map(collaborator => (
-            <div
-              key={collaborator.userId}
-              className="flex items-center space-x-1 px-2 py-1 rounded text-xs"
-              style={{ backgroundColor: collaborator.color + '20' }}
-            >
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: collaborator.color }}
-              />
-              <span>{collaborator.username}</span>
-            </div>
-          ))}
-        </div>
+        {/* 打字状态指示器 */}
+        {typingUsers.length > 0 && (
+          <motion.div 
+            className="text-xs text-gray-600 dark:text-gray-300"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+          >
+            {typingUsers.map(user => (
+              <span key={user.userId} className="mr-2">
+                {user.username} 正在输入{typingUsers.length > 1 ? '...' : ''}
+              </span>
+            ))}
+          </motion.div>
+        )}
       </div>
 
       {/* 编辑器区域 */}
@@ -443,18 +613,22 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
               websocketService.sendTypingStop();
             }
           }}
+          aria-label="协作编辑器"
+          aria-describedby={typingUsers.length > 0 ? 'typing-status' : undefined}
         />
       </div>
 
-      {/* 输入状态指示器 */}
-      {isTyping && (
-        <div className="mt-2 text-sm text-gray-500 flex items-center">
-          <i className="fas fa-pencil-alt mr-2 animate-pulse" />
-          正在输入...
-        </div>
-      )}
+      {/* 操作提示 */}
+      <div className="mt-2 text-xs text-gray-500">
+        {!readOnly && (
+          <span>
+            使用 <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">Ctrl+Z</kbd> 撤销，
+            <kbd className="ml-1 px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">Ctrl+Y</kbd> 重做
+          </span>
+        )}
+      </div>
     </motion.div>
   );
-};
+});
 
 export default CollaborativeEditor;

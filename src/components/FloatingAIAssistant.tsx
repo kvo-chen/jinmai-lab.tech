@@ -12,7 +12,7 @@ interface FloatingAIAssistantProps {
 
 const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   defaultOpen = false,
-  position = 'bottom-right'
+  position = 'bottom-left'
 }) => {
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -42,14 +42,24 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 预设问题列表
-  const presetQuestions = [
-    '平台上如何创作',
-    '如何使用AI生成功能',
-    '如何分享我的作品',
-    '如何查看创作数据',
-    '如何参与社区活动'
-  ];
+  // 根据当前页面动态生成预设问题
+  const getPresetQuestions = () => {
+    const pageQuestions: Record<string, string[]> = {
+      '/': ['平台上如何创作', '如何使用AI生成功能', '如何分享我的作品', '平台有哪些功能'],
+      '/cultural-knowledge': ['文化知识如何分类', '如何搜索特定文化内容', '如何收藏文化知识', '如何参与文化讨论'],
+      '/creation-workshop': ['如何开始创作', 'AI生成功能怎么用', '如何导出我的作品', '如何查看创作数据'],
+      '/marketplace': ['如何购买文创产品', '如何成为卖家', '如何评价商品', '如何查看订单'],
+      '/community': ['如何参与社区活动', '如何关注其他用户', '如何创建话题', '如何获取社区积分'],
+      '/my-works': ['如何管理我的作品', '如何编辑已发布作品', '如何查看作品统计', '如何设置作品隐私'],
+      '/explore': ['如何搜索作品', '如何筛选作品', '如何点赞收藏', '如何查看热门作品'],
+      '/create': ['如何使用创作工具', '如何添加素材', '如何使用AI辅助创作', '如何保存草稿']
+    };
+    
+    return pageQuestions[currentPath] || ['平台上如何创作', '如何使用AI生成功能', '如何分享我的作品', '如何查看创作数据', '如何参与社区活动'];
+  };
+  
+  // 动态预设问题
+  const presetQuestions = getPresetQuestions();
 
   // 监听路由变化，更新当前页面信息
   useEffect(() => {
@@ -57,14 +67,31 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     const path = location.pathname;
     setCurrentPath(path);
     
-    // 简单的路径到页面名称映射
+    // 完善的路径到页面名称映射
     const pathToPage: Record<string, string> = {
       '/': '首页',
       '/cultural-knowledge': '文化知识',
       '/creation-workshop': '创作工坊',
       '/marketplace': '文创市集',
       '/community': '社区',
-      '/my-works': '我的作品'
+      '/my-works': '我的作品',
+      '/explore': '探索页面',
+      '/create': '创作中心',
+      '/dashboard': '仪表盘',
+      '/settings': '设置页面',
+      '/login': '登录页面',
+      '/register': '注册页面',
+      '/about': '关于我们',
+      '/help': '帮助中心',
+      '/news': '新闻资讯',
+      '/events': '活动页面',
+      '/leaderboard': '排行榜',
+      '/knowledge': '知识库',
+      '/tianjin': '天津特色',
+      '/neo': '灵感引擎',
+      '/tools': '工具页面',
+      '/wizard': '共创向导',
+      '/square': '共创广场'
     };
     
     setCurrentPage(pathToPage[path] || '未知页面');
@@ -87,7 +114,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
       theme,
       show_preset_questions: showPresetQuestions,
       enable_typing_effect: enableTypingEffect,
-      auto_scroll
+      auto_scroll: autoScroll
     });
   };
 
@@ -157,15 +184,37 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }));
   };
 
-  // 添加初始欢迎消息
+  // 生成上下文相关的初始欢迎消息
+  const getWelcomeMessage = () => {
+    const welcomeMessages: Record<string, string> = {
+      '/': `你好！我是你的AI助手，欢迎来到津脉智坊平台首页。这里是探索和创作的起点，你可以浏览热门作品、参与社区活动或开始你的创作之旅。有什么可以帮助你的吗？`,
+      '/cultural-knowledge': `你好！我是你的AI助手，欢迎来到文化知识页面。在这里你可以探索丰富的非遗文化内容，学习传统技艺知识。有什么文化方面的问题需要解答吗？`,
+      '/creation-workshop': `你好！我是你的AI助手，欢迎来到创作工坊。这里是你的创意实验室，你可以尝试各种数字化创作工具和AI生成功能。需要我帮你了解创作流程吗？`,
+      '/marketplace': `你好！我是你的AI助手，欢迎来到文创市集。在这里你可以购买精美的文创产品，或成为卖家展示你的作品。有什么购物或销售方面的问题吗？`,
+      '/community': `你好！我是你的AI助手，欢迎来到社区。这里是创作者的聚集地，你可以参与讨论、分享作品或参与活动。需要我帮你了解社区功能吗？`,
+      '/my-works': `你好！我是你的AI助手，欢迎来到我的作品页面。在这里你可以管理和查看你的创作成果。需要我帮你了解作品管理功能吗？`,
+      '/explore': `你好！我是你的AI助手，欢迎来到探索页面。在这里你可以发现各类优秀作品，按照不同维度筛选内容。需要我帮你了解搜索和筛选功能吗？`,
+      '/create': `你好！我是你的AI助手，欢迎来到创作中心。现在你可以开始你的创作之旅，使用各种AI辅助工具和素材。需要我帮你了解创作工具的使用方法吗？`,
+      '/dashboard': `你好！我是你的AI助手，欢迎来到仪表盘。这里展示了你的创作数据和平台动态。需要我帮你解读数据或了解平台动态吗？`,
+      '/neo': `你好！我是你的AI助手，欢迎来到灵感引擎。在这里你可以获得创作灵感和AI辅助建议。需要我帮你激发创意吗？`,
+      '/tools': `你好！我是你的AI助手，欢迎来到工具页面。这里汇聚了各种创作辅助工具。需要我帮你了解工具的使用方法吗？`
+    };
+    
+    return welcomeMessages[currentPath] || `你好！我是你的AI助手，当前你正在浏览「${currentPage}」页面，有什么可以帮助你的吗？`;
+  };
+
+  // 添加初始欢迎消息 - 上下文感知
   useEffect(() => {
     const initialMessage: Message = {
       role: 'assistant',
-      content: `你好！我是你的AI助手，当前你正在浏览「${currentPage}」页面，有什么可以帮助你的吗？`,
+      content: getWelcomeMessage(),
       timestamp: Date.now()
     };
-    setMessages([initialMessage]);
-  }, [currentPage]);
+    // 只有当没有对话历史时才设置初始消息
+    if (messages.length <= 1) {
+      setMessages([initialMessage]);
+    }
+  }, [currentPage, messages.length]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -402,7 +451,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="fixed z-50"
+      className="fixed z-40"
       style={{
         left: `${positionStyle.x}px`,
         top: `${positionStyle.y}px`,

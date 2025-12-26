@@ -75,6 +75,9 @@ export const useMapState = create<MapState & {
   setTheme: (theme: MapTheme) => void;
   updateTheme: (theme: MapTheme) => void;
   
+  // 悬停状态管理
+  setHoveredPOI: (poiId: string | null) => void;
+  
   // 坐标转换
   screenToWorld: (screenCoord: Coordinate) => Coordinate;
   worldToScreen: (worldCoord: Coordinate) => Coordinate;
@@ -198,7 +201,7 @@ export const useMapState = create<MapState & {
     
     setZoom: (zoom) => {
       const clampedZoom = Math.max(DEFAULT_CONFIG.minZoom, Math.min(DEFAULT_CONFIG.maxZoom, zoom));
-      set({ targetZoom: clampedZoom });
+      set({ targetZoom: clampedZoom as ZoomLevel });
       
       // 记录初始缩放和时间
       const startTime = performance.now();
@@ -234,7 +237,7 @@ export const useMapState = create<MapState & {
     },
     updateZoom: (zoom) => {
       const clampedZoom = Math.max(DEFAULT_CONFIG.minZoom, Math.min(DEFAULT_CONFIG.maxZoom, zoom));
-      set({ zoom: clampedZoom, targetZoom: clampedZoom });
+      set({ zoom: clampedZoom as ZoomLevel, targetZoom: clampedZoom as ZoomLevel });
     },
     
     zoomIn: () => {

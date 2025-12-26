@@ -1,5 +1,7 @@
 // 导入错误服务
 import errorService from '../services/errorService';
+import securityService from '../services/securityService';
+import { recordNetworkRequest } from '../utils/performanceMonitor';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -446,13 +448,30 @@ export async function apiRequest<TResp, TBody = unknown>(
         
         // 记录请求开始时间
         const startTime = performance.now()
+        const timestamp = Date.now()
         
         console.log(`API Client: 开始请求 ${method} ${target}`)
         console.log(`API Client: 请求参数`, options.body)
         
+        // 生成请求签名
+        const bodyString = options.body ? JSON.stringify(options.body) : ''
+        const signatureData = `${method}:${target}:${timestamp}:${bodyString}`
+        const signature = await securityService.generateSignature(signatureData, timestamp)
+        
+        // 添加安全头
+        const secureHeaders = {
+          ...headers,
+          'X-Request-Timestamp': timestamp.toString(),
+          'X-Request-Signature': signature,
+          'X-Request-Id': securityService.generateUUID(),
+        }
+        
+        // 记录请求开始
+        const requestStartTime = Date.now()
+        
         const fetchPromise = fetch(target, {
           method,
-          headers,
+          headers: secureHeaders,
           body: options.body ? JSON.stringify(options.body) : undefined,
           signal: options.signal,
         })
@@ -462,6 +481,11 @@ export async function apiRequest<TResp, TBody = unknown>(
         // 计算请求耗时
         const endTime = performance.now()
         const duration = endTime - startTime
+        const requestEndTime = Date.now()
+        
+        // 记录响应大小（从响应头获取）
+        const contentLength = res.headers.get('content-length')
+        const size = contentLength ? parseInt(contentLength, 10) : 0
         
         // 记录请求日志
         console.log(`API Request: ${method} ${path} ${res.status} (${duration.toFixed(2)}ms)`)
@@ -490,14 +514,25 @@ export async function apiRequest<TResp, TBody = unknown>(
             responseData = data
           }
           
-          // 更新缓存
+          // 更新缓存 - 修复：使用正确的缓存选项
           if (isCacheEnabled && res.ok) {
-            cacheStore.set(requestKey, {
-              data: responseData,
-              timestamp: Date.now(),
-              isStale: false
+            cacheStore.set(requestKey, responseData, {
+              ttl: cacheOptions.ttl,
+              staleTtl: cacheOptions.staleTtl
             })
           }
+          
+          // 记录网络请求性能数据
+          recordNetworkRequest({
+            url: target,
+            method,
+            duration,
+            status: res.status,
+            size,
+            timestamp: requestStartTime,
+            fromCache: false,
+            retries: 0,
+          })
           
           // 返回统一格式的响应
           return { ok: true, status: res.status, data: responseData as TResp, fromCache: false }
@@ -540,6 +575,19 @@ export async function apiRequest<TResp, TBody = unknown>(
         // 记录错误
         console.error(`API Error: ${method} ${path} ${res.status}`, error)
         
+        // 记录网络请求性能数据（错误情况）
+        recordNetworkRequest({
+          url: target,
+          method,
+          duration,
+          status: res.status,
+          size,
+          timestamp: requestStartTime,
+          fromCache: false,
+          retries: 0,
+          error: errorMessage,
+        })
+        
         // 抛出错误
         throw error
       } catch (error) {
@@ -547,6 +595,19 @@ export async function apiRequest<TResp, TBody = unknown>(
         
         // 记录失败的请求
         console.error(`API Request Failed: ${method} ${path} (Attempt ${attempt}/${retries + 1})`, error)
+        
+        // 记录网络请求性能数据（失败情况）
+        recordNetworkRequest({
+          url: useFallback ? altUrl : url,
+          method,
+          duration: timeoutMs,
+          status: 500,
+          size: 0,
+          timestamp: Date.now(),
+          fromCache: false,
+          retries: attempt - 1,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
         
         // 如果是最后一次尝试，或者错误不可重试，抛出错误
         if (attempt > retries || !retryableErrors.some(code => error instanceof Error && error.message.includes(code))) {
@@ -588,8 +649,11 @@ export async function apiRequest<TResp, TBody = unknown>(
   
   // 检查缓存
   if (isCacheEnabled) {
-    cachedResult = cacheStore.get(requestKey)
+    cachedResult = cacheStore.get(requestKey, { allowStale: true })
     if (cachedResult) {
+      // 记录缓存命中
+      console.log(`API Cache Hit: ${method} ${path} (stale: ${cachedResult.isStale})`);
+      
       // 如果数据过期但未失效，返回缓存数据并在后台重新验证
       if (cachedResult.isStale) {
         // 在后台重新验证缓存
@@ -599,7 +663,23 @@ export async function apiRequest<TResp, TBody = unknown>(
           console.error(`Cache Revalidation Failed: ${method} ${path}`, error);
         })
       }
+      
+      // 记录网络请求性能数据（缓存命中）
+      recordNetworkRequest({
+        url: url,
+        method,
+        duration: 0, // 缓存命中，耗时为0
+        status: 200,
+        size: 0, // 缓存命中，不计算大小
+        timestamp: Date.now(),
+        fromCache: true,
+        retries: 0,
+      });
+      
       return { ok: true, status: 200, data: cachedResult.data as TResp, fromCache: true }
+    } else {
+      // 记录缓存未命中
+      console.log(`API Cache Miss: ${method} ${path}`);
     }
   }
   

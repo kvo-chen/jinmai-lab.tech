@@ -1,5 +1,5 @@
+import React, { useState, useEffect, Suspense, lazy, useRef, useMemo, useCallback } from 'react';
 import { Routes, Route, Outlet, useLocation, useNavigationType, Link, Navigate } from "react-router-dom";
-import { useState, useEffect, Suspense, lazy, useRef, useMemo } from 'react'
 
 
 // 核心页面保持同步加载，减少导航延迟
@@ -10,70 +10,132 @@ import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
 import Explore from "@/pages/Explore";
 import WorkDetail from "@/pages/WorkDetail";
-import Create from "@/pages/Create";
-import Tools from "@/pages/Tools";
 import About from "@/pages/About";
 import Square from "@/pages/Square";
 import Community from "@/pages/Community";
 import Neo from "@/pages/Neo";
 import NewsDetail from "@/pages/NewsDetail";
 import EventDetail from "@/pages/EventDetail";
+import TestBasic from "@/pages/TestBasic";
 
-// 大型组件和低频访问页面使用懒加载
-// 对于大型组件和低频访问的页面，使用懒加载可以减少初始加载时间
-const LazyComponent = ({ children }: { children: React.ReactNode }) => {
-  // 优化的加载骨架屏，提升用户体验
-  const SimpleLoadingSkeleton = () => (
-    <div className="min-h-[200px] bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg transition-all duration-300"></div>
-  );
-  
+// 优化懒加载策略：根据页面访问频率和大小重新分类
+
+// 2. 高频访问但较大的页面 - 懒加载，优先加载
+const Create = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Create"));
+const Tools = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Tools"));
+const Settings = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Settings"));
+
+// 3. 中频访问页面 - 懒加载，按功能模块分组
+// 创作和工具相关
+const Generation = lazy(() => import(/* webpackChunkName: "creation-tools" */ "@/pages/Generation"));
+const InputHub = lazy(() => import(/* webpackChunkName: "creation-tools" */ "@/pages/InputHub"));
+const Drafts = lazy(() => import(/* webpackChunkName: "creation-tools" */ "@/pages/Drafts"));
+
+// 文化和知识相关
+const CulturalKnowledge = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/CulturalKnowledge"));
+const Tianjin = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/Tianjin"));
+const TianjinMap = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/TianjinMap"));
+const CulturalEvents = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/CulturalEvents"));
+const CulturalNewsPage = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/CulturalNewsPage"));
+
+// 4. 低频访问页面 - 懒加载，按功能分组
+// 管理相关
+const Admin = lazy(() => import(/* webpackChunkName: "admin-pages" */ "@/pages/admin/Admin"));
+const AdminAnalytics = lazy(() => import(/* webpackChunkName: "admin-pages" */ "@/pages/AdminAnalytics"));
+const ErrorMonitoringDashboard = lazy(() => import(/* webpackChunkName: "admin-pages" */ "@/components/ErrorMonitoringDashboard"));
+
+// 会员和激励相关
+const Membership = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/Membership"));
+const MembershipPayment = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/MembershipPayment"));
+const MembershipBenefits = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/MembershipBenefits"));
+const Incentives = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/Incentives"));
+const PointsMall = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/PointsMall"));
+
+// 社区和互动相关
+const Leaderboard = lazy(() => import(/* webpackChunkName: "community-features" */ "@/pages/Leaderboard"));
+const DailyCheckin = lazy(() => import(/* webpackChunkName: "community-features" */ "@/components/DailyCheckin"));
+const CreativeMatchmaking = lazy(() => import(/* webpackChunkName: "community-features" */ "@/components/CreativeMatchmaking"));
+const AchievementMuseum = lazy(() => import(/* webpackChunkName: "community-features" */ "@/components/AchievementMuseum"));
+
+// 实验和特色功能
+const Lab = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/Lab"));
+const ParticleArt = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/ParticleArt"));
+const Games = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/Games"));
+const CollaborationDemo = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/CollaborationDemo"));
+
+// 辅助和测试页面
+const TestPage = lazy(() => import(/* webpackChunkName: "auxiliary-pages" */ "@/pages/TestPage"));
+const ImageTest = lazy(() => import(/* webpackChunkName: "auxiliary-pages" */ "@/pages/ImageTest"));
+const GitHubImageTestPage = lazy(() => import(/* webpackChunkName: "auxiliary-pages" */ "@/pages/GitHubImageTestPage"));
+
+// 其他低频页面
+const Terms = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Terms"));
+const Help = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Help"));
+const BrandGuide = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/BrandGuide"));
+const Authenticity = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Authenticity"));
+const Wizard = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Wizard"));
+const AnalyticsPage = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Analytics"));
+const UserCollection = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/UserCollection"));
+
+// 特殊功能组件
+const IPIncubationCenter = lazy(() => import(/* webpackChunkName: "special-features" */ "@/components/IPIncubationCenter"));
+const CrossDeviceSync = lazy(() => import(/* webpackChunkName: "special-features" */ "@/components/CrossDeviceSync"));
+const BlindBoxShop = lazy(() => import(/* webpackChunkName: "special-features" */ "@/components/BlindBoxShop"));
+
+// 优化LazyComponent和LoadingSkeleton
+// 改进LoadingSkeleton，添加更多视觉反馈
+const SimpleLoadingSkeleton = React.memo(() => (
+  <div className="min-h-[200px] p-6">
+    <div className="space-y-6">
+      {/* 标题骨架 */}
+      <div className="flex items-center space-x-3">
+        <div className="h-10 w-10 rounded-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-3/4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+          <div className="h-3 w-1/2 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+        </div>
+      </div>
+      
+      {/* 内容骨架 */}
+      <div className="space-y-3">
+        <div className="h-4 w-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+        <div className="h-4 w-5/6 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+        <div className="h-4 w-3/4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+      </div>
+      
+      {/* 卡片骨架 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="h-32 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+        <div className="h-32 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+      </div>
+      
+      {/* 行动按钮骨架 */}
+      <div className="flex space-x-3">
+        <div className="h-10 w-24 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+        <div className="h-10 w-24 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+      </div>
+    </div>
+  </div>
+));
+
+SimpleLoadingSkeleton.displayName = 'SimpleLoadingSkeleton';
+
+// 优化LazyComponent，添加延迟加载和错误处理
+const LazyComponent = React.memo(({ 
+  children, 
+  fallback = <SimpleLoadingSkeleton /> 
+}: { 
+  children: React.ReactNode; 
+  fallback?: React.ReactNode; 
+}) => {
   return (
-    <Suspense fallback={<SimpleLoadingSkeleton />}>
+    <Suspense fallback={fallback}>
       {children}
     </Suspense>
   );
-};
+});
 
-// 使用lazy实现组件懒加载
-const Admin = lazy(() => import("@/pages/admin/Admin"));
-const ErrorMonitoringDashboard = lazy(() => import("@/components/ErrorMonitoringDashboard"));
-const Terms = lazy(() => import("@/pages/Terms"));
-const Help = lazy(() => import("@/pages/Help"));
-const BrandGuide = lazy(() => import("@/pages/BrandGuide"));
-const InputHub = lazy(() => import("@/pages/InputHub"));
-const Generation = lazy(() => import("@/pages/Generation"));
-const Authenticity = lazy(() => import("@/pages/Authenticity"));
-const Incentives = lazy(() => import("@/pages/Incentives"));
-const TestPage = lazy(() => import("@/pages/TestPage"));
-const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
-const Wizard = lazy(() => import("@/pages/Wizard"));
-const Settings = lazy(() => import("@/pages/Settings"));
-const AnalyticsPage = lazy(() => import("@/pages/Analytics"));
-const UserCollection = lazy(() => import("@/pages/UserCollection"));
-const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
-const CulturalKnowledge = lazy(() => import("@/pages/CulturalKnowledge"));
-const Tianjin = lazy(() => import("@/pages/Tianjin"));
-const TianjinMap = lazy(() => import("@/pages/TianjinMap"));
-const CulturalEvents = lazy(() => import("@/pages/CulturalEvents"));
-const DailyCheckin = lazy(() => import("@/components/DailyCheckin"));
-const CreativeMatchmaking = lazy(() => import("@/components/CreativeMatchmaking"));
-const IPIncubationCenter = lazy(() => import("@/components/IPIncubationCenter"));
-const CrossDeviceSync = lazy(() => import("@/components/CrossDeviceSync"));
-const AchievementMuseum = lazy(() => import("@/components/AchievementMuseum"));
-const Drafts = lazy(() => import("@/pages/Drafts"));
-const Lab = lazy(() => import("@/pages/Lab"));
-const BlindBoxShop = lazy(() => import("@/components/BlindBoxShop"));
-const ParticleArt = lazy(() => import("@/pages/ParticleArt"));
-const Games = lazy(() => import("@/pages/Games"));
-const CollaborationDemo = lazy(() => import("@/pages/CollaborationDemo"));
-const ImageTest = lazy(() => import("@/pages/ImageTest"));
-const CulturalNewsPage = lazy(() => import("@/pages/CulturalNewsPage"));
-const GitHubImageTestPage = lazy(() => import("@/pages/GitHubImageTestPage"));
-import TestBasic from "@/pages/TestBasic";
-// 会员相关页面
-const Membership = lazy(() => import("@/pages/Membership"));
-const MembershipPayment = lazy(() => import("@/pages/MembershipPayment"));
-const MembershipBenefits = lazy(() => import("@/pages/MembershipBenefits"));
+LazyComponent.displayName = 'LazyComponent';
 
 
 
@@ -108,12 +170,128 @@ import PWAInstallButton from '@/components/PWAInstallButton';
 import FirstLaunchGuide from '@/components/FirstLaunchGuide';
 // 悬浮AI助手组件
 import FloatingAIAssistant from '@/components/FloatingAIAssistant';
+// 用户反馈组件
+import UserFeedback from '@/components/UserFeedback';
+// 满意度调查组件
+import SatisfactionSurvey from '@/components/SatisfactionSurvey';
+// 满意度调查服务
+import surveyService from '@/services/surveyService';
+// 认证上下文
+import { useContext } from 'react';
+import { AuthContext } from '@/contexts/authContext';
 
 
 export default function App() {
   const location = useLocation();
+  // 认证上下文
+  const { user } = useContext(AuthContext);
   // 添加响应式布局状态
   const [isMobile, setIsMobile] = useState(false);
+  // 添加用户反馈状态
+  const [showFeedback, setShowFeedback] = useState(false);
+  // 添加满意度调查状态
+  const [showSurvey, setShowSurvey] = useState(false);
+  // 添加社群消息面板状态
+  const [showCommunityMessages, setShowCommunityMessages] = useState(false);
+  const messagesRef = useRef<HTMLDivElement | null>(null);
+  // 添加白色内容区域检测状态
+  const [showWhiteArea, setShowWhiteArea] = useState(false);
+  const [buttonBottom, setButtonBottom] = useState('6rem'); // 默认底部距离
+
+  // 检测白色内容区域是否可见
+  const checkWhiteAreaVisibility = useCallback(() => {
+    const whiteElements = document.querySelectorAll('.bg-white, .bg-gray-50, .bg-gradient-to-r.from-blue-50.to-purple-50, .bg-gradient-to-br.from-blue-50.to-purple-50');
+    const viewportHeight = window.innerHeight;
+    const scrollPosition = window.scrollY;
+
+    let hasVisibleWhiteArea = false;
+
+    whiteElements.forEach(element => {
+      const rect = element.getBoundingClientRect();
+      // 检查元素是否在视口中或接近视口底部
+      const isVisible = rect.top < viewportHeight && rect.bottom > 0;
+      if (isVisible) {
+        // 检查元素底部是否在视口底部附近（200px范围内）
+        const distanceToBottom = viewportHeight - rect.bottom;
+        if (distanceToBottom < 200 && distanceToBottom > -100) {
+          hasVisibleWhiteArea = true;
+        }
+      }
+    });
+
+    setShowWhiteArea(hasVisibleWhiteArea);
+    // 根据白色区域是否可见动态调整按钮位置
+    setButtonBottom(hasVisibleWhiteArea ? '5rem' : '1.5rem');
+  }, []);
+
+  // 监听滚动事件，实时检测白色内容区域
+  useEffect(() => {
+    // 初始检测
+    checkWhiteAreaVisibility();
+    // 添加滚动事件监听
+    window.addEventListener('scroll', checkWhiteAreaVisibility, { passive: true });
+    // 添加窗口大小变化事件监听
+    window.addEventListener('resize', checkWhiteAreaVisibility, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', checkWhiteAreaVisibility);
+      window.removeEventListener('resize', checkWhiteAreaVisibility);
+    };
+  }, [checkWhiteAreaVisibility]);
+  
+  // 社群消息数据结构
+  interface CommunityMessage {
+    id: string;
+    sender: string;
+    content: string;
+    time: string;
+    read: boolean;
+    avatar: string;
+  }
+  
+  // 社群消息状态
+  const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>(() => {
+    try {
+      const stored = localStorage.getItem('jmzf_community_messages');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // 确保返回的是数组
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch {}
+    return [
+      { id: 'm1', sender: '创意达人', content: '分享一个新的创作技巧...', time: '刚刚', read: false, avatar: '👤' },
+      { id: 'm2', sender: '设计师小王', content: '大家觉得这个配色方案怎么样？', time: '1 小时前', read: false, avatar: '🎨' },
+      { id: 'm3', sender: '系统通知', content: '新活动：创意挑战赛开始了！', time: '昨天', read: true, avatar: '📢' },
+    ];
+  });
+  
+  // 未读消息计数
+  const unreadMessageCount = useMemo(() => 
+    communityMessages.filter(m => !m.read).length,
+    [communityMessages]
+  );
+  
+  // 保存消息到本地存储
+  useEffect(() => {
+    try {
+      localStorage.setItem('jmzf_community_messages', JSON.stringify(communityMessages));
+    } catch {}
+  }, [communityMessages]);
+  
+  // 点击外部关闭消息面板
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!messagesRef.current) return;
+      if (!messagesRef.current.contains(e.target as Node)) {
+        setShowCommunityMessages(false);
+      }
+    };
+    if (showCommunityMessages) {
+      document.addEventListener('mousedown', handler);
+    }
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCommunityMessages]);
   
   // 监听窗口大小变化
   useEffect(() => {
@@ -130,11 +308,23 @@ export default function App() {
     // 清理事件监听
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
+  
+  // 处理满意度调查提交
+  const handleSurveySubmit = (data: any) => {
+    // 使用调查服务提交数据
+    surveyService.submitSurvey(
+      data,
+      user?.id || `anonymous-${Date.now()}`,
+      user?.username || '匿名用户'
+    );
+  };
 
   // 移除智能预取逻辑，减少不必要的预加载请求
   // 预加载会增加初始加载时间和内存消耗，对于低性能设备来说可能会导致卡顿
   // 导航跳转速度的提升应该通过优化组件渲染和减少不必要的资源加载来实现
 
+  // 暂时禁用全局console日志过滤，排查问题
+  /*
   // 全局console日志过滤，用于过滤WebAssembly内存地址日志
   useEffect(() => {
     // 保存原始console方法
@@ -211,9 +401,10 @@ export default function App() {
       console.info = originalInfo;
     };
   }, []);
+  */
 
-  // 右侧内容组件
-  const RightContent = () => (
+  // 右侧内容组件 - 使用memo优化，避免不必要的重新渲染
+  const RightContent = React.memo(() => (
     <aside className="w-64 p-4 overflow-y-auto">
       <div className="space-y-4">
         {/* 用户信息卡片 */}
@@ -221,8 +412,8 @@ export default function App() {
           <h3 className="font-semibold text-lg mb-2">欢迎使用</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">探索AI创作的无限可能</p>
           <div className="flex flex-wrap gap-2">
-            <button className="px-3 py-1 text-xs bg-blue-600 text-white rounded-full hover:bg-blue-700">开始创作</button>
-            <button className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-600">了解更多</button>
+            <button className="px-3 py-1 text-xs bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">开始创作</button>
+            <button className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">了解更多</button>
           </div>
         </div>
         
@@ -253,40 +444,77 @@ export default function App() {
         </div>
       </div>
     </aside>
-  );
+  ));
+  
+  // 右侧内容组件的延迟加载版本 - 仅在需要时加载
+  const LazyRightContent = lazy(() => Promise.resolve({ default: RightContent }));
 
-  // 全局加载骨架屏
+  // 优化全局加载骨架屏，实现更美观的品牌化加载体验
   const GlobalLoadingSkeleton = () => (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="w-full max-w-md space-y-8">
+        {/* 品牌Logo骨架 */}
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse relative overflow-hidden">
+              {/* 添加品牌元素的骨架 */}
+              <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+            </div>
+            {/* 添加旋转动画效果 */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-xl opacity-50 animate-spin-slow"></div>
+          </div>
+          {/* 品牌名称骨架 */}
+          <div className="mt-6 space-y-2">
+            <div className="h-8 w-40 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+            <div className="h-4 w-64 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
+          </div>
         </div>
+        
+        {/* 进度指示器 */}
+        <div className="space-y-2">
+          <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse rounded-full" style={{ width: '70%' }}></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+            加载中...
+          </div>
+        </div>
+        
+        {/* 内容骨架 */}
         <div className="space-y-4">
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="h-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+            <div className="h-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+            <div className="h-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+          </div>
+          <div className="h-24 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded-lg"></div>
+        </div>
+        
+        {/* 版权信息骨架 */}
+        <div className="text-center text-xs text-gray-500 dark:text-gray-500">
+          <div className="h-3 w-40 mx-auto bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse rounded"></div>
         </div>
       </div>
     </div>
   );
 
-  // 带有页面切换动画的组件
-  const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
+  // 带有页面切换动画的组件 - 使用memo优化，增强动画效果
+  const AnimatedPage = React.memo(({ children }: { children: React.ReactNode }) => {
     return (
       <div 
         className="animate-page-transition transition-all duration-300 ease-in-out"
         style={{
           opacity: 0,
-          transform: 'translateY(10px)',
-          animation: 'fadeInUp 0.3s ease-out forwards'
+          transform: 'translateY(10px) scale(0.98)',
+          animation: 'fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards'
         }}
       >
         {children}
       </div>
     );
-  };
+  });
+  
+  AnimatedPage.displayName = 'AnimatedPage';
   
   // 全局CSS动画
   useEffect(() => {
@@ -315,9 +543,42 @@ export default function App() {
         }
       }
       
+      /* 自定义旋转动画 - 用于品牌Logo骨架 */
+      @keyframes spin-slow {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      
+      /* 自定义进度条动画 */
+      @keyframes progress-animation {
+        0% {
+          width: 0%;
+        }
+        50% {
+          width: 70%;
+        }
+        100% {
+          width: 100%;
+        }
+      }
+      
       .animate-page-transition {
         animation-duration: 0.3s;
         animation-fill-mode: both;
+      }
+      
+      /* 自定义旋转动画类 */
+      .animate-spin-slow {
+        animation: spin-slow 3s linear infinite;
+      }
+      
+      /* 自定义进度条动画类 */
+      .animate-progress {
+        animation: progress-animation 2s ease-in-out infinite;
       }
     `;
     document.head.appendChild(style);
@@ -351,88 +612,188 @@ export default function App() {
         <Route path="/test" element={<AnimatedPage><TestPage /></AnimatedPage>} />
         <Route path="/test-basic" element={<AnimatedPage><TestBasic /></AnimatedPage>} />
         
-        {/* 使用布局的页面 */}
+        {/* 使用布局的页面，为所有子路由添加动画 */}
         <Route element={
           isMobile ? (
             <MobileLayout>
-              <Outlet />
+              <AnimatedPage>
+                <Outlet />
+              </AnimatedPage>
             </MobileLayout>
           ) : (
             <SidebarLayout>
-              <Outlet />
+              <AnimatedPage>
+                <Outlet />
+              </AnimatedPage>
             </SidebarLayout>
           )
         }>
-          <Route path="/explore" element={<RouteCache><AnimatedPage><Explore /></AnimatedPage></RouteCache>} />
-          <Route path="/explore/:id" element={<AnimatedPage><WorkDetail /></AnimatedPage>} />
-          <Route path="/tools" element={<RouteCache><AnimatedPage><Tools /></AnimatedPage></RouteCache>} />
-          <Route path="/about" element={<RouteCache><AnimatedPage><About /></AnimatedPage></RouteCache>} />
-          <Route path="/neo" element={<AnimatedPage><Neo /></AnimatedPage>} />
-          <Route path="/square" element={<AnimatedPage><PrivateRoute component={Square} /></AnimatedPage>} />
-          <Route path="/square/:id" element={<AnimatedPage><PrivateRoute component={Square} /></AnimatedPage>} />
-          <Route path="/community" element={<AnimatedPage><PrivateRoute component={Community} /></AnimatedPage>} />
-          <Route path="/dashboard" element={<RouteCache><AnimatedPage><PrivateRoute component={Dashboard} /></AnimatedPage></RouteCache>} />
-          <Route path="/create" element={<AnimatedPage><PrivateRoute component={Create} /></AnimatedPage>} />
+          <Route path="/explore" element={<RouteCache><Explore /></RouteCache>} />
+          <Route path="/explore/:id" element={<WorkDetail />} />
+          <Route path="/tools" element={<RouteCache><LazyComponent><Tools /></LazyComponent></RouteCache>} />
+          <Route path="/about" element={<RouteCache><About /></RouteCache>} />
+          <Route path="/neo" element={<Neo />} />
+          <Route path="/square" element={<PrivateRoute><Square /></PrivateRoute>} />
+          <Route path="/square/:id" element={<PrivateRoute><Square /></PrivateRoute>} />
+          <Route path="/community" element={<PrivateRoute><Community /></PrivateRoute>} />
+          <Route path="/dashboard" element={<RouteCache><PrivateRoute><Dashboard /></PrivateRoute></RouteCache>} />
+          <Route path="/create" element={<LazyComponent><PrivateRoute><Create /></PrivateRoute></LazyComponent>} />
           
-          {/* 大型组件和低频访问页面使用懒加载，添加动画 */}
-          <Route path="/particle-art" element={<AnimatedPage><LazyComponent><ParticleArt /></LazyComponent></AnimatedPage>} />
-          <Route path="/collaboration" element={<AnimatedPage><LazyComponent><CollaborationDemo /></LazyComponent></AnimatedPage>} />
-          <Route path="/terms" element={<AnimatedPage><LazyComponent><Terms /></LazyComponent></AnimatedPage>} />
-          <Route path="/help" element={<AnimatedPage><LazyComponent><Help /></LazyComponent></AnimatedPage>} />
-          <Route path="/leaderboard" element={<AnimatedPage><LazyComponent><Leaderboard /></LazyComponent></AnimatedPage>} />
-          <Route path="/games" element={<AnimatedPage><LazyComponent><Games /></LazyComponent></AnimatedPage>} />
-          <Route path="/lab" element={<AnimatedPage><LazyComponent><PrivateRoute component={Lab} /></LazyComponent></AnimatedPage>} />
-          <Route path="/image-test" element={<AnimatedPage><LazyComponent><ImageTest /></LazyComponent></AnimatedPage>} />
-          <Route path="/github-image-test" element={<AnimatedPage><LazyComponent><GitHubImageTestPage /></LazyComponent></AnimatedPage>} />
-          <Route path="/wizard" element={<AnimatedPage><LazyComponent><PrivateRoute component={Wizard} /></LazyComponent></AnimatedPage>} />
-          <Route path="/brand" element={<AnimatedPage><LazyComponent><PrivateRoute component={BrandGuide} /></LazyComponent></AnimatedPage>} />
-          <Route path="/input" element={<AnimatedPage><LazyComponent><PrivateRoute component={InputHub} /></LazyComponent></AnimatedPage>} />
-          <Route path="/generate" element={<AnimatedPage><LazyComponent><PrivateRoute component={Generation} /></LazyComponent></AnimatedPage>} />
-          <Route path="/authenticity" element={<AnimatedPage><LazyComponent><PrivateRoute component={Authenticity} /></LazyComponent></AnimatedPage>} />
-          <Route path="/incentives" element={<AnimatedPage><LazyComponent><PrivateRoute component={Incentives} /></LazyComponent></AnimatedPage>} />
-          <Route path="/drafts" element={<AnimatedPage><LazyComponent><PrivateRoute component={Drafts} /></LazyComponent></AnimatedPage>} />
-          <Route path="/settings" element={<AnimatedPage><LazyComponent><PrivateRoute component={Settings} /></LazyComponent></AnimatedPage>} />
-          <Route path="/analytics" element={<AnimatedPage><LazyComponent><PrivateRoute component={AnalyticsPage} /></LazyComponent></AnimatedPage>} />
-          <Route path="/collection" element={<AnimatedPage><LazyComponent><PrivateRoute component={UserCollection} /></LazyComponent></AnimatedPage>} />
-          <Route path="/knowledge" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
-          <Route path="/knowledge/:type/:id" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
-          <Route path="/news" element={<AnimatedPage><LazyComponent><CulturalNewsPage /></LazyComponent></AnimatedPage>} />
-          <Route path="/news/:id" element={<AnimatedPage><NewsDetail /></AnimatedPage>} />
-          <Route path="/tianjin" element={<AnimatedPage><LazyComponent><Tianjin /></LazyComponent></AnimatedPage>} />
-          <Route path="/tianjin/map" element={<AnimatedPage><LazyComponent><TianjinMap /></LazyComponent></AnimatedPage>} />
-          <Route path="/events" element={<AnimatedPage><LazyComponent><CulturalEvents /></LazyComponent></AnimatedPage>} />
-          <Route path="/events/:id" element={<AnimatedPage><EventDetail /></AnimatedPage>} />
+          {/* 大型组件和低频访问页面使用懒加载 */}
+          <Route path="/particle-art" element={<LazyComponent><ParticleArt /></LazyComponent>} />
+          <Route path="/collaboration" element={<LazyComponent><CollaborationDemo /></LazyComponent>} />
+          <Route path="/terms" element={<LazyComponent><Terms /></LazyComponent>} />
+          <Route path="/help" element={<LazyComponent><Help /></LazyComponent>} />
+          <Route path="/leaderboard" element={<LazyComponent><Leaderboard /></LazyComponent>} />
+          <Route path="/games" element={<LazyComponent><Games /></LazyComponent>} />
+          <Route path="/lab" element={<LazyComponent><PrivateRoute><Lab /></PrivateRoute></LazyComponent>} />
+          <Route path="/image-test" element={<LazyComponent><ImageTest /></LazyComponent>} />
+          <Route path="/github-image-test" element={<LazyComponent><GitHubImageTestPage /></LazyComponent>} />
+          <Route path="/wizard" element={<LazyComponent><PrivateRoute><Wizard /></PrivateRoute></LazyComponent>} />
+          <Route path="/brand" element={<LazyComponent><PrivateRoute><BrandGuide /></PrivateRoute></LazyComponent>} />
+          <Route path="/input" element={<LazyComponent><PrivateRoute><InputHub /></PrivateRoute></LazyComponent>} />
+          <Route path="/generate" element={<LazyComponent><PrivateRoute><Generation /></PrivateRoute></LazyComponent>} />
+          <Route path="/authenticity" element={<LazyComponent><PrivateRoute><Authenticity /></PrivateRoute></LazyComponent>} />
+          <Route path="/incentives" element={<LazyComponent><PrivateRoute><Incentives /></PrivateRoute></LazyComponent>} />
+          <Route path="/drafts" element={<LazyComponent><PrivateRoute><Drafts /></PrivateRoute></LazyComponent>} />
+          <Route path="/settings" element={<LazyComponent><PrivateRoute><Settings /></PrivateRoute></LazyComponent>} />
+          <Route path="/analytics" element={<LazyComponent><PrivateRoute><AnalyticsPage /></PrivateRoute></LazyComponent>} />
+          <Route path="/collection" element={<LazyComponent><PrivateRoute><UserCollection /></PrivateRoute></LazyComponent>} />
+          <Route path="/knowledge" element={<LazyComponent><PrivateRoute><CulturalKnowledge /></PrivateRoute></LazyComponent>} />
+          <Route path="/knowledge/:type/:id" element={<LazyComponent><PrivateRoute><CulturalKnowledge /></PrivateRoute></LazyComponent>} />
+          <Route path="/news" element={<LazyComponent><CulturalNewsPage /></LazyComponent>} />
+          <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/tianjin" element={<LazyComponent><Tianjin /></LazyComponent>} />
+          <Route path="/tianjin/map" element={<LazyComponent><TianjinMap /></LazyComponent>} />
+          <Route path="/events" element={<LazyComponent><CulturalEvents /></LazyComponent>} />
+          <Route path="/events/:id" element={<EventDetail />} />
           
-          {/* 创新功能路由 - 懒加载，添加动画 */}
-          <Route path="/daily-checkin" element={<AnimatedPage><LazyComponent><PrivateRoute component={DailyCheckin} /></LazyComponent></AnimatedPage>} />
-          <Route path="/creative-matchmaking" element={<AnimatedPage><LazyComponent><PrivateRoute component={CreativeMatchmaking} /></LazyComponent></AnimatedPage>} />
-          <Route path="/ip-incubation" element={<AnimatedPage><LazyComponent><PrivateRoute component={IPIncubationCenter} /></LazyComponent></AnimatedPage>} />
-          <Route path="/cross-device-sync" element={<AnimatedPage><LazyComponent><PrivateRoute component={CrossDeviceSync} /></LazyComponent></AnimatedPage>} />
-          <Route path="/achievement-museum" element={<AnimatedPage><LazyComponent><PrivateRoute component={AchievementMuseum} /></LazyComponent></AnimatedPage>} />
-          <Route path="/blind-box" element={<AnimatedPage><LazyComponent><PrivateRoute component={BlindBoxShop} /></LazyComponent></AnimatedPage>} />
+          {/* 创新功能路由 - 懒加载 */}
+          <Route path="/daily-checkin" element={<LazyComponent><PrivateRoute><DailyCheckin /></PrivateRoute></LazyComponent>} />
+          <Route path="/creative-matchmaking" element={<LazyComponent><PrivateRoute><CreativeMatchmaking /></PrivateRoute></LazyComponent>} />
+          <Route path="/ip-incubation" element={<LazyComponent><PrivateRoute><IPIncubationCenter /></PrivateRoute></LazyComponent>} />
+          <Route path="/cross-device-sync" element={<LazyComponent><PrivateRoute><CrossDeviceSync /></PrivateRoute></LazyComponent>} />
+          <Route path="/achievement-museum" element={<LazyComponent><PrivateRoute><AchievementMuseum /></PrivateRoute></LazyComponent>} />
+          <Route path="/blind-box" element={<LazyComponent><PrivateRoute><BlindBoxShop /></PrivateRoute></LazyComponent>} />
+          {/* 积分商城路由 */}
+          <Route path="/points-mall" element={<LazyComponent><PrivateRoute><PointsMall /></PrivateRoute></LazyComponent>} />
           
-          {/* 会员相关路由 - 懒加载，添加动画 */}
-          <Route path="/membership" element={<AnimatedPage><LazyComponent><Membership /></LazyComponent></AnimatedPage>} />
-          <Route path="/membership/payment" element={<AnimatedPage><LazyComponent><PrivateRoute component={MembershipPayment} /></LazyComponent></AnimatedPage>} />
-          <Route path="/membership/benefits" element={<AnimatedPage><LazyComponent><MembershipBenefits /></LazyComponent></AnimatedPage>} />
-          <Route path="/membership/upgrade" element={<AnimatedPage><LazyComponent><PrivateRoute component={Membership} /></LazyComponent></AnimatedPage>} />
+          {/* 会员相关路由 - 懒加载 */}
+          <Route path="/membership" element={<LazyComponent><Membership /></LazyComponent>} />
+          <Route path="/membership/payment" element={<LazyComponent><PrivateRoute><MembershipPayment /></PrivateRoute></LazyComponent>} />
+          <Route path="/membership/benefits" element={<LazyComponent><MembershipBenefits /></LazyComponent>} />
+          <Route path="/membership/upgrade" element={<LazyComponent><PrivateRoute><Membership /></PrivateRoute></LazyComponent>} />
           
-          {/* 管理员路由 - 懒加载，添加动画 */}
-          <Route path="/admin" element={<AnimatedPage><LazyComponent><AdminRoute component={Admin} /></LazyComponent></AnimatedPage>} />
-          <Route path="/errors" element={<AnimatedPage><LazyComponent><AdminRoute component={ErrorMonitoringDashboard} /></LazyComponent></AnimatedPage>} />
-          <Route path="/admin-analytics" element={<AnimatedPage><LazyComponent><AdminRoute component={AdminAnalytics} /></LazyComponent></AnimatedPage>} />
+          {/* 管理员路由 - 懒加载 */}
+          <Route path="/admin" element={<LazyComponent><AdminRoute component={Admin} /></LazyComponent>} />
+          <Route path="/errors" element={<LazyComponent><AdminRoute component={ErrorMonitoringDashboard} /></LazyComponent>} />
+          <Route path="/admin-analytics" element={<LazyComponent><AdminRoute component={AdminAnalytics} /></LazyComponent>} />
         </Route>
       </Routes>
       
       {/* PWA 安装按钮 */}
       <PWAInstallButton />
-      {/* 移除FirstLaunchGuide组件，减少不必要的渲染 */}
-      {/* <FirstLaunchGuide /> */}
+      {/* 恢复FirstLaunchGuide组件，优化首次启动体验 */}
+      <LazyComponent>
+        <FirstLaunchGuide />
+      </LazyComponent>
       
       {/* 悬浮AI助手 */}
       <FloatingAIAssistant />
       
+      {/* 用户反馈组件 */}
+      <UserFeedback isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
       
+      {/* 满意度调查组件 */}
+      <SatisfactionSurvey 
+        isOpen={showSurvey} 
+        onClose={() => setShowSurvey(false)} 
+        onSubmit={handleSurveySubmit} 
+      />
+      
+      {/* 底部浮动按钮组 */}
+      <div className="fixed right-6 flex flex-col gap-4 z-30" style={{ bottom: buttonBottom }}>
+        {/* 社群消息提醒按钮 */}
+        <div className="relative" ref={messagesRef}>
+          <button
+            onClick={() => setShowCommunityMessages(v => !v)}
+            className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center relative"
+            aria-label="社群消息"
+            title="社群消息"
+          >
+            <i className="fas fa-comments text-xl"></i>
+            {/* 消息提示红点 */}
+            {unreadMessageCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold px-1">
+                {unreadMessageCount}
+              </span>
+            )}
+          </button>
+          {/* 消息面板 */}
+          {showCommunityMessages && (
+            <div className="absolute right-0 bottom-full mb-2 w-80 rounded-xl shadow-lg ring-1 bg-white dark:bg-gray-800 ring-gray-200 dark:ring-gray-700 z-50">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <span className="font-medium text-gray-900 dark:text-white">社群消息</span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    onClick={() => setCommunityMessages(prev => prev.map(m => ({ ...m, read: true })))}>
+                    全部已读
+                  </button>
+                  <button
+                    className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    onClick={() => {
+                      setShowCommunityMessages(false);
+                      window.location.href = '/community';
+                    }}>
+                    查看全部
+                  </button>
+                </div>
+              </div>
+              <ul className="max-h-80 overflow-auto">
+                {communityMessages.length === 0 ? (
+                  <li className="text-gray-500 dark:text-gray-400 px-4 py-6 text-sm">暂无消息</li>
+                ) : (
+                  communityMessages.map(m => (
+                    <li key={m.id}>
+                      <button
+                        className="w-full text-left px-4 py-3 flex items-start space-x-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => {
+                          setCommunityMessages(prev => prev.map(x => 
+                            x.id === m.id ? { ...x, read: true } : x
+                          ));
+                        }}
+                      >
+                        <span className="text-2xl">{m.avatar}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{m.sender}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{m.time}</span>
+                          </div>
+                          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{m.content}</p>
+                        </div>
+                        {!m.read && (
+                          <span className="mt-1 inline-flex items-center justify-center w-2 h-2 rounded-full bg-red-500"></span>
+                        )}
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+        
+        {/* 满意度调查按钮 */}
+        <button
+          onClick={() => setShowSurvey(true)}
+          className="bg-yellow-500 text-white p-4 rounded-full shadow-lg hover:bg-yellow-600 transition-all duration-300 flex items-center justify-center"
+          aria-label="满意度调查"
+          title="满意度调查"
+        >
+          <i className="fas fa-star text-xl"></i>
+        </button>
+      </div>
     </div>
 );
 }

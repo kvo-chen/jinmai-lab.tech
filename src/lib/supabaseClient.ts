@@ -40,5 +40,5 @@ export async function createPost(postData: any) {
     console.error('创建帖子失败:', error)
     return null
   }
-  return data[0]
+  return data ? data[0] : null
 }

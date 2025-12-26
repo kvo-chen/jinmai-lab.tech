@@ -61,6 +61,8 @@ export interface MapTheme {
 export interface MapState {
   center: Coordinate;
   zoom: ZoomLevel;
+  targetCenter: Coordinate; // 目标中心点，用于平滑过渡
+  targetZoom: ZoomLevel; // 目标缩放级别，用于平滑过渡
   theme: MapTheme;
   regions: Region[];
   pois: POI[];
@@ -72,6 +74,7 @@ export interface MapState {
   width: number;
   height: number;
   hoveredPOIId: string | null;
+  easeOutCubic: (t: number) => number; // 缓动函数
 }
 
 // 地图配置
