@@ -155,6 +155,11 @@ export default function Home() {
   }, []);
   
   // 将标签追加到搜索（避免重复）
+  // 快速标签常量
+  const quickTags = ['国潮风格','适用人群','文献灵感','科创思维','地域素材','非遗元素'];
+  // 选中标签集合
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
   const appendTagToSearch = (s: string, tag: string) => {
     const has = s.includes(tag);
     return has ? s : (s ? `${s} ${tag}` : tag);
@@ -174,11 +179,6 @@ export default function Home() {
       return next;
     });
   };
-  
-  // 快速标签常量
-  const quickTags = ['国潮风格','适用人群','文献灵感','科创思维','地域素材','非遗元素'];
-  // 选中标签集合
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   // 英雄区变体
   const [heroVariant] = useState<'A' | 'B'>(() => {
