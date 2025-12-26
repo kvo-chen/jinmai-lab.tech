@@ -424,8 +424,8 @@ export default function App() {
         </Route>
       </Routes>
       
-      {/* PWA 安装按钮 */}
-      <PWAInstallButton />
+      {/* 移除PWA安装按钮，因为PWA插件已被移除 */}
+      {/* <PWAInstallButton /> */}
       {/* 移除FirstLaunchGuide组件，减少不必要的渲染 */}
       {/* <FirstLaunchGuide /> */}
       
