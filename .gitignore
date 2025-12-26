@@ -54,3 +54,13 @@ data/
 .trae/
 .vercel
 .env*.local
+
+# Temporary files
+temp.tsx
+test-map.html
+test-map.js
+check-translations.js
+fix_simple.py
+fix_syntax.ps1
+fix_syntax.py
+fixed_skeleton.tsx

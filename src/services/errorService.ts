@@ -420,7 +420,16 @@ class ErrorService {
   async reportErrorToServer(errorInfo: ErrorInfo): Promise<boolean> {
     try {
       // 检查是否配置了错误上报URL
-      const reportUrl = process.env.REACT_APP_ERROR_REPORT_URL || process.env.NEXT_PUBLIC_ERROR_REPORT_URL;
+      // 使用安全的方式访问环境变量，避免process未定义错误
+      let reportUrl = '';
+      // 检查window对象是否存在（浏览器环境）
+      if (typeof window !== 'undefined') {
+        // 从window对象获取环境变量（Vite构建时会注入）
+        reportUrl = (window as any).env?.REACT_APP_ERROR_REPORT_URL || 
+                   (window as any).env?.NEXT_PUBLIC_ERROR_REPORT_URL || 
+                   '';
+      }
+      
       if (!reportUrl) {
         console.warn('错误上报URL未配置，跳过上报');
         return false;

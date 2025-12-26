@@ -31,22 +31,6 @@ const LogViewer: React.FC<LogViewerProps> = ({
     }
   });
 
-  // 组件挂载时初始化日志数据
-  useEffect(() => {
-    refreshLogs();
-  }, []);
-
-  // 定期刷新日志
-  useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        refreshLogs();
-      }, refreshInterval);
-
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh, refreshInterval, refreshLogs]);
-
   // 刷新日志
   const refreshLogs = useCallback(() => {
     setRefreshing(true);
@@ -101,6 +85,22 @@ const LogViewer: React.FC<LogViewerProps> = ({
       setRefreshing(false);
     }, 100);
   }, [filter, searchQuery, maxVisibleLogs]);
+
+  // 组件挂载时初始化日志数据
+  useEffect(() => {
+    refreshLogs();
+  }, [refreshLogs]);
+
+  // 定期刷新日志
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        refreshLogs();
+      }, refreshInterval);
+
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh, refreshInterval, refreshLogs]);
 
   // 清除所有日志
   const clearAllLogs = () => {

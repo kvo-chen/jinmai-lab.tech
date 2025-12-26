@@ -5,6 +5,9 @@ import * as THREE from 'three';
 // @ts-ignore
 window.THREE = THREE;
 
+// 导入国际化配置
+import './i18n/i18n';
+
 import { StrictMode } from "react";
 import "./styles/tianjin.css";
 import "./styles/neo.css";
@@ -14,39 +17,42 @@ import { Toaster } from 'sonner';
 import App from "./App.tsx";
 import { AuthProvider } from './contexts/authContext';
 import { WorkflowProvider } from './contexts/workflowContext.tsx';
+import { LanguageProvider } from './contexts/LanguageContext';
 import "./index.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
-// Vercel Analytics and Speed Insights
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
+// Vercel Analytics and Speed Insights - temporarily removed due to import error
+// import Analytics from '@vercel/analytics/react';
+// import SpeedInsights from '@vercel/speed-insights/react';
 // 性能监控
 import { initPerformanceMonitor } from './utils/performanceMonitor';
 
 // 初始化性能监控
 initPerformanceMonitor();
 
-// 启用Service Worker注册，PWA插件已重新启用
-import { registerServiceWorker } from './utils/serviceWorker';
-registerServiceWorker();
+// 暂时禁用Service Worker，排查问题
+// import { registerServiceWorker } from './utils/serviceWorker';
+// registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <WorkflowProvider>
-              <App />
-              <Toaster />
-              {/* Vercel Analytics and Speed Insights */}
-              <Analytics />
-              <SpeedInsights />
-            </WorkflowProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <WorkflowProvider>
+                <App />
+                <Toaster />
+                {/* Vercel Analytics and Speed Insights - temporarily removed due to import error */}
+                {/* <Analytics /> */}
+                {/* <SpeedInsights /> */}
+              </WorkflowProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   </StrictMode>
 );

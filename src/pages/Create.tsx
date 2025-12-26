@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
 import CollaborationPanel from '@/components/CollaborationPanel';
-import AID点评 from '@/components/AID点评';
+import AIReview from '@/components/AIReview';
  
 import LLMCommandPanel from '@/components/LLMCommandPanel';
 import ModelSelector from '@/components/ModelSelector';
@@ -98,7 +98,7 @@ export default function Create() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
-  const [showAID点评, setShowAID点评] = useState(false);
+  const [showAIReview, setShowAIReview] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [isPrecheckEnabled, setIsPrecheckEnabled] = useState(true);
   const [precheckResult, setPrecheckResult] = useState<{
@@ -1220,7 +1220,7 @@ export default function Create() {
               选择模型
             </button>
             <button 
-              onClick={() => setShowAID点评(true)}
+              onClick={() => setShowAIReview(true)}
               className={`px-4 py-2 rounded-full transition-colors ${
                 isDark 
                   ? 'bg-gray-700 hover:bg-gray-600' 
@@ -2379,11 +2379,11 @@ export default function Create() {
          )}
          
          {/* AI点评面板 */}
-          {showAID点评 && (
+          {showAIReview && (
             <HaiheBoatTransition>
-              <AID点评 
+              <AIReview 
                 workId="123"
-                onClose={() => setShowAID点评(false)}
+                onClose={() => setShowAIReview(false)}
               />
             </HaiheBoatTransition>
           )}

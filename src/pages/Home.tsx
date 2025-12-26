@@ -8,11 +8,13 @@ import { TianjinImage } from '@/components/TianjinStyleComponents';
 import { llmService } from '@/services/llmService'
 import voiceService from '@/services/voiceService'
 import { mockWorks } from '@/mock/works'
+import { useTranslation } from 'react-i18next'
 
 export default function Home() {
   const { theme, isDark, toggleTheme } = useTheme();
   useContext(AuthContext);
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   // 添加响应式布局状态
   const [isMobile, setIsMobile] = useState(false);
@@ -373,13 +375,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto mb-8">
           {/* 首页主标题：采用渐变文字与阴影效果，提升视觉吸引力 */}
           <h1 className={`text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-tight mb-4 text-center drop-shadow-md animate-gradient-text ${isDark ? 'text-white' : 'text-black'}`}>
-            津创灵感，点亮创意
+            {t('common.welcome')}
           </h1>
           {/* 首页副标题：提升可读性，限制最大宽度，并根据主题切换不同灰度 */}
           <p className={`text-sm sm:text-base md:text-lg leading-relaxed opacity-90 max-w-2xl text-center mx-auto ${isDark ? 'text-gray-200' : 'text-gray-600'} mb-8`}>
             {heroVariant === 'A' 
-              ? '探索天津文化灵感，一键生成创意作品' 
-              : '基于天津特色文化，AI助力你的创意表达'}
+              ? t('home.exploreTianjinCulture') 
+              : t('home.aiPoweredCreativity')}
           </p>
         
         {/* 搜索与功能按钮区域 */}
@@ -391,7 +393,7 @@ export default function Home() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateClick(); }}
-                placeholder="输入天津文化关键词，如：杨柳青年画、狗不理包子"
+                placeholder={t('home.searchPlaceholder')}
                 className={`w-full pl-10 pr-10 py-3.5 rounded-xl ${isDark ? 'bg-gray-700/95 text-white ring-2 ring-gray-600 focus:ring-primary shadow-inner shadow-gray-900/20' : 'bg-white/95 ring-2 ring-gray-300 focus:ring-primary shadow-inner shadow-gray-100'} focus:outline-none text-base transition-all duration-300 hover:ring-primary/50`}
                 autoCapitalize="none"
                 autoCorrect="off"
@@ -414,11 +416,11 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
               <button onClick={handleInspireClick} className={`px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-lg shadow-gray-500/30' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-lg shadow-gray-200'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 flex-1 sm:flex-none`}>
                 <i className="fas fa-bolt transition-transform duration-300 hover:scale-110"></i>
-                灵感
+                {t('home.inspire')}
               </button>
               <button onClick={handleGenerateClick} className={`px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold ${isDark ? 'bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30' : 'bg-black hover:bg-gray-800 text-white shadow-xl shadow-black/20'} ring-2 ${isDark ? 'ring-primary/50 hover:ring-primary' : 'ring-black/50 hover:ring-black'} transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 flex-1 sm:flex-none`}>
                 <i className="fas fa-wand-magic-sparkles transition-transform duration-300 hover:scale-110"></i>
-                生成
+                {t('home.generate')}
               </button>
             </div>
           </div>
@@ -427,15 +429,15 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-center gap-3 w-full mt-3">
             <button onClick={handleOptimizeClick} disabled={isOptimizing} className={`px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-lg shadow-gray-500/30' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-lg shadow-gray-200'} ring-2 ${isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 ${isOptimizing ? 'opacity-60 cursor-not-allowed hover:shadow-none hover:-translate-y-0' : ''} flex-1 sm:flex-none`}>
               <i className="fas fa-adjust transition-transform duration-300 hover:scale-110"></i>
-              {isOptimizing ? '优化中…' : '优化'}
+              {isOptimizing ? t('home.optimizing') : t('home.optimize')}
             </button>
             <button onClick={toggleInspire} className={`px-5 py-3.5 rounded-xl text-sm sm:text-base font-semibold ${inspireOn ? 'bg-primary text-white shadow-xl shadow-primary/30' : isDark ? 'bg-gray-700 hover:bg-gray-600 text-white shadow-lg shadow-gray-500/30' : 'bg-white hover:bg-gray-50 text-gray-900 shadow-lg shadow-gray-200'} ring-2 ${inspireOn ? 'ring-primary hover:ring-primary/80' : isDark ? 'ring-gray-600 hover:ring-primary' : 'ring-gray-300 hover:ring-primary'} transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 flex-1 sm:flex-none`}>
-              灵感加持 {inspireOn ? 'ON' : 'OFF'}
+              {t('home.inspirationBoost')} {inspireOn ? t('common.on') : t('common.off')}
             </button>
           </div>
           
           {/* 快速标签 */}
-          <div className="mt-5 flex flex-wrap gap-3 scroll-mt-24">
+          <div className="mt-5 flex flex-wrap justify-center gap-3 scroll-mt-24">
             {quickTags.map((t, i) => {
               const active = selectedTags.includes(t);
               const base = 'ring-2 text-sm px-4 py-2 rounded-xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5';
@@ -458,30 +460,30 @@ export default function Home() {
           <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 w-full justify-center md:justify-start">
               <span className={`text-sm px-4 py-2.5 rounded-xl ${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-200' : 'bg-gradient-to-r from-white to-gray-50 text-gray-700'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
-                <i className="fas fa-users mr-1.5"></i> <strong>12,536</strong> 创作者
+                <i className="fas fa-users mr-1.5"></i> <strong>12,536</strong> {t('common.creators')}
               </span>
               <span className={`text-sm px-4 py-2.5 rounded-xl ${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-200' : 'bg-gradient-to-r from-white to-gray-50 text-gray-700'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
-                <i className="fas fa-image mr-1.5"></i> <strong>2,148</strong> 作品
+                <i className="fas fa-image mr-1.5"></i> <strong>2,148</strong> {t('common.works')}
               </span>
               <span className={`text-sm px-4 py-2.5 rounded-xl ${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-200' : 'bg-gradient-to-r from-white to-gray-50 text-gray-700'} ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'} shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
-                <i className="fas fa-handshake mr-1.5"></i> <strong>36</strong> 合作
+                <i className="fas fa-handshake mr-1.5"></i> <strong>36</strong> {t('common.cooperation')}
               </span>
               <span className={`text-sm px-4 py-2.5 rounded-xl ${isDark ? 'bg-gradient-to-r from-primary/20 to-primary/10 text-primary' : 'bg-gradient-to-r from-primary/5 to-primary/10 text-primary'} ring-1 ${isDark ? 'ring-primary/50' : 'ring-primary/30'} shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5`}>
-                <i className="fas fa-star mr-1.5 text-yellow-400"></i> <strong>96%</strong> 满意度
+                <i className="fas fa-star mr-1.5 text-yellow-400"></i> <strong>96%</strong> {t('common.satisfaction')}
               </span>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+            <div className="flex flex-row items-center gap-3 w-full">
               <button
                 onClick={handleGenerateClick}
-                className={`px-8 py-3.5 rounded-xl font-semibold ${isDark ? 'bg-gradient-to-r from-primary to-primary/90 text-white ring-2 ring-primary/50 shadow-xl shadow-primary/20' : 'bg-gradient-to-r from-black to-gray-800 text-white ring-2 ring-black/20 shadow-xl shadow-black/10'} transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex-1 justify-center text-center text-base`}
+                className={`px-4 py-3 rounded-xl font-semibold ${isDark ? 'bg-gradient-to-r from-primary to-primary/90 text-white ring-2 ring-primary/50 shadow-xl shadow-primary/20' : 'bg-gradient-to-r from-black to-gray-800 text-white ring-2 ring-black/20 shadow-xl shadow-black/10'} transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex-1 justify-center text-center text-sm sm:text-base`}
               >
-                <i className="fas fa-wand-magic-sparkles mr-2"></i> 立即开始创作
+                <i className="fas fa-wand-magic-sparkles mr-1 sm:mr-2"></i> {t('common.startCreating')}
               </button>
               <button
                 onClick={handleExplore}
-                className={`px-6 py-3.5 rounded-xl font-semibold ${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-white ring-2 ring-gray-600 shadow-lg shadow-gray-500/20' : 'bg-gradient-to-r from-white to-gray-50 text-gray-900 ring-2 ring-gray-300 shadow-lg shadow-gray-200'} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex-1 justify-center text-center text-base`}
+                className={`px-4 py-3 rounded-xl font-semibold ${isDark ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-white ring-2 ring-gray-600 shadow-lg shadow-gray-500/20' : 'bg-gradient-to-r from-white to-gray-50 text-gray-900 ring-2 ring-gray-300 shadow-lg shadow-gray-200'} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex-1 justify-center text-center text-sm sm:text-base`}
               >
-                <i className="fas fa-compass mr-2"></i> 浏览精选作品
+                <i className="fas fa-compass mr-1 sm:mr-2"></i> {t('common.browseWorks')}
               </button>
             </div>
           </div>
@@ -574,8 +576,8 @@ export default function Home() {
       {/* 为你推荐作品区域 */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-6 animate-slide-up">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">为你推荐</h2>
-          <button onClick={handleExplore} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300">去作品集</button>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{t('home.recommendedForYou')}</h2>
+          <button onClick={handleExplore} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300">{t('home.viewPortfolio')}</button>
         </div>
         <div ref={galleryRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-24">
           {gallery.map((item, idx) => (
@@ -634,13 +636,13 @@ export default function Home() {
         <div className="flex justify-between items-center mb-8 animate-slide-up">
           <h3 className="text-2xl font-bold flex items-center bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
             <i className="fas fa-landmark text-primary mr-2"></i>
-            天津特色专区
+            {t('sidebar.tianjinFeatures')}
           </h3>
          <button 
            onClick={() => navigate('/tianjin')}
            className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-300 hover:shadow-md"
          >
-            查看更多
+            {t('home.viewMore')}
             <i className="fas fa-arrow-right ml-2"></i>
           </button>
         </div>

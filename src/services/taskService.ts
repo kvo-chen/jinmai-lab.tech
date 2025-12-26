@@ -3,6 +3,8 @@
  * 提供任务的创建、读取、更新、删除等功能
  */
 
+import pointsService from './pointsService';
+
 // 任务类型定义
 export interface Task {
   id: string;
@@ -244,123 +246,84 @@ class TaskService {
    * 获取所有任务
    */
   getAllTasks(): Task[] {
-    return [...this.tasks];
+    return this.tasks;
   }
 
   /**
-   * 根据ID获取任务
-   */
-  getTaskById(id: string): Task | undefined {
-    return this.tasks.find(t => t.id === id);
-  }
-
-  /**
-   * 根据类型获取任务
+   * 获取指定类型的任务
    */
   getTasksByType(type: Task['type']): Task[] {
-    return this.tasks.filter(t => t.type === type);
+    return this.tasks.filter(task => task.type === type);
   }
 
   /**
-   * 根据状态获取任务
+   * 获取用户的任务进度
    */
-  getTasksByStatus(status: Task['status']): Task[] {
-    return this.tasks.filter(t => t.status === status);
-  }
-
-  /**
-   * 获取用户任务进度
-   */
-  getTaskProgress(taskId: string, userId: string): TaskProgress | undefined {
-    return this.taskProgress.find(p => p.taskId === taskId && p.userId === userId);
-  }
-
-  /**
-   * 获取用户所有任务进度
-   */
-  getUserTaskProgress(userId: string): TaskProgress[] {
-    return this.taskProgress.filter(p => p.userId === userId);
+  getTaskProgress(userId: string): TaskProgress[] {
+    return this.taskProgress.filter(progress => progress.userId === userId);
   }
 
   /**
    * 更新任务进度
    */
-  updateTaskProgress(taskId: string, userId: string, progress: number): TaskProgress {
-    let progressItem = this.taskProgress.find(p => p.taskId === taskId && p.userId === userId);
-    const task = this.getTaskById(taskId);
-
-    if (!task) {
-      throw new Error('Task not found');
-    }
-
-    // 计算实际进度，不超过任务要求
-    const actualProgress = Math.min(progress, task.requirements.count);
-    const isCompleted = actualProgress >= task.requirements.count;
-    const wasCompleted = progressItem?.completedAt !== undefined;
-
-    if (progressItem) {
-      // 更新现有进度
-      progressItem.progress = actualProgress;
-      progressItem.updatedAt = Date.now();
-      if (isCompleted && !progressItem.completedAt) {
-        progressItem.completedAt = Date.now();
-        // 更新任务状态
-        this.updateTask(taskId, { status: 'completed' });
-        // 触发任务完成事件（可以在这里添加积分奖励和成就更新逻辑）
-        this.onTaskCompleted(task, userId);
-      }
-    } else {
-      // 创建新进度
-      progressItem = {
+  updateTaskProgress(userId: string, taskId: string, progress: number): TaskProgress {
+    let taskProgress = this.taskProgress.find(p => p.userId === userId && p.taskId === taskId);
+    
+    if (!taskProgress) {
+      taskProgress = {
         taskId,
         userId,
-        progress: actualProgress,
+        progress,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
-      if (isCompleted) {
-        progressItem.completedAt = Date.now();
-        // 更新任务状态
-        this.updateTask(taskId, { status: 'completed' });
-        // 触发任务完成事件（可以在这里添加积分奖励和成就更新逻辑）
-        this.onTaskCompleted(task, userId);
+      this.taskProgress.push(taskProgress);
+    } else {
+      taskProgress.progress = progress;
+      taskProgress.updatedAt = Date.now();
+      
+      // 如果任务完成，记录完成时间
+      const task = this.getTaskById(taskId);
+      if (task && progress >= task.requirements.count && !taskProgress.completedAt) {
+        taskProgress.completedAt = Date.now();
+        this.rewardTaskCompletion(userId, taskId);
       }
-      this.taskProgress.push(progressItem);
     }
-
+    
     this.saveProgress();
-    return progressItem;
+    return taskProgress;
   }
 
   /**
-   * 任务完成时的处理逻辑
+   * 完成任务后的奖励发放
    */
-  private onTaskCompleted(task: Task, userId: string): void {
-    // 这里可以添加任务完成后的逻辑，例如：
-    // 1. 给用户添加积分
-    // 2. 更新用户成就进度
-    // 3. 发送通知
-    // 4. 其他自定义逻辑
-    
-    // console.log(`Task completed: ${task.title} by user ${userId}`);
-    // console.log(`Reward: ${task.reward.points} points`);
-    
-    // 这里可以通过事件或直接调用其他服务来实现积分和成就的更新
-    // 例如：achievementService.addPoints(userId, task.reward.points);
+  private rewardTaskCompletion(userId: string, taskId: string) {
+    const task = this.getTaskById(taskId);
+    if (task && task.reward) {
+      pointsService.addPoints(task.reward.points, '任务完成', 'task', `完成任务：${task.title}`, taskId);
+      
+      // TODO: 添加徽章奖励逻辑
+    }
   }
 
   /**
-   * 创建任务
+   * 根据ID获取任务
    */
-  createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'progress'>): Task {
+  getTaskById(taskId: string): Task | undefined {
+    return this.tasks.find(task => task.id === taskId);
+  }
+
+  /**
+   * 创建新任务
+   */
+  createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Task {
     const newTask: Task = {
       ...task,
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      progress: 0,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
-
+    
     this.tasks.push(newTask);
     this.saveTasks();
     return newTask;
@@ -369,102 +332,67 @@ class TaskService {
   /**
    * 更新任务
    */
-  updateTask(id: string, updates: Partial<Task>): Task | undefined {
-    const index = this.tasks.findIndex(t => t.id === id);
-    if (index === -1) {
-      return undefined;
-    }
-
-    this.tasks[index] = {
-      ...this.tasks[index],
+  updateTask(taskId: string, updates: Partial<Task>): Task | undefined {
+    const taskIndex = this.tasks.findIndex(task => task.id === taskId);
+    if (taskIndex === -1) return undefined;
+    
+    this.tasks[taskIndex] = {
+      ...this.tasks[taskIndex],
       ...updates,
       updatedAt: Date.now()
     };
-
+    
     this.saveTasks();
-    return this.tasks[index];
+    return this.tasks[taskIndex];
   }
 
   /**
    * 删除任务
    */
-  deleteTask(id: string): boolean {
+  deleteTask(taskId: string): boolean {
     const initialLength = this.tasks.length;
-    this.tasks = this.tasks.filter(t => t.id !== id || t.isOfficial);
-    const deleted = this.tasks.length < initialLength;
+    this.tasks = this.tasks.filter(task => task.id !== taskId);
     
-    if (deleted) {
+    if (this.tasks.length < initialLength) {
       this.saveTasks();
-      // 删除相关进度
-      this.taskProgress = this.taskProgress.filter(p => p.taskId !== id);
-      this.saveProgress();
+      return true;
     }
-    
-    return deleted;
+    return false;
   }
 
   /**
-   * 搜索任务
+   * 获取用户的活跃任务
    */
-  searchTasks(query: string): Task[] {
-    const lowerQuery = query.toLowerCase();
-    return this.tasks.filter(t => 
-      t.title.toLowerCase().includes(lowerQuery) ||
-      t.description.toLowerCase().includes(lowerQuery) ||
-      t.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
-    );
-  }
-
-  /**
-   * 获取用户完成的任务
-   */
-  getUserCompletedTasks(userId: string): Task[] {
-    const completedProgress = this.taskProgress.filter(p => p.userId === userId && p.completedAt);
-    return completedProgress
-      .map(p => this.getTaskById(p.taskId))
-      .filter((t): t is Task => t !== undefined);
-  }
-
-  /**
-   * 获取用户活跃任务
-   */
-  getUserActiveTasks(userId: string): Task[] {
-    const activeTasks = this.getTasksByStatus('active');
-    return activeTasks.filter(task => {
-      const progress = this.getTaskProgress(task.id, userId);
-      return !progress?.completedAt;
-    });
-  }
-
-  /**
-   * 重置每日任务
-   */
-  resetDailyTasks(): void {
+  getActiveTasksForUser(userId: string): Task[] {
     const now = Date.now();
-    const oneDay = 24 * 60 * 60 * 1000;
-    
-    this.tasks.forEach(task => {
-      if (task.type === 'daily' && task.status === 'completed') {
-        const endDate = task.endDate || 0;
-        if (now > endDate + oneDay) {
-          // 重置任务状态和进度
-          this.updateTask(task.id, {
-            status: 'active',
-            progress: 0,
-            startDate: now,
-            endDate: now + oneDay
-          });
-          // 重置所有用户的任务进度
-          this.taskProgress = this.taskProgress.filter(p => p.taskId !== task.id);
-        }
-      }
+    return this.tasks.filter(task => {
+      const isActive = task.status === 'active' && 
+                     task.startDate <= now && 
+                     (!task.endDate || task.endDate >= now);
+      
+      // 获取用户进度
+      const progress = this.taskProgress.find(p => p.userId === userId && p.taskId === task.id)?.progress || 0;
+      const isCompleted = progress >= task.requirements.count;
+      
+      return isActive && !isCompleted;
     });
-    
-    this.saveTasks();
-    this.saveProgress();
+  }
+
+  /**
+   * 获取用户的已完成任务
+   */
+  getCompletedTasksForUser(userId: string): Task[] {
+    const now = Date.now();
+    return this.tasks.filter(task => {
+      // 获取用户进度
+      const progress = this.taskProgress.find(p => p.userId === userId && p.taskId === task.id)?.progress || 0;
+      const isCompleted = progress >= task.requirements.count;
+      
+      return isCompleted;
+    });
   }
 }
 
 // 导出单例实例
-const service = new TaskService();
-export default service;
+const taskService = new TaskService();
+export default taskService;

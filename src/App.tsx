@@ -44,6 +44,7 @@ const InputHub = lazy(() => import("@/pages/InputHub"));
 const Generation = lazy(() => import("@/pages/Generation"));
 const Authenticity = lazy(() => import("@/pages/Authenticity"));
 const Incentives = lazy(() => import("@/pages/Incentives"));
+const TestPage = lazy(() => import("@/pages/TestPage"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const Wizard = lazy(() => import("@/pages/Wizard"));
 const Settings = lazy(() => import("@/pages/Settings"));
@@ -116,6 +117,7 @@ import PWAInstallButton from '@/components/PWAInstallButton';
 import FirstLaunchGuide from '@/components/FirstLaunchGuide';
 // 悬浮AI助手组件
 import FloatingAIAssistant from '@/components/FloatingAIAssistant';
+
 
 export default function App() {
   const location = useLocation();
@@ -342,6 +344,8 @@ export default function App() {
         {/* 不需要布局的页面 */}
         <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
         <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
+        {/* 测试页面 */}
+        <Route path="/test" element={<AnimatedPage><TestPage /></AnimatedPage>} />
         
         {/* 使用布局的页面 */}
         <Route element={
@@ -389,13 +393,13 @@ export default function App() {
           <Route path="/analytics" element={<AnimatedPage><LazyComponent><PrivateRoute component={AnalyticsPage} /></LazyComponent></AnimatedPage>} />
           <Route path="/collection" element={<AnimatedPage><LazyComponent><PrivateRoute component={UserCollection} /></LazyComponent></AnimatedPage>} />
           <Route path="/knowledge" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
+          <Route path="/knowledge/:type/:id" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
           <Route path="/news" element={<AnimatedPage><LazyComponent><CulturalNewsPage /></LazyComponent></AnimatedPage>} />
           <Route path="/news/:id" element={<AnimatedPage><NewsDetail /></AnimatedPage>} />
           <Route path="/tianjin" element={<AnimatedPage><LazyComponent><Tianjin /></LazyComponent></AnimatedPage>} />
           <Route path="/tianjin/map" element={<AnimatedPage><LazyComponent><TianjinMap /></LazyComponent></AnimatedPage>} />
           <Route path="/events" element={<AnimatedPage><LazyComponent><CulturalEvents /></LazyComponent></AnimatedPage>} />
           <Route path="/events/:id" element={<AnimatedPage><EventDetail /></AnimatedPage>} />
-          <Route path="/knowledge/:type/:id" element={<AnimatedPage><LazyComponent><PrivateRoute component={CulturalKnowledge} /></LazyComponent></AnimatedPage>} />
           
           {/* 创新功能路由 - 懒加载，添加动画 */}
           <Route path="/daily-checkin" element={<AnimatedPage><LazyComponent><PrivateRoute component={DailyCheckin} /></LazyComponent></AnimatedPage>} />
@@ -425,6 +429,8 @@ export default function App() {
       
       {/* 悬浮AI助手 */}
       <FloatingAIAssistant />
+      
+      
     </div>
 );
 }

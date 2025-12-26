@@ -104,14 +104,16 @@ export default function Dashboard() {
   return (
     <>
       <OnboardingGuide
-        isOpen={showOnboarding}
-        onClose={(completed) => {
-          if (completed && user) {
-            try { localStorage.setItem(`onboarded-${user.id}`, 'true') } catch {}
-          }
-          setShowOnboarding(false)
-        }}
-      />
+          isOpen={showOnboarding}
+          onClose={(completed) => {
+            try {
+              if (user) {
+                localStorage.setItem(`onboarded-${user.id}`, 'true')
+              }
+            } catch {}
+            setShowOnboarding(false)
+          }}
+        />
       <main className="container mx-auto px-4 py-8">
         {/* 欢迎区域 */}
         <motion.div 

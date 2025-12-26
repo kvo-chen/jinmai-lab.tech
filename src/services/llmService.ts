@@ -3,6 +3,9 @@
  * 提供与各类大语言模型交互的接口
  */
 
+// 导入知识库服务
+import { knowledgeBaseService } from './knowledgeBaseService';
+
 // 模型类型定义
 export interface LLMModel {
   id: string;
@@ -31,6 +34,11 @@ export interface ConversationSession {
   isActive: boolean;
   tags?: string[];
   metadata?: Record<string, any>;
+  // 主题追踪相关字段
+  currentTopic?: string; // 当前对话主题
+  topicHistory?: string[]; // 主题历史记录
+  contextSummary?: string; // 对话上下文摘要，用于长对话
+  lastMessageTimestamp?: number; // 最后消息时间戳
 }
 
 // 性能监控数据类型定义
@@ -74,6 +82,12 @@ export interface ModelRole {
   updated_at: number;
   tags?: string[];
 }
+
+// 助手性格类型定义
+export type AssistantPersonality = 'friendly' | 'professional' | 'creative' | 'humorous' | 'concise';
+
+// 主题类型定义
+export type AssistantTheme = 'light' | 'dark' | 'auto';
 
 // 模型配置类型定义
 export interface ModelConfig {
@@ -127,6 +141,14 @@ export interface ModelConfig {
   safety_level: 'low' | 'medium' | 'high';
   // 新增角色配置
   current_role_id?: string;
+  // 新增个性化设置
+  personality: AssistantPersonality; // 助手性格
+  theme: AssistantTheme; // 主题偏好
+  show_preset_questions: boolean; // 是否显示预设问题
+  enable_typing_effect: boolean; // 是否启用打字效果
+  auto_scroll: boolean; // 是否自动滚动
+  shortcut_key: string; // 快捷键
+  enable_notifications: boolean; // 是否启用通知
 }
 
 // 可用的模型列表
@@ -202,7 +224,7 @@ export const DEFAULT_ROLES: ModelRole[] = [
     id: 'default',
     name: '默认助手',
     description: '帮助创作者进行设计构思、文化融合和平台使用的全能助手',
-    system_prompt: '你是一个帮助创作者进行设计构思、文化融合和平台使用的全能助手。请提供详细、具体、有用的回答，帮助用户解决在平台使用过程中遇到的各种问题，包括创作、上传、编辑、分享、推广、数据分析、账户设置等方面。你的回答应该友好、专业、易于理解，并且提供清晰的步骤和建议。',
+    system_prompt: '你是一个专注于传统文化创作与设计的全能AI助手，服务于文创平台。请提供详细、具体、有用的回答，帮助用户解决在平台使用过程中遇到的各种问题，包括创作流程、AI生成功能、文化元素融合、作品上传、编辑、分享、推广、数据分析、账户设置等方面。你的回答应该友好、专业、易于理解，并且提供清晰的步骤和建议。同时，你需要具备丰富的传统文化知识，能够为用户提供关于传统纹样、非遗技艺、文化元素创新应用等方面的专业指导。',
     temperature: 0.7,
     top_p: 0.9,
     presence_penalty: 0,
@@ -321,17 +343,47 @@ export const DEFAULT_CONFIG: ModelConfig = {
   enable_safety_check: true,
   safety_level: 'medium',
   // 新增角色配置默认值
-  current_role_id: 'default'
+  current_role_id: 'default',
+  // 新增个性化设置默认值
+  personality: 'friendly', // 默认友好性格
+  theme: 'auto', // 默认自动主题
+  show_preset_questions: true, // 默认显示预设问题
+  enable_typing_effect: true, // 默认启用打字效果
+  auto_scroll: true, // 默认自动滚动
+  shortcut_key: 'ctrl+k', // 默认快捷键
+  enable_notifications: false // 默认禁用通知
 };
 
 /**
    * 连接状态类型定义
    */
+// 错误类型定义
+export type ErrorType = 
+  | 'NETWORK_ERROR' 
+  | 'AUTH_ERROR' 
+  | 'QUOTA_ERROR' 
+  | 'RATE_LIMIT_ERROR' 
+  | 'SERVER_ERROR' 
+  | 'MODEL_ERROR' 
+  | 'VALIDATION_ERROR' 
+  | 'UNKNOWN_ERROR';
+
+// 错误详情类型定义
+export interface ErrorDetail {
+  type: ErrorType;
+  message: string;
+  originalError?: Error;
+  modelId?: string;
+  timestamp: number;
+  retryable: boolean;
+}
+
+// 连接状态类型定义
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
 
 /**
- * LLM服务类
- */
+   * LLM服务类
+   */
 class LLMService {
   private currentModel: LLMModel = AVAILABLE_MODELS.find(m => m.isDefault) || AVAILABLE_MODELS[0];
   private modelConfig: ModelConfig = { ...DEFAULT_CONFIG };
@@ -348,6 +400,14 @@ class LLMService {
   // 连接状态相关属性
   private connectionStatus: Record<string, ConnectionStatus> = {};
   private connectionStatusListeners: Array<(modelId: string, status: ConnectionStatus, error?: string) => void> = [];
+  // 响应缓存相关属性
+  private responseCache: Map<string, { response: string; timestamp: number; }> = new Map();
+  private cacheExpiryTime = 3600000; // 缓存过期时间：1小时
+  private maxCacheSize = 100; // 最大缓存数量
+  // 错误处理相关属性
+  private errorLogs: ErrorDetail[] = [];
+  private maxErrorLogs = 500; // 最大错误日志数量
+  private errorListeners: Array<(error: ErrorDetail) => void> = [];
 
   /**
    * 设置当前使用的模型
@@ -681,7 +741,12 @@ class LLMService {
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      isActive: true
+      isActive: true,
+      // 初始化主题追踪相关字段
+      currentTopic: '',
+      topicHistory: [],
+      contextSummary: '',
+      lastMessageTimestamp: Date.now()
     };
     
     // 停用当前会话
@@ -974,6 +1039,188 @@ class LLMService {
     }
     
     return false;
+  }
+  
+  /**
+   * 生成缓存键
+   */
+  private generateCacheKey(prompt: string, modelId: string, context?: any): string {
+    const contextStr = JSON.stringify(context || {});
+    return `${modelId}:${this.currentRole.id}:${prompt}:${contextStr}`;
+  }
+  
+  /**
+   * 检查缓存
+   */
+  private checkCache(prompt: string, modelId: string, context?: any): string | null {
+    const cacheKey = this.generateCacheKey(prompt, modelId, context);
+    const cachedItem = this.responseCache.get(cacheKey);
+    
+    if (cachedItem) {
+      // 检查缓存是否过期
+      const now = Date.now();
+      if (now - cachedItem.timestamp < this.cacheExpiryTime) {
+        return cachedItem.response;
+      } else {
+        // 缓存过期，移除
+        this.responseCache.delete(cacheKey);
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * 更新缓存
+   */
+  private updateCache(prompt: string, modelId: string, response: string, context?: any): void {
+    const cacheKey = this.generateCacheKey(prompt, modelId, context);
+    
+    // 检查缓存大小，超过限制则移除最旧的缓存
+    if (this.responseCache.size >= this.maxCacheSize) {
+      // 找到最旧的缓存键
+      let oldestKey = '';
+      let oldestTime = Infinity;
+      
+      for (const [key, value] of this.responseCache.entries()) {
+        if (value.timestamp < oldestTime) {
+          oldestTime = value.timestamp;
+          oldestKey = key;
+        }
+      }
+      
+      if (oldestKey) {
+        this.responseCache.delete(oldestKey);
+      }
+    }
+    
+    // 添加新缓存
+    this.responseCache.set(cacheKey, {
+      response,
+      timestamp: Date.now()
+    });
+  }
+  
+  /**
+   * 清除缓存
+   */
+  clearCache(modelId?: string): void {
+    if (modelId) {
+      // 清除特定模型的缓存
+      for (const key of this.responseCache.keys()) {
+        if (key.startsWith(`${modelId}:`)) {
+          this.responseCache.delete(key);
+        }
+      }
+    } else {
+      // 清除所有缓存
+      this.responseCache.clear();
+    }
+  }
+  
+  /**
+   * 分类错误类型
+   */
+  private classifyError(error: Error | string, modelId: string): ErrorDetail {
+    const errorMessage = typeof error === 'string' ? error : error.message;
+    let errorType: ErrorType = 'UNKNOWN_ERROR';
+    let retryable = true;
+    
+    // 根据错误信息分类
+    if (errorMessage.includes('network') || errorMessage.includes('fetch failed') || errorMessage.includes('connection') || errorMessage.includes('timeout')) {
+      errorType = 'NETWORK_ERROR';
+    } else if (errorMessage.includes('auth') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid api key') || errorMessage.includes('401')) {
+      errorType = 'AUTH_ERROR';
+      retryable = false; // 认证错误通常不可重试
+    } else if (errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('QUOTA_EXCEEDED')) {
+      errorType = 'QUOTA_ERROR';
+      retryable = false; // 配额错误通常不可重试
+    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      errorType = 'RATE_LIMIT_ERROR';
+      retryable = true; // 速率限制错误可以重试
+    } else if (errorMessage.includes('500') || errorMessage.includes('server error') || errorMessage.includes('internal error')) {
+      errorType = 'SERVER_ERROR';
+    } else if (errorMessage.includes('model') || errorMessage.includes('unsupported') || errorMessage.includes('invalid parameter')) {
+      errorType = 'MODEL_ERROR';
+    } else if (errorMessage.includes('validation') || errorMessage.includes('invalid') || errorMessage.includes('required')) {
+      errorType = 'VALIDATION_ERROR';
+      retryable = false; // 验证错误通常不可重试
+    }
+    
+    return {
+      type: errorType,
+      message: errorMessage,
+      originalError: typeof error === 'string' ? undefined : error,
+      modelId,
+      timestamp: Date.now(),
+      retryable
+    };
+  }
+  
+  /**
+   * 记录错误日志
+   */
+  private logError(error: ErrorDetail): void {
+    // 添加错误日志
+    this.errorLogs.push(error);
+    
+    // 限制错误日志数量
+    if (this.errorLogs.length > this.maxErrorLogs) {
+      this.errorLogs.shift(); // 移除最旧的日志
+    }
+    
+    // 触发错误监听
+    this.errorListeners.forEach(listener => {
+      try {
+        listener(error);
+      } catch (listenerError) {
+        console.error('Error in error listener:', listenerError);
+      }
+    });
+    
+    // 记录到控制台
+    console.error(`[LLM Error] ${error.type}: ${error.message}`, error);
+  }
+  
+  /**
+   * 添加错误监听器
+   */
+  addErrorListener(listener: (error: ErrorDetail) => void): () => void {
+    this.errorListeners.push(listener);
+    
+    // 返回移除监听器的函数
+    return () => {
+      const index = this.errorListeners.indexOf(listener);
+      if (index !== -1) {
+        this.errorListeners.splice(index, 1);
+      }
+    };
+  }
+  
+  /**
+   * 获取错误日志
+   */
+  getErrorLogs(limit: number = 100, type?: ErrorType): ErrorDetail[] {
+    let logs = [...this.errorLogs];
+    
+    // 按类型过滤
+    if (type) {
+      logs = logs.filter(log => log.type === type);
+    }
+    
+    // 按时间倒序排列，返回最新的日志
+    return logs.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
+  }
+  
+  /**
+   * 清除错误日志
+   */
+  clearErrorLogs(type?: ErrorType): void {
+    if (type) {
+      this.errorLogs = this.errorLogs.filter(log => log.type !== type);
+    } else {
+      this.errorLogs = [];
+    }
   }
   
   /**
@@ -1348,6 +1595,11 @@ class LLMService {
       onDelta?: (chunk: string) => void;
       signal?: AbortSignal;
       images?: string[]; // 支持多图像输入
+      context?: {
+        page?: string;
+        path?: string;
+        userPreferences?: Record<string, any>;
+      };
     }
   ): Promise<string> {
     // 添加用户消息到历史
@@ -1380,6 +1632,10 @@ class LLMService {
         image_resolution: this.modelConfig.image_resolution
       }
     };
+
+    // 优化：获取当前会话的对话历史，用于上下文处理
+    const session = this.getCurrentSession();
+    const conversationHistory = session ? [...session.messages].slice(-this.modelConfig.max_history) : [];
     
     // 智能回退机制：尝试多个模型直到成功
     const tryNextModel = async (fallbackCount: number = 0): Promise<string> => {
@@ -1395,36 +1651,84 @@ class LLMService {
       this.setConnectionStatus(currentModelId, 'connecting');
       
       try {
-        // 调用当前模型
+        // 首先检查缓存
+        const cachedResponse = this.checkCache(prompt, currentModelId, options?.context);
+        if (cachedResponse) {
+          // 缓存命中，直接返回
+          this.setConnectionStatus(currentModelId, 'connected');
+          
+          // 添加AI响应到历史
+          const aiMessage: Message = { 
+            role: 'assistant', 
+            content: cachedResponse, 
+            timestamp: Date.now() 
+          };
+          this.addToHistory(aiMessage);
+          
+          // 记录性能数据
+          this.recordPerformance(currentModelId, startTime, true);
+          
+          return cachedResponse;
+        }
+        
+        // 调用当前模型，传入完整的对话历史作为上下文
         let response: string;
+        
+        // 构建带有上下文的请求参数
+        const modelRequestParams = {
+          ...requestOptions,
+          history: conversationHistory
+        };
+        
+        // 集成知识库：搜索相关知识并添加到提示中
+        const enhancedPrompt = async (basePrompt: string) => {
+          // 检查知识库服务是否启用
+          const kbConfig = knowledgeBaseService.getConfig();
+          if (kbConfig.enableKnowledgeBase && kbConfig.enableAutoSearch) {
+            // 搜索知识库
+            const knowledgeResults = knowledgeBaseService.searchKnowledge(basePrompt);
+            if (knowledgeResults.length > 0) {
+              // 构建增强提示
+              const knowledgeContext = knowledgeResults
+                .map(item => `【知识库参考】${item.title}\n${item.content}`)
+                .join('\n\n');
+              
+              return `${basePrompt}\n\n请结合以下知识库信息回答问题：\n${knowledgeContext}`;
+            }
+          }
+          return basePrompt;
+        };
+        
+        // 增强提示词
+        const finalPrompt = await enhancedPrompt(prompt);
         
         switch (currentModelId) {
           case 'kimi':
-            response = await this.callKimi(prompt, requestOptions);
+            response = await this.callKimi(finalPrompt, modelRequestParams);
             break;
           case 'deepseek':
-            response = await this.callDeepseek(prompt, requestOptions);
+            response = await this.callDeepseek(finalPrompt, modelRequestParams);
             break;
           case 'wenxinyiyan':
-            response = await this.callWenxin(prompt, requestOptions);
+            response = await this.callWenxin(finalPrompt, modelRequestParams);
             break;
           case 'doubao':
-            response = await this.callDoubao(prompt, requestOptions);
+            response = await this.callDoubao(finalPrompt, modelRequestParams);
             break;
           case 'qwen':
-            response = await this.callQwen(prompt, requestOptions);
+            response = await this.callQwen(finalPrompt, modelRequestParams);
             break;
           case 'chatgpt':
-            response = await this.callChatGPT(prompt, requestOptions);
+            response = await this.callChatGPT(finalPrompt, modelRequestParams);
             break;
           case 'gemini':
-            response = await this.callGemini(prompt, requestOptions);
+            response = await this.callGemini(finalPrompt, modelRequestParams);
             break;
           case 'gork':
-            response = await this.callGork(prompt, requestOptions);
+            response = await this.callGork(finalPrompt, modelRequestParams);
             break;
           case 'zhipu':
-            response = await this.callZhipu(prompt, requestOptions);
+            response = await this.callZhipu(finalPrompt, modelRequestParams);
             break;
           default:
             throw new Error(`未知模型: ${currentModelId}`);
@@ -1441,6 +1745,9 @@ class LLMService {
         };
         this.addToHistory(aiMessage);
         
+        // 更新缓存
+        this.updateCache(prompt, currentModelId, response, options?.context);
+        
         // 记录性能数据
         this.recordPerformance(currentModelId, startTime, true);
         
@@ -1451,16 +1758,18 @@ class LLMService {
         
         return response;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        // 分类和记录错误
+        const errorDetail = this.classifyError(error instanceof Error ? error : String(error), currentModelId);
+        this.logError(errorDetail);
         
         // 设置连接状态为错误
-        this.setConnectionStatus(currentModelId, 'error', errorMessage);
+        this.setConnectionStatus(currentModelId, 'error', errorDetail.message);
         
         // 记录性能数据
-        this.recordPerformance(currentModelId, startTime, false, errorMessage);
+        this.recordPerformance(currentModelId, startTime, false, errorDetail.message);
         
-        // 检测配额用完错误，标记模型不可用
-        if ((errorMessage.includes('QUOTA_EXCEEDED') || errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('429'))) {
+        // 检测配额用完或认证错误，标记模型不可用
+        if (errorDetail.type === 'QUOTA_ERROR' || errorDetail.type === 'AUTH_ERROR' || errorDetail.type === 'RATE_LIMIT_ERROR') {
           localStorage.setItem(`${currentModelId.toUpperCase()}_QUOTA_EXCEEDED`, 'true');
         }
         
@@ -1479,18 +1788,18 @@ class LLMService {
             isConfigured = !!(storedKey || envKey);
           }
           
-          // 检查模型是否已被标记为配额用完
-          const isQuotaExceeded = localStorage.getItem(`${model.id.toUpperCase()}_QUOTA_EXCEEDED`) === 'true';
+          // 检查模型是否已被标记为不可用
+          const isUnavailable = localStorage.getItem(`${model.id.toUpperCase()}_QUOTA_EXCEEDED`) === 'true';
           
-          return isConfigured && !isQuotaExceeded && !attemptedModels.includes(model.id);
+          return isConfigured && !isUnavailable && !attemptedModels.includes(model.id);
         });
         
         // 如果没有更多可用模型，返回错误或模拟响应
         if (availableModels.length === 0) {
           console.error('所有可用模型均调用失败:', attemptedModels);
           
-          // 生成模拟响应
-          const mockResponse = this.getFallbackResponse(originalModelId, errorMessage);
+          // 生成模拟响应，根据错误类型返回不同的提示
+          const mockResponse = this.getFallbackResponse(originalModelId, errorDetail.message);
           const aiMessage: Message = { 
             role: 'assistant', 
             content: mockResponse, 
@@ -1508,7 +1817,7 @@ class LLMService {
           console.error('无法找到合适的下一个模型');
           
           // 生成模拟响应
-          const mockResponse = this.getFallbackResponse(originalModelId, errorMessage);
+          const mockResponse = this.getFallbackResponse(originalModelId, errorDetail.message);
           const aiMessage: Message = { 
             role: 'assistant', 
             content: mockResponse, 
@@ -1519,7 +1828,7 @@ class LLMService {
         }
         
         // 切换到下一个模型
-        console.log(`模型切换: ${currentModelId} → ${nextModelId} (原因: ${errorMessage})`);
+        console.log(`模型切换: ${currentModelId} → ${nextModelId} (原因: ${errorDetail.type}: ${errorDetail.message})`);
         this.setCurrentModel(nextModelId, true);
         
         // 递归调用，尝试下一个模型
@@ -1584,6 +1893,40 @@ class LLMService {
   }
   
   /**
+   * 简单的主题提取函数
+   */
+  private extractTopic(message: string): string {
+    // 简单的关键词提取，实际应用中可以使用更复杂的NLP算法
+    const keywords = [
+      '创作流程', 'AI生成', '文化元素', '传统纹样', '非遗技艺',
+      '作品分享', '数据分析', '平台功能', '教程', '帮助',
+      '传统色彩', '传统建筑', '传统节日', '设计创意', '技术支持'
+    ];
+    
+    // 查找匹配的关键词
+    for (const keyword of keywords) {
+      if (message.includes(keyword)) {
+        return keyword;
+      }
+    }
+    
+    return '其他';
+  }
+  
+  /**
+   * 生成对话上下文摘要
+   */
+  private generateContextSummary(messages: Message[]): string {
+    // 简单的摘要生成，实际应用中可以使用更复杂的NLP算法
+    const recentMessages = messages.slice(-5); // 只考虑最近5条消息
+    const summary = recentMessages
+      .map(msg => `${msg.role}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`)
+      .join('\n');
+    
+    return summary;
+  }
+  
+  /**
    * 添加消息到历史记录
    */
   private addToHistory(message: Message): void {
@@ -1591,6 +1934,28 @@ class LLMService {
     if (session) {
       session.messages.push(message);
       session.updatedAt = Date.now();
+      session.lastMessageTimestamp = Date.now();
+      
+      // 更新主题追踪
+      if (message.role === 'user') {
+        const newTopic = this.extractTopic(message.content);
+        if (newTopic && newTopic !== session.currentTopic) {
+          // 如果主题发生变化，更新主题历史
+          session.currentTopic = newTopic;
+          if (!session.topicHistory) {
+            session.topicHistory = [];
+          }
+          if (!session.topicHistory.includes(newTopic)) {
+            session.topicHistory.push(newTopic);
+          }
+        }
+      }
+      
+      // 更新上下文摘要（当消息数量超过一定阈值时）
+      if (session.messages.length > 20) {
+        session.contextSummary = this.generateContextSummary(session.messages);
+      }
+      
       this.saveSessions();
     }
   }

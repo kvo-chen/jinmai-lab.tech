@@ -12,7 +12,7 @@ interface ErrorMonitoringDashboardProps {
   recentCount?: number;
 }
 
-const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ refreshInterval = 30000, recentCount = 10 }) => {
+const ErrorMonitoringDashboard: React.FC<ErrorMonitoringDashboardProps> = ({ refreshInterval = 30000, recentCount = 100 }) => {
   const { isDark } = useTheme();
   const [errorStats, setErrorStats] = useState(errorService.getErrorStats(recentCount));
   const [refreshing, setRefreshing] = useState(false);

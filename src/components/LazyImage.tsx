@@ -56,6 +56,11 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     return processedSrc || (fallbackSrc || defaultFallbackSrc);
   }, [src, fallbackSrc, disableFallback]);
   
+  // 对于SVG数据URL，立即设置为已加载，因为它们是内联的，会立即加载
+  const isSvgDataUrl = useMemo(() => {
+    return src.startsWith('data:image/svg+xml');
+  }, [src]);
+  
   // 图片加载完成处理
   const handleLoad = () => {
     setIsLoaded(true);
@@ -78,9 +83,9 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   // 当src变化时重置加载状态
   useEffect(() => {
     // 重置状态，确保新图片能正确显示加载过程
-    setIsLoaded(false);
+    setIsLoaded(isSvgDataUrl); // SVG数据URL立即设置为已加载
     setIsError(false);
-  }, [src]);
+  }, [src, isSvgDataUrl]);
 
   // 观察图片是否进入视口
   useEffect(() => {
@@ -162,11 +167,20 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
           ref={imgRef}
           src={currentSrc}
           alt={alt}
-          className={`w-full h-full object-${fit} transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full object-${fit} transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'} ${isError ? 'opacity-0' : ''}`}
           onLoad={handleLoad}
           onError={handleError}
           {...rest}
         />
+        
+        {/* 加载状态 - 显示默认占位符或自定义占位符 */}
+        {!isLoaded && !isError && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+            {placeholder || (
+              <i className="fas fa-image text-gray-400 dark:text-gray-500 text-2xl"></i>
+            )}
+          </div>
+        )}
         
         {/* 加载失败状态 - 显示fallback图片 */}
         {isError && (

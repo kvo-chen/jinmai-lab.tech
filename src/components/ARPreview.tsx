@@ -1174,6 +1174,338 @@ const CanvasContent: React.FC<{
     </>
   );
 };
+// 设备性能检测工具 - 增强版，支持设备类型和AR能力检测
+const getDevicePerformance = () => {
+  // 检测设备性能的多种指标
+  let isLowEndDevice = false;
+  let isMediumEndDevice = false;
+  let isHighEndDevice = false;
+  
+  // 1. CPU核心数检测
+  const cpuCores = navigator.hardwareConcurrency || 4;
+  
+  // 2. 设备内存检测
+  const deviceMemory = (navigator as any).deviceMemory || 4;
+  
+  // 3. 增强的设备类型检测
+  const userAgent = navigator.userAgent;
+  const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const isTablet = /iPad|Android(?!.*Mobile)/i.test(userAgent);
+  const isDesktop = !isMobile && !isTablet;
+  const deviceType = isDesktop ? 'desktop' : isTablet ? 'tablet' : 'mobile';
+  
+  // 4. 增强的浏览器性能检测
+  const browserInfo = {
+    name: 'unknown',
+    version: '0',
+    isChrome: /Chrome\//i.test(userAgent) && !/Edg\//i.test(userAgent),
+    isEdge: /Edg\//i.test(userAgent),
+    isSafari: /Safari/i.test(userAgent) && !/Chrome\//i.test(userAgent),
+    isFirefox: /Firefox\//i.test(userAgent),
+    isOpera: /Opera|OPR\//i.test(userAgent),
+    isIE: /MSIE|Trident/i.test(userAgent),
+    versionNumber: parseInt(userAgent.match(/Chrome\/(\d+)/)?.[1] || 
+                     userAgent.match(/Edg\/(\d+)/)?.[1] || 
+                     userAgent.match(/Firefox\/(\d+)/)?.[1] || 
+                     userAgent.match(/Version\/(\d+)/)?.[1] || '0')
+  };
+  
+  // 检测低性能浏览器 - 优化版本，支持更新的浏览器版本
+  const isLowPerformanceBrowser = browserInfo.isIE || 
+                                   browserInfo.isOpera && browserInfo.versionNumber < 80 ||
+                                   browserInfo.isChrome && browserInfo.versionNumber < 90 ||
+                                   browserInfo.isEdge && browserInfo.versionNumber < 90 ||
+                                   browserInfo.isFirefox && browserInfo.versionNumber < 85;
+  
+  // 5. 更全面的GPU性能检测
+  let gpuPerformanceScore = 0;
+  let webGLVersion = 0;
+  let hasWebGL = false;
+  let gpuVendor = 'unknown';
+  let gpuRenderer = 'unknown';
+  let maxTextureSize = 2048;
+  let maxVertexAttribs = 8;
+  let shaderPrecision = 0;
+  let gpuMemoryMB = 0;
+  
+  // 6. WebGL特性检测（更全面的GPU性能检测）
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    
+    if (gl) {
+      hasWebGL = true;
+      webGLVersion = gl instanceof WebGL2RenderingContext ? 2 : 1;
+      
+      // 检测GPU信息
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        gpuVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) as string;
+        gpuRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string;
+      }
+      
+      // 检测GPU扩展支持
+      const extensions = gl.getSupportedExtensions() || [];
+      
+      // 基础扩展支持（每个基础扩展+1分）
+      const basicExtensions = ['WEBGL_compressed_textures', 'OES_texture_float', 'OES_standard_derivatives', 'OES_vertex_array_object'];
+      basicExtensions.forEach(ext => {
+        if (extensions.includes(ext)) {
+          gpuPerformanceScore += 1;
+        }
+      });
+      
+      // 高级扩展支持（每个高级扩展+2分）
+      const advancedExtensions = ['EXT_shader_texture_lod', 'WEBGL_draw_buffers', 'WEBGL_color_buffer_float', 
+                                 'WEBGL_depth_texture', 'WEBGL_multisampled_render_to_texture', 
+                                 'EXT_color_buffer_float', 'WEBGL_color_buffer_half_float'];
+      advancedExtensions.forEach(ext => {
+        if (extensions.includes(ext)) {
+          gpuPerformanceScore += 2;
+        }
+      });
+      
+      // 检测GPU最大纹理尺寸
+      maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+      if (maxTextureSize >= 32768) {
+        gpuPerformanceScore += 5;
+      } else if (maxTextureSize >= 16384) {
+        gpuPerformanceScore += 4;
+      } else if (maxTextureSize >= 8192) {
+        gpuPerformanceScore += 3;
+      } else if (maxTextureSize >= 4096) {
+        gpuPerformanceScore += 2;
+      } else if (maxTextureSize >= 2048) {
+        gpuPerformanceScore += 1;
+      }
+      
+      // 检测最大顶点属性数量
+      maxVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS) as number;
+      if (maxVertexAttribs >= 32) {
+        gpuPerformanceScore += 3;
+      } else if (maxVertexAttribs >= 16) {
+        gpuPerformanceScore += 2;
+      } else if (maxVertexAttribs >= 8) {
+        gpuPerformanceScore += 1;
+      }
+      
+      // 检测着色器精度
+      const shaderPrecisionFormat = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+      shaderPrecision = shaderPrecisionFormat.precision;
+      if (shaderPrecision >= 23) {
+        gpuPerformanceScore += 2;
+      } else if (shaderPrecision >= 16) {
+        gpuPerformanceScore += 1;
+      }
+      
+      // 检测最大统一变量数量
+      const maxUniforms = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) as number;
+      if (maxUniforms >= 1024) {
+        gpuPerformanceScore += 2;
+      } else if (maxUniforms >= 512) {
+        gpuPerformanceScore += 1;
+      }
+      
+      // 估算GPU内存（MB）
+      gpuMemoryMB = Math.min(4096, Math.max(256, Math.pow(2, Math.floor(Math.log2(maxTextureSize * maxTextureSize * 4 / (1024 * 1024))))));
+    }
+  } catch (e) {
+    // WebGL检测失败，继续执行
+    hasWebGL = false;
+  }
+  
+  // 7. WebXR支持检测 - 增强版
+  let isWebXRSupported = 'xr' in navigator;
+  let isARWebXRSupported = false;
+  let webXRFeatures: string[] = [];
+  let supportedARSessionModes: string[] = [];
+  
+  // 8. ARCore/ARKit支持检测 - 增强版
+  let hasARCore = false;
+  let hasARKit = false;
+  let arPlatform = '';
+  
+  // 检测ARCore（Android）
+  if (isMobile && /Android/i.test(userAgent)) {
+    hasARCore = isWebXRSupported && 
+               (navigator.userAgent.includes('ARCore') || 
+                /Google Play Services for AR/i.test(userAgent) ||
+                navigator.userAgent.includes('ARCore/'));
+    if (hasARCore) {
+      arPlatform = 'arcore';
+    }
+  }
+  
+  // 检测ARKit（iOS）
+  if (isMobile && /iPhone|iPad/i.test(userAgent)) {
+    hasARKit = isWebXRSupported && 
+              navigator.vendor.includes('Apple');
+    if (hasARKit) {
+      arPlatform = 'arkit';
+    }
+  }
+  
+  // 9. 设备性能API检测
+  const hasPerformanceAPI = 'performance' in window && 'getEntriesByType' in window.performance;
+  const hasPerformanceMemory = hasPerformanceAPI && typeof (window.performance as any).memory !== 'undefined';
+  const memoryInfo = hasPerformanceMemory ? (window.performance as any).memory : null;
+  
+  // 10. 检测设备刷新率
+  const maxRefreshRate = (window.screen as any).refreshRate || 60;
+  
+  // 11. 检测屏幕分辨率
+  const screenWidth = window.screen.width;
+  const screenHeight = window.screen.height;
+  const screenArea = screenWidth * screenHeight;
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  
+  // 综合AR支持检测
+  const isARSupported = isWebXRSupported && (hasARCore || hasARKit || isMobile);
+  
+  // 异步检测AR WebXR支持，不影响同步返回结果
+  if (isWebXRSupported) {
+    try {
+      (navigator.xr as any).isSessionSupported('immersive-ar')
+        .then((supported: boolean) => {
+          // 更新缓存中的值，下次调用时生效
+          if (devicePerformanceCache) {
+            devicePerformanceCache.isARWebXRSupported = supported;
+          }
+        })
+        .catch(() => {
+          // 忽略错误
+        });
+    } catch (error) {
+      // 忽略错误
+    }
+  }
+  
+  // 12. 检测设备电池状态，低电量设备可能性能受限
+  let batteryLevel = 1;
+  let batteryCharging = true;
+  try {
+    if ('battery' in navigator || 'getBattery' in navigator) {
+      const batteryPromise = ('getBattery' in navigator) ? (navigator as any).getBattery() : Promise.resolve((navigator as any).battery);
+      batteryPromise.then((battery: any) => {
+        batteryLevel = battery.level;
+        batteryCharging = battery.charging;
+      }).catch(() => {
+        // 忽略电池检测错误
+      });
+    }
+  } catch (e) {
+    // 忽略电池检测错误
+  }
+  
+  // 13. 检测设备CPU性能（使用Performance API）
+  let cpuPerformanceScore = 0;
+  if (hasPerformanceAPI) {
+    try {
+      // 使用navigation timing API获取页面加载性能
+      const navigationEntries = performance.getEntriesByType('navigation');
+      if (navigationEntries.length > 0) {
+        const navEntry = navigationEntries[0] as PerformanceNavigationTiming;
+        if (navEntry.loadEventEnd > 0) {
+          // 页面加载时间越短，CPU性能越好
+          const loadTime = navEntry.loadEventEnd - navEntry.navigationStart;
+          if (loadTime < 1000) {
+            cpuPerformanceScore += 3;
+          } else if (loadTime < 2000) {
+            cpuPerformanceScore += 2;
+          } else if (loadTime < 3000) {
+            cpuPerformanceScore += 1;
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略性能API错误
+    }
+  }
+  
+  // 综合性能评分（范围：0-50）
+  let performanceScore = gpuPerformanceScore + cpuPerformanceScore;
+  
+  // 根据设备类型和性能得分确定设备性能级别
+  if (isDesktop) {
+    // 桌面设备，基础性能较好
+    if (performanceScore < 25) {
+      isMediumEndDevice = true;
+    } else {
+      isHighEndDevice = true;
+    }
+  } else {
+    // 移动设备或平板，根据性能得分分级
+    if (performanceScore < 20) {
+      isLowEndDevice = true;
+    } else if (performanceScore < 35) {
+      isMediumEndDevice = true;
+    } else {
+      isHighEndDevice = true;
+    }
+  }
+  
+  // 生成性能检测结果
+  const result = {
+    // 设备基本信息
+    isDesktop,
+    isMobile,
+    deviceType,
+    
+    // 性能级别
+    isLowEndDevice,
+    isMediumEndDevice,
+    isHighEndDevice,
+    performanceLevel: isLowEndDevice ? 'low' : isMediumEndDevice ? 'medium' : 'high',
+    performanceScore,
+    
+    // CPU信息
+    cpuCores,
+    deviceMemory,
+    
+    // 浏览器信息
+    browserInfo,
+    
+    // GPU信息
+    hasWebGL,
+    webGLVersion,
+    gpuVendor,
+    gpuRenderer,
+    maxTextureSize,
+    maxVertexAttribs,
+    shaderPrecision,
+    gpuMemoryMB,
+    
+    // WebXR信息
+    isWebXRSupported,
+    isARWebXRSupported,
+    webXRFeatures,
+    supportedARSessionModes,
+    
+    // AR平台信息
+    hasARCore,
+    hasARKit,
+    arPlatform,
+    
+    // 屏幕信息
+    screenWidth,
+    screenHeight,
+    screenArea,
+    maxRefreshRate,
+    devicePixelRatio,
+    
+    // 性能API信息
+    hasPerformanceAPI,
+    hasPerformanceMemory,
+    memoryInfo,
+    
+    // 电池信息
+    batteryLevel,
+    batteryCharging
+  };
+  
+  return result;
+};
+
 // 设备性能检测结果缓存，避免重复计算
 let devicePerformanceCache: ReturnType<typeof getDevicePerformance> | null = null;
 const cacheExpiryTime = 10 * 60 * 1000; // 缓存10分钟，延长缓存时间减少重复计算
@@ -3770,14 +4102,16 @@ const renderThreeDPreviewContent = ({ config, scale, rotation, position, isARMod
               fov: devicePerformance.isDesktop ? 50 : 60
             }}
             gl={{ 
-              antialias: true,
-              powerPreference: 'high-performance',
+              antialias: devicePerformance.isHighEndDevice,
+              powerPreference: 'low-power',
               preserveDrawingBuffer: true,
               alpha: true,
-              stencil: true,
+              stencil: false,
               premultipliedAlpha: true,
-              depth: true
+              depth: true,
+              precision: 'mediump'
             }}
+            pixelRatio={Math.min(window.devicePixelRatio, 2)}
             shadows={false}
             performance={{ 
               min: 0.01,
@@ -4914,7 +5248,7 @@ const ARPreview: React.FC<{
             
             {/* 作品标签 */}
             <div className="flex flex-wrap gap-3">
-              {work?.tags?.map((tag, index) => (
+              {(work?.tags || []).map((tag, index) => (
                 <span 
                   key={index}
                   className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-xl text-white text-sm font-medium hover:bg-white/20 hover:shadow-lg transition-all duration-300 transform hover:scale-105 animate-fade-in"

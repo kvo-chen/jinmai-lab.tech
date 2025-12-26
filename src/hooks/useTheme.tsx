@@ -12,8 +12,8 @@ interface ThemeContextType {
 
 // 创建 ThemeContext
 export const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
-  isDark: true,
+  theme: 'light',
+  isDark: false,
   setTheme: () => {},
   toggleTheme: () => {},
   availableThemes: []
@@ -30,7 +30,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     if (savedTheme) {
       return savedTheme;
     }
-    return 'dark';
+    // 检测是否为移动端设备
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // 移动端默认使用浅色主题，桌面端默认使用深色主题
+    return isMobile ? 'light' : 'dark';
   });
 
   // 优化后的主题切换逻辑

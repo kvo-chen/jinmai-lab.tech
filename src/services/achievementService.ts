@@ -8,7 +8,7 @@ export interface CreatorLevel {
   name: string;
   icon: string;
   requiredPoints: number;
- 权益: string[];
+  权益: string[];
   description: string;
 }
 
@@ -39,10 +39,12 @@ export interface CreatorLevelInfo {
 export interface PointsRecord {
   id: number;
   source: string;
-  type: 'achievement' | 'task' | 'daily' | 'other';
+  type: 'achievement' | 'task' | 'daily' | 'consumption' | 'exchange' | 'system';
   points: number;
   date: string;
   description: string;
+  relatedId?: string;
+  balanceAfter: number;
 }
 
 // 积分来源统计类型定义
@@ -50,7 +52,21 @@ export interface PointsSourceStats {
   achievement: number;
   task: number;
   daily: number;
+  consumption: number;
+  exchange: number;
   other: number;
+}
+
+// 消费记录类型
+export interface ConsumptionRecord {
+  id: number;
+  amount: number;
+  pointsEarned: number;
+  pointsUsed: number;
+  finalAmount: number;
+  date: string;
+  description: string;
+  relatedId?: string;
 }
 
 // 成就服务类
@@ -147,15 +163,16 @@ class AchievementService {
     }
   ];
 
-  // 模拟积分记录数据
-  private pointsRecords: PointsRecord[] = [
+  // 积分记录数据
+  public pointsRecords: PointsRecord[] = [
     {
       id: 1,
       source: '初次创作',
       type: 'achievement',
       points: 10,
       date: '2025-11-01',
-      description: '完成第一篇创作作品'
+      description: '完成第一篇创作作品',
+      balanceAfter: 10
     },
     {
       id: 2,
@@ -163,7 +180,8 @@ class AchievementService {
       type: 'achievement',
       points: 20,
       date: '2025-11-07',
-      description: '连续登录7天'
+      description: '连续登录7天',
+      balanceAfter: 30
     },
     {
       id: 3,
@@ -171,7 +189,8 @@ class AchievementService {
       type: 'task',
       points: 50,
       date: '2025-11-01',
-      description: '完成平台新手引导'
+      description: '完成平台新手引导',
+      balanceAfter: 80
     },
     {
       id: 4,
@@ -179,7 +198,8 @@ class AchievementService {
       type: 'task',
       points: 100,
       date: '2025-11-01',
-      description: '在平台发布第一篇作品'
+      description: '在平台发布第一篇作品',
+      balanceAfter: 180
     },
     {
       id: 5,
@@ -187,13 +207,26 @@ class AchievementService {
       type: 'daily',
       points: 5,
       date: '2025-11-08',
-      description: '每日签到奖励'
+      description: '每日签到奖励',
+      balanceAfter: 185
     }
   ];
 
+  // 消费记录数据
+  private consumptionRecords: ConsumptionRecord[] = [];
+
   // 模拟用户积分数据
   private userPoints: number = 0;
-
+  
+  // 消费金额兑换积分比例
+  private readonly CASH_TO_POINTS_RATIO = 1; // 1元 = 1积分
+  
+  // 积分抵扣消费比例
+  private readonly POINTS_TO_CASH_RATIO = 100; // 100积分 = 1元
+  
+  // 单次消费最大抵扣比例
+  private readonly MAX_DISCOUNT_RATIO = 0.3; // 30%
+  
   // 获取所有成就
   getAllAchievements(): Achievement[] {
     return [...this.achievements];
@@ -224,6 +257,7 @@ class AchievementService {
       if (achievement.progress >= 100) {
         achievement.isUnlocked = true;
         achievement.unlockedAt = new Date().toISOString().split('T')[0];
+        this.addPoints(achievement.points, 'achievement', achievement.name, `解锁成就：${achievement.name}`);
         return true;
       }
     }
@@ -291,6 +325,13 @@ class AchievementService {
     // 计算已解锁成就的总积分
     const unlockedAchievements = this.getUnlockedAchievements();
     this.userPoints = unlockedAchievements.reduce((total, achievement) => total + achievement.points, 0);
+    
+    // 加上其他来源的积分
+    const otherPoints = this.pointsRecords
+      .filter(record => record.type !== 'achievement')
+      .reduce((total, record) => total + record.points, 0);
+    
+    this.userPoints += otherPoints;
     return this.userPoints;
   }
 
@@ -366,11 +407,15 @@ class AchievementService {
       achievement: 0,
       task: 0,
       daily: 0,
+      consumption: 0,
+      exchange: 0,
       other: 0
     };
 
     this.pointsRecords.forEach(record => {
-      stats[record.type] += record.points;
+      // 将'system'类型映射到'other'
+      const statKey = record.type in stats ? record.type : 'other';
+      stats[statKey as keyof PointsSourceStats] += record.points;
     });
 
     return stats;
@@ -415,7 +460,155 @@ class AchievementService {
       recentRecords
     };
   }
+
+  // 添加积分
+  private addPoints(points: number, type: PointsRecord['type'], source: string, description: string, relatedId?: string): void {
+    const currentPoints = this.calculateUserPoints();
+    const newPoints = currentPoints + points;
+    
+    this.pointsRecords.push({
+      id: this.pointsRecords.length + 1,
+      source,
+      type,
+      points,
+      date: new Date().toISOString().split('T')[0],
+      description,
+      relatedId,
+      balanceAfter: newPoints
+    });
+  }
+
+  // 消费金额兑换积分
+  convertCashToPoints(amount: number, description: string = '消费兑换积分', relatedId?: string): number {
+    const points = Math.floor(amount * this.CASH_TO_POINTS_RATIO);
+    this.addPoints(points, 'consumption', '消费兑换', description, relatedId);
+    return points;
+  }
+
+  // 计算积分抵扣金额
+  calculatePointsDiscount(totalAmount: number, pointsToUse: number): {
+    discountAmount: number;
+    actualPointsUsed: number;
+    finalAmount: number;
+  } {
+    // 计算最大可抵扣金额
+    const maxDiscountAmount = totalAmount * this.MAX_DISCOUNT_RATIO;
+    
+    // 计算可使用的积分对应的金额
+    const availableDiscountAmount = (pointsToUse / this.POINTS_TO_CASH_RATIO);
+    
+    // 实际抵扣金额（取最小值）
+    const discountAmount = Math.min(maxDiscountAmount, availableDiscountAmount);
+    
+    // 实际使用的积分
+    const actualPointsUsed = Math.floor(discountAmount * this.POINTS_TO_CASH_RATIO);
+    
+    // 最终支付金额
+    const finalAmount = totalAmount - discountAmount;
+    
+    return {
+      discountAmount,
+      actualPointsUsed,
+      finalAmount
+    };
+  }
+
+  // 使用积分抵扣消费
+  usePointsForDiscount(totalAmount: number, pointsToUse: number, description: string = '积分抵扣消费', relatedId?: string): {
+    discountAmount: number;
+    actualPointsUsed: number;
+    finalAmount: number;
+  } {
+    const currentPoints = this.calculateUserPoints();
+    
+    // 检查积分是否足够
+    if (pointsToUse > currentPoints) {
+      throw new Error('积分不足');
+    }
+    
+    const { discountAmount, actualPointsUsed, finalAmount } = this.calculatePointsDiscount(totalAmount, pointsToUse);
+    
+    // 扣除积分
+    this.addPoints(-actualPointsUsed, 'exchange', '积分抵扣', description, relatedId);
+    
+    // 添加消费记录
+    this.consumptionRecords.push({
+      id: this.consumptionRecords.length + 1,
+      amount: totalAmount,
+      pointsEarned: Math.floor(finalAmount * this.CASH_TO_POINTS_RATIO),
+      pointsUsed: actualPointsUsed,
+      finalAmount,
+      date: new Date().toISOString().split('T')[0],
+      description,
+      relatedId
+    });
+    
+    // 消费获得积分
+    if (this.consumptionRecords[this.consumptionRecords.length - 1].pointsEarned > 0) {
+      this.addPoints(
+        this.consumptionRecords[this.consumptionRecords.length - 1].pointsEarned,
+        'consumption',
+        '消费获得',
+        `${description}，获得${this.consumptionRecords[this.consumptionRecords.length - 1].pointsEarned}积分`,
+        relatedId
+      );
+    }
+    
+    return {
+      discountAmount,
+      actualPointsUsed,
+      finalAmount
+    };
+  }
+
+  // 获取积分记录（支持筛选和搜索）
+  getPointsRecords(filter?: {
+    startDate?: string;
+    endDate?: string;
+    type?: PointsRecord['type'];
+    search?: string;
+  }, limit: number = 20, offset: number = 0): PointsRecord[] {
+    let filteredRecords = [...this.pointsRecords];
+    
+    if (filter) {
+      // 按时间范围筛选
+      if (filter.startDate) {
+        filteredRecords = filteredRecords.filter(record => record.date >= filter.startDate);
+      }
+      
+      if (filter.endDate) {
+        filteredRecords = filteredRecords.filter(record => record.date <= filter.endDate);
+      }
+      
+      // 按类型筛选
+      if (filter.type) {
+        filteredRecords = filteredRecords.filter(record => record.type === filter.type);
+      }
+      
+      // 按关键词搜索
+      if (filter.search) {
+        const searchLower = filter.search.toLowerCase();
+        filteredRecords = filteredRecords.filter(record => 
+          record.source.toLowerCase().includes(searchLower) ||
+          record.description.toLowerCase().includes(searchLower)
+        );
+      }
+    }
+    
+    // 排序并分页
+    return filteredRecords
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(offset, offset + limit);
+  }
+
+  // 获取消费记录
+  getConsumptionRecords(limit: number = 20, offset: number = 0): ConsumptionRecord[] {
+    return [...this.consumptionRecords]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(offset, offset + limit);
+  }
 }
 
 // 导出单例实例
-export default new AchievementService();
+const service = new AchievementService();
+export default service;

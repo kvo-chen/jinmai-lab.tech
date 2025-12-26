@@ -54,6 +54,103 @@ export default function Tools() {
     filter: ['风格滤镜一键切换', '参数可控与批量应用', '快速预览省时省力'],
     trace: ['元素来源溯源提示', '文化语境辅注与解释', '版权风险友好提醒'],
   }
+  
+  // 中文注释：增强创作模板库
+  const creationTemplates: Record<string, Array<{ id: string; title: string; description: string; prompt: string; category: string }>> = {
+    sketch: [
+      {
+        id: 'sketch-1',
+        title: '杨柳青年画包装',
+        description: '传统杨柳青年画风格的产品包装设计',
+        prompt: '杨柳青年画·包装焕新·国潮风格·红蓝主色·细腻纹理·古典人物形象·喜庆氛围',
+        category: '包装设计'
+      },
+      {
+        id: 'sketch-2',
+        title: '现代国潮海报',
+        description: '融合现代设计元素的国潮风格海报',
+        prompt: '现代国潮海报·几何图形·鲜艳色彩·传统文化元素·动态构图·时尚感·年轻人喜爱',
+        category: '海报设计'
+      },
+      {
+        id: 'sketch-3',
+        title: '传统纹样插画',
+        description: '基于传统纹样的插画设计',
+        prompt: '传统纹样插画·对称构图·柔和色调·细腻线条·文化底蕴·艺术感',
+        category: '插画设计'
+      }
+    ],
+    pattern: [
+      {
+        id: 'pattern-1',
+        title: '回纹与祥云融合',
+        description: '将回纹与祥云纹样嵌入现代设计',
+        prompt: '将回纹与祥云纹样嵌入现代海报·保留传统比例与间距·和谐配色·文化融合·视觉平衡',
+        category: '纹样设计'
+      },
+      {
+        id: 'pattern-2',
+        title: '传统服饰纹样',
+        description: '适用于服饰设计的传统纹样',
+        prompt: '传统服饰纹样·连续图案·适合丝绸面料·优雅配色·古典美感·现代应用',
+        category: '服饰设计'
+      },
+      {
+        id: 'pattern-3',
+        title: '现代家居纹样',
+        description: '适用于家居产品的现代传统纹样',
+        prompt: '现代家居纹样·简约设计·柔和色调·几何变形·传统元素·实用性',
+        category: '家居设计'
+      }
+    ],
+    filter: [
+      {
+        id: 'filter-1',
+        title: '东方美学滤镜',
+        description: '提升作品东方美学质感的滤镜',
+        prompt: '为插画应用“东方美学”滤镜·提升色彩层次与光影质感·古典韵味·柔和过渡·艺术氛围',
+        category: '图像处理'
+      },
+      {
+        id: 'filter-2',
+        title: '国潮复古滤镜',
+        description: '营造复古国潮氛围的滤镜',
+        prompt: '应用国潮复古滤镜·暖色调·胶片质感·颗粒感·复古氛围·怀旧风格',
+        category: '图像处理'
+      },
+      {
+        id: 'filter-3',
+        title: '现代简约滤镜',
+        description: '适合现代设计的简约滤镜',
+        prompt: '应用现代简约滤镜·高对比度·清晰线条·简约配色·专业感·时尚设计',
+        category: '图像处理'
+      }
+    ],
+    trace: [
+      {
+        id: 'trace-1',
+        title: '海河文化溯源',
+        description: '说明海河主题作品中的文化元素来源',
+        prompt: '说明海河主题海报里的文化元素来源，并给出参考链接·历史背景·文化意义·视觉表现·准确性',
+        category: '文化研究'
+      },
+      {
+        id: 'trace-2',
+        title: '传统工艺溯源',
+        description: '追溯传统工艺元素的历史背景',
+        prompt: '追溯传统工艺元素的历史背景·工艺特点·文化价值·现代传承·创新应用',
+        category: '文化研究'
+      },
+      {
+        id: 'trace-3',
+        title: '民俗文化解读',
+        description: '解读作品中的民俗文化元素',
+        prompt: '解读作品中的民俗文化元素·象征意义·历史渊源·地域特色·文化传承',
+        category: '文化研究'
+      }
+    ]
+  }
+  
   const samplePrompts: Record<string, string> = {
     sketch: '杨柳青年画·包装焕新·国潮风格·红蓝主色·细腻纹理',
     pattern: '将回纹与祥云纹样嵌入现代海报·保留传统比例与间距',
@@ -413,32 +510,75 @@ export default function Tools() {
                     <span>近7天使用 {formatCount(toolStats[tool.id])}+ </span>
                   </div>
                   {/* 中文注释：卡片详情展开区（验证“Prove/证明”与“减少认知负担”的假设） */}
-                  {expandedTool === tool.id || expandedTool === 'all' ? (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-4">
-                      <ul className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm space-y-1`} aria-label="优势列表">
-                        {(toolBenefits[tool.id] || []).map((b, i) => (
-                          <li key={i} className="flex items-center"><i className="fas fa-check-circle text-green-500 mr-2"></i>{b}</li>
-                        ))}
-                      </ul>
-                      <div className="mt-2 text-xs opacity-80">示例提示词：{samplePrompts[tool.id]}</div>
-                      <div className="mt-2 flex gap-2">
-                        <TianjinButton 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={async () => { try { await navigator.clipboard.writeText(samplePrompts[tool.id]); track('tools:copy_prompt', { tool: tool.id }); } catch {} }}
-                        >
-                          复制示例提示词
-                        </TianjinButton>
-                        <TianjinButton 
-                          variant="secondary" 
-                          size="sm"
-                          onClick={() => { navigate(`/create?tool=${tool.id}&prompt=${encodeURIComponent(samplePrompts[tool.id])}`); track('tools:apply_prompt', { tool: tool.id }); }}
-                        >
-                          一键应用到创作
-                        </TianjinButton>
-                      </div>
-                    </motion.div>
-                  ) : null}
+                      {expandedTool === tool.id || expandedTool === 'all' ? (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-4">
+                          <ul className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-sm space-y-1`} aria-label="优势列表">
+                            {(toolBenefits[tool.id] || []).map((b, i) => (
+                              <li key={i} className="flex items-center"><i className="fas fa-check-circle text-green-500 mr-2"></i>{b}</li>
+                            ))}
+                          </ul>
+                          <div className="mt-2 text-xs opacity-80">示例提示词：{samplePrompts[tool.id]}</div>
+                          <div className="mt-2 flex gap-2">
+                            <TianjinButton 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={async () => { try { await navigator.clipboard.writeText(samplePrompts[tool.id]); track('tools:copy_prompt', { tool: tool.id }); } catch {} }}
+                            >
+                              复制示例提示词
+                            </TianjinButton>
+                            <TianjinButton 
+                              variant="secondary" 
+                              size="sm"
+                              onClick={() => { navigate(`/create?tool=${tool.id}&prompt=${encodeURIComponent(samplePrompts[tool.id])}`); track('tools:apply_prompt', { tool: tool.id }); }}
+                            >
+                              一键应用到创作
+                            </TianjinButton>
+                          </div>
+                          
+                          {/* 中文注释：新增创作模板选择功能 */}
+                          <div className="mt-4">
+                            <h4 className="font-medium text-sm mb-2">创作模板库</h4>
+                            <div className="space-y-2">
+                              {creationTemplates[tool.id]?.map((template) => (
+                                <div key={template.id} className={`p-2 rounded-lg border ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'} text-xs`}>
+                                  <div className="flex justify-between items-start mb-1">
+                                    <div>
+                                      <div className="font-medium">{template.title}</div>
+                                      <div className="opacity-70">{template.description}</div>
+                                      <div className="opacity-60 mt-1">{template.category}</div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <TianjinButton 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={async () => { 
+                                          try { 
+                                            await navigator.clipboard.writeText(template.prompt); 
+                                            track('tools:copy_template_prompt', { tool: tool.id, template: template.id }); 
+                                            toast.success('模板提示词已复制');
+                                          } catch {} 
+                                        }}
+                                      >
+                                        复制
+                                      </TianjinButton>
+                                      <TianjinButton 
+                                        variant="secondary" 
+                                        size="sm"
+                                        onClick={() => { 
+                                          navigate(`/create?tool=${tool.id}&prompt=${encodeURIComponent(template.prompt)}`); 
+                                          track('tools:apply_template', { tool: tool.id, template: template.id }); 
+                                        }}
+                                      >
+                                        应用
+                                      </TianjinButton>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ) : null}
                   <motion.div whileHover={{ scale: 1.02 }}>
                     <TianjinButton 
                       onClick={() => { track('tools:cta_click', { tool: tool.id }); navigate(`/create?tool=${tool.id}`) }} 

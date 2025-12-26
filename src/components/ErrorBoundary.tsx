@@ -44,6 +44,12 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       userId: localStorage.getItem('userId') || sessionStorage.getItem('userId') || undefined
     };
     
+    // 检查是否是removeChild错误，如果是，忽略它
+    if (error instanceof DOMException && error.name === 'NotFoundError' && error.message.includes('removeChild')) {
+      console.warn('忽略DOM移除错误:', error.message);
+      return;
+    }
+    
     // 记录错误信息
     const errorInfoObj = errorService.logError(error, context);
     

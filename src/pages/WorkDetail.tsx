@@ -3,11 +3,36 @@ import { useTheme } from '@/hooks/useTheme'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
 import { mockWorks } from '@/mock/works'
+// 使用更可靠的懒加载方式，并添加错误边界
 const ARPreview = lazy(() => import('@/components/SimplifiedARPreview'))
 import postsApi from '@/services/postService'
 import exportService, { ExportOptions, ExportFormat } from '@/services/exportService'
 import type { SimplifiedARPreviewConfig as ARPreviewConfig } from '@/components/SimplifiedARPreview'
 import LazyImage from '@/components/LazyImage'
+
+// 自定义错误边界组件
+const ARPreviewErrorBoundary: React.FC<{ children: React.ReactNode; onRetry: () => void }> = ({ children, onRetry }) => {
+  const [hasError, setHasError] = useState(false)
+
+  if (hasError) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+        <div className="text-white text-center p-6 bg-red-900 bg-opacity-70 rounded-lg">
+          <p className="text-xl font-bold mb-2">AR预览加载失败</p>
+          <p>请检查网络连接或稍后重试</p>
+          <button 
+            onClick={onRetry} 
+            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+          >
+            重试
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
+}
 
 export default function WorkDetail() {
   const { isDark } = useTheme()
@@ -36,6 +61,7 @@ export default function WorkDetail() {
   const [likes, setLikes] = useState(work?.likes || 0)
   const [bookmarked, setBookmarked] = useState(false)
   const [isARPreviewOpen, setIsARPreviewOpen] = useState(false)
+  const [arRetryCount, setArRetryCount] = useState(0) // 用于处理AR预览重试
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'png',
@@ -250,29 +276,31 @@ export default function WorkDetail() {
             )}
           </motion.div>
           
-          {/* AR预览组件 */}
+          {/* AR预览组件 - 添加错误边界和重试机制 */}
           {isARPreviewOpen && (
-            <Suspense fallback={
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-                <div className="text-white text-center">
-                  <div className="animate-spin-fast w-12 h-12 border-4 border-t-transparent border-white rounded-full mx-auto mb-3"></div>
-                  <p>正在加载AR预览...</p>
+            <ARPreviewErrorBoundary onRetry={() => setArRetryCount(prev => prev + 1)}>
+              <Suspense fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+                  <div className="text-white text-center">
+                    <div className="animate-spin w-12 h-12 border-4 border-t-transparent border-white rounded-full mx-auto mb-3"></div>
+                    <p>正在加载AR预览...</p>
+                    <p className="text-sm opacity-80 mt-2">请稍候...</p>
+                  </div>
                 </div>
-              </div>
-            }>
-              <ARPreview
-                config={{
-                  imageUrl: work?.thumbnail && work.thumbnail.includes('unsplash.com') ? work.thumbnail : 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80',
-                  modelUrl: work?.modelUrl || '',
-                  type: work?.modelUrl ? '3d' : '2d',
-                  scale: 5.0,
-                  rotation: { x: 0, y: 0, z: 0 },
-                  position: { x: 0, y: 0, z: 0 }
-                }}
-                work={work}
-                onClose={() => setIsARPreviewOpen(false)}
-              />
-            </Suspense>
+              }>
+                <ARPreview
+                  config={{
+                    imageUrl: work?.thumbnail && work.thumbnail.includes('unsplash.com') ? work.thumbnail : 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80',
+                    modelUrl: work?.modelUrl || '',
+                    type: work?.modelUrl ? '3d' : '2d',
+                    scale: 5.0,
+                    rotation: { x: 0, y: 0, z: 0 },
+                    position: { x: 0, y: 0, z: 0 }
+                  }}
+                  onClose={() => setIsARPreviewOpen(false)}
+                />
+              </Suspense>
+            </ARPreviewErrorBoundary>
           )}
 
           {/* 导出选项对话框 */}

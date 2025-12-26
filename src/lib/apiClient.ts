@@ -478,13 +478,16 @@ export async function apiRequest<TResp, TBody = unknown>(
         
         // 处理成功响应
         if (res.ok) {
-          // 尝试解析API响应格式
-          const apiResponse = data as ApiResponse<TResp>
-          let responseData: any = apiResponse
+          // 统一API响应格式：无论后端返回什么格式，都统一转换为ApiResponse格式
+          let responseData: any
           
-          // 如果响应是嵌套的，提取实际数据
-          if (apiResponse.ok && 'data' in apiResponse) {
+          // 如果响应是ApiResponse格式，直接使用其data字段
+          if (typeof data === 'object' && data !== null && 'ok' in data && 'data' in data) {
+            const apiResponse = data as ApiResponse<TResp>
             responseData = apiResponse.data
+          } else {
+            // 否则，直接将响应数据作为data字段
+            responseData = data
           }
           
           // 更新缓存
@@ -496,20 +499,48 @@ export async function apiRequest<TResp, TBody = unknown>(
             })
           }
           
+          // 返回统一格式的响应
           return { ok: true, status: res.status, data: responseData as TResp, fromCache: false }
         }
         
         // 处理错误响应
-        const errorMessage = data.message || data.error || `Request failed with status ${res.status}`
+        let errorMessage: string
+        let errorData: any = data
+        
+        // 统一错误信息格式
+        if (typeof data === 'object' && data !== null) {
+          // 如果是ApiResponse格式的错误
+          if ('error' in data) {
+            errorMessage = String(data.error || `Request failed with status ${res.status}`)
+          } 
+          // 如果是包含message字段的错误
+          else if ('message' in data) {
+            errorMessage = String(data.message || `Request failed with status ${res.status}`)
+          } 
+          // 如果是包含errors字段的错误（例如表单验证错误）
+          else if ('errors' in data) {
+            errorMessage = Array.isArray(data.errors) ? data.errors.join(', ') : String(data.errors || `Request failed with status ${res.status}`)
+          }
+          // 其他对象类型的错误
+          else {
+            errorMessage = JSON.stringify(data) || `Request failed with status ${res.status}`
+          }
+        } else {
+          // 非对象类型的错误
+          errorMessage = String(data || `Request failed with status ${res.status}`)
+        }
+        
+        // 创建ApiError对象
         const error = new Error(errorMessage) as ApiError
         error.status = res.status
-        error.data = data
+        error.data = errorData
         error.path = path
         error.method = method
         
         // 记录错误
         console.error(`API Error: ${method} ${path} ${res.status}`, error)
         
+        // 抛出错误
         throw error
       } catch (error) {
         attempt++
@@ -526,15 +557,15 @@ export async function apiRequest<TResp, TBody = unknown>(
             continue
           }
           
-          // 回退URL也失败了，抛出最终错误
-          const finalError = error as Error
-          return {
-            ok: false,
-            status: 500,
-            error: finalError.message || 'Unknown error',
-            data: null as any,
-            fromCache: false
-          }
+          // 回退URL也失败了，返回统一格式的错误响应
+        const finalError = error as Error
+        return {
+          ok: false,
+          status: finalError instanceof Error ? 500 : 500,
+          error: finalError.message || 'Unknown error',
+          data: null as any,
+          fromCache: false
+        }
         }
         
         // 计算延迟时间（指数退避）

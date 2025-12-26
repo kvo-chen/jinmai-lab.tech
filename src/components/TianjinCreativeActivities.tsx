@@ -47,7 +47,11 @@ interface TraditionalBrand {
   popularity: number;
 }
 
-export default memo(function TianjinCreativeActivities() {
+interface TianjinCreativeActivitiesProps {
+  search?: string;
+}
+
+export default memo(function TianjinCreativeActivities({ search: propSearch = '' }: TianjinCreativeActivitiesProps) {
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
@@ -57,7 +61,7 @@ export default memo(function TianjinCreativeActivities() {
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   const [hasOverflow, setHasOverflow] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(propSearch);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const openActivityDetail = (a: Activity) => navigate(`/events/${a.id}`);
   const closeActivityDetail = () => setSelectedActivity(null);
@@ -76,6 +80,11 @@ export default memo(function TianjinCreativeActivities() {
   const brandSentinelRef = useRef<HTMLDivElement | null>(null); // 中文注释：品牌区无限滚动哨兵引用
   const [brandPage, setBrandPage] = useState<number>(1); // 中文注释：品牌区当前分页
   const brandPageSize = 36; // 中文注释：品牌区每页数量
+  
+  // 当外部搜索属性变化时，更新内部搜索状态
+  useEffect(() => {
+    setSearch(propSearch);
+  }, [propSearch]);
 
   useEffect(() => {
     const updateTabScrollState = () => {
@@ -774,33 +783,38 @@ export default memo(function TianjinCreativeActivities() {
     toast.success('预约成功！我们会尽快与您联系确认详情');
   };
   
-  const searchLower = search.trim().toLowerCase();
+  const searchLower = typeof search === 'string' ? search.trim().toLowerCase() : '';
   
   // 使用useMemo缓存过滤结果，减少不必要的重复计算
   const filteredActivities = useMemo(() => {
     return searchLower
-      ? activities.filter((a) => [a.title, a.description].some((s) => s.toLowerCase().includes(searchLower)))
+      ? activities.filter((a) => [a.title, a.description].some((s) => typeof s === 'string' && s.toLowerCase().includes(searchLower)))
       : activities;
   }, [searchLower, activities]);
   
   const filteredTemplates = useMemo(() => {
     return searchLower
-      ? templates.filter((t) => [t.name, t.description, t.category].some((s) => s.toLowerCase().includes(searchLower)))
+      ? templates.filter((t) => [t.name, t.description, t.category].some((s) => typeof s === 'string' && s.toLowerCase().includes(searchLower)))
       : templates;
   }, [searchLower, templates]);
   
   const filteredExperiences = useMemo(() => {
     return searchLower
-      ? offlineExperiences.filter((e) => [e.name, e.description, e.location].some((s) => s.toLowerCase().includes(searchLower)))
+      ? offlineExperiences.filter((e) => [e.name, e.description, e.location].some((s) => typeof s === 'string' && s.toLowerCase().includes(searchLower)))
       : offlineExperiences;
   }, [searchLower, offlineExperiences]);
   
   const filteredBrands = useMemo(() => {
     return searchLower
-      ? allBrands.filter((b) => [b.name, b.description, b.establishedYear].some((s) => s.toLowerCase().includes(searchLower)))
+      ? allBrands.filter((b) => [b.name, b.description, b.establishedYear].some((s) => typeof s === 'string' && s.toLowerCase().includes(searchLower)))
       : allBrands;
   }, [searchLower, allBrands]);
-  const pagedBrands = useMemo(() => filteredBrands.slice(0, brandPage * brandPageSize), [filteredBrands, brandPage, brandPageSize]);
+  
+  // 确保 pagedBrands 始终是一个数组
+  const pagedBrands = useMemo(() => {
+    if (!Array.isArray(filteredBrands)) return [];
+    return filteredBrands.slice(0, brandPage * brandPageSize);
+  }, [filteredBrands, brandPage, brandPageSize]);
 
   // 中文注释：进入“老字号联名”或搜索变化时重置分页
   useEffect(() => { if (activeTab === 'brands') setBrandPage(1); }, [activeTab, search]);
@@ -809,41 +823,54 @@ export default memo(function TianjinCreativeActivities() {
     if (activeTab !== 'brands') return;
     const el = brandSentinelRef.current;
     if (!el) return;
-    const maxPages = Math.ceil(filteredBrands.length / brandPageSize);
-    const observer = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry.isIntersecting) {
-        setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
-      }
-    }, { rootMargin: '200px' });
-    observer.observe(el);
-    return () => observer.disconnect();
+    
+    try {
+      const maxPages = Math.ceil(filteredBrands.length / brandPageSize);
+      const observer = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
+        }
+      }, { rootMargin: '200px' });
+      observer.observe(el);
+      return () => observer.disconnect();
+    } catch (error) {
+      console.error('IntersectionObserver error:', error);
+    }
   }, [activeTab, filteredBrands.length, brandPageSize]);
+  
   // 中文注释：品牌区无限滚动降级方案（滚动到页面底部触发）
   useEffect(() => {
     if (activeTab !== 'brands') return;
-    const maxPages = Math.ceil(filteredBrands.length / brandPageSize);
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        ticking = false;
-        const doc = document.documentElement;
-        const scrollBottom = (window.scrollY || doc.scrollTop) + window.innerHeight;
-        const docHeight = Math.max(
-          doc.scrollHeight,
-          doc.offsetHeight,
-          document.body ? document.body.scrollHeight : 0,
-          document.body ? document.body.offsetHeight : 0
-        );
-        if (scrollBottom >= docHeight - 300) {
-          setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
-        }
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    
+    try {
+      const maxPages = Math.ceil(filteredBrands.length / brandPageSize);
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          const doc = document.documentElement;
+          if (!doc) return;
+          
+          const scrollBottom = (window.scrollY || doc.scrollTop) + window.innerHeight;
+          const docHeight = Math.max(
+            doc.scrollHeight || 0,
+            doc.offsetHeight || 0,
+            document.body?.scrollHeight || 0,
+            document.body?.offsetHeight || 0
+          );
+          if (scrollBottom >= docHeight - 300) {
+            setBrandPage((prev) => (prev < maxPages ? prev + 1 : prev));
+          }
+        });
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return () => window.removeEventListener('scroll', onScroll);
+    } catch (error) {
+      console.error('Scroll event listener error:', error);
+    }
   }, [activeTab, filteredBrands.length, brandPageSize]);
   
   // 骨架屏加载状态

@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/useTheme'
 import ModelSelector from '@/components/ModelSelector'
 
 export default function Settings() {
-  const { theme, isDark, toggleTheme } = useTheme()
+  const { theme, isDark, toggleTheme, setTheme, availableThemes } = useTheme()
   const [showModelSelector, setShowModelSelector] = useState(false)
   
   // 通知设置
@@ -116,9 +116,52 @@ export default function Settings() {
           {/* 主题设置 */}
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <h2 className="font-medium mb-3">主题</h2>
-            <div className="flex items-center justify-between">
-              <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>当前主题：{isDark ? '深色' : '浅色'}</span>
-              <button onClick={toggleTheme} className={`px-4 py-2 rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}>切换主题</button>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>当前主题</span>
+                <span className={`${isDark ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
+                  {theme === 'auto' ? '自动' : 
+                   theme === 'light' ? '浅色' : 
+                   theme === 'dark' ? '深色' : '粉色'}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                {availableThemes.map((themeOption) => (
+                  <button
+                    key={themeOption.value}
+                    onClick={() => setTheme(themeOption.value)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${
+                      theme === themeOption.value 
+                        ? isDark 
+                          ? 'bg-gray-700 ring-2 ring-blue-500' 
+                          : 'bg-gray-100 ring-2 ring-blue-500' 
+                        : isDark 
+                          ? 'bg-gray-800 hover:bg-gray-700' 
+                          : 'bg-white hover:bg-gray-100'
+                    }`}
+                    title={themeOption.label}
+                  >
+                    <i className={`${themeOption.icon} text-xl mb-1 ${
+                      theme === themeOption.value 
+                        ? isDark 
+                          ? 'text-white' 
+                          : 'text-blue-600' 
+                        : isDark 
+                          ? 'text-gray-400' 
+                          : 'text-gray-500'
+                    }`}></i>
+                    <span className={`text-xs ${
+                      theme === themeOption.value 
+                        ? isDark 
+                          ? 'text-white font-medium' 
+                          : 'text-blue-600 font-medium' 
+                        : isDark 
+                          ? 'text-gray-400' 
+                          : 'text-gray-500'
+                    }`}>{themeOption.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           

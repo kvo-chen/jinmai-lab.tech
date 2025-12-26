@@ -36,7 +36,7 @@ export default function GradientHero({ title, subtitle, badgeText, theme = 'red'
   const subtitleClass = size === 'lg' ? 'mt-3 text-base' : size === 'sm' ? 'mt-2 text-sm' : 'mt-2 text-sm'
   return (
     <motion.section
-      className={`relative overflow-hidden rounded-3xl mb-8 text-white bg-gradient-to-r ${gradient} ${className || ''}`}
+      className={`relative overflow-hidden rounded-3xl mb-8 text-white bg-gradient-to-r ${gradient} ${className || ''} container mx-auto`}
       aria-label={title}
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -52,7 +52,7 @@ export default function GradientHero({ title, subtitle, badgeText, theme = 'red'
         ></div>
       )}
       {variant === 'center' ? (
-        <div className={paddings}>
+        <div className={`container mx-auto ${paddings}`}>
           <div className="flex items-center justify-between">
             <h1 className={`${titleClass} font-bold tracking-tight`}>{title}</h1>
             {badgeText && (
@@ -77,7 +77,7 @@ export default function GradientHero({ title, subtitle, badgeText, theme = 'red'
           )}
         </div>
       ) : (
-        <div className={paddings}>
+        <div className={`container mx-auto ${paddings}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div>
               <div className="flex items-center justify-between">

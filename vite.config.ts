@@ -260,7 +260,7 @@ export default defineConfig({
         correctVarValueBeforeDeclaration: true,
         moduleSideEffects: (id) => {
           // 排除需要保留副作用的模块
-          return id.includes('@fortawesome') || id.includes('sonner') || id.includes('@vercel/analytics') || id.includes('@vercel/speed-insights');
+          return id.includes('@fortawesome') || id.includes('sonner');
         }
       },
       // 外部化 Node.js 原生模块，避免打包到浏览器代码中
@@ -351,8 +351,7 @@ export default defineConfig({
     // 禁用预构建的依赖，包括数据库依赖和可能存在兼容性问题的库
     exclude: [
       'better-sqlite3', 'mongodb', 'pg', '@neondatabase/serverless',
-      '@mediapipe/hands', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl',
-      'three', '@react-three/fiber', '@react-three/drei' // Three.js相关库不预构建
+      '@mediapipe/hands', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl'
     ],
     // 优化依赖构建，增加并发数
     esbuildOptions: {

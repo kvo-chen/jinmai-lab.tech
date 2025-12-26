@@ -1,23 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import GradientHero from '@/components/GradientHero';
-import AMapLoader from '@amap/amap-jsapi-loader';
+import VirtualMap from '@/components/VirtualMap/VirtualMap';
 import { 
-  AMAP_KEY, 
-  MAP_INIT_CONFIG, 
-  MOCK_COORDINATES, 
   CATEGORY_ICONS, 
   CATEGORY_COLORS, 
-  CATEGORY_NAMES 
+  CATEGORY_NAMES,
+  MOCK_COORDINATES 
 } from '@/utils/mapUtils';
 
-// 声明AMap全局变量
-declare global {
-  interface Window {
-    AMap: any;
-  }
-}
+// 导入虚拟地图类型
+import { Region, POI as VirtualPOI, Path } from '@/components/VirtualMap/types';
 
 // 定义POI类型
 interface POI {
@@ -34,6 +28,10 @@ interface POI {
   importance?: number;
   tags?: string[];
   relatedPois?: number[];
+  featuredProducts?: string[];
+  honors?: string[];
+  historicalSignificance?: string;
+  culturalHeritageLevel?: string;
 }
 
 interface Category {
@@ -85,7 +83,7 @@ const localPOIData: POIData = {
       "id": 1,
       "name": "狗不理包子",
       "category": "food",
-      "description": "天津著名的传统小吃，以皮薄馅大、鲜香可口著称，有着悠久的历史和文化底蕴。",
+      "description": "天津著名的传统小吃，以皮薄馅大、鲜香可口著称，有着悠久的历史和文化底蕴。狗不理包子的制作技艺被列入国家级非物质文化遗产名录。",
       "address": "天津市和平区山东路77号",
       "position": { 
         "x": 45, 
@@ -95,14 +93,19 @@ const localPOIData: POIData = {
       },
       "year": 1858,
       "images": [
-        "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1626084896955-33563b55b0ca?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop"
+        // 使用SVG占位图替代外部图片，避免ORB阻止
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E百年老店%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "08:00-22:00",
       "phone": "022-27306590",
       "importance": 5,
       "tags": ["天津三绝", "传统小吃", "百年老店"],
+      "featuredProducts": ["猪肉包子", "三鲜包子", "蟹黄包子", "野菜包子"],
+      "honors": ["国家级非物质文化遗产", "中华老字号", "天津名小吃"],
+      "historicalSignificance": "狗不理包子始创于1858年，由高贵友创立，是天津传统饮食文化的重要代表，见证了天津近代商业的发展历程。",
+      "culturalHeritageLevel": "国家级",
       "relatedPois": [2, 3]
     },
     {
@@ -119,8 +122,8 @@ const localPOIData: POIData = {
       },
       "year": 1912,
       "images": [
-        "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E十八街麻花%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E十八街麻花%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统名点%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "09:00-21:00",
       "phone": "022-28326900",
@@ -142,8 +145,8 @@ const localPOIData: POIData = {
       },
       "year": 1900,
       "images": [
-        "https://images.unsplash.com/photo-1576827152400-24a02034b260?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1628646345558-26a999e9b437?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E耳朵眼炸糕%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E耳朵眼炸糕%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "08:30-20:30",
       "phone": "022-27275033",
@@ -165,8 +168,8 @@ const localPOIData: POIData = {
       },
       "year": 1928,
       "images": [
-        "https://images.unsplash.com/photo-1560448204-e02f11bad21b?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1600081329455-ba9599a7e63c?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E劝业场%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E百年老店%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E劝业场%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E商业地标%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "10:00-22:00",
       "phone": "022-27211818",
@@ -188,8 +191,8 @@ const localPOIData: POIData = {
       },
       "year": 1600,
       "images": [
-        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1616410626454-7a0b76a43ba8?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E杨柳青年画%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E民间艺术%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E杨柳青年画%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E国家级非遗%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "09:00-17:00",
       "phone": "022-27940617",
@@ -211,8 +214,8 @@ const localPOIData: POIData = {
       },
       "year": 1844,
       "images": [
-        "https://images.unsplash.com/photo-1511104491606-aa6905b541e4?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1616410626454-7a0b76a43ba8?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E泥人张彩塑%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E民间艺术%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E泥人张彩塑%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统工艺%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "09:00-18:00",
       "phone": "022-27353157",
@@ -234,8 +237,8 @@ const localPOIData: POIData = {
       },
       "year": 2008,
       "images": [
-        "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津之眼%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E现代地标%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津之眼%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E旅游景点%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "09:30-21:30",
       "phone": "022-26288830",
@@ -257,14 +260,147 @@ const localPOIData: POIData = {
       },
       "year": 2012,
       "images": [
-        "https://images.unsplash.com/photo-1578473349177-3985528a3b9c?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1590092084034-d01156383737?w=800&h=600&fit=crop"
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津大剧院%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E文化设施%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津大剧院%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E艺术殿堂%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "根据演出时间而定",
       "phone": "022-83882000",
       "importance": 4,
       "tags": ["现代建筑", "文化设施", "艺术殿堂"],
+      "featuredProducts": ["歌剧演出", "音乐会", "话剧", "舞蹈表演"],
+      "honors": ["国家大剧院联盟成员", "天津市文化地标"],
+      "culturalHeritageLevel": "市级",
       "relatedPois": [7]
+    },
+    {
+      "id": 9,
+      "name": "老美华",
+      "category": "retail",
+      "description": "天津著名的鞋店，以制作传统布鞋而闻名，有着百年历史，是天津传统商业的代表。",
+      "address": "天津市和平区和平路290号劝业场底商",
+      "position": { 
+        "x": 46, 
+        "y": 55, 
+        "lng": MOCK_COORDINATES[1][0] + 0.01, 
+        "lat": MOCK_COORDINATES[1][1] + 0.01 
+      },
+      "year": 1911,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E老美华%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E百年鞋店%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:30-21:00",
+      "phone": "022-27211587",
+      "importance": 5,
+      "tags": ["百年老店", "传统布鞋", "中华老字号"],
+      "featuredProducts": ["传统布鞋", "手工皮鞋", "中老年鞋", "礼品鞋"],
+      "honors": ["中华老字号", "国家级非物质文化遗产", "天津名牌产品"],
+      "historicalSignificance": "老美华始创于1911年，由庞鹤年创立，是天津传统商业的代表，见证了天津近代商业的发展历程。",
+      "culturalHeritageLevel": "国家级",
+      "relatedPois": [4]
+    },
+    {
+      "id": 10,
+      "name": "果仁张",
+      "category": "food",
+      "description": "天津著名的传统小吃，以制作各种风味果仁而闻名，有着悠久的历史和独特的制作工艺。",
+      "address": "天津市南开区古文化街宫北大街10号",
+      "position": { 
+        "x": 45, 
+        "y": 52, 
+        "lng": MOCK_COORDINATES[3][0] + 0.01, 
+        "lat": MOCK_COORDINATES[3][1] + 0.01 
+      },
+      "year": 1830,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E果仁张%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:00-19:00",
+      "phone": "022-27355368",
+      "importance": 4,
+      "tags": ["天津名小吃", "传统食品", "百年老店"],
+      "featuredProducts": ["五香果仁", "琥珀桃仁", "麻辣花生", "怪味豆"],
+      "honors": ["中华老字号", "天津名小吃", "国家级非物质文化遗产"],
+      "historicalSignificance": "果仁张始创于1830年，由张惠山创立，是天津传统小吃的代表，制作技艺独特，风味各异。",
+      "culturalHeritageLevel": "国家级",
+      "relatedPois": [5, 6]
+    },
+    {
+      "id": 11,
+      "name": "天津古文化街",
+      "category": "landmark",
+      "description": "天津著名的文化旅游景点，集传统商业、文化展示、旅游观光于一体，是天津传统文化的重要载体。",
+      "address": "天津市南开区东门外大街宫北大街",
+      "position": { 
+        "x": 45, 
+        "y": 53, 
+        "lng": MOCK_COORDINATES[3][0], 
+        "lat": MOCK_COORDINATES[3][1] 
+      },
+      "year": 1985,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津古文化街%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E文化旅游景点%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:00-21:00",
+      "phone": "022-27356433",
+      "importance": 5,
+      "tags": ["文化旅游", "传统商业", "天津地标"],
+      "featuredProducts": ["杨柳青年画", "泥人张彩塑", "风筝魏风筝", "天津特产"],
+      "honors": ["国家5A级旅游景区", "中国历史文化名街", "天津市文化地标"],
+      "historicalSignificance": "天津古文化街是天津传统文化的重要载体，集中展示了天津的历史文化、传统工艺和民俗风情。",
+      "culturalHeritageLevel": "国家级",
+      "relatedPois": [5, 6]
+    },
+    {
+      "id": 12,
+      "name": "风筝魏",
+      "category": "craft",
+      "description": "天津著名的风筝制作技艺，以制作精美、造型独特的风筝而闻名，是中国传统手工艺的代表。",
+      "address": "天津市南开区古文化街宫南大街12号",
+      "position": { 
+        "x": 45, 
+        "y": 54, 
+        "lng": MOCK_COORDINATES[3][0] - 0.01, 
+        "lat": MOCK_COORDINATES[3][1] - 0.01 
+      },
+      "year": 1892,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E风筝魏%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统手工艺%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:00-18:00",
+      "phone": "022-27356878",
+      "importance": 4,
+      "tags": ["传统手工艺", "国家级非遗", "天津名产"],
+      "featuredProducts": ["沙燕风筝", "巨龙风筝", "蝴蝶风筝", "人物风筝"],
+      "honors": ["国家级非物质文化遗产", "中华老字号", "中国传统工艺珍品"],
+      "historicalSignificance": "风筝魏始创于1892年，由魏元泰创立，其制作的风筝以造型精美、工艺精湛、放飞稳定而闻名中外。",
+      "culturalHeritageLevel": "国家级",
+      "relatedPois": [5, 6, 11]
+    },
+    {
+      "id": 13,
+      "name": "天津博物馆",
+      "category": "culture",
+      "description": "天津最大的综合性博物馆，收藏了大量天津历史文化遗产，是了解天津历史文化的重要场所。",
+      "address": "天津市河西区平江道62号",
+      "position": { 
+        "x": 48, 
+        "y": 59, 
+        "lng": MOCK_COORDINATES[8][0] + 0.01, 
+        "lat": MOCK_COORDINATES[8][1] + 0.01 
+      },
+      "year": 1918,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津博物馆%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E综合性博物馆%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:00-16:30（周一闭馆）",
+      "phone": "022-83883000",
+      "importance": 5,
+      "tags": ["文化设施", "历史文物", "天津地标"],
+      "featuredProducts": ["文物展览", "历史陈列", "临时特展", "文创产品"],
+      "honors": ["国家一级博物馆", "天津市爱国主义教育基地"],
+      "historicalSignificance": "天津博物馆是天津历史文化的重要载体，收藏了大量珍贵文物，展示了天津从古代到现代的历史发展脉络。",
+      "culturalHeritageLevel": "国家级",
+      "relatedPois": [8]
     }
   ]
 };
@@ -281,112 +417,129 @@ export default function TianjinMap() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBrand, setSelectedBrand] = useState<POI | null>(null);
   const [showInfo, setShowInfo] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState<{[key: number]: boolean[]}>({});
-  const [isLoading, setIsLoading] = useState(true);
+  // 初始化imageLoaded状态，为每个POI创建对应的加载状态数组
+  const [imageLoaded, setImageLoaded] = useState<{[key: number]: boolean[]}>(() => {
+    const initialState: {[key: number]: boolean[]} = {};
+    mapData.forEach(poi => {
+      initialState[poi.id] = poi.images.map(() => false);
+    });
+    return initialState;
+  });
   // 图片轮播状态
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // 搜索状态
   const [searchQuery, setSearchQuery] = useState('');
+  // 区域筛选状态
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
   
-  // 地图相关状态
-  const [mapInstance, setMapInstance] = useState<any>(null);
-  const [markers, setMarkers] = useState<any[]>([]);
-  
-  // 地图容器引用
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
+  // 筛选数据 - 使用useMemo缓存筛选结果，避免在每次渲染时重复计算
+  const filteredBrands = useMemo(() => {
+    // 缓存筛选条件，避免重复计算
+    const lowerSearchQuery = searchQuery.toLowerCase();
+    const isAllCategories = selectedCategory === 'all';
+    const isAllRegions = selectedRegion === 'all';
+    
+    return mapData.filter(brand => {
+      const matchesCategory = isAllCategories || brand.category === selectedCategory;
+      const matchesSearch = lowerSearchQuery === '' || 
+                           (brand.name && brand.name.toLowerCase().includes(lowerSearchQuery)) || 
+                           (brand.description && brand.description.toLowerCase().includes(lowerSearchQuery));
+      // 目前所有POI都在天津市区，所以区域筛选暂时只做占位
+      const matchesRegion = isAllRegions || true;
+      
+      return matchesCategory && matchesSearch && matchesRegion;
+    });
+  }, [mapData, selectedCategory, searchQuery, selectedRegion]);
 
-  // 初始化高德地图
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
-    
-    const initMap = async () => {
-      try {
-        setIsLoading(true);
-        
-        // 加载高德地图API
-        await AMapLoader.load({
-          key: AMAP_KEY,
-          version: '2.0',
-          plugins: ['AMap.Marker', 'AMap.InfoWindow', 'AMap.Scale', 'AMap.ToolBar'],
-          AMapUI: {
-            version: '1.1',
-            plugins: []
-          }
-        });
-        
-        // 创建地图实例
-        const map = new window.AMap.Map(mapContainerRef.current, {
-          zoom: MAP_INIT_CONFIG.zoom,
-          center: MAP_INIT_CONFIG.center,
-          mapStyle: MAP_INIT_CONFIG.mapStyle,
-          resizeEnable: true
-        });
-        
-        // 添加地图控件
-        map.addControl(new window.AMap.Scale());
-        map.addControl(new window.AMap.ToolBar({
-          position: 'RT'
-        }));
-        
-        // 保存地图实例
-        setMapInstance(map);
-        mapRef.current = map;
-        
-        // 监听地图事件
-        map.on('zoomend', () => {
-          setZoom(map.getZoom());
-        });
-        
-      } catch (error) {
-        console.error('Failed to initialize AMap:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    initMap();
-    
-    // 清理函数
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.destroy();
-      }
-    };
+  // 虚拟地图数据 - 使用useMemo优化数据生成和转换
+  const virtualRegions = useMemo<Region[]>(() => {
+    return [];
   }, []);
   
-  // 预加载POI图片
+  // 转换本地POI为虚拟地图POI格式 - 使用useMemo缓存转换结果
+  const virtualPOIs = useMemo<VirtualPOI[]>(() => {
+    // 缓存坐标转换计算结果
+    const baseX = 500;
+    const baseY = 500;
+    const offsetMultiplier = 20;
+    
+    // 正确的颜色映射表，将Tailwind颜色类映射到十六进制颜色
+    const colorMap: Record<string, string> = {
+      'bg-yellow-500': '#eab308',
+      'bg-blue-500': '#3b82f6',
+      'bg-purple-500': '#8b5cf6',
+      'bg-red-500': '#ef4444',
+      'bg-green-500': '#10b981'
+    };
+    
+    // 使用筛选后的POI数据，而不是全部POI数据
+    return filteredBrands.map(poi => {
+      // 确保坐标数据有效，并生成合理的虚拟地图坐标
+      const x = typeof poi.position.x === 'number' ? baseX + (poi.position.x - 50) * offsetMultiplier : baseX;
+      const y = typeof poi.position.y === 'number' ? baseY + (poi.position.y - 50) * offsetMultiplier : baseY;
+      
+      // 获取正确的十六进制颜色
+      const twColor = CATEGORY_COLORS[poi.category] || 'bg-blue-500';
+      const hexColor = colorMap[twColor] || '#3b82f6';
+      
+      return {
+        id: poi.id.toString(),
+        name: poi.name,
+        coordinate: {
+          x,
+          y
+        },
+        category: poi.category,
+        description: poi.description,
+        color: hexColor
+      };
+    });
+  }, [filteredBrands]);
+  
+  // 生成初始路径 - 使用useMemo优化
+  const virtualPaths = useMemo<Path[]>(() => {
+    return [];
+  }, []);
+  
+  // 预加载POI图片 - 优化版：更高效的加载策略
   useEffect(() => {
     const preloadPOIImages = async () => {
-      const imagePromises = mapData.flatMap(poi => {
-        return poi.images.map((imageUrl, index) => {
-          return new Promise<void>((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              setImageLoaded(prev => {
-                const existing = prev[poi.id] || Array(poi.images.length).fill(false);
-                const updated = [...existing];
-                updated[index] = true;
-                return { ...prev, [poi.id]: updated };
-              });
-              resolve();
-            };
-            img.onerror = () => {
-              setImageLoaded(prev => {
-                const existing = prev[poi.id] || Array(poi.images.length).fill(false);
-                const updated = [...existing];
-                updated[index] = true;
-                return { ...prev, [poi.id]: updated };
-              });
-              resolve();
-            };
-            img.src = imageUrl;
-          });
+      // 不使用延迟执行，直接开始预加载
+      
+      // 只预加载第一张图片，其他图片按需加载
+      const imagesToPreload = mapData.map(poi => ({
+        poi,
+        imageUrl: poi.images[0],
+        index: 0
+      }));
+      
+      // 并行处理所有图片预加载，提高效率
+      const promises = imagesToPreload.map(({ poi, imageUrl, index }) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          
+          img.onload = () => {
+            // 使用更高效的状态更新，只更新当前图片的状态
+            setImageLoaded((prev) => {
+              const existing = prev[poi.id] || Array(poi.images.length).fill(false);
+              const updated = [...existing];
+              updated[index] = true;
+              return { ...prev, [poi.id]: updated };
+            });
+            resolve();
+          };
+            
+          img.onerror = () => {
+            // 错误处理，避免影响其他图片加载
+            resolve();
+          };
+            
+          img.src = imageUrl;
         });
       });
       
-      await Promise.all(imagePromises);
+      await Promise.all(promises);
     };
     
     preloadPOIImages();
@@ -397,68 +550,27 @@ export default function TianjinMap() {
     setCurrentImageIndex(0);
   }, [selectedBrand]);
 
-  // 筛选数据
-  const filteredBrands = mapData.filter(brand => {
-    const matchesCategory = selectedCategory === 'all' || brand.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-                         brand.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         brand.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-  
-  // 添加标记点到地图
-  useEffect(() => {
-    if (!mapInstance) return;
-    
-    // 清除旧标记
-    markers.forEach(marker => marker.remove());
-    
-    // 创建新标记
-    const newMarkers: any[] = [];
-    
-    filteredBrands.forEach(brand => {
-      if (!brand.position.lat || !brand.position.lng) return;
-      
-      // 创建标记
-      const marker = new window.AMap.Marker({
-        position: [brand.position.lng, brand.position.lat],
-        map: mapInstance,
-        title: brand.name,
-        icon: new window.AMap.Icon({
-          size: new window.AMap.Size(30, 30),
-          image: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Ccircle cx='15' cy='15' r='14' fill='%23${CATEGORY_COLORS[brand.category]?.replace('bg-', '') || 'gray-500'}' opacity='0.8'/%3E%3Ctext x='15' y='20' font-size='16' text-anchor='middle' fill='white'%3E${CATEGORY_ICONS[brand.category] || '📍'}%3C/text%3E%3C/svg%3E`,
-          imageSize: new window.AMap.Size(30, 30)
-        })
-      });
-      
-      // 添加点击事件
-      marker.on('click', () => {
-        setSelectedBrand(brand);
-        setShowInfo(true);
-      });
-      
-      newMarkers.push(marker);
-    });
-    
-    setMarkers(newMarkers);
-    
-    // 清理函数
-    return () => {
-      newMarkers.forEach(marker => marker.remove());
-    };
-  }, [mapInstance, filteredBrands, markers]);
-
   // 处理标记点击
   const handleMarkerClick = (brand: POI) => {
     setSelectedBrand(brand);
     setShowInfo(true);
-    
-    // 如果有经纬度，将地图中心定位到该标记点
-    if (brand.position.lat && brand.position.lng && mapInstance) {
-      mapInstance.setCenter([brand.position.lng, brand.position.lat]);
-      mapInstance.setZoom(14);
-    }
   };
+  
+  // 处理虚拟地图POI点击
+  const handlePOIClick = useCallback((poiId: string) => {
+    const brand = mapData.find(b => b.id.toString() === poiId);
+    if (brand) {
+      handleMarkerClick(brand);
+    } else {
+      console.error('未找到对应的POI:', poiId);
+    }
+  }, [mapData]);
+  
+  // 处理虚拟地图点击 - 添加关闭信息卡片逻辑
+  const handleMapClick = useCallback(() => {
+    setShowInfo(false);
+    setSelectedBrand(null);
+  }, []);
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white' : 'bg-gradient-to-br from-gray-50 via-white to-gray-100 text-gray-900'}`}>
@@ -479,11 +591,13 @@ export default function TianjinMap() {
 
       {/* 主内容区 */}
       <main className="container mx-auto px-4 py-8">
+
+        
         {/* 地图控制区 */}
-        <div className={`p-4 md:p-6 rounded-2xl shadow-lg mb-4 md:mb-6 ${isDark ? 'bg-gray-800/80 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-200'}`}>
-          <div className="flex flex-col gap-4">
+        <div className={`p-3 md:p-6 rounded-2xl shadow-lg mb-3 md:mb-6 ${isDark ? 'bg-gray-800/80 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-200'}`}>
+          <div className="flex flex-col gap-3">
             {/* 搜索输入框 - 置顶显示在移动端 */}
-            <div className="relative w-full md:w-64 lg:w-80">
+            <div className="relative w-full">
               <input
                 type="text"
                 placeholder="搜索老字号或地标..."
@@ -503,51 +617,52 @@ export default function TianjinMap() {
             </div>
 
             {/* 分类筛选和缩放控制 */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* 分类筛选 */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              {/* 分类筛选 - 移动端紧凑布局 */}
               <div className="flex flex-wrap gap-2">
                 <button 
-                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm transition-all duration-300 ${selectedCategory === 'all' ? (isDark ? 'bg-red-600 text-white' : 'bg-red-500 text-white') : (isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}`}
+                  className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg ${selectedCategory === 'all' ? (isDark ? 'bg-gradient-to-r from-red-600 to-red-700 text-white' : 'bg-gradient-to-r from-red-500 to-red-600 text-white') : (isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')} border border-transparent hover:border-opacity-50`}
                   onClick={() => setSelectedCategory('all')}
                 >
                   全部
                 </button>
-                {Object.entries(categories).map(([key, category]) => (
+                {Object.entries(categories).map(([key, category]) => {
+                  const colorClass = category.color.replace('bg-', '');
+                  return (
                   <button 
                     key={key}
-                    className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm transition-all duration-300 flex items-center gap-1 ${selectedCategory === key ? (isDark ? 'bg-red-600 text-white' : 'bg-red-500 text-white') : (isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}`}
+                    className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg flex items-center gap-1.5 ${selectedCategory === key ? (isDark ? `bg-gradient-to-r from-${colorClass}/80 to-${colorClass}` : `bg-gradient-to-r from-${colorClass} to-${colorClass}/80`) + ' text-white' : (isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')} border border-transparent hover:border-opacity-50`}
                     onClick={() => setSelectedCategory(key)}
                   >
-                    {category.icon} {category.name}
+                    <span className="text-base">{category.icon}</span> <span className="hidden sm:inline">{category.name}</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
 
-        {/* 地图展示区 */}
-        <div 
-          ref={mapContainerRef}
-          className={`relative w-full rounded-2xl shadow-lg overflow-hidden ${isDark ? 'bg-gray-800/80 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-200'}`}
-          style={{ height: '600px', maxHeight: '80vh' }}
-        >
-          {/* 地图加载状态 */}
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 border-4 border-t-red-500 border-white rounded-full animate-spin"></div>
-                <p className="text-white text-lg font-medium">加载地图中...</p>
-              </div>
-            </div>
-          )}
+        {/* 地图展示区 - 响应式设计 */}
+        <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border border-gray-100 dark:border-gray-700" style={{ height: '800px', minHeight: '500px', maxHeight: 'calc(100vh - 100px)' }}>
+          {/* 使用虚拟地图组件 */}
+          <VirtualMap
+            initialRegions={virtualRegions}
+            initialPOIs={virtualPOIs}
+            initialPaths={virtualPaths}
+            onPOIClick={handlePOIClick}
+            onMapClick={handleMapClick}
+            className={`${isDark ? 'bg-gray-800/80 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-sm'}`}
+            style={{ height: '100%', width: '100%' }}
+          />
           
-          {/* 信息面板 */}
+          {/* 信息面板 - 响应式设计 */}
           {showInfo && selectedBrand && (
             <motion.div
-              className={`absolute bottom-4 left-4 right-4 md:left-4 md:w-96 lg:left-8 lg:w-96 bg-white dark:bg-gray-800 rounded-xl shadow-xl border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden z-10`}
+              className={`absolute bottom-0 left-0 right-0 md:bottom-4 md:left-4 md:right-auto md:w-80 lg:w-96 bg-white dark:bg-gray-800 rounded-t-xl md:rounded-xl shadow-2xl border-t md:border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden z-50 max-h-[70vh] md:max-h-[90vh]`}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
               {/* 图片轮播区域 */}
@@ -581,17 +696,11 @@ export default function TianjinMap() {
                         return { ...prev, [selectedBrand.id]: updated };
                       });
                     }}
-                    style={{ display: (imageLoaded[selectedBrand.id]?.[index] || false) ? 'block' : 'none' }}
+                    style={{ display: 'block' }}
                   />
                 ))}
                 
-                {/* 图片加载占位 */}
-                {!imageLoaded[selectedBrand.id]?.[currentImageIndex] && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex flex-col items-center justify-center">
-                    <i className="fas fa-image text-4xl text-gray-400 dark:text-gray-500 mb-2"></i>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">加载图片中...</span>
-                  </div>
-                )}
+                {/* SVG数据URL会立即加载，移除加载占位符 */}
                 
                 {/* 年份徽章 */}
                 <div className="absolute top-3 left-3 bg-black/80 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm flex items-center gap-1">
@@ -630,9 +739,24 @@ export default function TianjinMap() {
                 )}
               </div>
               
-              {/* 内容区域 */}
-              <div className="p-5">
+              {/* 内容区域 - 添加滚动功能 */}
+              <div className="p-5 overflow-y-auto max-h-[calc(80vh-130px)] md:max-h-[calc(90vh-130px)]">
                 <h3 className="text-2xl font-bold mb-2 dark:text-white">{selectedBrand.name}</h3>
+                
+                {/* 重要性等级展示 */}
+                {selectedBrand.importance && (
+                  <div className="mb-3 flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <i 
+                        key={index}
+                        className={`fas fa-star ${index < selectedBrand.importance ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} text-sm`}
+                      ></i>
+                    ))}
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                      {['', '一般', '重要', '很重要', '非常重要', '极其重要'][selectedBrand.importance] || ''}
+                    </span>
+                  </div>
+                )}
                 
                 {/* 分类和地址 */}
                 <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -659,38 +783,141 @@ export default function TianjinMap() {
                   </div>
                 )}
                 
-                {/* 开放时间和联系电话 */}
-                {selectedBrand.openingHours && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <i className="fas fa-clock text-gray-500 dark:text-gray-400 text-sm"></i>
-                    <span className="text-sm text-gray-600 dark:text-gray-300">{selectedBrand.openingHours}</span>
+                {/* 核心信息卡片 */}
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 p-4 rounded-xl ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                  {/* 创立时间 */}
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
+                      <i className="fas fa-calendar-alt text-xs"></i>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">创立时间</div>
+                      <div className="text-sm font-semibold dark:text-white">{selectedBrand.year} 年</div>
+                    </div>
+                  </div>
+                  
+                  {/* 开放时间 */}
+                  {selectedBrand.openingHours && (
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'}`}>
+                        <i className="fas fa-clock text-xs"></i>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">开放时间</div>
+                        <div className="text-sm font-semibold dark:text-white">{selectedBrand.openingHours}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 联系电话 */}
+                  {selectedBrand.phone && (
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'}`}>
+                        <i className="fas fa-phone text-xs"></i>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">联系电话</div>
+                        <div className="text-sm font-semibold dark:text-white">{selectedBrand.phone}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 文化遗产级别 */}
+                  {selectedBrand.culturalHeritageLevel && (
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800'}`}>
+                        <i className="fas fa-award text-xs"></i>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">遗产级别</div>
+                        <div className="text-sm font-semibold dark:text-white">{selectedBrand.culturalHeritageLevel}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 历史背景 */}
+                <div className="mb-5">
+                  <h4 className="text-sm font-semibold mb-2 dark:text-white flex items-center gap-1">
+                    <i className="fas fa-history text-gray-500 dark:text-gray-400"></i>
+                    历史背景
+                  </h4>
+                  <p className="text-sm dark:text-gray-300 leading-relaxed">{selectedBrand.description}</p>
+                </div>
+                
+                {/* 历史意义 */}
+                {selectedBrand.historicalSignificance && (
+                  <div className="mb-5">
+                    <h4 className="text-sm font-semibold mb-2 dark:text-white flex items-center gap-1">
+                      <i className="fas fa-book text-gray-500 dark:text-gray-400"></i>
+                      历史意义
+                    </h4>
+                    <p className="text-sm dark:text-gray-300 leading-relaxed">{selectedBrand.historicalSignificance}</p>
                   </div>
                 )}
                 
-                {selectedBrand.phone && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <i className="fas fa-phone text-gray-500 dark:text-gray-400 text-sm"></i>
-                    <span className="text-sm text-gray-600 dark:text-gray-300">{selectedBrand.phone}</span>
+                {/* 特色产品/服务 */}
+                {selectedBrand.featuredProducts && selectedBrand.featuredProducts.length > 0 && (
+                  <div className="mb-5">
+                    <h4 className="text-sm font-semibold mb-2 dark:text-white flex items-center gap-1">
+                      <i className="fas fa-gift text-gray-500 dark:text-gray-400"></i>
+                      特色产品
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedBrand.featuredProducts.map((product, index) => (
+                        <span 
+                          key={index}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-green-900/30 text-green-400 hover:bg-green-800/30' : 'bg-green-100 text-green-800 hover:bg-green-200'} hover:opacity-80 transition-all duration-300`}
+                        >
+                          {product}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
                 
-                {/* 描述 */}
-                <p className="text-sm dark:text-gray-300 mb-5 leading-relaxed">{selectedBrand.description}</p>
+                {/* 荣誉资质 */}
+                {selectedBrand.honors && selectedBrand.honors.length > 0 && (
+                  <div className="mb-5">
+                    <h4 className="text-sm font-semibold mb-2 dark:text-white flex items-center gap-1">
+                      <i className="fas fa-trophy text-gray-500 dark:text-gray-400"></i>
+                      荣誉资质
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(selectedBrand.honors || []).map((honor, index) => (
+                        <span 
+                          key={`honor-${index}`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-blue-900/30 text-blue-400 hover:bg-blue-800/30' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'} hover:opacity-80 transition-all duration-300`}
+                        >
+                          {honor}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {/* 相关POI推荐 */}
                 {selectedBrand.relatedPois && selectedBrand.relatedPois.length > 0 && (
                   <div className="mb-5">
-                    <h4 className="text-sm font-semibold mb-2 dark:text-white">相关推荐</h4>
-                    <div className="flex flex-wrap gap-2">
+                    <h4 className="text-sm font-semibold mb-2 dark:text-white flex items-center gap-1">
+                      <i className="fas fa-compass text-gray-500 dark:text-gray-400"></i>
+                      相关推荐
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {selectedBrand.relatedPois.map(poiId => {
                         const relatedPoi = mapData.find(p => p.id === poiId);
                         return relatedPoi ? (
                           <button 
                             key={relatedPoi.id}
-                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} transition-all`}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-all duration-300 hover:shadow-md`}
                             onClick={() => handleMarkerClick(relatedPoi)}
                           >
-                            {CATEGORY_ICONS[relatedPoi.category]} {relatedPoi.name}
+                            <span className={`text-lg ${CATEGORY_COLORS[relatedPoi.category]}`}>{CATEGORY_ICONS[relatedPoi.category]}</span>
+                            <div className="flex-1 text-left">
+                              <div className="font-medium truncate">{relatedPoi.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{localPOIData.categories[relatedPoi.category]?.name}</div>
+                            </div>
+                            <i className="fas fa-chevron-right text-xs text-gray-400 dark:text-gray-500"></i>
                           </button>
                         ) : null;
                       })}

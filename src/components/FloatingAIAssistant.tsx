@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { llmService, Message } from '@/services/llmService';
+import { llmService, Message, AssistantPersonality, AssistantTheme } from '@/services/llmService';
 
 interface FloatingAIAssistantProps {
   // 可以添加一些自定义配置属性
@@ -24,6 +24,17 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const [positionStyle, setPositionStyle] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // 个性化设置相关状态
+  const [showSettings, setShowSettings] = useState(false);
+  const [personality, setPersonality] = useState<AssistantPersonality>('friendly');
+  const [theme, setTheme] = useState<AssistantTheme>('auto');
+  const [showPresetQuestions, setShowPresetQuestions] = useState(true);
+  const [enableTypingEffect, setEnableTypingEffect] = useState(true);
+  const [autoScroll, setAutoScroll] = useState(true);
+  // 反馈相关状态
+  const [feedbackVisible, setFeedbackVisible] = useState<{[key: number]: boolean}>({});
+  const [feedbackRatings, setFeedbackRatings] = useState<{[key: number]: number}>({});
+  const [feedbackComments, setFeedbackComments] = useState<{[key: number]: string}>({});
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -59,6 +70,93 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     setCurrentPage(pathToPage[path] || '未知页面');
   }, [location.pathname]);
   
+  // 加载个性化设置
+  useEffect(() => {
+    const config = llmService.getConfig();
+    setPersonality(config.personality);
+    setTheme(config.theme);
+    setShowPresetQuestions(config.show_preset_questions);
+    setEnableTypingEffect(config.enable_typing_effect);
+    setAutoScroll(config.auto_scroll);
+  }, []);
+
+  // 保存个性化设置
+  const saveSettings = () => {
+    llmService.updateConfig({
+      personality,
+      theme,
+      show_preset_questions: showPresetQuestions,
+      enable_typing_effect: enableTypingEffect,
+      auto_scroll
+    });
+  };
+
+  // 处理设置变更
+  const handleSettingChange = (setting: string, value: any) => {
+    switch (setting) {
+      case 'personality':
+        setPersonality(value);
+        break;
+      case 'theme':
+        setTheme(value);
+        break;
+      case 'showPresetQuestions':
+        setShowPresetQuestions(value);
+        break;
+      case 'enableTypingEffect':
+        setEnableTypingEffect(value);
+        break;
+      case 'autoScroll':
+        setAutoScroll(value);
+        break;
+      default:
+        break;
+    }
+    saveSettings();
+  };
+
+  // 处理消息评分
+  const handleRating = (messageIndex: number, rating: number) => {
+    setFeedbackRatings(prev => ({
+      ...prev,
+      [messageIndex]: rating
+    }));
+    
+    // 记录评分到本地存储或发送到服务器
+    console.log(`Message ${messageIndex} rated: ${rating}`);
+    
+    // 显示评论输入框
+    setFeedbackVisible(prev => ({
+      ...prev,
+      [messageIndex]: true
+    }));
+  };
+
+  // 处理反馈评论提交
+  const handleFeedbackSubmit = (messageIndex: number) => {
+    const comment = feedbackComments[messageIndex] || '';
+    const rating = feedbackRatings[messageIndex] || 0;
+    
+    // 发送反馈到服务器或本地存储
+    console.log(`Feedback submitted for message ${messageIndex}:`, {
+      rating,
+      comment,
+      message: messages[messageIndex]
+    });
+    
+    // 隐藏评论输入框
+    setFeedbackVisible(prev => ({
+      ...prev,
+      [messageIndex]: false
+    }));
+    
+    // 清除评论
+    setFeedbackComments(prev => ({
+      ...prev,
+      [messageIndex]: ''
+    }));
+  };
+
   // 添加初始欢迎消息
   useEffect(() => {
     const initialMessage: Message = {
@@ -71,10 +169,10 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
 
   // 自动滚动到底部
   useEffect(() => {
-    if (chatContainerRef.current) {
+    if (chatContainerRef.current && autoScroll) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, autoScroll]);
 
   // 处理发送消息
   const handleSendMessage = async () => {
@@ -163,8 +261,13 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
           
           response = numberResponses[num] || `你输入的数字是 ${num}。在我们的平台上，每个数字都可以成为创作的灵感来源。你可以尝试将数字元素融入你的作品中，创造出独特的视觉效果。`;
         } else {
-          // 调用LLM服务生成响应
-          response = await llmService.generateResponse(userMessage.content);
+          // 调用LLM服务生成响应，传递当前页面上下文
+          response = await llmService.generateResponse(userMessage.content, {
+            context: {
+              page: currentPage,
+              path: currentPath
+            }
+          });
         }
       }
       
@@ -314,91 +417,311 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             transition={{ duration: 0.2 }}
-            className={`w-80 sm:w-96 h-[550px] rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} overflow-hidden`}
+            className={`w-full max-w-[320px] sm:max-w-[384px] h-[450px] rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} overflow-hidden`}
           >
             {/* 聊天头部 */}
-            <div className={`p-4 border-b ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} flex justify-between items-center shadow-sm`}>
+            <div className={`p-3 border-b ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} flex justify-between items-center shadow-sm`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-500'} text-white shadow-md`}>
-                  <i className="fas fa-robot text-xl"></i>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-500'} text-white shadow-md`}>
+                  <i className="fas fa-robot text-lg"></i>
                 </div>
-                <h3 className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI助手</h3>
+                <h3 className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI助手</h3>
               </div>
-              <button
-                onClick={toggleAssistant}
-                className={`p-2 rounded-full transition-all ${isDark ? 'hover:bg-gray-700 hover:scale-110' : 'hover:bg-gray-100 hover:scale-110'} transform`}
-                aria-label="关闭"
-              >
-                <i className={`fas fa-times ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-              </button>
+              <div className="flex gap-2">
+                {/* 设置按钮 */}
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className={`p-2 rounded-full transition-all ${isDark ? 'hover:bg-gray-700 hover:scale-110' : 'hover:bg-gray-100 hover:scale-110'} transform`}
+                  aria-label="设置"
+                >
+                  <i className={`fas fa-cog ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
+                </button>
+                {/* 关闭按钮 */}
+                <button
+                  onClick={toggleAssistant}
+                  className={`p-2 rounded-full transition-all ${isDark ? 'hover:bg-gray-700 hover:scale-110' : 'hover:bg-gray-100 hover:scale-110'} transform`}
+                  aria-label="关闭"
+                >
+                  <i className={`fas fa-times ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
+                </button>
+              </div>
             </div>
 
-            {/* 聊天内容 */}
-            <div
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-              style={{
-                scrollbarWidth: 'thin',
-                scrollbarColor: isDark ? '#4B5563 #1F2937' : '#9CA3AF #F3F4F6'
-              }}
-            >
-              {messages.map((message, index) => (
-                <motion.div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <div
-                    className={`max-w-[85%] p-4 rounded-xl ${message.role === 'user' ? 
-                      (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg' : 'bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg') : 
-                      (isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200')
-                    } transition-all hover:shadow-xl`}
+            {/* 聊天内容和设置面板的容器 */}
+            <div className="flex-1 flex">
+              {/* 聊天内容 */}
+              <AnimatePresence mode="wait">
+                {!showSettings ? (
+                  <motion.div
+                    key="chat"
+                    initial={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 overflow-y-auto p-3 space-y-4"
+                    style={{
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: isDark ? '#4B5563 #1F2937' : '#9CA3AF #F3F4F6'
+                    }}
+                    ref={chatContainerRef}
                   >
-                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                    {messages.map((message, index) => (
+                      <motion.div
+                        key={index}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <div className="max-w-[85%]">
+                          <div
+                            className={`p-4 rounded-xl ${message.role === 'user' ? 
+                              (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg' : 'bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg') : 
+                              (isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200')
+                            } transition-all hover:shadow-xl`}
+                          >
+                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {message.content}
+                            </div>
+                          </div>
+                          
+                          {/* 只有AI回复显示评分功能 */}
+                          {message.role === 'assistant' && (
+                            <div className={`mt-2 flex flex-col items-end ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {/* 评分按钮 */}
+                              {!feedbackRatings[index] && (
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleRating(index, 1)}
+                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-red-400' : 'hover:text-red-500'}`}
+                                    aria-label="非常不满意"
+                                  >
+                                    <i className="fas fa-thumbs-down text-xs"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRating(index, 2)}
+                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-yellow-400' : 'hover:text-yellow-500'}`}
+                                    aria-label="不满意"
+                                  >
+                                    <i className="fas fa-thumbs-down-half-alt text-xs"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRating(index, 3)}
+                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-500'}`}
+                                    aria-label="一般"
+                                  >
+                                    <i className="fas fa-meh text-xs"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRating(index, 4)}
+                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
+                                    aria-label="满意"
+                                  >
+                                    <i className="fas fa-thumbs-up-half-alt text-xs"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleRating(index, 5)}
+                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
+                                    aria-label="非常满意"
+                                  >
+                                    <i className="fas fa-thumbs-up text-xs"></i>
+                                  </button>
+                                </div>
+                              )}
+                              
+                              {/* 评分结果显示 */}
+                              {feedbackRatings[index] && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs">
+                                    {feedbackRatings[index] === 1 && '非常不满意'}
+                                    {feedbackRatings[index] === 2 && '不满意'}
+                                    {feedbackRatings[index] === 3 && '一般'}
+                                    {feedbackRatings[index] === 4 && '满意'}
+                                    {feedbackRatings[index] === 5 && '非常满意'}
+                                  </span>
+                                  <i className={`fas fa-star text-yellow-400 text-xs`}></i>
+                                </div>
+                              )}
+                              
+                              {/* 反馈评论输入框 */}
+                              {feedbackVisible[index] && (
+                                <div className="mt-2 w-full">
+                                  <div className="flex gap-1">
+                                    <input
+                                      type="text"
+                                      placeholder="有什么建议可以告诉我..."
+                                      className={`flex-1 px-3 py-1.5 text-xs rounded-lg ${isDark ? 'bg-gray-700 border border-gray-600 text-gray-200 placeholder-gray-500' : 'bg-gray-100 border border-gray-200 text-gray-800 placeholder-gray-500'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                      value={feedbackComments[index] || ''}
+                                      onChange={(e) => setFeedbackComments(prev => ({
+                                        ...prev,
+                                        [index]: e.target.value
+                                      }))}
+                                      onKeyPress={(e) => e.key === 'Enter' && handleFeedbackSubmit(index)}
+                                    />
+                                    <button
+                                      onClick={() => handleFeedbackSubmit(index)}
+                                      className={`px-3 py-1.5 text-xs rounded-lg transition-all ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                                    >
+                                      提交
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
 
-              {/* 正在生成指示器 */}
-              {isGenerating && (
-                <div className="flex justify-start">
-                  <div className={`max-w-[85%] p-4 rounded-xl ${isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200'}`}>
-                    <div className="flex items-center gap-2">
-                      <motion.div
-                        className="w-2 h-2 rounded-full bg-blue-500"
-                        animate={{ y: [-5, 5, -5] }}
-                        transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                      ></motion.div>
-                      <motion.div
-                        className="w-2 h-2 rounded-full bg-purple-500"
-                        animate={{ y: [-5, 5, -5] }}
-                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
-                      ></motion.div>
-                      <motion.div
-                        className="w-2 h-2 rounded-full bg-pink-500"
-                        animate={{ y: [-5, 5, -5] }}
-                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
-                      ></motion.div>
+                    {/* 正在生成指示器 */}
+                    {isGenerating && (
+                      <div className="flex justify-start">
+                        <div className={`max-w-[85%] p-4 rounded-xl ${isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200'}`}>
+                          <div className="flex items-center gap-2">
+                            <motion.div
+                              className="w-2 h-2 rounded-full bg-blue-500"
+                              animate={{ y: [-5, 5, -5] }}
+                              transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                            ></motion.div>
+                            <motion.div
+                              className="w-2 h-2 rounded-full bg-purple-500"
+                              animate={{ y: [-5, 5, -5] }}
+                              transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                            ></motion.div>
+                            <motion.div
+                              className="w-2 h-2 rounded-full bg-pink-500"
+                              animate={{ y: [-5, 5, -5] }}
+                              transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                            ></motion.div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="settings"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 overflow-y-auto p-4"
+                  >
+                    <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">设置</h3>
+                    
+                    {/* 助手性格设置 */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}">助手性格</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['friendly', 'professional', 'creative', 'humorous', 'concise'] as AssistantPersonality[]).map(persona => (
+                          <button
+                            key={persona}
+                            onClick={() => handleSettingChange('personality', persona)}
+                            className={`p-2 rounded-lg transition-all ${personality === persona ? 
+                              (isDark ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : 
+                              (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')
+                            }`}
+                          >
+                            {persona === 'friendly' && '友好'}
+                            {persona === 'professional' && '专业'}
+                            {persona === 'creative' && '创意'}
+                            {persona === 'humorous' && '幽默'}
+                            {persona === 'concise' && '简洁'}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                    
+                    {/* 主题设置 */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}">主题</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['light', 'dark', 'auto'] as AssistantTheme[]).map(themeOption => (
+                          <button
+                            key={themeOption}
+                            onClick={() => handleSettingChange('theme', themeOption)}
+                            className={`p-2 rounded-lg transition-all ${theme === themeOption ? 
+                              (isDark ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : 
+                              (isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')
+                            }`}
+                          >
+                            {themeOption === 'light' && '浅色'}
+                            {themeOption === 'dark' && '深色'}
+                            {themeOption === 'auto' && '自动'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* 显示预设问题 */}
+                    <div className="mb-4">
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>显示预设问题</span>
+                        <div className={`relative inline-block w-10 h-5 transition-all ${showPresetQuestions ? 
+                          (isDark ? 'bg-blue-600' : 'bg-blue-500') : 
+                          (isDark ? 'bg-gray-600' : 'bg-gray-300')
+                        } rounded-full`}>
+                          <input
+                            type="checkbox"
+                            checked={showPresetQuestions}
+                            onChange={(e) => handleSettingChange('showPresetQuestions', e.target.checked)}
+                            className="sr-only"
+                          />
+                          <span className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${showPresetQuestions ? 'transform translate-x-5' : ''}`}></span>
+                        </div>
+                      </label>
+                    </div>
+                    
+                    {/* 启用打字效果 */}
+                    <div className="mb-4">
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>启用打字效果</span>
+                        <div className={`relative inline-block w-10 h-5 transition-all ${enableTypingEffect ? 
+                          (isDark ? 'bg-blue-600' : 'bg-blue-500') : 
+                          (isDark ? 'bg-gray-600' : 'bg-gray-300')
+                        } rounded-full`}>
+                          <input
+                            type="checkbox"
+                            checked={enableTypingEffect}
+                            onChange={(e) => handleSettingChange('enableTypingEffect', e.target.checked)}
+                            className="sr-only"
+                          />
+                          <span className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${enableTypingEffect ? 'transform translate-x-5' : ''}`}></span>
+                        </div>
+                      </label>
+                    </div>
+                    
+                    {/* 自动滚动 */}
+                    <div className="mb-4">
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>自动滚动</span>
+                        <div className={`relative inline-block w-10 h-5 transition-all ${autoScroll ? 
+                          (isDark ? 'bg-blue-600' : 'bg-blue-500') : 
+                          (isDark ? 'bg-gray-600' : 'bg-gray-300')
+                        } rounded-full`}>
+                          <input
+                            type="checkbox"
+                            checked={autoScroll}
+                            onChange={(e) => handleSettingChange('autoScroll', e.target.checked)}
+                            className="sr-only"
+                          />
+                          <span className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${autoScroll ? 'transform translate-x-5' : ''}`}></span>
+                        </div>
+                      </label>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* 预设问题 */}
             {messages.length <= 1 && !isGenerating && (
-              <div className={`px-4 pb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`px-3 pb-2 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                 <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>快速提问</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {presetQuestions.map((question, index) => (
                     <motion.button
                       key={index}
                       onClick={() => handlePresetQuestionClick(question)}
-                      className={`px-3 py-1.5 text-xs rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'} transition-all transform hover:scale-105`}
+                      className={`px-2.5 py-1.25 text-xs rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'} transition-all transform hover:scale-105`}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -410,8 +733,8 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
             )}
 
             {/* 输入区域 */}
-            <div className={`p-4 border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} shadow-inner`}>
-              <div className="flex gap-2 items-center">
+            <div className={`p-3 border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} shadow-inner`}>
+              <div className="flex gap-1.5 items-center">
                 <input
                   ref={inputRef}
                   type="text"
@@ -420,12 +743,12 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                   onKeyPress={handleKeyPress}
                   placeholder="输入你的问题..."
                   disabled={isGenerating}
-                  className={`flex-1 px-4 py-3 rounded-full border ${isDark ? 'border-gray-700 bg-gray-800 text-white placeholder-gray-500 focus:border-blue-500' : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm`}
+                  className={`flex-1 px-3 py-2.5 rounded-full border ${isDark ? 'border-gray-700 bg-gray-800 text-white placeholder-gray-500 focus:border-blue-500' : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm text-sm`}
                 />
                 <motion.button
                   onClick={handleSendMessage}
                   disabled={isGenerating || !inputMessage.trim()}
-                  className={`p-3 rounded-full transition-all shadow-md ${isGenerating || !inputMessage.trim() ? 
+                  className={`p-2.5 rounded-full transition-all shadow-md ${isGenerating || !inputMessage.trim() ? 
                     (isDark ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed') : 
                     (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white')
                   }`}
@@ -433,7 +756,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                   whileTap={{ scale: isGenerating || !inputMessage.trim() ? 1 : 0.95 }}
                   aria-label="发送"
                 >
-                  <i className="fas fa-paper-plane"></i>
+                  <i className="fas fa-paper-plane text-sm"></i>
                 </motion.button>
               </div>
             </div>
@@ -450,9 +773,9 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
         onClick={toggleAssistant}
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
-        className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50 transition-all duration-300 transform hover:scale-125 ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white cursor-${isDragging ? 'grabbing' : 'grab'}`}
+        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-50 transition-all duration-300 transform hover:scale-125 ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white cursor-${isDragging ? 'grabbing' : 'grab'}`}
         aria-label="AI助手"
-        whileHover={{ scale: 1.25, boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)' }}
+        whileHover={{ scale: 1.25, boxShadow: '0 8px 20px rgba(59, 130, 246, 0.4)' }}
         whileTap={{ scale: 1.1 }}
         style={{
           position: 'absolute',
@@ -461,7 +784,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
         }}
       >
         <motion.i 
-          className="fas fa-robot text-2xl" 
+          className="fas fa-robot text-lg" 
           animate={isOpen ? { rotate: 90 } : { rotate: 0 }}
           transition={{ duration: 0.3 }}
         ></motion.i>

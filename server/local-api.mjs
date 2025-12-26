@@ -116,7 +116,7 @@ try {
 }
 
 // 端口配置
-const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3007
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3008
 
 // Volcengine TTS config (server-side only)
 const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''
@@ -1384,8 +1384,8 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
-server.listen(3007, () => {
-  console.log(`Local API server running on port 3007`);
+server.listen(PORT, () => {
+  console.log(`Local API server running on port ${PORT}`);
 })
 
 // 实时协作WebSocket服务器
