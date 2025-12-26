@@ -28,8 +28,8 @@ import { ThemeProvider } from './hooks/useTheme';
 // 性能监控
 import { initPerformanceMonitor } from './utils/performanceMonitor';
 
-// 初始化性能监控
-initPerformanceMonitor();
+// 暂时禁用性能监控，排查问题
+// initPerformanceMonitor();
 
 // 暂时禁用Service Worker，排查问题
 // import { registerServiceWorker } from './utils/serviceWorker';
