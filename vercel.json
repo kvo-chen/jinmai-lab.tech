@@ -3,10 +3,34 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(index.html|manifest.webmanifest|sw.js|workbox-.*.js|registerSW.js)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/(manifest.webmanifest|sw.js|workbox-.*.js|registerSW.js|icons/.*|images/.*|assets/.*|chunks/.*|entries/.*)",
+      "destination": "/$1"
     },
     {
       "source": "/(.*)",

@@ -267,9 +267,7 @@ export default defineConfig({
       // 移除了 external 配置，因为已使用 alias 将这些模块映射到 stub 文件
       // external: ['better-sqlite3', 'mongodb', 'pg', '@neondatabase/serverless', 'ws'],
       // 优化输入选项
-      input: {
-        main: 'index.html',
-      },
+      input: 'index.html',
       output: {
         // 优化资产输出
         assetFileNames: 'assets/[name]-[hash:8][extname]',
