@@ -307,6 +307,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     'leaderboard': 'sidebar.popularityRanking',
     'games': 'sidebar.funGames',
     'lab': 'sidebar.newWindowLab',
+    'points-mall': 'sidebar.pointsMall',
     'brand': 'sidebar.brandCooperation',
     'about': 'sidebar.aboutUs'
   }

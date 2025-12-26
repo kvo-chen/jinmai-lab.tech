@@ -454,6 +454,235 @@ export default function App() {
   // 右侧内容组件的延迟加载版本 - 仅在需要时加载
   const LazyRightContent = lazy(() => Promise.resolve({ default: RightContent }));
 
+  // 优化：将浮动按钮组件提取为独立的memo组件，避免每次App状态变化都重新渲染
+  const FloatingButtons = React.memo(() => {
+    // 在组件内部管理自己的状态，避免影响全局
+    const [isMobile, setIsMobile] = useState(false);
+    const [showCommunityMessages, setShowCommunityMessages] = useState(false);
+    const [showSurvey, setShowSurvey] = useState(false);
+    const messagesRef = useRef<HTMLDivElement | null>(null);
+    const [buttonBottom, setButtonBottom] = useState('6rem'); // 默认底部距离
+
+    // 检测白色内容区域是否可见
+    const checkWhiteAreaVisibility = useCallback(() => {
+      const whiteElements = document.querySelectorAll('.bg-white, .bg-gray-50, .bg-gradient-to-r.from-blue-50.to-purple-50, .bg-gradient-to-br.from-blue-50.to-purple-50');
+      const viewportHeight = window.innerHeight;
+      const scrollPosition = window.scrollY;
+
+      let hasVisibleWhiteArea = false;
+
+      whiteElements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        // 检查元素是否在视口中或接近视口底部
+        const isVisible = rect.top < viewportHeight && rect.bottom > 0;
+        if (isVisible) {
+          // 检查元素底部是否在视口底部附近（200px范围内）
+          const distanceToBottom = viewportHeight - rect.bottom;
+          if (distanceToBottom < 200 && distanceToBottom > -100) {
+            hasVisibleWhiteArea = true;
+          }
+        }
+      });
+
+      // 根据白色区域是否可见动态调整按钮位置
+      setButtonBottom(hasVisibleWhiteArea ? '5rem' : '1.5rem');
+    }, []);
+
+    // 监听滚动事件，实时检测白色内容区域
+    useEffect(() => {
+      // 初始检测
+      checkWhiteAreaVisibility();
+      // 添加滚动事件监听
+      window.addEventListener('scroll', checkWhiteAreaVisibility, { passive: true });
+      // 添加窗口大小变化事件监听
+      window.addEventListener('resize', checkWhiteAreaVisibility, { passive: true });
+
+      return () => {
+        window.removeEventListener('scroll', checkWhiteAreaVisibility);
+        window.removeEventListener('resize', checkWhiteAreaVisibility);
+      };
+    }, [checkWhiteAreaVisibility]);
+
+    // 添加挂载状态，确保只在客户端执行
+    const [isMounted, setIsMounted] = useState(false);
+    
+    // 在客户端挂载后执行，避免服务器端渲染时的hydration不匹配
+    useEffect(() => {
+      setIsMounted(true);
+      
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      // 初始化检查
+      checkIsMobile();
+      
+      // 添加 resize 事件监听
+      window.addEventListener('resize', checkIsMobile);
+      
+      // 清理事件监听
+      return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
+    // 社群消息数据结构
+    interface CommunityMessage {
+      id: string;
+      sender: string;
+      content: string;
+      time: string;
+      read: boolean;
+      avatar: string;
+    }
+    
+    // 社群消息状态
+    const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>(() => {
+      try {
+        const stored = localStorage.getItem('jmzf_community_messages');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // 确保返回的是数组
+          return Array.isArray(parsed) ? parsed : [];
+        }
+      } catch {}
+      return [
+        { id: 'm1', sender: '创意达人', content: '分享一个新的创作技巧...', time: '刚刚', read: false, avatar: '👤' },
+        { id: 'm2', sender: '设计师小王', content: '大家觉得这个配色方案怎么样？', time: '1 小时前', read: false, avatar: '🎨' },
+        { id: 'm3', sender: '系统通知', content: '新活动：创意挑战赛开始了！', time: '昨天', read: true, avatar: '📢' },
+      ];
+    });
+    
+    // 未读消息计数
+    const unreadMessageCount = useMemo(() => 
+      communityMessages.filter(m => !m.read).length,
+      [communityMessages]
+    );
+    
+    // 保存消息到本地存储
+    useEffect(() => {
+      try {
+        localStorage.setItem('jmzf_community_messages', JSON.stringify(communityMessages));
+      } catch {}
+    }, [communityMessages]);
+    
+    // 点击外部关闭消息面板
+    useEffect(() => {
+      const handler = (e: MouseEvent) => {
+        if (!messagesRef.current) return;
+        if (!messagesRef.current.contains(e.target as Node)) {
+          setShowCommunityMessages(false);
+        }
+      };
+      if (showCommunityMessages) {
+        document.addEventListener('mousedown', handler);
+      }
+      return () => document.removeEventListener('mousedown', handler);
+    }, [showCommunityMessages]);
+
+    return (
+      <>
+        {/* 底部浮动按钮组 */}
+        <div className="fixed right-6 flex flex-col gap-4 z-30" style={{ bottom: buttonBottom }}>
+          {/* 社群消息提醒按钮 */}
+          <div className="relative" ref={messagesRef}>
+            <button
+              onClick={() => setShowCommunityMessages(v => !v)}
+              className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center relative"
+              aria-label="社群消息"
+              title="社群消息"
+            >
+              <i className="fas fa-comments text-xl"></i>
+              {/* 消息提示红点 */}
+              {unreadMessageCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold px-1">
+                  {unreadMessageCount}
+                </span>
+              )}
+            </button>
+            {/* 消息面板 */}
+            {showCommunityMessages && (
+              <div className="absolute right-0 bottom-full mb-2 w-80 rounded-xl shadow-lg ring-1 bg-white dark:bg-gray-800 ring-gray-200 dark:ring-gray-700 z-50">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                  <span className="font-medium text-gray-900 dark:text-white">社群消息</span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => setCommunityMessages(prev => prev.map(m => ({ ...m, read: true })))}>
+                      全部已读
+                    </button>
+                    <button
+                      className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      onClick={() => {
+                        setShowCommunityMessages(false);
+                        window.location.href = '/community';
+                      }}>
+                      查看全部
+                    </button>
+                  </div>
+                </div>
+                <ul className="max-h-80 overflow-auto">
+                  {communityMessages.length === 0 ? (
+                    <li className="text-gray-500 dark:text-gray-400 px-4 py-6 text-sm">暂无消息</li>
+                  ) : (
+                    communityMessages.map(m => (
+                      <li key={m.id}>
+                        <button
+                          className="w-full text-left px-4 py-3 flex items-start space-x-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          onClick={() => {
+                            setCommunityMessages(prev => prev.map(x => 
+                              x.id === m.id ? { ...x, read: true } : x
+                            ));
+                          }}
+                        >
+                          <span className="text-2xl">{m.avatar}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">{m.sender}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{m.time}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{m.content}</p>
+                          </div>
+                          {!m.read && (
+                            <span className="mt-1 inline-flex items-center justify-center w-2 h-2 rounded-full bg-red-500"></span>
+                          )}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+          
+          {/* 满意度调查按钮 */}
+          <button
+            onClick={() => setShowSurvey(true)}
+            className="bg-yellow-500 text-white p-4 rounded-full shadow-lg hover:bg-yellow-600 transition-all duration-300 flex items-center justify-center"
+            aria-label="满意度调查"
+            title="满意度调查"
+          >
+            <i className="fas fa-star text-xl"></i>
+          </button>
+        </div>
+        
+        {/* 满意度调查组件 */}
+        <SatisfactionSurvey 
+          isOpen={showSurvey} 
+          onClose={() => setShowSurvey(false)} 
+          onSubmit={(data) => {
+            // 使用调查服务提交数据
+            surveyService.submitSurvey(
+              data,
+              user?.id || `anonymous-${Date.now()}`,
+              user?.username || '匿名用户'
+            );
+          }} 
+        />
+      </>
+    );
+  });
+
+  FloatingButtons.displayName = 'FloatingButtons';
+
   // 优化全局加载骨架屏，实现更美观的品牌化加载体验
   const GlobalLoadingSkeleton = () => (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">

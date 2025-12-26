@@ -50,6 +50,7 @@ export const moreNavItems: NavItem[] = [
   { id: 'leaderboard', path: '/leaderboard', label: '人气排行', icon: 'fas fa-chart-line' },
   { id: 'games', path: '/games', label: '趣味游戏', icon: 'fas fa-gamepad' },
   { id: 'lab', path: '/lab', label: '新窗实验室', icon: 'fas fa-window-restore' },
+  { id: 'points-mall', path: '/points-mall', label: '积分商城', icon: 'fas fa-gift' },
   { id: 'brand', path: '/brand', label: '品牌合作', icon: 'fas fa-handshake' },
   { id: 'about', path: '/about', label: '关于我们', icon: 'fas fa-info-circle' }
 ];

@@ -16,6 +16,9 @@ const PointsMall: React.FC = () => {
 
   // 加载商品和积分数据
   useEffect(() => {
+    // 清空本地存储中的商品数据，强制重新初始化
+    localStorage.removeItem('SECURE_PRODUCTS');
+    
     const allProducts = productService.getAllProducts();
     const records = productService.getUserExchangeRecords('current-user');
     const points = pointsService.getCurrentPoints();

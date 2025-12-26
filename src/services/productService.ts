@@ -66,7 +66,7 @@ class ProductService {
             status: 'active',
             category: 'virtual',
             tags: ['红包', '虚拟'],
-            imageUrl: 'https://via.placeholder.com/200x200?text=红包',
+            imageUrl: '/images/红包.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -79,7 +79,7 @@ class ProductService {
             status: 'active',
             category: 'virtual',
             tags: ['贴纸', '虚拟'],
-            imageUrl: 'https://via.placeholder.com/200x200?text=贴纸包',
+            imageUrl: '/images/贴纸包.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -92,7 +92,7 @@ class ProductService {
             status: 'active',
             category: 'service',
             tags: ['AI工具', '服务'],
-            imageUrl: 'https://via.placeholder.com/200x200?text=AI工具包',
+            imageUrl: '/images/AI工具包.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -105,7 +105,7 @@ class ProductService {
             status: 'active',
             category: 'rights',
             tags: ['徽章', '权益'],
-            imageUrl: 'https://via.placeholder.com/200x200?text=成就徽章',
+            imageUrl: '/images/成就徽章.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -118,7 +118,7 @@ class ProductService {
             status: 'active',
             category: 'physical',
             tags: ['笔记本', '实体'],
-            imageUrl: 'https://via.placeholder.com/200x200?text=笔记本',
+            imageUrl: '/images/笔记本.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }
