@@ -3,6 +3,78 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 全局 knowledge 属性保护脚本 -->
+    <script>
+      // 在所有脚本加载前执行，保护全局 knowledge 属性
+      (function() {
+        // 1. 捕获全局错误，特别处理 "Cannot set properties of undefined (setting 'knowledge')" 错误
+        window.addEventListener('error', function(event) {
+          if (event.message && event.message.includes('Cannot set properties of undefined (setting \'knowledge\')')) {
+            console.error('CRITICAL ERROR: Attempting to set knowledge property on undefined object!');
+            console.error('Error details:', event);
+            console.trace('Stack trace for error:');
+            
+            // 阻止错误继续传播，防止应用崩溃
+            event.preventDefault();
+          }
+        });
+        
+        // 2. 监控对象属性设置，防止意外修改全局对象
+        const originalDefineProperty = Object.defineProperty;
+        Object.defineProperty = function(obj, prop, descriptor) {
+          if (prop === 'knowledge') {
+            if (obj === undefined || obj === null) {
+              console.error('CRITICAL: Attempting to define knowledge property on', obj);
+              console.trace('Stack trace:');
+            } else if (obj === window) {
+              console.warn('Warning: Attempting to set knowledge property on window object:', descriptor);
+              console.trace('Stack trace:');
+            } else {
+              console.log('Info: Setting knowledge property on', obj.constructor.name || typeof obj);
+            }
+          }
+          return originalDefineProperty.call(this, obj, prop, descriptor);
+        };
+        
+        // 3. 重写赋值操作，捕获对 undefined 对象的属性赋值
+        const originalSetProperty = Object.prototype.__defineSetter__;
+        if (originalSetProperty) {
+          Object.prototype.__defineSetter__ = function(prop, setter) {
+            if (prop === 'knowledge') {
+              console.warn('Attempting to define setter for knowledge property:', setter);
+              console.trace('Stack trace:');
+            }
+            return originalSetProperty.call(this, prop, setter);
+          };
+        }
+        
+        // 4. 定义一个安全的全局 knowledge 属性
+        window._protectedKnowledge = {
+          value: undefined,
+          get: function() {
+            return this.value;
+          },
+          set: function(newValue) {
+            console.warn('Warning: Setting global knowledge property to:', newValue);
+            this.value = newValue;
+          }
+        };
+        
+        // 使用 Object.defineProperty 来拦截对 window.knowledge 的访问
+        Object.defineProperty(window, 'knowledge', {
+          configurable: true,
+          enumerable: false,
+          get: function() {
+            return window._protectedKnowledge.get();
+          },
+          set: function(newValue) {
+            window._protectedKnowledge.set(newValue);
+          }
+        });
+        
+        console.log('Global knowledge property protection initialized');
+      })();
+    </script>
 
     <title>津脉智坊 - 津门老字号共创平台</title>
     <!-- 页面描述 -->

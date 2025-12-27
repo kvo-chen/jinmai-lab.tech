@@ -93,32 +93,7 @@ window.addEventListener('error', (event) => {
   }
 }, true);
 
-// 4. 保护全局对象不被意外修改
-Object.defineProperty(window, 'knowledge', {
-  configurable: false,
-  writable: false,
-  value: undefined,
-  enumerable: false
-});
-
-// 5. 监控对象属性设置
-const originalDefineProperty = Object.defineProperty;
-Object.defineProperty = function(obj, prop, descriptor) {
-  if (prop === 'knowledge' && obj === window) {
-    console.warn('Attempting to set knowledge property on window object:', descriptor);
-  }
-  return originalDefineProperty.call(this, obj, prop, descriptor);
-};
-
-const originalSet = Object.prototype.__defineSetter__;
-if (originalSet) {
-  Object.prototype.__defineSetter__ = function(prop, setter) {
-    if (prop === 'knowledge') {
-      console.warn('Attempting to define setter for knowledge property:', setter);
-    }
-    return originalSet.call(this, prop, setter);
-  };
-}
+// 全局对象保护已移至 index.html 中的脚本，在所有脚本加载前执行
 
 // 注销旧的Service Worker，确保没有遗留的Service Worker影响应用
 if ('serviceWorker' in navigator) {
