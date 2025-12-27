@@ -59,6 +59,36 @@
         window.knowledge = window.knowledge || {};
         window.lazilyLoaded = window.lazilyLoaded || {};
         
+        // 6. 使用 Object.defineProperty 直接拦截对 lazilyLoaded 属性的访问
+        Object.defineProperty(window, 'lazilyLoaded', {
+          configurable: true,
+          enumerable: false,
+          get: function() {
+            return this._lazilyLoaded || {};
+          },
+          set: function(newValue) {
+            console.warn('Setting window.lazilyLoaded to:', newValue);
+            this._lazilyLoaded = newValue || {};
+          }
+        });
+        
+        // 7. 使用 Object.defineProperty 直接拦截对 knowledge 属性的访问
+        Object.defineProperty(window, 'knowledge', {
+          configurable: true,
+          enumerable: false,
+          get: function() {
+            return this._knowledge || {};
+          },
+          set: function(newValue) {
+            console.warn('Setting window.knowledge to:', newValue);
+            this._knowledge = newValue || {};
+          }
+        });
+        
+        // 8. 初始化内部存储对象
+        window._knowledge = {};
+        window._lazilyLoaded = {};
+        
         // 6. 捕获并阻止"Cannot set properties of undefined"错误
         window.addEventListener('error', function(event) {
           if (event.message && event.message.includes('Cannot set properties of undefined')) {
