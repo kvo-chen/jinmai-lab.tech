@@ -413,9 +413,14 @@ export default function Home() {
           </h1>
           {/* 首页副标题：提升可读性，限制最大宽度，并根据主题切换不同灰度 */}
           <p className={`text-sm sm:text-base md:text-lg leading-relaxed opacity-90 max-w-2xl text-center mx-auto ${isDark ? 'text-gray-200' : 'text-gray-600'} mb-8`}>
-            {heroVariant === 'A' 
-              ? t('home.exploreTianjinCulture') 
-              : t('home.aiPoweredCreativity')}
+            {/* 服务器端和客户端初始渲染使用相同的文本，避免hydration错误 */}
+            {isMounted ? (
+              heroVariant === 'A' 
+                ? t('home.exploreTianjinCulture') 
+                : t('home.aiPoweredCreativity')
+            ) : (
+              t('home.exploreTianjinCulture')
+            )}
           </p>
         
         {/* 搜索与功能按钮区域 */}
