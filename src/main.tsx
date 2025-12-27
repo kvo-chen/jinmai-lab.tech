@@ -31,8 +31,10 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 // 性能监控
 import { initPerformanceMonitor } from './utils/performanceMonitor';
 
-// 初始化性能监控，根据环境动态调整监控级别
-initPerformanceMonitor();
+// 初始化性能监控，根据环境动态调整监控级别 - 只在浏览器环境中执行
+if (typeof window !== 'undefined') {
+  initPerformanceMonitor();
+}
 
 // 全局错误捕获
 import errorService from './services/errorService';
