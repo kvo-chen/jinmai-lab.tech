@@ -25,8 +25,8 @@ jest.mock('../components/TianjinStyleComponents', () => ({
 // Mock external dependencies
 jest.mock('../components/GradientHero', () => ({
   __esModule: true,
-  default: ({ children, ...props }: any) => (
-    <div data-testid="gradient-hero-mock" {...props}>{children}</div>
+  default: ({ children, badgeText, pattern, ...rest }: any) => (
+    <div data-testid="gradient-hero-mock" {...rest}>{children}</div>
   ),
 }));
 

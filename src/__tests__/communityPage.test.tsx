@@ -40,8 +40,8 @@ jest.mock('../components/ScheduledPost', () => ({
 
 jest.mock('../components/VirtualList', () => ({
   __esModule: true,
-  default: ({ children, ...props }: any) => (
-    <div data-testid="virtual-list-mock" {...props}>{children}</div>
+  default: ({ children, isDark, pattern, renderItem, ...rest }: any) => (
+    <div data-testid="virtual-list-mock" {...rest}>{children}</div>
   ),
 }));
 
