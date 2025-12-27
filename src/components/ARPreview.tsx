@@ -70,11 +70,25 @@ const ARPreview: React.FC<{
   rotation = { x: 0, y: 0, z: 0 }, 
   position = { x: 0, y: 0, z: 0 }, 
   particleEffect = { enabled: false, type: 'sparkle', intensity: 0.5, color: '#ffffff', size: 1 },
-  renderSettings = { shadows: false, antialias: true, pixelRatio: window.devicePixelRatio, toneMapping: 0, toneMappingExposure: 1.0 },
+  renderSettings: customRenderSettings,
   devicePerformance = { fps: 60, memory: 0, deviceType: 'desktop', browser: 'unknown', isWebXRCompatible: false }
 }) => {
   const { isDark } = useTheme();
   const [isARMode, setIsARMode] = useState(false);
+  
+  // 确保只在客户端访问window.devicePixelRatio
+  const getDefaultRenderSettings = () => {
+    if (typeof window === 'undefined') {
+      return { shadows: false, antialias: true, pixelRatio: 1, toneMapping: 0, toneMappingExposure: 1.0 };
+    }
+    return { shadows: false, antialias: true, pixelRatio: window.devicePixelRatio, toneMapping: 0, toneMappingExposure: 1.0 };
+  };
+  
+  // 合并默认渲染设置和自定义渲染设置
+  const effectiveRenderSettings = {
+    ...getDefaultRenderSettings(),
+    ...customRenderSettings
+  };
 
   // 简化实现，只返回一个简单的div
   return (

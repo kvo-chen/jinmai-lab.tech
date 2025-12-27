@@ -674,15 +674,19 @@ export default function App() {
         {/* 确保根路径是第一个路由，提高匹配优先级 */}
         {/* 使用isMounted状态，确保服务器端渲染时使用默认布局，避免hydration不匹配 */}
         <Route path="/" element={
-          (isMounted && isMobile) ? (
-            <MobileLayout>
-              <RouteCache><AnimatedPage><Home /></AnimatedPage></RouteCache>
-            </MobileLayout>
-          ) : (
-            <SidebarLayout>
-              <RouteCache><AnimatedPage><Home /></AnimatedPage></RouteCache>
-            </SidebarLayout>
-          )
+          <RouteCache>
+            <AnimatedPage>
+              {isMounted ? (
+                isMobile ? (
+                  <MobileLayout><Home /></MobileLayout>
+                ) : (
+                  <SidebarLayout><Home /></SidebarLayout>
+                )
+              ) : (
+                <SidebarLayout><Home /></SidebarLayout>
+              )}
+            </AnimatedPage>
+          </RouteCache>
         } />
         
         {/* 不需要布局的页面 */}
@@ -694,19 +698,23 @@ export default function App() {
         
         {/* 使用布局的页面，为所有子路由添加动画 */}
         <Route element={
-          (isMounted && isMobile) ? (
-            <MobileLayout>
-              <AnimatedPage>
+          <AnimatedPage>
+            {isMounted ? (
+              isMobile ? (
+                <MobileLayout>
+                  <Outlet />
+                </MobileLayout>
+              ) : (
+                <SidebarLayout>
+                  <Outlet />
+                </SidebarLayout>
+              )
+            ) : (
+              <SidebarLayout>
                 <Outlet />
-              </AnimatedPage>
-            </MobileLayout>
-          ) : (
-            <SidebarLayout>
-              <AnimatedPage>
-                <Outlet />
-              </AnimatedPage>
-            </SidebarLayout>
-          )
+              </SidebarLayout>
+            )}
+          </AnimatedPage>
         }>
           <Route path="/explore" element={<RouteCache><Explore /></RouteCache>} />
           <Route path="/explore/:id" element={<WorkDetail />} />

@@ -59,6 +59,9 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
   const [isTyping, setIsTyping] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(0);
   
+  // 添加挂载状态，确保只在客户端执行浏览器API访问
+  const [isMounted, setIsMounted] = useState(false);
+  
   // 撤销/重做功能
   const [history, setHistory] = useState<string[]>([initialContent]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -69,6 +72,11 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const userColors = useRef<Map<string, string>>(new Map());
   const contentChangeTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // 在客户端挂载后设置isMounted状态
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // 生成用户颜色
   const getUserColor = useCallback((userId: string) => {
@@ -389,7 +397,7 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
 
   // 处理键盘事件
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (readOnly) return;
+    if (readOnly || !isMounted) return;
     
     const target = event.target as HTMLDivElement;
     const selection = window.getSelection();
@@ -414,7 +422,7 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
     } else {
       websocketService.sendSelectionChange(position, position);
     }
-  }, [readOnly]);
+  }, [readOnly, isMounted]);
 
   // 获取光标位置
   const getCaretPosition = (element: HTMLElement, range: Range): number => {
@@ -426,7 +434,7 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
 
   // 处理鼠标事件
   const handleMouseUp = useCallback(() => {
-    if (readOnly || !editorRef.current) return;
+    if (readOnly || !editorRef.current || !isMounted) return;
     
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
@@ -437,7 +445,7 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
     const end = getCaretPosition(editorRef.current, range);
     
     websocketService.sendSelectionChange(start, end);
-  }, [readOnly]);
+  }, [readOnly, isMounted]);
 
   // 渲染光标指示器
   const renderCursors = () => {
