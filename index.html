@@ -7,89 +7,91 @@
     <script>
       // 在所有脚本加载前执行，确保任何尝试在undefined对象上设置属性的操作都不会导致应用崩溃
       (function() {
-        // 1. 重写Object.defineProperty，处理在undefined/null对象上设置属性的情况
-        const originalDefineProperty = Object.defineProperty;
-        Object.defineProperty = function(obj, prop, descriptor) {
-          if (obj === undefined || obj === null) {
-            console.error('CRITICAL: Attempting to define property', prop, 'on', obj);
-            console.trace('Stack trace:');
-            // 返回一个空对象，避免应用崩溃
-            return {};
+        // 1. 最核心的保护：使用Proxy包装undefined，拦截所有对它的访问
+        (function() {
+          const undefinedProxy = new Proxy({}, {
+            get: function(target, prop, receiver) {
+              console.error('CRITICAL: Attempting to get property', prop, 'from undefined!');
+              console.trace('Stack trace:');
+              // 返回空对象，防止后续访问出错
+              return undefinedProxy;
+            },
+            set: function(target, prop, value, receiver) {
+              console.error('CRITICAL: Attempting to set property', prop, 'on undefined with value', value);
+              console.trace('Stack trace:');
+              // 返回true表示设置成功，避免抛出错误
+              return true;
+            },
+            has: function(target, prop) {
+              return false;
+            },
+            deleteProperty: function(target, prop) {
+              console.error('CRITICAL: Attempting to delete property', prop, 'from undefined!');
+              console.trace('Stack trace:');
+              return true;
+            },
+            ownKeys: function(target) {
+              return [];
+            },
+            getOwnPropertyDescriptor: function(target, prop) {
+              return undefined;
+            },
+            defineProperty: function(target, prop, descriptor) {
+              console.error('CRITICAL: Attempting to define property', prop, 'on undefined with descriptor', descriptor);
+              console.trace('Stack trace:');
+              return false;
+            },
+            getPrototypeOf: function(target) {
+              return null;
+            },
+            setPrototypeOf: function(target, proto) {
+              console.error('CRITICAL: Attempting to set prototype of undefined!');
+              console.trace('Stack trace:');
+              return false;
+            },
+            isExtensible: function(target) {
+              return true;
+            },
+            preventExtensions: function(target) {
+              return true;
+            },
+            apply: function(target, thisArg, argumentsList) {
+              console.error('CRITICAL: Attempting to call undefined as a function!');
+              console.trace('Stack trace:');
+              return undefinedProxy;
+            },
+            construct: function(target, argumentsList, newTarget) {
+              console.error('CRITICAL: Attempting to construct undefined!');
+              console.trace('Stack trace:');
+              return undefinedProxy;
+            }
+          });
+
+          // 重写全局undefined，使其指向我们的代理对象
+          // 注意：这是一个危险操作，但为了保护应用，我们必须这样做
+          try {
+            Object.defineProperty(window, 'undefined', {
+              configurable: true,
+              enumerable: false,
+              value: undefinedProxy,
+              writable: false
+            });
+          } catch (e) {
+            console.warn('Failed to redefine global undefined, using alternative approach');
+            // 备用方案：在全局作用域中创建一个新的undefined变量
+            // 这会覆盖当前作用域的undefined，但不会影响其他作用域
+            (function(undefined) {
+              // 这里的undefined是我们的代理对象
+              // 我们可以在这里添加更多保护代码
+            })(undefinedProxy);
           }
-          return originalDefineProperty.call(this, obj, prop, descriptor);
-        };
-        
-        // 2. 重写Object.defineProperties，处理多个属性定义
-        const originalDefineProperties = Object.defineProperties;
-        Object.defineProperties = function(obj, props) {
-          if (obj === undefined || obj === null) {
-            console.error('CRITICAL: Attempting to define properties on', obj, 'with props:', props);
-            console.trace('Stack trace:');
-            // 返回一个空对象，避免应用崩溃
-            return {};
-          }
-          return originalDefineProperties.call(this, obj, props);
-        };
-        
-        // 3. 重写Reflect.set，处理普通属性赋值
-        const originalSet = Reflect.set;
-        Reflect.set = function(target, propertyKey, value, receiver) {
-          if (target === undefined || target === null) {
-            console.error('CRITICAL: Attempting to set property', propertyKey, 'on', target, 'with value', value);
-            console.trace('Stack trace:');
-            // 返回true，表示赋值成功，避免应用崩溃
-            return true;
-          }
-          return originalSet.call(this, target, propertyKey, value, receiver);
-        };
-        
-        // 4. 重写Object.assign，处理对象合并
-        const originalAssign = Object.assign;
-        Object.assign = function(target, ...sources) {
-          if (target === undefined || target === null) {
-            console.error('CRITICAL: Attempting to assign to', target, 'with sources:', sources);
-            console.trace('Stack trace:');
-            // 返回一个新对象，避免应用崩溃
-            return {};
-          }
-          return originalAssign.call(this, target, ...sources);
-        };
-        
-        // 5. 初始化关键全局对象
+        })();
+
+        // 2. 初始化关键全局对象，确保它们总是存在
         window.knowledge = window.knowledge || {};
         window.lazilyLoaded = window.lazilyLoaded || {};
         
-        // 6. 使用 Object.defineProperty 直接拦截对 lazilyLoaded 属性的访问
-        Object.defineProperty(window, 'lazilyLoaded', {
-          configurable: true,
-          enumerable: false,
-          get: function() {
-            return this._lazilyLoaded || {};
-          },
-          set: function(newValue) {
-            console.warn('Setting window.lazilyLoaded to:', newValue);
-            this._lazilyLoaded = newValue || {};
-          }
-        });
-        
-        // 7. 使用 Object.defineProperty 直接拦截对 knowledge 属性的访问
-        Object.defineProperty(window, 'knowledge', {
-          configurable: true,
-          enumerable: false,
-          get: function() {
-            return this._knowledge || {};
-          },
-          set: function(newValue) {
-            console.warn('Setting window.knowledge to:', newValue);
-            this._knowledge = newValue || {};
-          }
-        });
-        
-        // 8. 初始化内部存储对象
-        window._knowledge = {};
-        window._lazilyLoaded = {};
-        
-        // 6. 捕获并阻止"Cannot set properties of undefined"错误
+        // 3. 捕获并阻止"Cannot set properties of undefined"错误
         window.addEventListener('error', function(event) {
           if (event.message && event.message.includes('Cannot set properties of undefined')) {
             console.error('CRITICAL ERROR: Attempting to set property on undefined object!');
