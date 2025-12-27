@@ -1,4 +1,4 @@
-name: Deploy to Vercel
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -6,11 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: production
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: github-pages
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,19 +31,19 @@ jobs:
       - name: Build project
         run: pnpm build
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
-          vercel-args: '--prod'
-          alias-domains: ${{ secrets.VERCEL_ALIAS_DOMAINS }}
-          scope: ${{ secrets.VERCEL_TEAM_ID || secrets.VERCEL_ORG_ID }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
 
       - name: Verify deployment
         run: |
           echo "Deployment completed successfully!"
-          echo "Vercel URL: ${{ steps.deploy.outputs.vercel-url }}"
+          echo "GitHub Pages URL: ${{ steps.deploy.outputs.page_url }}"
