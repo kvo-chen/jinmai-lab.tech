@@ -16,6 +16,8 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   quality?: 'high' | 'low' | 'medium';
   // 图片填充方式
   fit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+  // 图片定位方式
+  position?: string;
   // 默认图片URL，当原始图片加载失败时使用
   fallbackSrc?: string;
   // 是否禁用fallback机制
@@ -37,6 +39,7 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   onError,
   ratio = 'auto',
   fit = 'cover',
+  position,
   priority = false,
   quality,
   fallbackSrc,
@@ -54,7 +57,7 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   const observerRef = useRef<IntersectionObserver | null>(null);
   
   // 默认fallback图片 - 使用内联base64图片作为占位符，确保可靠加载
-  const defaultFallbackSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAyNCIgaGVpZ2h0PSI1NzYiIGZpbGw9IiM3Nzc3NzciIGZpbGwtb3BhY2l0eT0iMC4yIiB2aWV3Qm94PSIwIDAgMTAyNCA1NzYiIG1pZGRsZT0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMjQiIGhlaWdodD0iNTc2IiBmaWxsPSIjMjIyMjIyIi8+CjxjaXJjbGUgY3g9IjUwMiIgY3k9IjI2MiIgcj0iMTAwIiBmaWxsPSIjQjFCOUIxIi8+CjxjaXJjbGUgY3g9IjUwMiIgY3k9IjI2MiIgcj0iNzAiIGZpbGw9IiNEMURFRDEiLz4KPHN2ZyB4PSI0NTIiIHk9IjIyMiIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIGZpbGw9Im5vbmUiIGZpbGwtb3BhY2l0eT0iMC4zIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYSIgeDE9IjAiIHkxPSIwIiB4Mj0iMTIwIiB5Mj0iMTIwIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0I1QjViNSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNCMUJ5QjEiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0idXJsKCNhKSIgb3BhY2l0eT0iMC42Ii8+CiAgPC9kZWZzPgogIDwvc3ZnPgogPHN2ZyB4PSI1ODIiIHk9IjIwMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSJub25lIiBmaWxsLW9wYWNpdHk9IjAuNCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImIiIHgxPSIwIiB5MT0iMCIgeDI9IjUwIiB5Mj0iNTAiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjQjVCNUI1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI0IxQjViMSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxyZWN0IHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgZmlsbD0idXJsKCNiKSIgb3BhY2l0eT0iMC42Ii8+CiAgPC9kZWZzPgogIDwvc3ZnPgogPC9zdmc+';
+  const defaultFallbackSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iMTAwIiBmaWxsPSIjZmZmZmZmIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSI3MCIgeT0iNzAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz4KPHJlY3QgeD0iODAiIHk9IjgwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNkY2RjZGMiLz4KPHJlY3QgeD0iOTAuNSIgeT0iOTEiIHdpZHRoPSIxOSIgaGVpZ2h0PSIxOCIgc3Ryb2tlPSIjNzc3Nzc3IiBzdHJva2Utb3BhY2l0eT0iMC41IiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cjwvc3ZnPg==';
   
   // 使用useMemo确保currentSrc与src同步更新，避免异步更新问题
   const currentSrc = useMemo(() => {
@@ -161,7 +164,8 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   
   // 图片容器样式
   const getImageClasses = () => {
-    const baseClasses = `w-full h-full object-${fit} ${getLoadingAnimationClasses()}`;
+    const positionClass = position ? `object-${position}` : '';
+    const baseClasses = `w-full h-full object-${fit} ${positionClass} ${getLoadingAnimationClasses()}`;
     
     if (isLoaded) {
       if (loadingAnimation === 'fade') {
@@ -236,11 +240,8 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
         
         {/* 加载失败状态 - 显示自定义错误界面，允许重试 */}
         {isError && (
-          <div className="absolute inset-0 z-20 w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800">
-            <div className="text-center p-4">
-              <i className="fas fa-exclamation-circle text-4xl text-red-500 mb-2"></i>
-              <p className="text-gray-800 dark:text-gray-200 mb-1">图片加载失败</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">请检查网络连接或稍后重试</p>
+          <div className="absolute inset-0 z-20 w-full h-full flex items-center justify-center bg-transparent">
+            <div className="text-center p-2">
               <button 
                 onClick={() => {
                   setIsLoaded(false);
@@ -254,16 +255,11 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
                     }, 0);
                   }
                 }} 
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                aria-label="重新加载图片"
               >
-                重试
+                <i className="fas fa-redo"></i>
               </button>
-              {/* 添加调试信息，便于开发人员排查问题 */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-                  <p>URL: {currentSrc}</p>
-                </div>
-              )}
             </div>
           </div>
         )}

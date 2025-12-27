@@ -357,30 +357,30 @@ export default function Explore() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
       {/* 顶部红色框 - 优化版 */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-red-700 py-12 px-8 rounded-3xl mx-4 mt-4 shadow-2xl">
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-red-700 py-6 px-4 sm:py-8 sm:px-6 rounded-3xl mx-4 mt-4 shadow-2xl">
         {/* 静态装饰性背景元素 */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/15 rounded-full blur-3xl -mr-24 -mt-24"></div>
-        <div className="absolute bottom-0 left-0 w-36 h-36 bg-white/15 rounded-full blur-3xl -ml-18 -mb-18"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/15 rounded-full blur-3xl -mr-16 -mt-16 sm:-mr-24 sm:-mt-24"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-36 sm:h-36 bg-white/15 rounded-full blur-3xl -ml-12 -mb-12 sm:-ml-18 sm:-mb-18"></div>
         {/* 中心装饰元素 */}
         <div className="absolute top-1/2 left-1/2 w-[150%] h-[150%] bg-gradient-to-r from-red-500/20 to-pink-500/20 blur-3xl -translate-x-1/2 -translate-y-1/2 rotate-45"></div>
         
         <div className="container mx-auto relative z-10">
           {/* 标题和副标题 - 简化动画 */}
-          <div className="mb-12 text-center md:text-left">
+          <div className="mb-6 sm:mb-10 text-center md:text-left">
             <h1 
-              className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg leading-tight"
+              className="text-2xl sm:text-3xl md:text-5xl font-bold text-white drop-shadow-lg leading-tight"
             >
               探索中国传统品牌新创意
             </h1>
             <p 
-              className="text-white/95 mt-4 text-base md:text-lg max-w-2xl mx-auto md:mx-0 leading-relaxed"
+              className="text-white/95 mt-3 text-sm sm:text-base md:text-lg max-w-2xl mx-auto md:mx-0 leading-relaxed"
             >
               发现来自全国各地的品牌设计作品，感受传统与现代的完美融合
             </p>
           </div>
           
           {/* 标签区 - 简化动画 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             {[
               { title: '精选', subtitle: '优选', category: '全部', icon: '✨' },
               { title: '风格', subtitle: '融合', category: '国潮设计', icon: '🎨' },
@@ -389,16 +389,16 @@ export default function Explore() {
             ].map((item, index) => (
               <button
                 key={index}
-                className="px-6 py-5 bg-gradient-to-r from-red-700/95 to-red-800/95 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-red-900/30 hover:border-red-800/50 hover:bg-red-600/90 backdrop-blur-sm group"
+                className="px-4 py-3 sm:px-6 sm:py-5 bg-gradient-to-r from-red-700/95 to-red-800/95 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-red-900/30 hover:border-red-800/50 hover:bg-red-600/90 backdrop-blur-sm group relative overflow-hidden"
                 onClick={() => setSelectedCategory(item.category)}
                 aria-label={`查看${item.category}作品`}
               >
                 {/* 图标 */}
-                <div className="text-xl mb-2">
+                <div className="text-lg sm:text-xl mb-1 sm:mb-2">
                   {item.icon}
                 </div>
-                <div className="font-semibold text-lg">{item.title}</div>
-                <div className="text-xs opacity-90 mt-1">{item.subtitle}</div>
+                <div className="font-semibold text-base sm:text-lg">{item.title}</div>
+                <div className="text-xs opacity-90 mt-0.5 sm:mt-1">{item.subtitle}</div>
                 {/* 底部渐变光效 */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </button>

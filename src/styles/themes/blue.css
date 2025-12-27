@@ -1,0 +1,225 @@
+/* 蓝色主题高级色彩方案 */
+.blue {
+  /* 优化后的蓝色背景层次 */
+  --bg-primary: #f0f9ff;
+  --bg-secondary: #e0f2fe;
+  --bg-tertiary: #bae6fd;
+  --bg-hover: #7dd3fc;
+  --bg-active: #38bdf8;
+  
+  /* 优化后的蓝色文字层次 */
+  --text-primary: #0c4a6e;
+  --text-secondary: #075985;
+  --text-tertiary: #0369a1;
+  --text-muted: #0284c7;
+  
+  /* 优化后的蓝色边框层次 */
+  --border-primary: #bae6fd;
+  --border-secondary: #7dd3fc;
+  --border-tertiary: #38bdf8;
+  
+  /* 优化后的蓝色主题阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(56, 189, 248, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(56, 189, 248, 0.08), 0 2px 4px -1px rgba(56, 189, 248, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(56, 189, 248, 0.08), 0 4px 6px -2px rgba(56, 189, 248, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(56, 189, 248, 0.08), 0 8px 10px -6px rgba(56, 189, 248, 0.02);
+  
+  /* 优化后的蓝色主题发光效果 */
+  --glow-primary: 0 0 10px rgba(56, 189, 248, 0.2);
+  --glow-secondary: 0 0 15px rgba(3, 105, 161, 0.2);
+  --glow-accent: 0 0 20px rgba(2, 132, 199, 0.2);
+  
+  /* 优化后的蓝色主题渐变 */
+  --gradient-primary: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  --gradient-secondary: linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%);
+  --gradient-accent: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
+}
+
+/* 蓝色主题卡片高级样式 */
+.blue .card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-md), 0 0 15px rgba(56, 189, 248, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.blue .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+  opacity: 0.7;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.blue .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(56, 189, 248, 0.02) 100%);
+  pointer-events: none;
+}
+
+.blue .card:hover {
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(56, 189, 248, 0.1);
+  transform: translateY(-3px) scale(1.01);
+  border-color: var(--border-secondary);
+}
+
+.blue .card:active {
+  transform: translateY(-1px) scale(0.995);
+}
+
+/* 蓝色主题按钮高级样式 */
+.blue button {
+  box-shadow: var(--shadow-sm), 0 0 10px rgba(56, 189, 248, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+.blue button:hover {
+  box-shadow: var(--shadow-md), 0 0 15px rgba(56, 189, 248, 0.1);
+  transform: translateY(-2px) scale(1.02);
+  border-color: var(--border-secondary);
+}
+
+.blue button:active {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(0) scale(0.98);
+}
+
+.blue button:focus {
+  outline: none;
+  box-shadow: var(--shadow-md), 0 0 0 3px rgba(56, 189, 248, 0.15), var(--glow-primary);
+}
+
+/* 蓝色主题输入框高级样式 */
+.blue input, .blue textarea, .blue select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 2px rgba(56, 189, 248, 0.08), 0 0 10px rgba(56, 189, 248, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.blue input::placeholder, .blue textarea::placeholder, .blue select::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+  transition: color 0.3s ease;
+}
+
+.blue input:hover::placeholder, .blue textarea:hover::placeholder, .blue select:hover::placeholder {
+  color: var(--text-tertiary);
+}
+
+.blue input:focus, .blue textarea:focus, .blue select:focus {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12), inset 0 1px 2px rgba(56, 189, 248, 0.08), 0 0 15px rgba(56, 189, 248, 0.1);
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+  outline: none;
+  background: var(--bg-primary);
+}
+
+.blue input:hover, .blue textarea:hover, .blue select:hover {
+  border-color: var(--border-secondary);
+  box-shadow: inset 0 1px 2px rgba(56, 189, 248, 0.1), 0 0 15px rgba(56, 189, 248, 0.08);
+}
+
+.blue input:disabled, .blue textarea:disabled, .blue select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+  box-shadow: inset 0 1px 2px rgba(56, 189, 248, 0.08);
+}
+
+.blue input:read-only, .blue textarea:read-only {
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+  box-shadow: inset 0 1px 2px rgba(56, 189, 248, 0.08);
+}
+
+.blue input[type="file"] {
+  padding: 0.5rem;
+  border: 1px dashed var(--border-primary);
+  background: var(--bg-secondary);
+  cursor: pointer;
+}
+
+.blue input[type="file"]:hover {
+  border-color: var(--color-accent);
+  background: var(--bg-tertiary);
+}
+
+.blue textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.blue select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.blue select:hover {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.blue select:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b5cf6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* 蓝色主题滚动条美化 */
+.blue ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.blue ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  box-shadow: inset 0 0 5px rgba(56, 189, 248, 0.1);
+}
+
+.blue ::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  box-shadow: 0 2px 4px rgba(56, 189, 248, 0.3), var(--glow-accent);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.blue ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.3), var(--glow-primary);
+  transform: scale(1.1);
+}
+
+/* 蓝色主题文本选中颜色 */
+.blue ::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* 蓝色主题全局渐变背景 */
+.blue body {
+  background: var(--gradient-primary);
+  background-attachment: fixed;
+}

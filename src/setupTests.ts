@@ -1,13 +1,5 @@
 require('@testing-library/jest-dom');
 
-// Ensure React.memo is available
-const React = require('react');
-// If React.memo is not available (unlikely), add a fallback
-if (!React.memo) {
-  // @ts-ignore
-  React.memo = (Component: any) => Component;
-}
-
 // Simple mocks for Three.js related libraries
 jest.mock('three', () => ({
   ...jest.requireActual('three'),
@@ -132,3 +124,12 @@ global.IntersectionObserver = jest.fn(() => ({
   disconnect: jest.fn(),
   takeRecords: jest.fn(),
 })) as MockObserver;
+
+// Mock TextEncoder and TextDecoder for JSDOM environment
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = require('util').TextEncoder;
+}
+
+if (typeof global.TextDecoder === 'undefined') {
+  global.TextDecoder = require('util').TextDecoder;
+}

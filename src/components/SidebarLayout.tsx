@@ -10,13 +10,14 @@ import CreatorDashboard from './CreatorDashboard'
 import useLanguage from '@/contexts/LanguageContext'
 import { useTranslation } from 'react-i18next'
 import { navigationGroups } from '@/config/navigationConfig'
+import ThemePreviewModal from './ThemePreviewModal'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
 }
 
 export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
-  const { theme = 'light', isDark = false, toggleTheme = () => {} } = useTheme()
+  const { theme = 'light', isDark = false, toggleTheme = () => {}, setTheme = () => {} } = useTheme()
   const { isAuthenticated, user, logout, updateUser } = useContext(AuthContext)
   const location = useLocation()
   const navigate = useNavigate()
@@ -34,6 +35,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const dragging = useRef(false)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [search, setSearch] = useState('')
+  const [showThemeModal, setShowThemeModal] = useState(false)
   
   // 保存折叠状态到localStorage
   useEffect(() => {
@@ -549,7 +551,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
               </div>
               {/* 主题切换按钮 */}
               <button
-                onClick={toggleTheme}
+                onClick={() => setShowThemeModal(true)}
                 className={`p-2 rounded-lg transition-all duration-300 flex items-center ${isDark ? 'bg-gray-800 hover:bg-gray-700 ring-1 ring-gray-700 text-gray-100 hover:ring-gray-600' : theme === 'pink' ? 'bg-pink-50 hover:bg-pink-100 ring-1 ring-pink-200 text-pink-800 hover:ring-pink-300' : 'bg-white hover:bg-gray-50 ring-1 ring-gray-200 text-gray-900 hover:ring-gray-300'}`}
                 aria-label={t('header.toggleTheme')}
                 title={t('header.toggleTheme')}
@@ -762,6 +764,15 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
             </div>
           </div>
         </header>
+        <ThemePreviewModal
+          isOpen={showThemeModal}
+          onClose={() => setShowThemeModal(false)}
+          onSelectTheme={(selectedTheme) => {
+            setTheme(selectedTheme);
+            setShowThemeModal(false);
+          }}
+          currentTheme={theme}
+        />
         {children}
         {/* 中文注释：全局“回到顶部”悬浮按钮（自适应暗色/浅色主题） */}
         {showBackToTop && (

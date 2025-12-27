@@ -40,7 +40,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     const appliedTheme = getAppliedTheme(theme);
     
     // 清除所有主题类
-    document.documentElement.classList.remove('light', 'dark', 'pink');
+    document.documentElement.classList.remove('light', 'dark', 'pink', 'blue', 'green');
     
     // 添加当前主题类（浅色主题不需要添加类，使用默认样式）
     if (appliedTheme !== 'light') {

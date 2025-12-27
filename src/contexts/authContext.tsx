@@ -440,9 +440,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // 返回Provider组件
-  return React.createElement(
-    AuthContext.Provider,
-    { value: contextValue },
-    children
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
   );
 };

@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 
 import ModelSelector from '@/components/ModelSelector'
+import ThemePreviewModal from '@/components/ThemePreviewModal'
 
 export default function Settings() {
   const { theme, isDark, toggleTheme, setTheme, availableThemes } = useTheme()
   const [showModelSelector, setShowModelSelector] = useState(false)
+  const [showThemeModal, setShowThemeModal] = useState(false)
   
   // 通知设置
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -122,46 +124,22 @@ export default function Settings() {
                 <span className={`${isDark ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
                   {theme === 'auto' ? '自动' : 
                    theme === 'light' ? '浅色' : 
-                   theme === 'dark' ? '深色' : '粉色'}
+                   theme === 'dark' ? '深色' : 
+                   theme === 'pink' ? '粉色' : 
+                   theme === 'blue' ? '蓝色' : '绿色'}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-3">
-                {availableThemes.map((themeOption) => (
-                  <button
-                    key={themeOption.value}
-                    onClick={() => setTheme(themeOption.value)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${
-                      theme === themeOption.value 
-                        ? isDark 
-                          ? 'bg-gray-700 ring-2 ring-blue-500' 
-                          : 'bg-gray-100 ring-2 ring-blue-500' 
-                        : isDark 
-                          ? 'bg-gray-800 hover:bg-gray-700' 
-                          : 'bg-white hover:bg-gray-100'
-                    }`}
-                    title={themeOption.label}
-                  >
-                    <i className={`${themeOption.icon} text-xl mb-1 ${
-                      theme === themeOption.value 
-                        ? isDark 
-                          ? 'text-white' 
-                          : 'text-blue-600' 
-                        : isDark 
-                          ? 'text-gray-400' 
-                          : 'text-gray-500'
-                    }`}></i>
-                    <span className={`text-xs ${
-                      theme === themeOption.value 
-                        ? isDark 
-                          ? 'text-white font-medium' 
-                          : 'text-blue-600 font-medium' 
-                        : isDark 
-                          ? 'text-gray-400' 
-                          : 'text-gray-500'
-                    }`}>{themeOption.label}</span>
-                  </button>
-                ))}
-              </div>
+              <button
+                onClick={() => setShowThemeModal(true)}
+                className={`w-full py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+                  isDark 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                    : 'bg-blue-50 hover:bg-blue-100 text-blue-600'
+                }`}
+              >
+                <i className="fas fa-palette text-lg"></i>
+                <span className="font-medium">预览并选择主题</span>
+              </button>
             </div>
           </div>
           
@@ -347,6 +325,15 @@ export default function Settings() {
       {showModelSelector && (
         <ModelSelector isOpen={showModelSelector} onClose={() => setShowModelSelector(false)} />
       )}
+      <ThemePreviewModal
+        isOpen={showThemeModal}
+        onClose={() => setShowThemeModal(false)}
+        onSelectTheme={(selectedTheme) => {
+          setTheme(selectedTheme);
+          setShowThemeModal(false);
+        }}
+        currentTheme={theme}
+      />
     </>
   )
 }

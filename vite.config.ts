@@ -161,7 +161,9 @@ export default defineConfig({
       'pg': '@/utils/databaseStub',
       '@neondatabase/serverless': '@/utils/databaseStub',
       'ws': '@/utils/databaseStub',
-    }
+    },
+    // 自动解析的文件扩展名
+    extensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json']
   },
   build: {
     // 优化构建输出

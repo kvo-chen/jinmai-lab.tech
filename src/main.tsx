@@ -15,7 +15,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from 'sonner';
 import App from "./App.tsx";
-import { AuthProvider } from './contexts/authContext';
+import { AuthProvider } from './contexts/authContext.tsx';
 import { WorkflowProvider } from './contexts/workflowContext.tsx';
 import { LanguageProvider } from './contexts/LanguageContext';
 import "./index.css";
@@ -93,26 +93,39 @@ window.addEventListener('error', (event) => {
   }
 }, true);
 
-// 全局对象已经在index.html中初始化和保护，这里不再重复
-// 确保关键全局对象总是存在
+// 确保关键全局对象总是存在，防止 "Cannot set properties of undefined" 错误
+// 在所有代码执行前立即初始化这些对象
 (function() {
-  console.log('Verifying global objects in main.tsx...');
+  // 直接赋值，确保它们总是存在
+  window.knowledge = window.knowledge || {};
+  window.lazilyLoaded = window.lazilyLoaded || {};
   
-  // 验证knowledge对象
-  if (typeof window.knowledge === 'undefined') {
-    console.error('window.knowledge is undefined in main.tsx! Initializing now...');
-    window.knowledge = {};
-  } else {
-    console.log('✓ window.knowledge exists:', typeof window.knowledge);
-  }
+  // 使用 Object.defineProperty 确保这些属性永远不会是 undefined
+  Object.defineProperty(window, 'knowledge', {
+    configurable: true,
+    enumerable: false,
+    get: function() {
+      return this._knowledge || {};
+    },
+    set: function(newValue) {
+      this._knowledge = newValue || {};
+    }
+  });
   
-  // 验证lazilyLoaded对象
-  if (typeof window.lazilyLoaded === 'undefined') {
-    console.error('window.lazilyLoaded is undefined in main.tsx! Initializing now...');
-    window.lazilyLoaded = {};
-  } else {
-    console.log('✓ window.lazilyLoaded exists:', typeof window.lazilyLoaded);
-  }
+  Object.defineProperty(window, 'lazilyLoaded', {
+    configurable: true,
+    enumerable: false,
+    get: function() {
+      return this._lazilyLoaded || {};
+    },
+    set: function(newValue) {
+      this._lazilyLoaded = newValue || {};
+    }
+  });
+  
+  // 初始化内部存储
+  window._knowledge = window._knowledge || {};
+  window._lazilyLoaded = window._lazilyLoaded || {};
 })();
 
 // 注销旧的Service Worker，确保没有遗留的Service Worker影响应用

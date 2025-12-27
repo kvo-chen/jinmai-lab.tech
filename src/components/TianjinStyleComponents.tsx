@@ -599,6 +599,7 @@ export const TianjinImage: React.FC<{
   withBorder?: boolean;
   badge?: string;
   fit?: 'cover' | 'contain';
+  position?: string;
   onClick?: () => void;
   loading?: 'eager' | 'lazy';
   imageTag?: string;
@@ -620,6 +621,7 @@ export const TianjinImage: React.FC<{
   withBorder = false,
   badge,
   fit = 'cover',
+  position,
   onClick,
   loading = 'lazy',
   imageTag,
@@ -660,6 +662,7 @@ export const TianjinImage: React.FC<{
         className={`w-full h-full`}
         ratio={ratio}
         fit={fit}
+        position={position}
         loading={loading}
         priority={priority}
         quality={quality}
@@ -699,6 +702,7 @@ export const TianjinAvatar: React.FC<{
   onClick?: () => void;
   withBorder?: boolean;
   variant?: 'default' | 'gradient' | 'heritage'; // 新增：头像变体
+  position?: string;
 }> = ({
   src,
   alt,
@@ -708,6 +712,7 @@ export const TianjinAvatar: React.FC<{
   onClick,
   withBorder = true,
   variant = 'default', // 新增：默认变体
+  position = 'center',
 }) => {
   // 简化主题处理
   const { isDark = false } = useTheme() || {};
@@ -781,9 +786,10 @@ export const TianjinAvatar: React.FC<{
         <LazyImage
           src={src}
           alt={alt}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
           ratio="square"
           fit="cover"
+          position={position}
           loading="lazy"
         />
         

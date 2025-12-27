@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/authContext';
@@ -581,37 +582,44 @@ export default function Home() {
         </div>
         <div ref={galleryRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 scroll-mt-24">
           {gallery.map((item, idx) => (
-            <div 
+            <motion.div 
               key={item.id} 
-              className={`rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isDark ? 'bg-gradient-to-b from-gray-800 to-gray-800/90 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-gradient-to-b from-white to-gray-50 ring-1 ring-gray-200 hover:ring-primary/50'} cursor-pointer animate-slide-up-${idx + 1}`}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              whileHover={{ 
+                y: -5, 
+                boxShadow: isDark ? '0 20px 25px -5px rgba(245, 158, 11, 0.2), 0 10px 10px -5px rgba(245, 158, 11, 0.1)' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' 
+              }}
+              className={`rounded-2xl overflow-hidden shadow-md transition-all duration-300 ${isDark ? 'bg-gradient-to-b from-gray-800 to-gray-800/90 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-gradient-to-b from-white to-gray-50 ring-1 ring-gray-200 hover:ring-primary/50'} cursor-pointer`}
               role="button"
               tabIndex={0}
               onClick={() => {
-                ;
                 navigate(`/explore?q=${encodeURIComponent(item.title)}`)
               }}
-              
-              
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  ;
                   navigate(`/explore?q=${encodeURIComponent(item.title)}`)
                 }
               }}
             >
-              <div className="relative aspect-video overflow-hidden rounded-t-2xl">
+              <div className="relative aspect-video overflow-hidden rounded-t-2xl group">
                 <TianjinImage 
                   src={item.thumbnail} 
                   alt={item.title} 
                   ratio="landscape" 
                   rounded="2xl" 
-                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                   disableFallback={true} 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                <span className={`absolute top-3 right-3 text-sm px-3 py-1.5 rounded-full backdrop-blur-md ${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-800'} shadow-md transition-all duration-300 hover:shadow-lg`}>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <motion.span 
+                  whileHover={{ scale: 1.1 }}
+                  className={`absolute top-3 right-3 text-sm px-3 py-1.5 rounded-full backdrop-blur-md ${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-800'} shadow-md transition-all duration-300 hover:shadow-lg`}
+                >
                   <i className="far fa-heart mr-1"></i>{item.likes}
-                </span>
+                </motion.span>
               </div>
               <div className={`p-5 ${isDark ? 'bg-gray-800' : 'bg-white'} transition-all duration-300`}>
                 <div className="flex justify-between items-start mb-3">
@@ -623,7 +631,7 @@ export default function Home() {
                   <span>精选创作 · 高质量示例</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -772,41 +780,60 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
           {popularCreators.map((creator, idx) => (
-            <div 
+            <motion.div 
               key={idx}
-              className={`flex flex-col items-center p-5 rounded-2xl ${isDark ? 'bg-gradient-to-b from-gray-800 to-gray-800/90 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-gradient-to-b from-white to-gray-50 ring-1 ring-gray-200 hover:ring-primary/50'} transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer animate-slide-up-${idx + 1} group`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: idx * 0.08 }}
+              whileHover={{ 
+                y: -8, 
+                boxShadow: isDark ? '0 25px 50px -12px rgba(245, 158, 11, 0.25)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)' 
+              }}
+              className={`flex flex-col items-center p-5 rounded-2xl ${isDark ? 'bg-gradient-to-b from-gray-800 to-gray-800/90 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-gradient-to-b from-white to-gray-50 ring-1 ring-gray-200 hover:ring-primary/50'} transition-all duration-300 hover:shadow-xl cursor-pointer group`}
               role="button"
               tabIndex={0}
               onClick={() => {
-                ;
                 navigate(`/explore?creator=${encodeURIComponent(creator.name)}`)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  ;
                   navigate(`/explore?creator=${encodeURIComponent(creator.name)}`)
                 }
               }}
             >
               <div className="relative w-24 h-24 mb-4 overflow-hidden rounded-full border-4 border-primary/20 group-hover:border-primary transition-all duration-300">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/50 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <TianjinImage 
-                  src={creator.avatar} 
-                  alt={creator.name} 
-                  rounded="full" 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  disableFallback={true}
-                />
+                <motion.div 
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <TianjinImage 
+                    src={creator.avatar} 
+                    alt={creator.name} 
+                    rounded="full" 
+                    className="w-full h-full object-cover object-center"
+                    ratio="square"
+                    fit="cover"
+                    disableFallback={true}
+                  />
+                </motion.div>
               </div>
               <h3 className={`font-semibold text-base text-center ${isDark ? 'text-gray-100' : 'text-gray-900'} group-hover:text-primary transition-colors duration-300`}>{creator.name}</h3>
-              <div className="flex items-center gap-1 text-sm text-primary mt-2 group-hover:translate-y-1 transition-transform duration-300">
+              <motion.div 
+                whileHover={{ scale: 1.1, translateY: 1 }}
+                className="flex items-center gap-1 text-sm text-primary mt-2"
+              >
                 <i className="far fa-heart group-hover:text-red-500 transition-colors duration-300"></i>
                 <span>{creator.likes.toLocaleString()}</span>
-              </div>
-              <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'} group-hover:translate-y-1 transition-transform duration-300`}>
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.1, translateY: 1 }}
+                className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+              >
                 {creator.works.length} 件作品
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -819,40 +846,54 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
           {latestWorks.map((work, idx) => (
-            <div 
+            <motion.div 
               key={work.id}
-              className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-2 ${isDark ? 'bg-gradient-to-b from-gray-800 to-gray-800/90 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-gradient-to-b from-white to-gray-50 ring-1 ring-gray-200 hover:ring-primary/50'} cursor-pointer animate-slide-up-${idx + 1} group`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.08 }}
+              whileHover={{ 
+                y: -5, 
+                boxShadow: isDark ? '0 20px 25px -5px rgba(245, 158, 11, 0.2), 0 10px 10px -5px rgba(245, 158, 11, 0.1)' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' 
+              }}
+              className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 ${isDark ? 'bg-gradient-to-b from-gray-800 to-gray-800/90 ring-1 ring-gray-700 hover:ring-primary/50' : 'bg-gradient-to-b from-white to-gray-50 ring-1 ring-gray-200 hover:ring-primary/50'} cursor-pointer group`}
               role="button"
               tabIndex={0}
               onClick={() => {
-                ;
                 navigate(`/explore?q=${encodeURIComponent(work.title)}`)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  ;
                   navigate(`/explore?q=${encodeURIComponent(work.title)}`)
                 }
               }}
             >
               <div className="relative aspect-video overflow-hidden rounded-t-2xl">
-                <TianjinImage 
-                  src={work.thumbnail} 
-                  alt={work.title} 
-                  ratio="landscape" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  disableFallback={true}
-                />
+                <motion.div 
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <TianjinImage 
+                    src={work.thumbnail} 
+                    alt={work.title} 
+                    ratio="landscape" 
+                    className="w-full h-full object-cover"
+                    disableFallback={true}
+                  />
+                </motion.div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className={`absolute top-3 right-3 text-sm px-3 py-1.5 rounded-full backdrop-blur-md ${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-800'} shadow-md transition-all duration-300 group-hover:shadow-lg`}>
+                <motion.span 
+                  whileHover={{ scale: 1.1 }}
+                  className={`absolute top-3 right-3 text-sm px-3 py-1.5 rounded-full backdrop-blur-md ${isDark ? 'bg-gray-800/80 ring-1 ring-gray-700 text-gray-200' : 'bg-white/90 ring-1 ring-gray-200 text-gray-800'} shadow-md transition-all duration-300 group-hover:shadow-lg`}
+                >
                   <i className="far fa-heart mr-1 group-hover:text-red-500 transition-colors duration-300"></i>{work.likes}
-                </span>
+                </motion.span>
               </div>
               <div className={`p-5 ${isDark ? 'bg-gray-800' : 'bg-white'} transition-all duration-300`}>
                 <h3 className={`font-semibold text-base transition-all duration-200 hover:text-primary ${isDark ? 'text-gray-100' : 'text-gray-900'} line-clamp-1`}>{work.title}</h3>
                 <span className={`text-xs px-3 py-1 rounded-full mt-2 inline-block ${isDark ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'} transition-all duration-300 hover:bg-primary/30`}>{work.category}</span>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

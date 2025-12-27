@@ -77,8 +77,19 @@ const AICreativeAssistant: React.FC<AICreativeAssistantProps> = ({ isOpen, onClo
 
   // 应用创意建议
   const applySuggestion = (suggestion: CreativeSuggestion) => {
-    // 这里可以添加应用创意建议的逻辑，例如更新创作提示
+    // 应用创意建议的逻辑：将建议内容添加到创作提示中
+    const updatedPrompt = `${promptInput} ${suggestion.content}`;
+    setPromptInput(updatedPrompt);
     toast.success(`已应用创意建议：${suggestion.content}`);
+    // 自动切换到创意方案标签页，方便用户生成方案
+    setActiveTab('plan');
+    // 自动滚动到生成方案按钮位置
+    setTimeout(() => {
+      const button = document.querySelector('.generate-plan-button');
+      if (button) {
+        button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
   };
 
   if (!isOpen) return null;
@@ -265,7 +276,7 @@ const AICreativeAssistant: React.FC<AICreativeAssistantProps> = ({ isOpen, onClo
               <button
                 onClick={generateCreativePlan}
                 disabled={isGenerating || !promptInput.trim() || !selectedDirection}
-                className={`px-4 py-2 rounded-lg transition-colors font-medium text-sm ${isDark ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`px-4 py-2 rounded-lg transition-colors font-medium text-sm ${isDark ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white disabled:opacity-50 disabled:cursor-not-allowed generate-plan-button`}
               >
                 {isGenerating ? (
                   <><i className="fas fa-spinner fa-spin mr-2"></i>生成中...</>

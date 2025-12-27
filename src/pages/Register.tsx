@@ -20,6 +20,8 @@ const registerSchema = z.object({
     .min(8, { message: '密码至少需要8个字符' })
     .regex(/[a-zA-Z]/, { message: '密码需要包含至少一个字母' })
     .regex(/[0-9]/, { message: '密码需要包含至少一个数字' }),
+  age: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export default function Register() {
