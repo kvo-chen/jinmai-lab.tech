@@ -93,7 +93,13 @@ window.addEventListener('error', (event) => {
   }
 }, true);
 
-// 全局对象保护已移至 index.html 中的脚本，在所有脚本加载前执行
+// 确保关键全局对象总是存在，防止 "Cannot set properties of undefined" 错误
+if (!window.knowledge) {
+  window.knowledge = {};
+}
+if (!window.lazilyLoaded) {
+  window.lazilyLoaded = {};
+}
 
 // 注销旧的Service Worker，确保没有遗留的Service Worker影响应用
 if ('serviceWorker' in navigator) {
