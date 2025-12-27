@@ -78,10 +78,10 @@ export const initializeTheme = (): Theme => {
     if (savedTheme) {
       return savedTheme;
     }
-    // 检测是否为移动端设备
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    // 移动端默认使用浅色主题，桌面端默认使用深色主题
-    return isMobile ? 'light' : 'dark';
+    // 服务器端和客户端初始主题必须完全一致，避免hydration错误
+    // 移除设备类型检测，始终返回defaultTheme作为初始值
+    // 后续可以通过用户交互或系统偏好设置更改主题
+    return defaultTheme;
   }
   
   // 服务器端渲染时返回默认主题
