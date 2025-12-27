@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from 'zustand/react';
 import { Coordinate, ZoomLevel, MapState, MapConfig, MapTheme, Region, POI, Path } from './types';
 
 // 默认地图主题
