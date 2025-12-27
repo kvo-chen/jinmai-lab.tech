@@ -21,17 +21,25 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const { isAuthenticated, user, logout, updateUser } = useContext(AuthContext)
   const location = useLocation()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    // 从localStorage读取保存的折叠状态，默认展开
-    const saved = localStorage.getItem('sidebarCollapsed')
-    return saved ? JSON.parse(saved) : false
-  })
+  // 初始化默认值，避免SSR期间访问localStorage
+  const [collapsed, setCollapsed] = useState<boolean>(false)
   const [hovered, setHovered] = useState<boolean>(false)
-  const [width, setWidth] = useState<number>(() => {
-    const saved = localStorage.getItem('sidebarWidth')
-    // 中文注释：默认侧边栏更窄（180px），并将可拖拽的最小宽度下调到 180px
-    return saved ? Math.min(Math.max(parseInt(saved), 180), 320) : 180
-  })
+  const [width, setWidth] = useState<number>(180)
+  
+  // 在客户端挂载后从localStorage加载保存的状态
+  useEffect(() => {
+    // 从localStorage读取保存的折叠状态
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed')
+    if (savedCollapsed) {
+      setCollapsed(JSON.parse(savedCollapsed))
+    }
+    
+    // 从localStorage读取保存的宽度
+    const savedWidth = localStorage.getItem('sidebarWidth')
+    if (savedWidth) {
+      setWidth(Math.min(Math.max(parseInt(savedWidth), 180), 320))
+    }
+  }, [])
   const dragging = useRef(false)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [search, setSearch] = useState('')
@@ -45,13 +53,19 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const suggestions = useMemo(() => (
     ['品牌设计', '国潮设计', '老字号品牌', 'IP设计', '插画设计', '工艺创新', '非遗传承', '共创向导']
   ), [])
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
+  
+  // 在客户端挂载后从localStorage加载最近搜索
+  useEffect(() => {
     try {
       const s = localStorage.getItem('recentSearches')
-      if (s) return JSON.parse(s)
-    } catch {}
-    return []
-  })
+      if (s) {
+        setRecentSearches(JSON.parse(s))
+      }
+    } catch {
+      // 忽略错误
+    }
+  }, [])
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   
   // 中文注释：搜索建议列表
@@ -62,6 +76,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   
   // 中文注释：处理搜索框聚焦和失焦事件
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof document === 'undefined') return
+    
     const handleClickOutside = (e: MouseEvent) => {
       const searchContainer = document.querySelector('.search-container')
       if (searchContainer && !searchContainer.contains(e.target as Node)) {
@@ -90,6 +107,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   // 中文注释：问题反馈弹层显示状态
   const [showFeedback, setShowFeedback] = useState(false)
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof document === 'undefined') return
+    
     const handler = (e: MouseEvent) => {
       if (!shortcutsRef.current) return
       if (!shortcutsRef.current.contains(e.target as Node)) {
@@ -100,17 +120,27 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     return () => document.removeEventListener('mousedown', handler)
   }, [showShortcuts])
   const notifRef = useRef<HTMLDivElement | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
+  // 初始化通知状态，避免SSR期间访问localStorage
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: 'n1', title: '欢迎回来', description: '每日签到可领取奖励', time: '刚刚', read: false, type: 'success' },
+    { id: 'n2', title: '系统更新', description: '创作中心新增AI文案优化', time: '1 小时前', read: false, type: 'info' },
+    { id: 'n3', title: '新教程上线', description: '杨柳青年画入门视频', time: '昨天', read: true, type: 'info' },
+  ])
+  
+  // 在客户端挂载后从localStorage加载通知
+  useEffect(() => {
     try {
       const stored = localStorage.getItem('notifications')
-      if (stored) return JSON.parse(stored)
-    } catch {}
-    return [
-      { id: 'n1', title: '欢迎回来', description: '每日签到可领取奖励', time: '刚刚', read: false, type: 'success' },
-      { id: 'n2', title: '系统更新', description: '创作中心新增AI文案优化', time: '1 小时前', read: false, type: 'info' },
-      { id: 'n3', title: '新教程上线', description: '杨柳青年画入门视频', time: '昨天', read: true, type: 'info' },
-    ]
-  })
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setNotifications(parsed)
+        }
+      }
+    } catch {
+      // 忽略错误
+    }
+  }, [])
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications])
   useEffect(() => {
     try {
@@ -118,6 +148,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     } catch {}
   }, [notifications])
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof document === 'undefined') return
+    
     const handler = (e: MouseEvent) => {
       if (!notifRef.current) return
       if (!notifRef.current.contains(e.target as Node)) {
@@ -136,6 +169,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const fileRef = useRef<HTMLInputElement | null>(null)
   // 中文注释：点击外部关闭用户菜单
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof document === 'undefined') return
+    
     const handler = (e: MouseEvent) => {
       if (!userMenuRef.current) return
       if (!userMenuRef.current.contains(e.target as Node)) {
@@ -166,6 +202,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const maxW = 320
 
   const onMouseDown = () => {
+    // 只在浏览器环境中执行
+    if (typeof document === 'undefined') return
+    
     dragging.current = true
     document.body.style.cursor = 'col-resize'
   }
@@ -188,6 +227,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   // }, [])
 
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const onMove = (e: MouseEvent) => {
       if (!dragging.current || collapsed) return
       const next = Math.min(Math.max(width + e.movementX, minW), maxW)
@@ -207,6 +249,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   }, [width, collapsed])
 
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    
     const onKey = (e: KeyboardEvent) => {
       const tag = (document.activeElement && (document.activeElement as HTMLElement).tagName) || ''
       const isTyping = ['INPUT', 'TEXTAREA'].includes(tag)
@@ -246,6 +291,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
 
   // 中文注释：当滚动距离超过 480px 时展示“回到顶部”按钮
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof window === 'undefined') return
+    
     const onScroll = () => {
       const y = window.scrollY
       setShowBackToTop(y > 480)

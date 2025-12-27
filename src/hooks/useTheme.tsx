@@ -33,33 +33,47 @@ interface ThemeProviderProps {
 
 // 创建 ThemeProvider 组件
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(initializeTheme);
+  // 确保在服务器端渲染时使用默认主题，避免访问浏览器API
+  const [theme, setTheme] = useState<Theme>(() => {
+    // 只在浏览器环境中调用initializeTheme
+    if (typeof window !== 'undefined') {
+      return initializeTheme();
+    }
+    return defaultTheme;
+  });
 
   // 更新主题类到DOM
   const updateThemeClass = useCallback(() => {
-    const appliedTheme = getAppliedTheme(theme);
-    
-    // 清除所有主题类
-    document.documentElement.classList.remove('light', 'dark', 'pink', 'blue', 'green');
-    
-    // 添加当前主题类（浅色主题不需要添加类，使用默认样式）
-    if (appliedTheme !== 'light') {
-      document.documentElement.classList.add(appliedTheme);
+    // 只在浏览器环境中执行DOM操作
+    if (typeof document !== 'undefined') {
+      const appliedTheme = getAppliedTheme(theme);
+      
+      // 清除所有主题类
+      document.documentElement.classList.remove('light', 'dark', 'pink', 'blue', 'green');
+      
+      // 添加当前主题类（浅色主题不需要添加类，使用默认样式）
+      if (appliedTheme !== 'light') {
+        document.documentElement.classList.add(appliedTheme);
+      }
     }
   }, [theme]);
 
   // 监听系统主题变化
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleSystemThemeChange = () => {
-      if (theme === 'auto') {
-        updateThemeClass();
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    // 只在浏览器环境中添加事件监听
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      const handleSystemThemeChange = () => {
+        if (theme === 'auto') {
+          updateThemeClass();
+        }
+      };
+      
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+      return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    }
+    return undefined;
   }, [theme, updateThemeClass]);
 
   // 主题变化时更新类名和localStorage

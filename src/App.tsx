@@ -363,20 +363,27 @@ export default function App() {
     
     // 社群消息状态
     const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>(() => {
-      try {
-        const stored = localStorage.getItem('jmzf_community_messages');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          // 确保返回的是数组
-          return Array.isArray(parsed) ? parsed : [];
-        }
-      } catch {}
+      // 在SSR期间返回默认值，不访问localStorage
       return [
         { id: 'm1', sender: '创意达人', content: '分享一个新的创作技巧...', time: '刚刚', read: false, avatar: '👤' },
         { id: 'm2', sender: '设计师小王', content: '大家觉得这个配色方案怎么样？', time: '1 小时前', read: false, avatar: '🎨' },
         { id: 'm3', sender: '系统通知', content: '新活动：创意挑战赛开始了！', time: '昨天', read: true, avatar: '📢' },
       ];
     });
+    
+    // 在客户端挂载后从localStorage加载消息
+    useEffect(() => {
+      try {
+        const stored = localStorage.getItem('jmzf_community_messages');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // 确保返回的是数组
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCommunityMessages(parsed);
+          }
+        }
+      } catch {}
+    }, []);
     
     // 未读消息计数
     const unreadMessageCount = useMemo(() => 
@@ -393,6 +400,9 @@ export default function App() {
     
     // 点击外部关闭消息面板
     useEffect(() => {
+      // 只在浏览器环境中添加事件监听
+      if (typeof document === 'undefined') return;
+      
       const handler = (e: MouseEvent) => {
         if (!messagesRef.current) return;
         if (!messagesRef.current.contains(e.target as Node)) {
@@ -585,6 +595,9 @@ export default function App() {
   
   // 全局CSS动画
   useEffect(() => {
+    // 只在浏览器环境中执行
+    if (typeof document === 'undefined') return;
+    
     // 添加全局动画样式
     const style = document.createElement('style');
     style.textContent = `
