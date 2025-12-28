@@ -15,28 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js and pnpm
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: '10.21.0'
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Install pnpm globally
+        run: npm install -g pnpm
 
       - name: Install dependencies
         run: |
           echo "Installing dependencies..."
-          pnpm install --frozen-lockfile --verbose
+          pnpm install --frozen-lockfile
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
