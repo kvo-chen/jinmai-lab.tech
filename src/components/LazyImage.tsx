@@ -69,6 +69,14 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     return processedSrc || (fallbackSrc || defaultFallbackSrc);
   }, [src, fallbackSrc, disableFallback]);
   
+  // 计算实际显示的图片URL，如果加载失败则使用fallback
+  const displaySrc = useMemo(() => {
+    if (isError && !disableFallback) {
+      return fallbackSrc || defaultFallbackSrc;
+    }
+    return currentSrc;
+  }, [isError, currentSrc, fallbackSrc, disableFallback]);
+  
   // 对于SVG数据URL，立即设置为已加载，因为它们是内联的，会立即加载
   const isSvgDataUrl = useMemo(() => {
     return src.startsWith('data:image/svg+xml');
@@ -221,7 +229,7 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
         {isVisible && (
           <img
             ref={imgRef}
-            src={currentSrc}
+            src={displaySrc}
             alt={alt}
             className={getImageClasses()}
             onLoad={handleLoad}
