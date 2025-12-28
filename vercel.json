@@ -1,14 +1,10 @@
 {
   "version": 2,
-  "packageManager": "pnpm",
-  "framework": "vite",
   "build": {
-    "command": "pnpm build",
+    "command": "pnpm install && pnpm build",
     "outputDirectory": "dist",
     "installCommand": "pnpm install",
-    "env": {
-      "NODE_ENV": "production"
-    }
+    "nodeVersion": "18.x"
   },
   "routes": [
     {
@@ -18,6 +14,5 @@
       "src": "/(.*)",
       "dest": "/"
     }
-  ],
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ./package.json ./pnpm-lock.yaml ./vite.config.ts ./src"
+  ]
 }
