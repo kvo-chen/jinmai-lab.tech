@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "build": {
-    "command": "pnpm install && pnpm build",
-    "outputDirectory": "dist",
-    "installCommand": "pnpm install",
-    "framework": "vite"
-  },
+  "packageManager": "pnpm",
+  "framework": "vite",
   "routes": [
     {
       "handle": "filesystem"
