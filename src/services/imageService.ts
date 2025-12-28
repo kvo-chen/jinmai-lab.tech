@@ -503,8 +503,11 @@ class ImageService {
 
   // 生成备用图片URL - 根据alt文本生成不同的备用图片
   public getFallbackUrl(alt: string): string {
-    // 返回本地占位图，避免使用可能被ORB策略阻止的外部URL
-    return '/images/placeholder-image.jpg';
+    // 检查当前部署环境，返回正确的占位图片路径
+    // 对于GitHub Pages部署，需要包含base路径/jinmai-lab/
+    const isGithubPages = window.location.hostname.includes('github.io');
+    const basePath = isGithubPages ? '/jinmai-lab/' : '/';
+    return `${basePath}images/placeholder-image.jpg`;
   }
 
   // 检查URL是否为有效图片URL
