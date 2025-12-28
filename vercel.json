@@ -1,7 +1,6 @@
 {
   "version": 2,
   "build": {
-    "installCommand": "pnpm install",
     "nodeVersion": "18.x"
   },
   "routes": [
