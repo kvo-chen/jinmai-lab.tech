@@ -17,8 +17,8 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   
   // 游戏状态
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'completed'>('menu');
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
+  const [levels, setLevels] = useState<PairMatchingLevel[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<PairMatchingLevel | null>(null);
   const [allItems, setAllItems] = useState<PairItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
@@ -54,7 +54,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   useEffect(() => {
     if (selectedLevel) {
       // 收集所有配对项并打乱顺序
-      const items = selectedLevel.pairs.flatMap(pair => [pair.item1, pair.item2]);
+      const items = selectedLevel.pairs.flatMap((pair: { item1: PairItem; item2: PairItem }) => [pair.item1, pair.item2]);
       const shuffledItems = items.sort(() => Math.random() - 0.5);
       
       setAllItems(shuffledItems);
@@ -82,7 +82,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   }, [startTime, gameState]);
 
   // 选择关卡
-  const handleSelectLevel = useCallback((level: Level) => {
+  const handleSelectLevel = useCallback((level: PairMatchingLevel) => {
     if (!user) {
       toast.error('请先登录！');
       return;

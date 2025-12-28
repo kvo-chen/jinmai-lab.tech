@@ -12,7 +12,7 @@ interface CulturalMatchingGameProps {
 }
 
 interface CardState {
-  card: Card;
+  card: MatchingCard;
   isFlipped: boolean;
   isMatched: boolean;
   isHinted: boolean;
@@ -24,8 +24,8 @@ const CulturalMatchingGame: React.FC<CulturalMatchingGameProps> = ({ isOpen, onC
   
   // 游戏状态
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'completed'>('menu');
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
+  const [levels, setLevels] = useState<MatchingLevel[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<MatchingLevel | null>(null);
   const [gameProgress, setGameProgress] = useState<GameProgress | null>(null);
   const [cardStates, setCardStates] = useState<CardState[]>([]);
   const [selectedCards, setSelectedCards] = useState<CardState[]>([]);

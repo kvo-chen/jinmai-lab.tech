@@ -17,6 +17,7 @@
     "test:ci": "jest --ci --coverage"
   },
   "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
     "@bufbuild/protobuf": "^2.10.2",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@mediapipe/camera_utils": "^0.3.1675466862",
@@ -42,7 +43,6 @@
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.0.0",
     "pg": "^8.16.3",
-    "puppeteer": "^24.34.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^16.5.0",

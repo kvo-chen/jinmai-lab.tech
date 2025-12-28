@@ -1,9 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import errorService from '@/services/errorService';
 import { toast } from 'sonner';
-import { withTranslation, WithTranslation } from 'react-i18next';
 
-interface ErrorBoundaryProps extends WithTranslation {
+interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
@@ -16,13 +15,11 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  t: (key: string) => string;
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
       hasError: false
     };
-    this.t = props.t;
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -48,11 +45,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
     // 显示错误提示
     toast.error(
-      this.t('error.message'),
+      '抱歉，应用程序发生了错误',
       {
         duration: 5000,
         action: {
-          label: this.t('error.refreshButton'),
+          label: '刷新页面',
           onClick: () => window.location.reload()
         }
       }
@@ -66,21 +63,21 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         return this.props.fallback;
       }
 
-      // 默认降级UI
+      // 默认降级UI - 使用硬编码文本，避免依赖i18n
       return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
           <div className="w-full max-w-md text-center">
             <div className="text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold mb-2">{this.t('error.title')}</h1>
+            <h1 className="text-2xl font-bold mb-2">应用程序发生错误</h1>
             <p className="mb-6 text-gray-600 dark:text-gray-400">
-              {this.t('error.description')}
+              抱歉，应用程序遇到了一个问题。请尝试刷新页面或联系支持团队。
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => window.location.reload()}
                 className="px-6 py-3 rounded-lg font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors"
               >
-                {this.t('error.refreshButton')}
+                刷新页面
               </button>
               <button
                 onClick={() => {
@@ -89,18 +86,18 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                 }}
                 className="px-6 py-3 rounded-lg font-medium bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
               >
-                {this.t('error.contactSupportButton')}
+                联系支持
               </button>
             </div>
             {this.state.error && (
               <details className="mt-6 p-4 rounded-lg text-left bg-gray-100 dark:bg-gray-800">
-                <summary className="cursor-pointer font-medium">{this.t('error.detailsTitle')}</summary>
+                <summary className="cursor-pointer font-medium">错误详情</summary>
                 <pre className="mt-2 whitespace-pre-wrap text-sm">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack && (
                     <>
                       <br />
-                      {this.t('error.componentStack')}
+                      组件栈:
                       <br />
                       {this.state.errorInfo.componentStack}
                     </>
@@ -117,4 +114,4 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-export default withTranslation()(ErrorBoundary);
+export default ErrorBoundary;

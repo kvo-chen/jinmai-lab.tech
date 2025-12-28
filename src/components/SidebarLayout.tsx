@@ -108,7 +108,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     description?: string
     time: string
     read: boolean
-    type?: 'info' | 'success' | 'warning'
+    type: 'info' | 'success' | 'warning' | 'error'
+    category?: string
+    actionUrl?: string
   }
   const [showNotifications, setShowNotifications] = useState(false)
   // 中文注释：滚动超过一定距离后显示“回到顶部”悬浮按钮，提升长页可用性
@@ -118,6 +120,13 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const shortcutsRef = useRef<HTMLDivElement | null>(null)
   // 中文注释：问题反馈弹层显示状态
   const [showFeedback, setShowFeedback] = useState(false)
+  // 通知过滤状态
+  const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread' | 'info' | 'success' | 'warning' | 'error'>('all')
+  // 语言菜单ref
+  const languageRef = useRef<HTMLDivElement | null>(null)
+  // 语言菜单状态
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false)
+  
   useEffect(() => {
     // 只在浏览器环境中添加事件监听
     if (typeof document === 'undefined') return
@@ -131,29 +140,54 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     if (showShortcuts) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showShortcuts])
-  const notifRef = useRef<HTMLDivElement | null>(null)
-  // 初始化通知状态，避免SSR期间访问localStorage
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: 'n1', title: '欢迎回来', description: '每日签到可领取奖励', time: '刚刚', read: false, type: 'success' },
-    { id: 'n2', title: '系统更新', description: '创作中心新增AI文案优化', time: '1 小时前', read: false, type: 'info' },
-    { id: 'n3', title: '新教程上线', description: '杨柳青年画入门视频', time: '昨天', read: true, type: 'info' },
-  ])
   
-  // 在客户端挂载后从localStorage加载通知
+  // 点击外部关闭语言菜单
   useEffect(() => {
+    // 只在浏览器环境中添加事件监听
+    if (typeof document === 'undefined') return
+    
+    const handler = (e: MouseEvent) => {
+      if (!languageRef.current) return
+      if (!languageRef.current.contains(e.target as Node)) {
+        setShowLanguageMenu(false)
+      }
+    }
+    if (showLanguageMenu) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showLanguageMenu])
+  
+  const notifRef = useRef<HTMLDivElement | null>(null)
+  // 初始化通知状态
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
     try {
       const stored = localStorage.getItem('notifications')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setNotifications(parsed)
-        }
-      }
-    } catch {
-      // 忽略错误
+      if (stored) return JSON.parse(stored)
+    } catch {}
+    return [
+      { id: 'n1', title: '欢迎回来', description: '每日签到可领取奖励', time: '刚刚', read: false, type: 'success', category: 'system' },
+      { id: 'n2', title: '系统更新', description: '创作中心新增AI文案优化', time: '1 小时前', read: false, type: 'info', category: 'system' },
+      { id: 'n3', title: '新教程上线', description: '杨柳青年画入门视频', time: '昨天', read: true, type: 'info', category: 'learning' },
+      { id: 'n4', title: '创作提醒', description: '您的作品《天津之眼》获得了10个赞', time: '2 小时前', read: false, type: 'success', category: 'social' },
+      { id: 'n5', title: '系统警告', description: '部分功能暂时不可用', time: '3 小时前', read: true, type: 'warning', category: 'system' },
+      { id: 'n6', title: '错误通知', description: '上传失败，请重试', time: '4 小时前', read: false, type: 'error', category: 'creation' },
+    ]
+  })
+  
+  // 过滤后的通知
+  const filteredNotifications = useMemo(() => {
+    let result = [...notifications]
+    
+    if (notificationFilter === 'unread') {
+      result = result.filter(n => !n.read)
+    } else if (notificationFilter !== 'all') {
+      result = result.filter(n => n.type === notificationFilter)
     }
-  }, [])
+    
+    return result
+  }, [notifications, notificationFilter])
+  
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications])
+  
   useEffect(() => {
     try {
       localStorage.setItem('notifications', JSON.stringify(notifications))
@@ -260,6 +294,27 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     }
   }, [width, collapsed])
 
+  // 添加通知动画效果
+  const [newNotification, setNewNotification] = useState<Notification | null>(null)
+  
+  // 添加新通知的函数
+  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'read' | 'time'>) => {
+    const newNotif: Notification = {
+      ...notification,
+      id: `n${Date.now()}`,
+      read: false,
+      time: '刚刚',
+    }
+    
+    setNotifications(prev => [newNotif, ...prev])
+    setNewNotification(newNotif)
+    
+    // 3秒后清除新通知标记
+    setTimeout(() => {
+      setNewNotification(null)
+    }, 3000)
+  }, [])
+
   useEffect(() => {
     // 只在浏览器环境中添加事件监听
     if (typeof window === 'undefined' || typeof document === 'undefined') return
@@ -267,6 +322,8 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     const onKey = (e: KeyboardEvent) => {
       const tag = (document.activeElement && (document.activeElement as HTMLElement).tagName) || ''
       const isTyping = ['INPUT', 'TEXTAREA'].includes(tag)
+      
+      // 全局快捷键
       if (e.key === 't') {
         toggleTheme()
       }
@@ -277,6 +334,31 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
       if (e.key === 'b') {
         setCollapsed((c) => !c)
       }
+      
+      // 添加快捷键提示
+      if (e.key === '?') {
+        e.preventDefault()
+        setShowShortcuts(v => !v)
+        return
+      }
+      
+      // 添加通知快捷键
+      if (e.key === 'n' && !isTyping) {
+        e.preventDefault()
+        setShowNotifications(v => !v)
+      }
+      
+      // ESC 键关闭各种弹出内容
+      if (e.key === 'Escape') {
+        if (showNotifications) setShowNotifications(false)
+        if (showShortcuts) setShowShortcuts(false)
+        if (showFeedback) setShowFeedback(false)
+        if (showUserMenu) setShowUserMenu(false)
+        if (showSearchDropdown) setShowSearchDropdown(false)
+        // 移除对showLanguageDropdown的依赖，避免初始化顺序问题
+        // if (showLanguageDropdown) setShowLanguageDropdown(false)
+      }
+      
       if (!isTyping) {
         const map: Record<string, string> = {
           '1': '/',
@@ -299,7 +381,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggleTheme])
+  }, [toggleTheme, showNotifications, showShortcuts, showFeedback, showUserMenu, showSearchDropdown, prefetchRoute, navigate, setCollapsed])
 
   // 中文注释：当滚动距离超过 480px 时展示“回到顶部”按钮
   useEffect(() => {
@@ -459,10 +541,12 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
         <nav className="px-2 pt-2 pb-4 space-y-4">
           {navigationGroups.map((group) => (
             <div key={group.id} className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
-              <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
-                <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
-                {t(navGroupIdToTranslationKey[group.id] || group.id)}
-              </h3>
+              {(!collapsed || hovered) && (
+                <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
+                  <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
+                  {t(navGroupIdToTranslationKey[group.id] || group.id)}
+                </h3>
+              )}
               <div className="space-y-1">
                 {group.items.map((item) => (
                   <NavLink 
@@ -470,10 +554,10 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                     to={item.path}
                     title={collapsed ? t(navItemIdToTranslationKey[item.id] || item.id) : undefined} 
                     onMouseEnter={() => debouncedPrefetch(item.path)} 
-                    className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''}`}
+                    className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''} relative overflow-hidden group ${collapsed ? 'justify-center px-2 py-2.5' : ''}`}
                   > 
-                    <i className={`fas ${item.icon} mr-2`}></i>
-                    {(!collapsed || hovered) && t(navItemIdToTranslationKey[item.id] || item.id)}
+                    <i className={`fas ${item.icon} ${collapsed ? 'mr-0' : 'mr-2'} transition-all duration-300 group-hover:scale-110 group-hover:rotate-5`}></i>
+                    {(!collapsed || hovered) && <span className="transition-all duration-300">{t(navItemIdToTranslationKey[item.id] || item.id)}</span>}
                   </NavLink>
                 ))}
               </div>
@@ -519,7 +603,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
             </div>
             <div className="flex items-center space-x-3">
               {/* 中文注释：搜索框 */}
-              <div className="relative search-container">
+              <div className="relative search-container max-w-md flex-shrink-0">
                 <div className={`flex items-center rounded-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} px-3 py-2`}>
                   <i className={`fas fa-search ${isDark ? 'text-gray-400' : 'text-gray-500'} mr-2`}></i>
                   <input
@@ -715,51 +799,107 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
               </button>
               <div className="relative" ref={notifRef}>
                 <button
-                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-800 ring-1 ring-gray-700' : 'hover:bg-gray-50 ring-1 ring-gray-200'}`}
+                  className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 hover:bg-gray-700 hover:ring-blue-500' : 'bg-white/70 ring-1 ring-gray-200 hover:bg-gray-50 hover:ring-blue-500'} hover:shadow-md relative`}
                   aria-label="通知"
                   aria-expanded={showNotifications}
                   onClick={() => setShowNotifications(v => !v)}
+                  title={`${unreadCount > 0 ? `${unreadCount} 条未读通知` : '查看通知'}`}
                 >
-                  <i className="fas fa-bell"></i>
+                  <i className="fas fa-bell transition-transform duration-300 hover:scale-110"></i>
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold shadow-lg animate-pulse">
+                      {unreadCount}
+                    </span>
                   )}
                 </button>
                 {showNotifications && (
-                  <div className={`absolute right-0 mt-2 w-80 rounded-xl shadow-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'}`} role="dialog" aria-label={t('header.notifications')}>
+                  <div className={`absolute right-0 mt-2 w-96 rounded-2xl shadow-xl ring-1 transition-all duration-300 transform ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} z-50`} role="dialog" aria-label="通知列表">
                     <div className={`px-4 py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
-                      <span className="font-medium">{t('header.notifications')}</span>
+                      <span className="font-medium text-lg flex items-center">
+                        <i className="fas fa-bell mr-2 text-blue-500"></i>
+                        通知
+                        <span className="ml-2 text-xs font-normal ${isDark ? 'text-gray-400' : 'text-gray-500'}">({unreadCount} 未读)</span>
+                      </span>
                       <div className="flex items-center space-x-2">
                         <button
-                          className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
+                          className={`text-xs px-3 py-1.5 rounded-lg transition-all duration-300 ${isDark ? 'bg-gray-700 text-white hover:bg-blue-900/50 hover:text-blue-400' : 'bg-gray-100 text-gray-900 hover:bg-blue-50 hover:text-blue-700'}`}
                           onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}>
-                          {t('header.markAllAsRead')}
+                          <i className="fas fa-check-double mr-1"></i>
+                          全部已读
                         </button>
                         <button
-                          className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
+                          className={`text-xs px-3 py-1.5 rounded-lg transition-all duration-300 ${isDark ? 'bg-gray-700 text-white hover:bg-red-900/50 hover:text-red-400' : 'bg-gray-100 text-gray-900 hover:bg-red-50 hover:text-red-700'}`}
                           onClick={() => setNotifications([])}>
-                          {t('header.clear')}
+                          <i className="fas fa-trash mr-1"></i>
+                          清空
                         </button>
                       </div>
                     </div>
-                    <ul className="max-h-80 overflow-auto">
-                      {notifications.length === 0 ? (
-                        <li className={`${isDark ? 'text-gray-400' : 'text-gray-600'} px-4 py-6 text-sm`}>{t('header.noNotifications')}</li>
+                    
+                    {/* 通知过滤标签 */}
+                    <div className={`px-4 py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-x-auto whitespace-nowrap`}>
+                      <div className="flex space-x-2">
+                        {[
+                          { value: 'all', label: '全部', icon: 'fa-inbox' },
+                          { value: 'unread', label: '未读', icon: 'fa-envelope-open-text' },
+                          { value: 'success', label: '成功', icon: 'fa-check-circle' },
+                          { value: 'info', label: '信息', icon: 'fa-info-circle' },
+                          { value: 'warning', label: '警告', icon: 'fa-exclamation-triangle' },
+                          { value: 'error', label: '错误', icon: 'fa-times-circle' },
+                        ].map(filter => (
+                          <button
+                            key={filter.value}
+                            onClick={() => setNotificationFilter(filter.value as any)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center transition-all duration-300 ${notificationFilter === filter.value ? 
+                              (isDark ? 'bg-blue-900/50 text-blue-400 border border-blue-700' : 'bg-blue-100 text-blue-700 border border-blue-300') : 
+                              (isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')}`}
+                          >
+                            <i className={`fas ${filter.icon} mr-1.5 text-xs`}></i>
+                            {filter.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <ul className="max-h-96 overflow-auto">
+                      {filteredNotifications.length === 0 ? (
+                        <li className={`${isDark ? 'text-gray-400' : 'text-gray-500'} px-4 py-8 text-center`}>
+                          <i className="fas fa-bell-slash text-3xl mb-3 opacity-50"></i>
+                          <p className="text-sm">暂无通知</p>
+                          <p className="text-xs mt-1 opacity-75">当有新通知时，会在这里显示</p>
+                        </li>
                       ) : (
-                        notifications.map(n => (
+                        filteredNotifications.map(n => (
                           <li key={n.id}>
                             <button
-                              className={`w-full text-left px-4 py-3 flex items-start space-x-3 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
-                              onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
+                              onClick={() => {
+                                setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+                                // 如果有跳转链接，处理跳转
+                                if (n.actionUrl) {
+                                  navigate(n.actionUrl)
+                                  setShowNotifications(false)
+                                }
+                              }}
+                              className={`w-full text-left px-4 py-3 flex items-start space-x-3 transition-all duration-300 ${isDark ? 'hover:bg-gray-700/80' : 'hover:bg-gray-50'} ${newNotification?.id === n.id ? 'animate-pulse' : ''} ${!n.read ? `${isDark ? 'bg-blue-900/20 border-l-4 border-blue-500' : 'bg-blue-50 border-l-4 border-blue-500'}` : ''}`}
                             >
-                              <span className={`mt-0.5 inline-flex items-center justify-center w-2 h-2 rounded-full ${n.read ? 'bg-gray-300' : 'bg-red-500'}`}></span>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium">{n.title}</span>
-                                  <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{n.time}</span>
+                              <span className={`mt-0.5 inline-flex items-center justify-center w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} text-lg`}>
+                                <i className={`fas ${n.type === 'success' ? 'fa-check-circle text-green-500' : n.type === 'info' ? 'fa-info-circle text-blue-500' : n.type === 'warning' ? 'fa-exclamation-triangle text-yellow-500' : 'fa-times-circle text-red-500'}`}></i>
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between">
+                                  <h4 className="text-sm font-medium truncate">{n.title}</h4>
+                                  <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{n.time}</span>
                                 </div>
                                 {n.description && (
-                                  <p className={`mt-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{n.description}</p>
+                                  <p className={`mt-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'} truncate`}>{n.description}</p>
+                                )}
+                                {n.category && (
+                                  <span className={`mt-1 inline-block px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                                    {n.category === 'system' && '系统'}
+                                    {n.category === 'learning' && '学习'}
+                                    {n.category === 'creation' && '创作'}
+                                    {n.category === 'social' && '社交'}
+                                  </span>
                                 )}
                               </div>
                             </button>
@@ -767,13 +907,6 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                         ))
                       )}
                     </ul>
-                    <div className={`px-4 py-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} text-right`}>
-                      <button
-                        className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`}
-                        onClick={() => setShowNotifications(false)}>
-                        {t('header.close')}
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
@@ -799,6 +932,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                       <ul className="py-1">
                         <li>
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/dashboard') }}>{t('header.profile')}</button>
+                        </li>
+                        <li>
+                          <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/analytics') }}>{t('header.analytics')}</button>
                         </li>
                         <li>
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/membership') }}>{t('header.membershipCenter')}</button>

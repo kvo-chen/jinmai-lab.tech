@@ -51,11 +51,49 @@ interface ApiError extends Error {
   method?: string
 }
 
+// 新增：中间件接口
+interface Middleware {
+  name: string
+  // 中间件处理函数，接收请求上下文，返回修改后的上下文
+  process: <TResp, TBody = unknown>(
+    context: RequestContext<TResp, TBody>,
+    next: () => Promise<ApiResponse<TResp>>
+  ) => Promise<ApiResponse<TResp>>
+}
+
+// 新增：请求上下文
+interface RequestContext<TResp, TBody = unknown> {
+  path: string
+  options: RequestOptions<TBody>
+  method: HttpMethod
+  url: string
+  headers: Record<string, string>
+  body?: TBody
+  signal?: AbortSignal
+  retries: number
+  timeoutMs: number
+  cacheKey: string
+  isCacheEnabled: boolean
+}
+
 const DEFAULT_TIMEOUT = 10000
 const DEFAULT_RETRIES = 1
 const DEFAULT_CACHE_TTL = 60000 // 默认缓存时间1分钟
 const DEFAULT_DEBOUNCE_DELAY = 300 // 默认防抖延迟300ms
 const DEFAULT_THROTTLE_LIMIT = 1000 // 默认节流限制1秒
+
+// 新增：中间件存储
+const middlewares: Middleware[] = []
+
+// 新增：注册中间件函数
+export const registerMiddleware = (middleware: Middleware) => {
+  middlewares.push(middleware)
+}
+
+// 新增：清除所有中间件函数
+export const clearMiddlewares = () => {
+  middlewares.length = 0
+}
 
 // 重试延迟配置
 const baseDelay = 1000 // 基础延迟1秒
@@ -432,10 +470,46 @@ export async function apiRequest<TResp, TBody = unknown>(
   const isCacheEnabled = cacheOptions.enabled !== false && method === 'GET'
   let cachedResult: { data: any; isStale: boolean } | null = null
   
+  // 检查缓存
+  if (isCacheEnabled) {
+    cachedResult = cacheStore.get(requestKey, { allowStale: true })
+    if (cachedResult) {
+      // 记录缓存命中
+      console.log(`API Cache Hit: ${method} ${path} (stale: ${cachedResult.isStale})`);
+      
+      // 如果数据过期但未失效，返回缓存数据并在后台重新验证
+      if (cachedResult.isStale) {
+        // 在后台重新验证缓存
+        actualRequest()
+          .catch(error => {
+            console.warn('Cache revalidation failed:', error);
+            // 记录缓存重新验证错误
+            console.error(`Cache Revalidation Failed: ${method} ${path}`, error);
+          });
+      }
+      
+      // 记录网络请求性能数据（缓存命中）
+      recordNetworkRequest({
+        url: url,
+        method,
+        duration: 0, // 缓存命中，耗时为0
+        status: 200,
+        size: 0, // 缓存命中，不计算大小
+        timestamp: Date.now(),
+        fromCache: true,
+        retries: 0,
+      });
+      
+      return { ok: true, status: 200, data: cachedResult.data as TResp, fromCache: true }
+    } else {
+      // 记录缓存未命中
+      console.log(`API Cache Miss: ${method} ${path}`);
+    }
+  }
+  
   // 定义实际请求函数
   const actualRequest = async (): Promise<ApiResponse<TResp>> => {
     let attempt = 0
-    let fallbackAttempt = 0
     let useFallback = false
     
     // 定义可重试的错误类型
@@ -514,7 +588,7 @@ export async function apiRequest<TResp, TBody = unknown>(
             responseData = data
           }
           
-          // 更新缓存 - 修复：使用正确的缓存选项
+          // 更新缓存
           if (isCacheEnabled && res.ok) {
             cacheStore.set(requestKey, responseData, {
               ttl: cacheOptions.ttl,
@@ -619,14 +693,14 @@ export async function apiRequest<TResp, TBody = unknown>(
           }
           
           // 回退URL也失败了，返回统一格式的错误响应
-        const finalError = error as Error
-        return {
-          ok: false,
-          status: finalError instanceof Error ? 500 : 500,
-          error: finalError.message || 'Unknown error',
-          data: null as any,
-          fromCache: false
-        }
+          const finalError = error as Error
+          return {
+            ok: false,
+            status: 500,
+            error: finalError.message || 'Unknown error',
+            data: null as any,
+            fromCache: false
+          }
         }
         
         // 计算延迟时间（指数退避）
@@ -647,44 +721,48 @@ export async function apiRequest<TResp, TBody = unknown>(
     }
   }
   
-  // 检查缓存
-  if (isCacheEnabled) {
-    cachedResult = cacheStore.get(requestKey, { allowStale: true })
-    if (cachedResult) {
-      // 记录缓存命中
-      console.log(`API Cache Hit: ${method} ${path} (stale: ${cachedResult.isStale})`);
-      
-      // 如果数据过期但未失效，返回缓存数据并在后台重新验证
-      if (cachedResult.isStale) {
-        // 在后台重新验证缓存
-        actualRequest().catch(error => {
-          console.warn('Cache revalidation failed:', error);
-          // 记录缓存重新验证错误
-          console.error(`Cache Revalidation Failed: ${method} ${path}`, error);
-        })
+  // 新增：中间件执行逻辑
+  // 构建请求上下文
+  const context: RequestContext<TResp, TBody> = {
+    path,
+    options,
+    method,
+    url,
+    headers,
+    body: options.body,
+    signal: options.signal,
+    retries,
+    timeoutMs,
+    cacheKey: requestKey,
+    isCacheEnabled
+  }
+  
+  // 构建中间件链
+  const executeMiddlewareChain = async (index: number): Promise<ApiResponse<TResp>> => {
+    if (index >= middlewares.length) {
+      // 所有中间件执行完毕，执行实际请求
+      return actualRequest()
+    }
+    
+    const middleware = middlewares[index]
+    try {
+      // 执行当前中间件
+      return await middleware.process(context, () => executeMiddlewareChain(index + 1))
+    } catch (error) {
+      console.error(`Middleware ${middleware.name} failed:`, error)
+      // 中间件执行失败，返回错误响应
+      return {
+        ok: false,
+        status: 500,
+        error: `Middleware ${middleware.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        data: null as any,
+        fromCache: false
       }
-      
-      // 记录网络请求性能数据（缓存命中）
-      recordNetworkRequest({
-        url: url,
-        method,
-        duration: 0, // 缓存命中，耗时为0
-        status: 200,
-        size: 0, // 缓存命中，不计算大小
-        timestamp: Date.now(),
-        fromCache: true,
-        retries: 0,
-      });
-      
-      return { ok: true, status: 200, data: cachedResult.data as TResp, fromCache: true }
-    } else {
-      // 记录缓存未命中
-      console.log(`API Cache Miss: ${method} ${path}`);
     }
   }
   
-  // 执行实际请求
-  return actualRequest()
+  // 执行中间件链
+  return executeMiddlewareChain(0)
 }
 
 export const apiClient = {
@@ -694,7 +772,17 @@ export const apiClient = {
   patch: <T, B = unknown>(path: string, body?: B, options?: RequestOptions<B>) => apiRequest<T, B>(path, { ...options, method: 'PATCH', body }),
   delete: <T>(path: string, options?: RequestOptions<never>) => apiRequest<T, never>(path, { ...options, method: 'DELETE' }),
   
-  // 新增：缓存管理方法
+  // 新增：中间件管理方法
+  middleware: {
+    // 注册中间件
+    register: (middleware: Middleware) => registerMiddleware(middleware),
+    // 清除所有中间件
+    clearAll: () => clearMiddlewares(),
+    // 获取所有注册的中间件
+    getAll: () => [...middlewares],
+  },
+  
+  // 缓存管理方法
   cache: {
     // 清理特定键的缓存
     clear: (key: string) => cacheStore.delete(key),
@@ -716,7 +804,7 @@ export const apiClient = {
     },
   },
   
-  // 新增：防抖管理方法
+  // 防抖管理方法
   debounce: {
     // 清除特定键的防抖定时器
     clear: (key: string) => {
@@ -735,7 +823,7 @@ export const apiClient = {
     },
   },
   
-  // 新增：节流管理方法
+  // 节流管理方法
   throttle: {
     // 清除特定键的节流状态
     clear: (key: string) => throttleStore.delete(key),
@@ -743,14 +831,14 @@ export const apiClient = {
     clearAll: () => throttleStore.clear(),
   },
   
-  // 新增：取消所有进行中的请求（通过AbortController）
+  // 取消所有进行中的请求（通过AbortController）
   cancelAll: () => {
     // 这里可以实现更复杂的请求取消逻辑
     // 目前主要通过AbortSignal机制让调用方自行管理
     console.warn('apiClient.cancelAll() is not fully implemented. Use AbortSignal for request cancellation.')
   },
   
-  // 新增：性能监控方法
+  // 性能监控方法
   performance: {
     // 获取缓存统计
     getCacheStats: () => cacheStore.getStats(),

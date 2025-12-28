@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
       <ErrorBoundary>
         <LanguageProvider>
           <ThemeProvider>
-            <BrowserRouter basename="/jinmai-lab/">
+            <BrowserRouter basename="/">
                 <AuthProvider>
                   <WorkflowProvider>
                     <App />
