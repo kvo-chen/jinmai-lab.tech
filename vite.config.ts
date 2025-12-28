@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
+import path from 'path'
 
 function getPlugins() {
   const plugins = [
@@ -147,6 +148,7 @@ export default defineConfig({
   resolve: {
     // 为数据库相关的 Node.js 原生模块创建别名，避免在浏览器环境中打包
     alias: {
+      '@': path.resolve(__dirname, './src'),
       'better-sqlite3': '@/utils/databaseStub',
       'mongodb': '@/utils/databaseStub',
       'pg': '@/utils/databaseStub',
