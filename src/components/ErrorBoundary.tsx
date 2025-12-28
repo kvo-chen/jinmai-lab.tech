@@ -102,6 +102,18 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                       {this.state.errorInfo.componentStack}
                     </>
                   )}
+                  {this.state.error.stack && (
+                    <>
+                      <br />
+                      错误栈:
+                      <br />
+                      {this.state.error.stack}
+                    </>
+                  )}
+                  <br />
+                  错误名称: {this.state.error.name}
+                  <br />
+                  错误消息: {this.state.error.message}
                 </pre>
               </details>
             )}
