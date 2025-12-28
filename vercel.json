@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "build": {
-    "nodeVersion": "18.x"
-  },
   "routes": [
     {
       "handle": "filesystem"
