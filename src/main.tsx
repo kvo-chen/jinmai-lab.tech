@@ -49,22 +49,20 @@ if (typeof window !== 'undefined') {
   const root = document.getElementById("root");
   if (root) {
     createRoot(root).render(
-      <StrictMode>
-        <ErrorBoundary>
-          <LanguageProvider>
-            <ThemeProvider>
-              <BrowserRouter basename="/jinmai-lab">
-                  <AuthProvider>
-                    <WorkflowProvider>
-                      <App />
-                      <Toaster />
-                    </WorkflowProvider>
-                  </AuthProvider>
-                </BrowserRouter>
-            </ThemeProvider>
-          </LanguageProvider>
-        </ErrorBoundary>
-      </StrictMode>
+      <ErrorBoundary>
+        <LanguageProvider>
+          <ThemeProvider>
+            <BrowserRouter basename="/jinmai-lab">
+                <AuthProvider>
+                  <WorkflowProvider>
+                    <App />
+                    <Toaster />
+                  </WorkflowProvider>
+                </AuthProvider>
+              </BrowserRouter>
+          </ThemeProvider>
+        </LanguageProvider>
+      </ErrorBoundary>
     );
   }
 }
