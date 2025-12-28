@@ -15,31 +15,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js and pnpm
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
+          cache: 'npm'
 
-      - name: Install pnpm globally
+      - name: Install pnpm using npm
         run: npm install -g pnpm
 
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
       - name: Install dependencies
-        run: |
-          echo "Installing dependencies..."
-          pnpm install --frozen-lockfile
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: |
-          echo "Building project..."
-          pnpm build --verbose
-
-      - name: Verify build output
-        run: |
-          echo "Checking build output..."
-          ls -la ./dist
+        run: pnpm build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -47,6 +44,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: true
-          enable_jekyll: false
-          allow_empty_commit: false
-          full_commit_message: "Deploy from GitHub Actions: ${{ github.sha }}"
