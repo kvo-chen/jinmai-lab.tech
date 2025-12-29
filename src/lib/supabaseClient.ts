@@ -1,37 +1,32 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 获取环境变量，使用Vite标准的VITE_前缀
+// 获取环境变量，优先使用NEXT_PUBLIC_前缀，因为Vercel配置的是这个前缀
 let supabaseUrl = ''
 let supabaseKey = ''
 
-// 直接从import.meta.env中获取VITE_前缀的环境变量
+// 直接从import.meta.env中获取各种前缀的环境变量
+const nextPublicUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL
+const nextPublicKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const viteSupabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const viteSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const directUrl = import.meta.env.SUPABASE_URL
+const directKey = import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY
 
-// 检查并清理环境变量值
-if (viteSupabaseUrl) {
+// 优先使用NEXT_PUBLIC_前缀的环境变量
+if (nextPublicUrl) {
+  supabaseUrl = nextPublicUrl.replace(/^[\s`']+|[\s`']+$/g, '')
+} else if (viteSupabaseUrl) {
   supabaseUrl = viteSupabaseUrl.replace(/^[\s`']+|[\s`']+$/g, '')
+} else if (directUrl) {
+  supabaseUrl = directUrl.replace(/^[\s`']+|[\s`']+$/g, '')
 }
 
-if (viteSupabaseAnonKey) {
+if (nextPublicKey) {
+  supabaseKey = nextPublicKey.replace(/^[\s`']+|[\s`']+$/g, '')
+} else if (viteSupabaseAnonKey) {
   supabaseKey = viteSupabaseAnonKey.replace(/^[\s`']+|[\s`']+$/g, '')
-}
-
-// 如果VITE_前缀的环境变量不存在，尝试其他前缀作为备选
-if (!supabaseUrl || !supabaseKey) {
-  console.log('尝试使用其他前缀的环境变量...')
-  
-  // 尝试NEXT_PUBLIC_前缀
-  const nextPublicUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL
-  const nextPublicKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  
-  // 尝试直接使用SUPABASE_前缀
-  const directUrl = import.meta.env.SUPABASE_URL
-  const directKey = import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY
-  
-  // 选择第一个可用的URL和密钥
-  supabaseUrl = supabaseUrl || (nextPublicUrl || '').replace(/^[\s`']+|[\s`']+$/g, '') || (directUrl || '').replace(/^[\s`']+|[\s`']+$/g, '')
-  supabaseKey = supabaseKey || (nextPublicKey || '').replace(/^[\s`']+|[\s`']+$/g, '') || (directKey || '').replace(/^[\s`']+|[\s`']+$/g, '')
+} else if (directKey) {
+  supabaseKey = directKey.replace(/^[\s`']+|[\s`']+$/g, '')
 }
 
 // 验证环境变量并添加详细日志
