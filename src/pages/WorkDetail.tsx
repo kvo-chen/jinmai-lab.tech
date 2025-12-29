@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
 import { mockWorks } from '@/mock/works'
 // 使用更可靠的懒加载方式，并添加错误边界
-const ARPreview = lazy(() => import('@/components/SimplifiedARPreview'))
+const ARPreview = lazy(() => import('@/components/SimplifiedARPreview').then(module => ({ default: module.default })))
 import postsApi from '@/services/postService'
 import exportService, { ExportOptions, ExportFormat } from '@/services/exportService'
 import type { SimplifiedARPreviewConfig as ARPreviewConfig } from '@/components/SimplifiedARPreview'
@@ -290,9 +290,11 @@ export default function WorkDetail() {
               }>
                 <ARPreview
                   config={{
-                    imageUrl: work?.thumbnail && work.thumbnail.includes('unsplash.com') ? work.thumbnail : 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80',
-                    modelUrl: work?.modelUrl || '',
-                    type: work?.modelUrl ? '3d' : '2d',
+                    imageUrl: work?.thumbnail || 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80',
+                    // 暂时移除3D模型支持，只使用2D模式
+                    modelUrl: '',
+                    // 所有作品都使用2D模式，避免3D模型加载失败
+                    type: '2d',
                     scale: 5.0,
                     rotation: { x: 0, y: 0, z: 0 },
                     position: { x: 0, y: 0, z: 0 }
