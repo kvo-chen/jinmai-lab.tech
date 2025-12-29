@@ -84,10 +84,53 @@ export interface ModelRole {
 }
 
 // 助手性格类型定义
-export type AssistantPersonality = 'friendly' | 'professional' | 'creative' | 'humorous' | 'concise';
+export type AssistantPersonality = 
+  | 'friendly'     // 友好
+  | 'professional' // 专业
+  | 'creative'     // 创意
+  | 'humorous'     // 幽默
+  | 'concise'      // 简洁
+  // 新增更多性格选项
+  | 'warm'         // 温暖
+  | 'enthusiastic' // 热情
+  | 'calm'         // 冷静
+  | 'witty'        // 机智
+  | 'scholarly'    // 博学
+  | 'casual'       // 随意
+  | 'strict'       // 严格
+  | 'empathetic';  // 富有同理心
 
 // 主题类型定义
-export type AssistantTheme = 'light' | 'dark' | 'auto';
+export type AssistantTheme = 
+  | 'light'     // 浅色主题
+  | 'dark'      // 深色主题
+  | 'auto'      // 自动主题（跟随系统）
+  | 'custom';   // 自定义主题
+
+// 缓存相关类型定义
+export interface CacheItem {
+  response: string;
+  timestamp: number;
+  conversationId?: string;
+  topic?: string;
+  // 缓存优先级：高优先级缓存更不容易被清除
+  priority: 'high' | 'medium' | 'low';
+}
+
+// 自定义主题配置类型
+export interface CustomThemeConfig {
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  accentColor: string;
+  borderColor: string;
+  hoverColor: string;
+  successColor: string;
+  warningColor: string;
+  errorColor: string;
+  infoColor: string;
+}
 
 // 模型配置类型定义
 export interface ModelConfig {
@@ -100,10 +143,12 @@ export interface ModelConfig {
   stream: boolean;
   kimi_model: string;
   kimi_base_url: string;
+  kimi_api_key?: string;
   retry: number;
   backoff_ms: number;
   deepseek_model?: string;
   deepseek_base_url?: string;
+  deepseek_api_key?: string;
   // 新增通用高级参数
   presence_penalty: number;
   frequency_penalty: number;
@@ -117,18 +162,22 @@ export interface ModelConfig {
   // 新增通义千问模型配置
   qwen_model: string;
   qwen_base_url: string;
+  qwen_api_key?: string;
   // 新增ChatGPT模型配置
   chatgpt_model: string;
   chatgpt_base_url: string;
+  openai_api_key?: string;
   // 新增Gemini模型配置
   gemini_model: string;
   gemini_base_url: string;
+  gemini_api_key?: string;
   // 新增Gork模型配置
   gork_model: string;
   gork_base_url: string;
   // 新增智谱模型配置
   zhipu_model: string;
   zhipu_base_url: string;
+  zhipu_api_key?: string;
   // 新增对话相关配置
   enable_memory: boolean;
   memory_window: number;
@@ -144,6 +193,7 @@ export interface ModelConfig {
   // 新增个性化设置
   personality: AssistantPersonality; // 助手性格
   theme: AssistantTheme; // 主题偏好
+  customThemeConfig?: CustomThemeConfig; // 自定义主题配置
   show_preset_questions: boolean; // 是否显示预设问题
   enable_typing_effect: boolean; // 是否启用打字效果
   auto_scroll: boolean; // 是否自动滚动
@@ -154,34 +204,6 @@ export interface ModelConfig {
 // 可用的模型列表
 export const AVAILABLE_MODELS: LLMModel[] = [
   {
-    id: 'deepseek',
-    name: 'DeepSeek',
-    description: '擅长传统纹样生成和文化元素融合',
-    strengths: ['传统纹样生成', '文化元素融合', '设计创意'],
-    isDefault: false
-  },
-  {
-    id: 'doubao',
-    name: '豆包',
-    description: '擅长现代设计风格和创新表达',
-    strengths: ['现代设计', '创新表达', '交互对话'],
-    isDefault: false
-  },
-  {
-    id: 'wenxinyiyan',
-    name: '文心一言',
-    description: '擅长多模态生成和传统文化理解',
-    strengths: ['多模态生成', '传统文化理解', '创意激发'],
-    isDefault: false
-  },
-  {
-    id: 'qwen',
-    name: '通义千问',
-    description: '阿里云DashScope，中文对话与综合任务表现优秀',
-    strengths: ['中文对话', '综合任务', '工具调用'],
-    isDefault: false
-  },
-  {
     id: 'kimi',
     name: 'Kimi',
     description: 'Kimi（Moonshot AI），擅长中文长文创作与协作',
@@ -189,31 +211,17 @@ export const AVAILABLE_MODELS: LLMModel[] = [
     isDefault: true
   },
   {
-    id: 'chatgpt',
-    name: 'ChatGPT',
-    description: 'OpenAI旗下的通用AI模型，擅长多种任务',
-    strengths: ['通用任务', '创意写作', '代码生成'],
+    id: 'deepseek',
+    name: 'DeepSeek',
+    description: '擅长传统纹样生成和文化元素融合',
+    strengths: ['中文对话', '文化元素融合', '设计创意'],
     isDefault: false
   },
   {
-    id: 'gemini',
-    name: 'Gemini',
-    description: 'Google旗下的多模态AI模型，擅长图像和文本理解',
-    strengths: ['多模态理解', '图像分析', '创意生成'],
-    isDefault: false
-  },
-  {
-    id: 'gork',
-    name: 'Gork',
-    description: 'XAI旗下的AI模型，擅长生成和推理',
-    strengths: ['推理能力', '创意生成', '长文本处理'],
-    isDefault: false
-  },
-  {
-    id: 'zhipu',
-    name: '智谱',
-    description: '智谱AI旗下的大语言模型，擅长中文处理和多模态',
-    strengths: ['中文处理', '多模态生成', '知识问答'],
+    id: 'qwen',
+    name: '通义千问',
+    description: '阿里云DashScope，中文对话与综合任务表现优秀，支持图像生成',
+    strengths: ['中文对话', '综合任务', '工具调用', '图像生成', '语音合成'],
     isDefault: false
   }
 ];
@@ -347,6 +355,19 @@ export const DEFAULT_CONFIG: ModelConfig = {
   // 新增个性化设置默认值
   personality: 'friendly', // 默认友好性格
   theme: 'auto', // 默认自动主题
+  customThemeConfig: { // 默认自定义主题配置
+    primaryColor: '#6366f1',
+    secondaryColor: '#8b5cf6',
+    backgroundColor: '#ffffff',
+    textColor: '#1f2937',
+    accentColor: '#ec4899',
+    borderColor: '#e5e7eb',
+    hoverColor: '#f3f4f6',
+    successColor: '#10b981',
+    warningColor: '#f59e0b',
+    errorColor: '#ef4444',
+    infoColor: '#3b82f6'
+  },
   show_preset_questions: true, // 默认显示预设问题
   enable_typing_effect: true, // 默认启用打字效果
   auto_scroll: true, // 默认自动滚动
@@ -366,7 +387,18 @@ export type ErrorType =
   | 'SERVER_ERROR' 
   | 'MODEL_ERROR' 
   | 'VALIDATION_ERROR' 
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  // 新增更细粒度的错误类型
+  | 'CONNECTION_TIMEOUT'      // 连接超时
+  | 'API_KEY_INVALID'          // API密钥无效
+  | 'API_KEY_MISSING'          // API密钥缺失
+  | 'REQUEST_TOO_LARGE'        // 请求过大
+  | 'RESPONSE_PARSE_ERROR'     // 响应解析错误
+  | 'MODEL_UNAVAILABLE'        // 模型不可用
+  | 'FEATURE_NOT_SUPPORTED'    // 功能不支持
+  | 'CONTEXT_OVERFLOW'         // 上下文溢出
+  | 'THROTTLING_ERROR'         // 节流错误
+  | 'SERVICE_UNAVAILABLE';     // 服务不可用
 
 // 错误详情类型定义
 export interface ErrorDetail {
@@ -376,10 +408,33 @@ export interface ErrorDetail {
   modelId?: string;
   timestamp: number;
   retryable: boolean;
+  // 新增字段
+  errorCode?: string;          // 错误代码
+  requestId?: string;          // 请求ID
+  context?: Record<string, any>; // 错误上下文信息
+  userFriendlyMessage?: string; // 对用户友好的错误提示
+  suggestedActions?: string[];   // 建议的用户操作
 }
 
 // 连接状态类型定义
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+
+// 意图类型定义
+export type UserIntent = 
+  | 'QUERY'          // 查询信息
+  | 'GENERATE'       // 生成内容
+  | 'EXPLAIN'        // 解释概念
+  | 'HELP'           // 请求帮助
+  | 'SETTING'        // 设置配置
+  | 'FEEDBACK'       // 提供反馈
+  | 'UNKNOWN';       // 未知意图
+
+// 实体类型定义
+export interface RecognizedEntity {
+  type: string;       // 实体类型，如"PERSON"、"DATE"、"PLACE"等
+  value: string;      // 实体值
+  confidence: number; // 识别置信度
+}
 
 /**
    * LLM服务类
@@ -400,14 +455,56 @@ class LLMService {
   // 连接状态相关属性
   private connectionStatus: Record<string, ConnectionStatus> = {};
   private connectionStatusListeners: Array<(modelId: string, status: ConnectionStatus, error?: string) => void> = [];
-  // 响应缓存相关属性
-  private responseCache: Map<string, { response: string; timestamp: number; }> = new Map();
+
+  // 分层缓存相关属性
+  private responseCache: Map<string, CacheItem> = new Map();
   private cacheExpiryTime = 3600000; // 缓存过期时间：1小时
   private maxCacheSize = 100; // 最大缓存数量
+  // 缓存统计
+  private cacheStats = {
+    hits: 0,
+    misses: 0,
+    evictions: 0,
+    totalRequests: 0
+  };
   // 错误处理相关属性
   private errorLogs: ErrorDetail[] = [];
   private maxErrorLogs = 500; // 最大错误日志数量
   private errorListeners: Array<(error: ErrorDetail) => void> = [];
+
+  /**
+   * 构造函数，初始化配置
+   */
+  constructor() {
+    // 从环境变量读取API密钥并更新模型配置
+    this.loadApiKeysFromEnv();
+    // 初始化会话系统
+    this.initializeSessions();
+  }
+
+  /**
+   * 从环境变量加载API密钥
+   */
+  private loadApiKeysFromEnv(): void {
+    // 获取环境变量
+    const env = typeof import.meta !== 'undefined' && (import.meta as any).env || process.env || {};
+    
+    // 读取各个模型的API密钥
+    const apiKeys = {
+      kimi_api_key: env.VITE_KIMI_API_KEY || env.KIMI_API_KEY,
+      deepseek_api_key: env.VITE_DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY,
+      qwen_api_key: env.VITE_QWEN_API_KEY || env.QWEN_API_KEY,
+      openai_api_key: env.VITE_OPENAI_API_KEY || env.OPENAI_API_KEY,
+      gemini_api_key: env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY,
+      zhipu_api_key: env.VITE_ZHIPU_API_KEY || env.ZHIPU_API_KEY,
+    };
+    
+    // 更新模型配置
+    this.modelConfig = {
+      ...this.modelConfig,
+      ...apiKeys
+    };
+  }
 
   /**
    * 设置当前使用的模型
@@ -654,7 +751,271 @@ class LLMService {
       this.applyRoleToConfig(this.currentRole);
     }
   }
-  
+
+  /**
+   * 识别用户查询意图
+   * @param query 用户查询
+   * @returns 识别的意图和置信度
+   */
+  private recognizeIntent(query: string): { intent: UserIntent; confidence: number } {
+    const lowerQuery = query.toLowerCase();
+    
+    // 简单的意图识别逻辑，基于关键词匹配
+    if (lowerQuery.includes('查询') || lowerQuery.includes('怎么') || lowerQuery.includes('如何') || lowerQuery.includes('什么')) {
+      return { intent: 'QUERY', confidence: 0.9 };
+    } else if (lowerQuery.includes('生成') || lowerQuery.includes('创建') || lowerQuery.includes('写') || lowerQuery.includes('设计')) {
+      return { intent: 'GENERATE', confidence: 0.9 };
+    } else if (lowerQuery.includes('解释') || lowerQuery.includes('说明') || lowerQuery.includes('什么是') || lowerQuery.includes('意思')) {
+      return { intent: 'EXPLAIN', confidence: 0.9 };
+    } else if (lowerQuery.includes('帮助') || lowerQuery.includes('使用') || lowerQuery.includes('教程')) {
+      return { intent: 'HELP', confidence: 0.9 };
+    } else if (lowerQuery.includes('设置') || lowerQuery.includes('配置') || lowerQuery.includes('调整')) {
+      return { intent: 'SETTING', confidence: 0.9 };
+    } else if (lowerQuery.includes('反馈') || lowerQuery.includes('建议') || lowerQuery.includes('评价')) {
+      return { intent: 'FEEDBACK', confidence: 0.9 };
+    }
+    
+    return { intent: 'UNKNOWN', confidence: 0.5 };
+  }
+
+  /**
+   * 识别用户查询中的实体
+   * @param query 用户查询
+   * @returns 识别的实体列表
+   */
+  private recognizeEntities(query: string): RecognizedEntity[] {
+    const entities: RecognizedEntity[] = [];
+    
+    // 简单的实体识别逻辑，基于正则表达式和关键词匹配
+    
+    // 1. 识别日期实体
+    const dateRegex = /(\d{4}年\d{1,2}月\d{1,2}日|\d{4}-\d{1,2}-\d{1,2}|\d{1,2}\/\d{1,2}\/\d{4}|今天|明天|昨天|本周|下周|上个月|下个月)/g;
+    let match;
+    while ((match = dateRegex.exec(query)) !== null) {
+      entities.push({
+        type: 'DATE',
+        value: match[0],
+        confidence: 0.9
+      });
+    }
+    
+    // 2. 识别地点实体（简单示例，实际应用中需要更复杂的逻辑）
+    const placeKeywords = ['北京', '上海', '广州', '深圳', '天津', '重庆', '成都', '杭州'];
+    for (const keyword of placeKeywords) {
+      if (query.includes(keyword)) {
+        entities.push({
+          type: 'PLACE',
+          value: keyword,
+          confidence: 0.8
+        });
+      }
+    }
+    
+    // 3. 识别人物实体（简单示例）
+    const personKeywords = ['李白', '杜甫', '苏轼', '白居易', '王维', '孟浩然'];
+    for (const keyword of personKeywords) {
+      if (query.includes(keyword)) {
+        entities.push({
+          type: 'PERSON',
+          value: keyword,
+          confidence: 0.8
+        });
+      }
+    }
+    
+    // 4. 识别产品实体（简单示例）
+    const productKeywords = ['AI助手', '创作工具', '文化知识', '文创产品', '社区活动'];
+    for (const keyword of productKeywords) {
+      if (query.includes(keyword)) {
+        entities.push({
+          type: 'PRODUCT',
+          value: keyword,
+          confidence: 0.8
+        });
+      }
+    }
+    
+    return entities;
+  }
+
+  /**
+   * 分析复杂查询结构
+   * @param query 用户查询
+   * @returns 分析结果，包括意图、实体和查询结构
+   */
+  private analyzeComplexQuery(query: string): {
+    intent: UserIntent;
+    entities: RecognizedEntity[];
+    queryType: 'simple' | 'complex';
+    subQueries?: string[];
+  } {
+    const intentResult = this.recognizeIntent(query);
+    const entities = this.recognizeEntities(query);
+    
+    // 简单的查询结构分析，基于标点符号和连接词
+    const hasMultipleQuestions = query.includes('?') && query.indexOf('?') !== query.lastIndexOf('?');
+    const hasConjunctions = query.includes('和') || query.includes('并且') || query.includes('同时') || query.includes('还有');
+    
+    let queryType: 'simple' | 'complex' = 'simple';
+    let subQueries: string[] | undefined;
+    
+    if (hasMultipleQuestions || hasConjunctions) {
+      queryType = 'complex';
+      
+      // 简单的子查询分割，实际应用中需要更复杂的逻辑
+      if (hasMultipleQuestions) {
+        subQueries = query.split('?').filter(part => part.trim().length > 0).map(part => part.trim() + '?');
+      } else if (hasConjunctions) {
+        subQueries = query.split(/[和并且同时还有]/).filter(part => part.trim().length > 0).map(part => part.trim());
+      }
+    }
+    
+    return {
+      intent: intentResult.intent,
+      entities,
+      queryType,
+      subQueries
+    };
+  }
+
+  /**
+   * 生成动态提示词
+   * 根据用户角色、当前页面和对话历史调整系统提示词
+   */
+  private generateDynamicPrompt(
+    basePrompt: string,
+    context?: {
+      page?: string;
+      path?: string;
+      userPreferences?: Record<string, any>;
+    }
+  ): string {
+    const session = this.getCurrentSession();
+    const dynamicElements: string[] = [];
+    
+    // 1. 添加当前页面上下文
+    if (context?.page) {
+      dynamicElements.push(`\n\n当前用户正在访问页面：${context.page}`);
+    }
+    if (context?.path) {
+      dynamicElements.push(`路径：${context.path}`);
+    }
+    
+    // 2. 添加对话主题信息
+    if (session?.currentTopic) {
+      dynamicElements.push(`\n\n当前对话主题：${session.currentTopic}`);
+      if (session.topicHistory && session.topicHistory.length > 0) {
+        dynamicElements.push(`\n历史主题：${session.topicHistory.join(', ')}`);
+      }
+    }
+    
+    // 3. 添加个性化设置
+    const personality = this.modelConfig.personality;
+    switch (personality) {
+      case 'friendly':
+        dynamicElements.push(`\n\n请以友好、热情的语气回答用户的问题。`);
+        break;
+      case 'professional':
+        dynamicElements.push(`\n\n请以专业、严谨的语气回答用户的问题，提供详细的技术解释。`);
+        break;
+      case 'creative':
+        dynamicElements.push(`\n\n请以富有创意、想象力的语气回答用户的问题，提供创新的解决方案。`);
+        break;
+      case 'humorous':
+        dynamicElements.push(`\n\n请以幽默、轻松的语气回答用户的问题，适当加入玩笑和有趣的比喻。`);
+        break;
+      case 'concise':
+        dynamicElements.push(`\n\n请以简洁、明了的语气回答用户的问题，避免冗长的解释。`);
+        break;
+      // 新增性格选项的语气指导
+      case 'warm':
+        dynamicElements.push(`\n\n请以温暖、亲切的语气回答用户的问题，让用户感到舒适和被关心。`);
+        break;
+      case 'enthusiastic':
+        dynamicElements.push(`\n\n请以充满热情和活力的语气回答用户的问题，展现积极向上的态度。`);
+        break;
+      case 'calm':
+        dynamicElements.push(`\n\n请以冷静、沉稳的语气回答用户的问题，提供理性和客观的分析。`);
+        break;
+      case 'witty':
+        dynamicElements.push(`\n\n请以机智、风趣的语气回答用户的问题，展现敏捷的思维和幽默。`);
+        break;
+      case 'scholarly':
+        dynamicElements.push(`\n\n请以博学、严谨的语气回答用户的问题，提供深入的分析和专业知识。`);
+        break;
+      case 'casual':
+        dynamicElements.push(`\n\n请以随意、轻松的语气回答用户的问题，就像和朋友聊天一样。`);
+        break;
+      case 'strict':
+        dynamicElements.push(`\n\n请以严格、认真的语气回答用户的问题，强调准确性和规范性。`);
+        break;
+      case 'empathetic':
+        dynamicElements.push(`\n\n请以富有同理心和理解力的语气回答用户的问题，表现出对用户感受的理解和支持。`);
+        break;
+      default:
+        break;
+    }
+    
+    // 4. 添加对话历史摘要（如果有）
+    if (session?.contextSummary) {
+      dynamicElements.push(`\n\n对话历史摘要：${session.contextSummary}`);
+    }
+    
+    // 5. 添加模型特定指令
+    const modelId = this.currentModel.id;
+    switch (modelId) {
+      case 'kimi':
+        dynamicElements.push(`\n\n请充分利用Kimi的长上下文能力，提供详细、全面的回答。`);
+        break;
+      case 'deepseek':
+        dynamicElements.push(`\n\n请结合Deepseek在文化元素融合方面的优势，提供富有文化内涵的回答。`);
+        break;
+      case 'qwen':
+        dynamicElements.push(`\n\n请利用通义千问的综合能力，提供全面、准确的回答。`);
+        break;
+      default:
+        break;
+    }
+    
+    // 组合基础提示词和动态元素
+    return `${basePrompt}${dynamicElements.join('')}`;
+  }
+
+  /**
+   * 更新对话上下文摘要
+   * 定期生成对话摘要，用于长对话管理
+   */
+  private updateContextSummary(): void {
+    const session = this.getCurrentSession();
+    if (!session || session.messages.length < 10) {
+      // 对话历史较短，不需要生成摘要
+      return;
+    }
+    
+    // 简单的摘要生成逻辑：提取最近几条消息的关键词
+    const recentMessages = session.messages.slice(-5);
+    const combinedText = recentMessages.map(msg => msg.content).join(' ');
+    
+    // 这里可以替换为更复杂的摘要生成算法，甚至调用LLM生成摘要
+    // 暂时使用简单的关键词提取
+    const words = combinedText.toLowerCase().split(/\s+/);
+    const stopWords = new Set(['的', '了', '是', '在', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这']);
+    
+    const filteredWords = words.filter(word => !stopWords.has(word) && word.length > 1);
+    const wordFreq: Record<string, number> = {};
+    filteredWords.forEach(word => {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
+    });
+    
+    const topWords = Object.entries(wordFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(entry => entry[0]);
+    
+    session.contextSummary = `对话围绕以下主题展开：${topWords.join(', ')}`;
+    this.saveSessions();
+  }
+
   /**
    * 将角色配置应用到模型配置
    */
@@ -1043,1160 +1404,840 @@ class LLMService {
   
   /**
    * 生成缓存键
+   * 支持多种缓存级别：全局、对话、模型
    */
-  private generateCacheKey(prompt: string, modelId: string, context?: any): string {
+  private generateCacheKey(prompt: string, modelId: string, context?: any, cacheLevel: 'global' | 'conversation' | 'model' = 'global'): string {
     const contextStr = JSON.stringify(context || {});
-    return `${modelId}:${this.currentRole.id}:${prompt}:${contextStr}`;
+    const session = this.getCurrentSession();
+    const conversationId = session?.id || 'global';
+    
+    // 根据缓存级别生成不同的缓存键
+    switch (cacheLevel) {
+      case 'global':
+        return `${modelId}:${this.currentRole.id}:${prompt}:${contextStr}`;
+      case 'conversation':
+        return `${modelId}:${this.currentRole.id}:${conversationId}:${prompt}:${contextStr}`;
+      case 'model':
+        return `${modelId}:${prompt}:${contextStr}`;
+      default:
+        return `${modelId}:${this.currentRole.id}:${prompt}:${contextStr}`;
+    }
   }
   
   /**
    * 检查缓存
+   * 支持智能缓存匹配和统计
    */
   private checkCache(prompt: string, modelId: string, context?: any): string | null {
-    const cacheKey = this.generateCacheKey(prompt, modelId, context);
-    const cachedItem = this.responseCache.get(cacheKey);
+    this.cacheStats.totalRequests++;
     
-    if (cachedItem) {
-      // 检查缓存是否过期
-      const now = Date.now();
-      if (now - cachedItem.timestamp < this.cacheExpiryTime) {
-        return cachedItem.response;
-      } else {
-        // 缓存过期，移除
-        this.responseCache.delete(cacheKey);
+    // 生成不同级别的缓存键
+    const cacheKeys = [
+      this.generateCacheKey(prompt, modelId, context, 'conversation'),
+      this.generateCacheKey(prompt, modelId, context, 'global'),
+      this.generateCacheKey(prompt, modelId, context, 'model')
+    ];
+    
+    const now = Date.now();
+    
+    // 依次检查不同级别的缓存
+    for (const cacheKey of cacheKeys) {
+      const cachedItem = this.responseCache.get(cacheKey);
+      
+      if (cachedItem) {
+        // 检查缓存是否过期
+        if (now - cachedItem.timestamp < this.cacheExpiryTime) {
+          this.cacheStats.hits++;
+          return cachedItem.response;
+        } else {
+          // 缓存过期，移除
+          this.responseCache.delete(cacheKey);
+          this.cacheStats.evictions++;
+        }
       }
     }
     
+    this.cacheStats.misses++;
     return null;
   }
   
   /**
+   * 计算缓存优先级
+   * 根据对话上下文和内容自动确定缓存优先级
+   */
+  private calculateCachePriority(prompt: string, response: string): 'high' | 'medium' | 'low' {
+    // 简单的优先级计算逻辑
+    const session = this.getCurrentSession();
+    
+    // 1. 如果是系统级提示或重要指令，优先级高
+    if (prompt.includes('系统') || prompt.includes('设置') || prompt.includes('配置')) {
+      return 'high';
+    }
+    
+    // 2. 如果是当前对话的主题相关内容，优先级中
+    if (session?.currentTopic && prompt.includes(session.currentTopic)) {
+      return 'medium';
+    }
+    
+    // 3. 其他情况优先级低
+    return 'low';
+  }
+  
+  /**
    * 更新缓存
+   * 实现分层缓存和智能缓存失效
    */
   private updateCache(prompt: string, modelId: string, response: string, context?: any): void {
-    const cacheKey = this.generateCacheKey(prompt, modelId, context);
+    const cacheKey = this.generateCacheKey(prompt, modelId, context, 'conversation');
+    const session = this.getCurrentSession();
     
-    // 检查缓存大小，超过限制则移除最旧的缓存
+    // 计算缓存优先级
+    const priority = this.calculateCachePriority(prompt, response);
+    
+    // 检查缓存大小，超过限制则移除优先级低的缓存
     if (this.responseCache.size >= this.maxCacheSize) {
-      // 找到最旧的缓存键
-      let oldestKey = '';
-      let oldestTime = Infinity;
-      
-      for (const [key, value] of this.responseCache.entries()) {
-        if (value.timestamp < oldestTime) {
-          oldestTime = value.timestamp;
-          oldestKey = key;
+      // 按优先级和时间排序，移除最应该被清除的缓存
+      const cacheEntries = Array.from(this.responseCache.entries());
+      cacheEntries.sort((a, b) => {
+        // 先按优先级排序
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        const priorityDiff = priorityOrder[b[1].priority] - priorityOrder[a[1].priority];
+        if (priorityDiff !== 0) {
+          return priorityDiff;
         }
-      }
+        // 优先级相同时，按时间排序，移除最旧的
+        return a[1].timestamp - b[1].timestamp;
+      });
       
-      if (oldestKey) {
-        this.responseCache.delete(oldestKey);
-      }
+      // 移除最末尾的缓存（优先级最低且最旧）
+      const itemToRemove = cacheEntries[cacheEntries.length - 1];
+      this.responseCache.delete(itemToRemove[0]);
+      this.cacheStats.evictions++;
     }
     
     // 添加新缓存
     this.responseCache.set(cacheKey, {
       response,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      conversationId: session?.id,
+      topic: session?.currentTopic,
+      priority
     });
   }
   
   /**
    * 清除缓存
+   * 支持按多种条件清除
    */
-  clearCache(modelId?: string): void {
-    if (modelId) {
-      // 清除特定模型的缓存
-      for (const key of this.responseCache.keys()) {
-        if (key.startsWith(`${modelId}:`)) {
-          this.responseCache.delete(key);
-        }
-      }
-    } else {
+  clearCache(options?: {
+    modelId?: string;
+    conversationId?: string;
+    topic?: string;
+    priority?: 'high' | 'medium' | 'low';
+  }): void {
+    if (!options) {
       // 清除所有缓存
       this.responseCache.clear();
+      return;
+    }
+    
+    // 按条件清除缓存
+    for (const [key, value] of this.responseCache.entries()) {
+      let shouldDelete = false;
+      
+      if (options.modelId && key.startsWith(`${options.modelId}:`)) {
+        shouldDelete = true;
+      }
+      
+      if (options.conversationId && value.conversationId === options.conversationId) {
+        shouldDelete = true;
+      }
+      
+      if (options.topic && value.topic === options.topic) {
+        shouldDelete = true;
+      }
+      
+      if (options.priority && value.priority === options.priority) {
+        shouldDelete = true;
+      }
+      
+      if (shouldDelete) {
+        this.responseCache.delete(key);
+        this.cacheStats.evictions++;
+      }
     }
   }
   
   /**
-   * 分类错误类型
+   * 获取缓存统计信息
    */
-  private classifyError(error: Error | string, modelId: string): ErrorDetail {
-    const errorMessage = typeof error === 'string' ? error : error.message;
-    let errorType: ErrorType = 'UNKNOWN_ERROR';
-    let retryable = true;
+  getCacheStats() {
+    return { ...this.cacheStats };
+  }
+  
+  /**
+   * 重置缓存统计信息
+   */
+  resetCacheStats() {
+    this.cacheStats = {
+      hits: 0,
+      misses: 0,
+      evictions: 0,
+      totalRequests: 0
+    };
+  }
+  
+  /**
+   * 获取对用户友好的错误提示和建议操作
+   */
+  private getFriendlyErrorInfo(errorType: ErrorType, modelId: string): {
+    userFriendlyMessage: string;
+    suggestedActions: string[];
+  } {
+    const modelName = AVAILABLE_MODELS.find(m => m.id === modelId)?.name || modelId;
     
-    // 根据错误信息分类
-    if (errorMessage.includes('network') || errorMessage.includes('fetch failed') || errorMessage.includes('connection') || errorMessage.includes('timeout')) {
-      errorType = 'NETWORK_ERROR';
-    } else if (errorMessage.includes('auth') || errorMessage.includes('unauthorized') || errorMessage.includes('invalid api key') || errorMessage.includes('401')) {
-      errorType = 'AUTH_ERROR';
-      retryable = false; // 认证错误通常不可重试
-    } else if (errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('QUOTA_EXCEEDED')) {
-      errorType = 'QUOTA_ERROR';
-      retryable = false; // 配额错误通常不可重试
-    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      errorType = 'RATE_LIMIT_ERROR';
-      retryable = true; // 速率限制错误可以重试
-    } else if (errorMessage.includes('500') || errorMessage.includes('server error') || errorMessage.includes('internal error')) {
-      errorType = 'SERVER_ERROR';
-    } else if (errorMessage.includes('model') || errorMessage.includes('unsupported') || errorMessage.includes('invalid parameter')) {
-      errorType = 'MODEL_ERROR';
-    } else if (errorMessage.includes('validation') || errorMessage.includes('invalid') || errorMessage.includes('required')) {
-      errorType = 'VALIDATION_ERROR';
-      retryable = false; // 验证错误通常不可重试
+    switch (errorType) {
+      case 'NETWORK_ERROR':
+      case 'CONNECTION_TIMEOUT':
+        return {
+          userFriendlyMessage: `网络连接失败，请检查您的网络设置后重试。`,
+          suggestedActions: [
+            '检查网络连接',
+            '刷新页面重试',
+            '稍后再试'
+          ]
+        };
+        
+      case 'AUTH_ERROR':
+      case 'API_KEY_INVALID':
+        return {
+          userFriendlyMessage: `${modelName} API密钥无效，请检查并更新API密钥。`,
+          suggestedActions: [
+            '检查API密钥是否正确',
+            '更新API密钥',
+            '联系管理员获取帮助'
+          ]
+        };
+        
+      case 'API_KEY_MISSING':
+        return {
+          userFriendlyMessage: `${modelName} API密钥缺失，请配置API密钥。`,
+          suggestedActions: [
+            '在设置中配置API密钥',
+            '联系管理员获取API密钥'
+          ]
+        };
+        
+      case 'QUOTA_ERROR':
+        return {
+          userFriendlyMessage: `${modelName} 配额已用完，请稍后再试或联系管理员。`,
+          suggestedActions: [
+            '稍后再试',
+            '联系管理员增加配额',
+            '切换到其他可用模型'
+          ]
+        };
+        
+      case 'RATE_LIMIT_ERROR':
+      case 'THROTTLING_ERROR':
+        return {
+          userFriendlyMessage: `请求频率过高，请稍等片刻后重试。`,
+          suggestedActions: [
+            '稍等片刻后重试',
+            '减少请求频率',
+            '稍后再试'
+          ]
+        };
+        
+      case 'SERVER_ERROR':
+      case 'SERVICE_UNAVAILABLE':
+        return {
+          userFriendlyMessage: `${modelName} 服务暂时不可用，请稍后再试。`,
+          suggestedActions: [
+            '稍后再试',
+            '刷新页面',
+            '切换到其他可用模型'
+          ]
+        };
+        
+      case 'MODEL_ERROR':
+      case 'MODEL_UNAVAILABLE':
+        return {
+          userFriendlyMessage: `${modelName} 模型暂时不可用，请尝试其他模型。`,
+          suggestedActions: [
+            '切换到其他可用模型',
+            '稍后再试',
+            '联系管理员获取帮助'
+          ]
+        };
+        
+      case 'VALIDATION_ERROR':
+      case 'REQUEST_TOO_LARGE':
+        return {
+          userFriendlyMessage: `请求参数无效或过大，请检查输入内容后重试。`,
+          suggestedActions: [
+            '检查输入内容是否符合要求',
+            '减少输入内容的长度',
+            '重新尝试'
+          ]
+        };
+        
+      case 'RESPONSE_PARSE_ERROR':
+        return {
+          userFriendlyMessage: `系统处理响应时出现错误，请稍后再试。`,
+          suggestedActions: [
+            '稍后再试',
+            '刷新页面',
+            '联系管理员获取帮助'
+          ]
+        };
+        
+      case 'FEATURE_NOT_SUPPORTED':
+        return {
+          userFriendlyMessage: `当前模型不支持该功能，请尝试其他模型。`,
+          suggestedActions: [
+            '切换到其他可用模型',
+            '联系管理员获取帮助'
+          ]
+        };
+        
+      case 'CONTEXT_OVERFLOW':
+        return {
+          userFriendlyMessage: `对话历史过长，请清空部分历史或开始新对话。`,
+          suggestedActions: [
+            '清空对话历史',
+            '开始新对话',
+            '减少单次输入内容'
+          ]
+        };
+        
+      default:
+        return {
+          userFriendlyMessage: `系统出现未知错误，请稍后再试。`,
+          suggestedActions: [
+            '稍后再试',
+            '刷新页面',
+            '联系管理员获取帮助'
+          ]
+        };
+    }
+  }
+
+  /**
+   * 优化对话历史，实现智能选择和截断
+   * 根据当前提示和最大历史长度，智能选择最相关的对话历史
+   */
+  private optimizeConversationHistory(messages: Message[], currentPrompt: string, maxHistory: number): Message[] {
+    // 如果历史消息数量小于等于最大历史长度，直接返回
+    if (messages.length <= maxHistory) {
+      return messages;
+    }
+    
+    // 简单的优化逻辑：保留最近的maxHistory条消息
+    // 实际应用中可以实现更复杂的逻辑，如基于相关性的选择
+    return messages.slice(-maxHistory);
+  }
+
+  /**
+   * 更新对话主题
+   * 根据对话历史和当前提示，自动更新对话主题
+   */
+  private updateConversationTopic(messages: Message[], currentPrompt: string): string {
+    // 简单的主题提取逻辑：使用当前提示的前几个关键词
+    // 实际应用中可以实现更复杂的主题提取算法
+    const words = currentPrompt.toLowerCase().split(/\s+/);
+    const stopWords = new Set(['的', '了', '是', '在', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这']);
+    
+    const filteredWords = words.filter(word => !stopWords.has(word) && word.length > 1);
+    return filteredWords.slice(0, 3).join(' ');
+  }
+
+  /**
+   * 构建多模态内容
+   * 处理包含图像的多模态请求
+   */
+  private buildMultimodalContent(prompt: string, images?: string[]): any {
+    // 简单的多模态内容构建逻辑
+    // 实际应用中需要根据具体模型的API要求进行调整
+    if (!images || images.length === 0) {
+      return { text: prompt };
     }
     
     return {
-      type: errorType,
-      message: errorMessage,
-      originalError: typeof error === 'string' ? undefined : error,
-      modelId,
-      timestamp: Date.now(),
-      retryable
+      text: prompt,
+      images: images.map(url => ({ url }))
     };
-  }
-  
-  /**
-   * 记录错误日志
-   */
-  private logError(error: ErrorDetail): void {
-    // 添加错误日志
-    this.errorLogs.push(error);
-    
-    // 限制错误日志数量
-    if (this.errorLogs.length > this.maxErrorLogs) {
-      this.errorLogs.shift(); // 移除最旧的日志
-    }
-    
-    // 触发错误监听
-    this.errorListeners.forEach(listener => {
-      try {
-        listener(error);
-      } catch (listenerError) {
-        console.error('Error in error listener:', listenerError);
-      }
-    });
-    
-    // 记录到控制台
-    console.error(`[LLM Error] ${error.type}: ${error.message}`, error);
-  }
-  
-  /**
-   * 添加错误监听器
-   */
-  addErrorListener(listener: (error: ErrorDetail) => void): () => void {
-    this.errorListeners.push(listener);
-    
-    // 返回移除监听器的函数
-    return () => {
-      const index = this.errorListeners.indexOf(listener);
-      if (index !== -1) {
-        this.errorListeners.splice(index, 1);
-      }
-    };
-  }
-  
-  /**
-   * 获取错误日志
-   */
-  getErrorLogs(limit: number = 100, type?: ErrorType): ErrorDetail[] {
-    let logs = [...this.errorLogs];
-    
-    // 按类型过滤
-    if (type) {
-      logs = logs.filter(log => log.type === type);
-    }
-    
-    // 按时间倒序排列，返回最新的日志
-    return logs.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
-  }
-  
-  /**
-   * 清除错误日志
-   */
-  clearErrorLogs(type?: ErrorType): void {
-    if (type) {
-      this.errorLogs = this.errorLogs.filter(log => log.type !== type);
-    } else {
-      this.errorLogs = [];
-    }
-  }
-  
-  /**
-   * 获取指定角色
-   * @param roleId 角色ID
-   */
-  getRole(roleId: string): ModelRole | undefined {
-    return this.roles.find(r => r.id === roleId);
-  }
-  
-  /**
-   * 设置模型连接状态
-   */
-  private setConnectionStatus(modelId: string, status: ConnectionStatus, error?: string): void {
-    this.connectionStatus[modelId] = status;
-    
-    // 触发状态变更事件
-    this.connectionStatusListeners.forEach(listener => {
-      try {
-        listener(modelId, status, error);
-      } catch (e) {
-        console.error('Error in connection status listener:', e);
-      }
-    });
-    
-    // 触发全局事件
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('llm-connection-status-changed', {
-        detail: {
-          modelId,
-          status,
-          error,
-          timestamp: Date.now()
-        }
-      }));
-    }
-  }
-  
-  /**
-   * 获取模型连接状态
-   */
-  getConnectionStatus(modelId?: string): ConnectionStatus | Record<string, ConnectionStatus> {
-    if (modelId) {
-      return this.connectionStatus[modelId] || 'disconnected';
-    }
-    return { ...this.connectionStatus };
-  }
-  
-  /**
-   * 添加连接状态监听器
-   */
-  addConnectionStatusListener(
-    listener: (modelId: string, status: ConnectionStatus, error?: string) => void
-  ): () => void {
-    this.connectionStatusListeners.push(listener);
-    
-    // 返回移除监听器的函数
-    return () => {
-      const index = this.connectionStatusListeners.indexOf(listener);
-      if (index !== -1) {
-        this.connectionStatusListeners.splice(index, 1);
-      }
-    };
-  }
-  
-  /**
-   * 检查模型连接状态
-   */
-  async checkConnectionStatus(modelId: string): Promise<ConnectionStatus> {
-    this.setConnectionStatus(modelId, 'connecting');
-    
-    // 1. 检查API密钥是否配置
-    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
-    const useProxy = !!apiBase;
-    let hasValidKey = false;
-    
-    if (!useProxy) {
-      // 非代理模式下，检查本地存储或环境变量中的API密钥
-      const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[`VITE_${modelId.toUpperCase()}_API_KEY`]) || '';
-      const storedKey = localStorage.getItem(`${modelId.toUpperCase()}_API_KEY`) || '';
-      hasValidKey = !!(storedKey || envKey);
-      
-      if (!hasValidKey) {
-        const detailedError = `${modelId} API密钥未配置`;
-        this.setConnectionStatus(modelId, 'error', detailedError);
-        return 'error';
-      }
-    }
-    
-    // 2. 网络连通性检测
-    try {
-      // 获取模型的基础URL
-      let baseUrl = '';
-      
-      // 根据模型ID获取对应的基础URL
-      switch (modelId) {
-        case 'kimi':
-          baseUrl = this.modelConfig.kimi_base_url || 'https://api.moonshot.cn/v1';
-          break;
-        case 'deepseek':
-          baseUrl = this.modelConfig.deepseek_base_url || 'https://api.deepseek.com';
-          break;
-        case 'doubao':
-          baseUrl = this.modelConfig.doubao_base_url || 'https://api.doubao.com/v1';
-          break;
-        case 'qwen':
-          baseUrl = this.modelConfig.qwen_base_url || 'https://dashscope.aliyuncs.com/api/v1';
-          break;
-        case 'wenxinyiyan':
-          // 百度文心一言API的基础URL需要特殊处理
-          const rawWenxinUrl = this.modelConfig.wenxin_base_url || 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions';
-          // 只使用域名部分进行连通性检测
-          const urlObj = new URL(rawWenxinUrl);
-          baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-          break;
-        case 'chatgpt':
-          baseUrl = this.modelConfig.chatgpt_base_url || 'https://api.openai.com/v1';
-          break;
-        case 'gemini':
-          baseUrl = this.modelConfig.gemini_base_url || 'https://generativelanguage.googleapis.com/v1';
-          break;
-        case 'gork':
-          baseUrl = this.modelConfig.gork_base_url || 'https://api.x.ai/v1';
-          break;
-        case 'zhipu':
-          baseUrl = this.modelConfig.zhipu_base_url || 'https://open.bigmodel.cn/api/paas/v4';
-          break;
-        default:
-          baseUrl = this.modelConfig.kimi_base_url || 'https://api.moonshot.cn/v1';
-      }
-      
-      // 测试网络连通性：使用HEAD请求更快，添加超时
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3秒超时
-      
-      try {
-        const response = await fetch(baseUrl, {
-          method: 'HEAD', // HEAD请求只获取响应头，更快
-          signal: controller.signal,
-          // 不跟随重定向，直接检测目标服务器
-          redirect: 'manual'
-        });
-        
-        // 检查响应状态码
-        if (response.status >= 400 && response.status < 600) {
-          throw new Error(`服务器返回错误状态码: ${response.status}`);
-        }
-        
-        clearTimeout(timeoutId);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const networkErrorMsg = `${modelId} 网络连通性检测失败: ${errorMessage}`;
-        this.setConnectionStatus(modelId, 'error', networkErrorMsg);
-        return 'error';
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const networkErrorMsg = `${modelId} 网络连通性检测失败: ${errorMessage}`;
-      this.setConnectionStatus(modelId, 'error', networkErrorMsg);
-      return 'error';
-    }
-    
-    // 3. API调用测试：使用专门的测试方法，避免影响当前模型
-    try {
-      // 创建临时的模型配置，避免修改当前配置
-      const tempConfig = { ...this.modelConfig };
-      const tempModel = AVAILABLE_MODELS.find(m => m.id === modelId) || this.currentModel;
-      
-      // 发送一个简单的测试请求，使用独立的调用逻辑，避免影响当前模型
-      const testResponse = await this.testModelConnection(modelId, tempModel, tempConfig, useProxy);
-      
-      this.setConnectionStatus(modelId, 'connected');
-      return 'connected';
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      let detailedError = '';
-      
-      // 详细的错误分类和处理
-      if (errorMessage.includes('Missing')) {
-        detailedError = `${modelId} API密钥缺失: ${errorMessage}`;
-      } else if (errorMessage.includes('Invalid API key') || 
-                 errorMessage.includes('authentication failed') || 
-                 errorMessage.includes('Unauthorized') || 
-                 errorMessage.includes('401') ||
-                 errorMessage.includes('invalid_iam_token')) {
-        detailedError = `${modelId} API密钥无效或认证失败: ${errorMessage}`;
-      } else if (errorMessage.includes('QUOTA_EXCEEDED') || 
-                 errorMessage.includes('quota') || 
-                 errorMessage.includes('limit') ||
-                 errorMessage.includes('429')) {
-        detailedError = `${modelId} API配额已用完: ${errorMessage}`;
-      } else if (errorMessage.includes('timeout') || 
-                 errorMessage.includes('Timeout') ||
-                 errorMessage.includes('Timed out')) {
-        detailedError = `${modelId} API请求超时: ${errorMessage}`;
-      } else if (errorMessage.includes('network') || 
-                 errorMessage.includes('Network') ||
-                 errorMessage.includes('fetch failed') ||
-                 errorMessage.includes('connection')) {
-        detailedError = `${modelId} 网络连接错误: ${errorMessage}`;
-      } else if (errorMessage.includes('500') || 
-                 errorMessage.includes('502') || 
-                 errorMessage.includes('503') || 
-                 errorMessage.includes('504') ||
-                 errorMessage.includes('service unavailable')) {
-        detailedError = `${modelId} 服务器内部错误: ${errorMessage}`;
-      } else {
-        detailedError = `${modelId} API调用失败: ${errorMessage}`;
-      }
-      
-      this.setConnectionStatus(modelId, 'error', detailedError);
-      return 'error';
-    }
-  }
-  
-  /**
-   * 测试模型连接的内部方法，不影响当前模型状态
-   */
-  private async testModelConnection(
-    modelId: string, 
-    model: LLMModel, 
-    config: ModelConfig, 
-    useProxy: boolean
-  ): Promise<string> {
-    const testPrompt = 'ping';
-    
-    // 根据模型ID调用相应的API测试方法
-    switch (modelId) {
-      case 'kimi':
-        return this.callKimi(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          // 不使用流模式，测试更简单
-          onDelta: undefined
-        });
-      case 'deepseek':
-        return this.callDeepseek(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'doubao':
-        return this.callDoubao(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'qwen':
-        return this.callQwen(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'wenxinyiyan':
-        return this.callWenxin(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'chatgpt':
-        return this.callChatGPT(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'gemini':
-        return this.callGemini(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'gork':
-        return this.callGork(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      case 'zhipu':
-        return this.callZhipu(testPrompt, { 
-          signal: AbortSignal.timeout(5000),
-          onDelta: undefined
-        });
-      default:
-        throw new Error(`未知模型: ${modelId}`);
-    }
-  }
-  
-  /**
-   * 检查所有模型的连接状态
-   */
-  async checkAllConnectionsStatus(): Promise<Record<string, ConnectionStatus>> {
-    const results: Record<string, ConnectionStatus> = {};
-    const promises = AVAILABLE_MODELS.map(async (model) => {
-      results[model.id] = await this.checkConnectionStatus(model.id);
-    });
-    
-    await Promise.allSettled(promises);
-    return results;
   }
 
-  /**
-   * 向多个模型并行发送请求
-   * 支持文本和图像输入（多模态）
-   */
-  async generateResponsesFromMultipleModels(
-    prompt: string,
-    modelIds: string[],
-    options?: {
-      onModelResponse?: (modelId: string, response: string, success: boolean, error?: string) => void;
-      signal?: AbortSignal;
-      images?: string[]; // 支持多图像输入
-    }
-  ): Promise<Record<string, { response: string; success: boolean; error?: string }>> {
-    const results: Record<string, { response: string; success: boolean; error?: string }> = {};
-    const modelPromises: Promise<void>[] = [];
-    
-    // 为每个模型创建一个请求函数
-    for (const modelId of modelIds) {
-      const modelPromise = this.generateResponseForModel(
-        prompt,
-        modelId,
-        options?.images,
-        options?.signal
-      ).then(
-        (response) => {
-          results[modelId] = { response, success: true };
-          options?.onModelResponse?.(modelId, response, true);
-        },
-        (error) => {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          results[modelId] = { response: '', success: false, error: errorMessage };
-          options?.onModelResponse?.(modelId, '', false, errorMessage);
-        }
-      );
-      
-      modelPromises.push(modelPromise);
-    }
-    
-    // 等待所有请求完成
-    await Promise.allSettled(modelPromises);
-    
-    return results;
-  }
-  
-  /**
-   * 向单个模型发送请求（内部方法）
-   * 支持文本和图像输入（多模态）
-   */
-  private async generateResponseForModel(
-    prompt: string,
-    modelId: string,
-    images?: string[],
-    signal?: AbortSignal
-  ): Promise<string> {
-    // 保存当前模型和配置
-    const originalModel = this.currentModel;
-    const originalConfig = { ...this.modelConfig };
-    
-    try {
-      // 切换到目标模型
-      this.setCurrentModel(modelId, true);
-      
-      // 调用生成方法
-      return await this.generateResponse(prompt, { images, signal });
-    } finally {
-      // 恢复原始模型和配置
-      this.currentModel = originalModel;
-      this.modelConfig = originalConfig;
-    }
-  }
-  
-  /**
-   * 向模型发送请求
-   * 支持文本和图像输入（多模态）
-   */
-  async generateResponse(
-    prompt: string,
-    options?: {
-      onDelta?: (chunk: string) => void;
-      signal?: AbortSignal;
-      images?: string[]; // 支持多图像输入
-      context?: {
-        page?: string;
-        path?: string;
-        userPreferences?: Record<string, any>;
-      };
-    }
-  ): Promise<string> {
-    // 添加用户消息到历史
-    const userMessage: Message = {
-      role: 'user',
-      content: prompt,
-      timestamp: Date.now()
-    };
-    this.addToHistory(userMessage);
-
-    // 记录请求开始时间
-    const startTime = Date.now();
-    const originalModelId = this.currentModel.id;
-    
-    // 尝试过的模型列表
-    const attemptedModels: string[] = [];
-    
-    // 获取当前连接状态
-    const connectionStatus = this.getConnectionStatus() as Record<string, ConnectionStatus>;
-    
-    // 获取模型性能数据
-    const performanceData = this.getPerformanceData() as Record<string, ModelPerformance>;
-    
-    // 构建带有多模态支持的请求选项
-    const requestOptions = {
-      ...options,
-      images: options?.images || [],
-      multimodalConfig: {
-        enable_multimodal: this.modelConfig.enable_multimodal,
-        image_resolution: this.modelConfig.image_resolution
-      }
-    };
-
-    // 优化：获取当前会话的对话历史，用于上下文处理
-    const session = this.getCurrentSession();
-    const conversationHistory = session ? [...session.messages].slice(-this.modelConfig.max_history) : [];
-    
-    // 智能回退机制：尝试多个模型直到成功
-    const tryNextModel = async (fallbackCount: number = 0): Promise<string> => {
-      // 获取当前模型
-      const currentModelId = this.currentModel.id;
-      
-      // 记录尝试过的模型
-      if (!attemptedModels.includes(currentModelId)) {
-        attemptedModels.push(currentModelId);
-      }
-      
-      // 设置连接状态为连接中
-      this.setConnectionStatus(currentModelId, 'connecting');
-      
-      try {
-        // 首先检查缓存
-        const cachedResponse = this.checkCache(prompt, currentModelId, options?.context);
-        if (cachedResponse) {
-          // 缓存命中，直接返回
-          this.setConnectionStatus(currentModelId, 'connected');
-          
-          // 添加AI响应到历史
-          const aiMessage: Message = { 
-            role: 'assistant', 
-            content: cachedResponse, 
-            timestamp: Date.now() 
-          };
-          this.addToHistory(aiMessage);
-          
-          // 记录性能数据
-          this.recordPerformance(currentModelId, startTime, true);
-          
-          return cachedResponse;
-        }
-        
-        // 调用当前模型，传入完整的对话历史作为上下文
-        let response: string;
-        
-        // 构建带有上下文的请求参数
-        const modelRequestParams = {
-          ...requestOptions,
-          history: conversationHistory
-        };
-        
-        // 集成知识库：搜索相关知识并添加到提示中
-        const enhancedPrompt = async (basePrompt: string) => {
-          // 检查知识库服务是否启用
-          const kbConfig = knowledgeBaseService.getConfig();
-          if (kbConfig.enableKnowledgeBase && kbConfig.enableAutoSearch) {
-            // 搜索知识库
-            const knowledgeResults = knowledgeBaseService.searchKnowledge(basePrompt);
-            if (knowledgeResults.length > 0) {
-              // 构建增强提示
-              const knowledgeContext = knowledgeResults
-                .map(item => `【知识库参考】${item.title}\n${item.content}`)
-                .join('\n\n');
-              
-              return `${basePrompt}\n\n请结合以下知识库信息回答问题：\n${knowledgeContext}`;
-            }
-          }
-          return basePrompt;
-        };
-        
-        // 增强提示词
-        const finalPrompt = await enhancedPrompt(prompt);
-        
-        switch (currentModelId) {
-          case 'kimi':
-            response = await this.callKimi(finalPrompt, modelRequestParams);
-            break;
-          case 'deepseek':
-            response = await this.callDeepseek(finalPrompt, modelRequestParams);
-            break;
-          case 'wenxinyiyan':
-            response = await this.callWenxin(finalPrompt, modelRequestParams);
-            break;
-          case 'doubao':
-            response = await this.callDoubao(finalPrompt, modelRequestParams);
-            break;
-          case 'qwen':
-            response = await this.callQwen(finalPrompt, modelRequestParams);
-            break;
-          case 'chatgpt':
-            response = await this.callChatGPT(finalPrompt, modelRequestParams);
-            break;
-          case 'gemini':
-            response = await this.callGemini(finalPrompt, modelRequestParams);
-            break;
-          case 'gork':
-            response = await this.callGork(finalPrompt, modelRequestParams);
-            break;
-          case 'zhipu':
-            response = await this.callZhipu(finalPrompt, modelRequestParams);
-            break;
-          default:
-            throw new Error(`未知模型: ${currentModelId}`);
-        }
-        
-        // 设置连接状态为已连接
-        this.setConnectionStatus(currentModelId, 'connected');
-        
-        // 添加AI响应到历史
-        const aiMessage: Message = { 
-          role: 'assistant', 
-          content: response, 
-          timestamp: Date.now() 
-        };
-        this.addToHistory(aiMessage);
-        
-        // 更新缓存
-        this.updateCache(prompt, currentModelId, response, options?.context);
-        
-        // 记录性能数据
-        this.recordPerformance(currentModelId, startTime, true);
-        
-        // 如果不是原始模型，记录模型切换信息
-        if (currentModelId !== originalModelId) {
-          console.log(`模型切换成功: ${originalModelId} → ${currentModelId}`);
-        }
-        
-        return response;
-      } catch (error) {
-        // 分类和记录错误
-        const errorDetail = this.classifyError(error instanceof Error ? error : String(error), currentModelId);
-        this.logError(errorDetail);
-        
-        // 设置连接状态为错误
-        this.setConnectionStatus(currentModelId, 'error', errorDetail.message);
-        
-        // 记录性能数据
-        this.recordPerformance(currentModelId, startTime, false, errorDetail.message);
-        
-        // 检测配额用完或认证错误，标记模型不可用
-        if (errorDetail.type === 'QUOTA_ERROR' || errorDetail.type === 'AUTH_ERROR' || errorDetail.type === 'RATE_LIMIT_ERROR') {
-          localStorage.setItem(`${currentModelId.toUpperCase()}_QUOTA_EXCEEDED`, 'true');
-        }
-        
-        // 计算已尝试的模型数量
-        const availableModels = AVAILABLE_MODELS.filter(model => {
-          // 检查模型是否已配置
-          const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
-          const useProxy = !!apiBase;
-          let isConfigured = false;
-          
-          if (useProxy) {
-            isConfigured = true; // 代理模式下，假设所有模型都已配置
-          } else {
-            const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[`VITE_${model.id.toUpperCase()}_API_KEY`]) || '';
-            const storedKey = localStorage.getItem(`${model.id.toUpperCase()}_API_KEY`) || '';
-            isConfigured = !!(storedKey || envKey);
-          }
-          
-          // 检查模型是否已被标记为不可用
-          const isUnavailable = localStorage.getItem(`${model.id.toUpperCase()}_QUOTA_EXCEEDED`) === 'true';
-          
-          return isConfigured && !isUnavailable && !attemptedModels.includes(model.id);
-        });
-        
-        // 如果没有更多可用模型，返回错误或模拟响应
-        if (availableModels.length === 0) {
-          console.error('所有可用模型均调用失败:', attemptedModels);
-          
-          // 生成模拟响应，根据错误类型返回不同的提示
-          const mockResponse = this.getFallbackResponse(originalModelId, errorDetail.message);
-          const aiMessage: Message = { 
-            role: 'assistant', 
-            content: mockResponse, 
-            timestamp: Date.now() 
-          };
-          this.addToHistory(aiMessage);
-          return mockResponse;
-        }
-        
-        // 根据性能和连接状态选择下一个最佳模型
-        const nextModelId = this.selectNextBestModel(availableModels, connectionStatus, performanceData);
-        
-        // 如果找不到合适的模型，返回错误
-        if (!nextModelId) {
-          console.error('无法找到合适的下一个模型');
-          
-          // 生成模拟响应
-          const mockResponse = this.getFallbackResponse(originalModelId, errorDetail.message);
-          const aiMessage: Message = { 
-            role: 'assistant', 
-            content: mockResponse, 
-            timestamp: Date.now() 
-          };
-          this.addToHistory(aiMessage);
-          return mockResponse;
-        }
-        
-        // 切换到下一个模型
-        console.log(`模型切换: ${currentModelId} → ${nextModelId} (原因: ${errorDetail.type}: ${errorDetail.message})`);
-        this.setCurrentModel(nextModelId, true);
-        
-        // 递归调用，尝试下一个模型
-        return await tryNextModel(fallbackCount + 1);
-      }
-    };
-    
-    // 开始尝试第一个模型
-    return tryNextModel();
-  }
-  
-  /**
-   * 根据性能和连接状态选择下一个最佳模型
-   */
-  private selectNextBestModel(
-    availableModels: LLMModel[],
-    connectionStatus: Record<string, ConnectionStatus>,
-    performanceData: Record<string, ModelPerformance>
-  ): string | null {
-    // 如果只有一个可用模型，直接返回
-    if (availableModels.length === 1) {
-      return availableModels[0].id;
-    }
-    
-    // 计算每个模型的评分
-    const scoredModels = availableModels.map(model => {
-      let score = 0;
-      const modelId = model.id;
-      
-      // 连接状态评分 (30%权重)
-      if (connectionStatus[modelId] === 'connected') {
-        score += 30;
-      } else if (!connectionStatus[modelId]) {
-        score += 15; // 未知状态，给予中等评分
-      } else {
-        score += 5; // 错误状态，给予低评分
-      }
-      
-      // 性能评分 (70%权重)
-      const perf = performanceData[modelId];
-      if (perf) {
-        // 成功率评分 (40%权重)
-        const successRate = perf.requestCount > 0 ? (perf.successCount / perf.requestCount) : 0;
-        score += successRate * 40;
-        
-        // 平均响应时间评分 (30%权重，响应时间越短评分越高)
-        const responseTimeScore = perf.averageResponseTime > 0 ? Math.max(0, 30 - (perf.averageResponseTime / 1000)) : 15;
-        score += Math.min(responseTimeScore, 30);
-      } else {
-        // 没有性能数据，给予中等评分
-        score += 35;
-      }
-      
-      return { modelId, score };
-    });
-    
-    // 按评分降序排序
-    scoredModels.sort((a, b) => b.score - a.score);
-    
-    // 返回评分最高的模型
-    return scoredModels[0]?.modelId || null;
-  }
-  
-  /**
-   * 简单的主题提取函数
-   */
-  private extractTopic(message: string): string {
-    // 简单的关键词提取，实际应用中可以使用更复杂的NLP算法
-    const keywords = [
-      '创作流程', 'AI生成', '文化元素', '传统纹样', '非遗技艺',
-      '作品分享', '数据分析', '平台功能', '教程', '帮助',
-      '传统色彩', '传统建筑', '传统节日', '设计创意', '技术支持'
-    ];
-    
-    // 查找匹配的关键词
-    for (const keyword of keywords) {
-      if (message.includes(keyword)) {
-        return keyword;
-      }
-    }
-    
-    return '其他';
-  }
-  
-  /**
-   * 生成对话上下文摘要
-   */
-  private generateContextSummary(messages: Message[]): string {
-    // 简单的摘要生成，实际应用中可以使用更复杂的NLP算法
-    const recentMessages = messages.slice(-5); // 只考虑最近5条消息
-    const summary = recentMessages
-      .map(msg => `${msg.role}: ${msg.content.substring(0, 50)}${msg.content.length > 50 ? '...' : ''}`)
-      .join('\n');
-    
-    return summary;
-  }
-  
-  /**
-   * 添加消息到历史记录
-   */
-  private addToHistory(message: Message): void {
-    const session = this.getCurrentSession();
-    if (session) {
-      session.messages.push(message);
-      session.updatedAt = Date.now();
-      session.lastMessageTimestamp = Date.now();
-      
-      // 更新主题追踪
-      if (message.role === 'user') {
-        const newTopic = this.extractTopic(message.content);
-        if (newTopic && newTopic !== session.currentTopic) {
-          // 如果主题发生变化，更新主题历史
-          session.currentTopic = newTopic;
-          if (!session.topicHistory) {
-            session.topicHistory = [];
-          }
-          if (!session.topicHistory.includes(newTopic)) {
-            session.topicHistory.push(newTopic);
-          }
-        }
-      }
-      
-      // 更新上下文摘要（当消息数量超过一定阈值时）
-      if (session.messages.length > 20) {
-        session.contextSummary = this.generateContextSummary(session.messages);
-      }
-      
-      this.saveSessions();
-    }
-  }
-  
-  /**
-   * 基础模型调用方法（需要根据实际API实现）
-   */
-  private async callKimi(prompt: string, options: any): Promise<string> {
-    throw new Error('Kimi API 调用未实现');
-  }
-  
-  private async callDeepseek(prompt: string, options: any): Promise<string> {
-    throw new Error('Deepseek API 调用未实现');
-  }
-  
-  private async callDoubao(prompt: string, options: any): Promise<string> {
-    throw new Error('Doubao API 调用未实现');
-  }
-  
-  private async callQwen(prompt: string, options: any): Promise<string> {
-    throw new Error('Qwen API 调用未实现');
-  }
-  
-  private async callWenxin(prompt: string, options: any): Promise<string> {
-    throw new Error('Wenxin API 调用未实现');
-  }
-  
-  private async callChatGPT(prompt: string, options: any): Promise<string> {
-    throw new Error('ChatGPT API 调用未实现');
-  }
-  
-  private async callGemini(prompt: string, options: any): Promise<string> {
-    throw new Error('Gemini API 调用未实现');
-  }
-  
-  private async callGork(prompt: string, options: any): Promise<string> {
-    throw new Error('Gork API 调用未实现');
-  }
-  
-  private async callZhipu(prompt: string, options: any): Promise<string> {
-    throw new Error('Zhipu API 调用未实现');
-  }
-  
   /**
    * 生成创意方向
    */
-  generateCreativeDirections(prompt: string): string[] {
-    return [];
-  }
-  
-  /**
-   * 推荐文化元素
-   */
-  recommendCulturalElements(prompt: string): string[] {
-    return [];
-  }
-  
-  /**
-   * 诊断创作问题
-   */
-  diagnoseCreationIssues(prompt: string): string[] {
-    return [];
-  }
-  
-  /**
-   * 获取模型调用失败时的回退响应
-   */
-  private getFallbackResponse(modelId: string, errorMessage: string): string {
-    // 详细的错误类型分析
-    const isNetworkError = errorMessage.includes('fetch failed') || errorMessage.includes('Request timed out') || errorMessage.includes('network') || errorMessage.includes('timeout') || errorMessage.includes('ECONNREFUSED');
-    const isAuthError = errorMessage.includes('invalid_iam_token') || errorMessage.includes('Invalid API key') || errorMessage.includes('authentication failed') || errorMessage.includes('Unauthorized');
-    const isQuotaExceeded = errorMessage.includes('QUOTA_EXCEEDED') || errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('429');
-    const isApiError = errorMessage.includes('API error') || errorMessage.includes('HTTP 5');
-    
-    // 统一的错误处理逻辑
-    const baseErrorMsg = `${this.currentModel.name}接口调用失败，`;
-    
-    switch (modelId) {
-      case 'kimi':
-        if (isNetworkError) {
-          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的Kimi API密钥。错误详情：${errorMessage}`;
-        } else if (isQuotaExceeded) {
-          return `${baseErrorMsg}API请求配额已用完，请检查账号配额或稍后重试。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}返回模拟响应。错误详情：${errorMessage}`;
-      
-      case 'deepseek':
-        if (isNetworkError) {
-          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的DeepSeek API密钥。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}返回模拟响应。错误详情：${errorMessage}`;
-      
-      case 'wenxinyiyan':
-        if (isAuthError) {
-          return `${baseErrorMsg}鉴权失败，请确保 .env.local 中设置了正确的 QIANFAN_ACCESS_TOKEN（或 QIANFAN_AK/QIANFAN_SK）。注意：bce-v3 格式的密钥不适用于 chat 接口。错误详情：${errorMessage}`;
-        } else if (isQuotaExceeded) {
-          return `${baseErrorMsg}百度千帆API免费额度已用完，请检查账号配额或购买付费套餐。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      case 'doubao':
-        if (isNetworkError) {
-          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的豆包API密钥。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      case 'qwen':
-        if (isNetworkError) {
-          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请在 .env.local 设置 DASHSCOPE_API_KEY 后重试。错误详情：${errorMessage}`;
-        } else if (isQuotaExceeded) {
-          return `${baseErrorMsg}API请求配额已用完，请检查阿里云DashScope账号配额。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      case 'chatgpt':
-        if (isNetworkError) {
-          return `${baseErrorMsg}网络连接失败，可能是国内访问限制导致。请检查网络设置（如VPN）或尝试使用其他模型。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的OpenAI API密钥。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      case 'gemini':
-        if (isNetworkError) {
-          return `${baseErrorMsg}网络连接失败，可能是国内访问限制导致。请检查网络设置（如VPN）或尝试使用其他模型。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的Google Gemini API密钥。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      case 'gork':
-        if (isNetworkError) {
-          return `${baseErrorMsg}网络连接失败，可能是国内访问限制导致。请检查网络设置（如VPN）或尝试使用其他模型。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的Gork API密钥。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      case 'zhipu':
-        if (isNetworkError) {
-          return `${baseErrorMsg}可能是网络连接问题或API服务异常，请检查网络设置或稍后重试。错误详情：${errorMessage}`;
-        } else if (isAuthError) {
-          return `${baseErrorMsg}API密钥无效或未配置，请确保在设置中配置了正确的智谱API密钥。错误详情：${errorMessage}`;
-        }
-        return `${baseErrorMsg}请检查API配置后重试。错误详情：${errorMessage}`;
-      
-      default:
-        return `模型调用失败: ${errorMessage}`;
-    }
+  public generateCreativeDirections(prompt: string): string[] {
+    // 这里可以实现更复杂的创意方向生成逻辑
+    return [
+      '基于传统文化元素的创新设计',
+      '结合现代科技的创意表现',
+      '跨文化融合的设计思路',
+      '注重可持续发展的设计理念',
+      '以用户为中心的交互设计'
+    ];
   }
 
   /**
-   * 确保当前模型可用：按优先级选择已配置的供应商
-   * @param preferred 首选模型列表
-   * @returns 最终选择的模型ID
+   * 推荐文化元素
+   */
+  public recommendCulturalElements(prompt: string): string[] {
+    // 这里可以实现更复杂的文化元素推荐逻辑
+    return [
+      '传统纹样',
+      '民族色彩',
+      '非遗技艺',
+      '古典诗词',
+      '历史典故'
+    ];
+  }
+
+  /**
+   * 诊断创作问题
+   */
+  public diagnoseCreationIssues(prompt: string): string[] {
+    // 这里可以实现更复杂的创作问题诊断逻辑
+    return [
+      '创意方向不明确',
+      '文化元素融合不够自然',
+      '视觉层次不清晰',
+      '色彩搭配不协调',
+      '缺乏创新亮点'
+    ];
+  }
+
+  /**
+   * 获取回退响应
+   */
+  private getFallbackResponse(modelId: string, errorMessage: string): string {
+    return `当前模型 ${modelId} 暂时无法提供服务，请稍后再试。错误信息：${errorMessage}`;
+  }
+
+  /**
+   * 确保可用模型
    */
   async ensureAvailableModel(preferred: string[] = []): Promise<string> {
     const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
     const useProxy = !!apiBase;
-    
-    // 1. 检查当前模型是否已配置且可用
+
+    // 首先检查当前模型是否可用
     const currentModel = this.getCurrentModel();
     const hasValidKey = this.hasValidApiKey(currentModel.id, useProxy);
-    
     if (hasValidKey) {
-      try {
-        const status = await this.checkConnectionStatus(currentModel.id);
-        if (status === 'connected') {
-          return currentModel.id;
-        }
-      } catch (error) {
-        console.warn(`当前模型 ${currentModel.id} 不可用，尝试其他模型: ${error}`);
+      return currentModel.id;
+    }
+
+    // 检查首选模型列表
+    for (const modelId of preferred) {
+      if (this.hasValidApiKey(modelId, useProxy)) {
+        return modelId;
       }
     }
-    
-    // 2. 如果当前模型不可用，按优先级选择已配置的模型
+
+    // 检查所有可用模型
     const availableModels = AVAILABLE_MODELS.filter(model => {
-      return this.hasValidApiKey(model.id, useProxy) && 
-             localStorage.getItem(`${model.id.toUpperCase()}_QUOTA_EXCEEDED`) !== 'true';
+      return this.hasValidApiKey(model.id, useProxy);
     });
-    
-    // 按优先级排序：首选列表 > 默认模型 > 其他模型
+
+    // 按优先级排序模型
     const sortedModels = [...availableModels].sort((a, b) => {
-      // 检查是否在首选列表中
-      const aIsPreferred = preferred.includes(a.id);
-      const bIsPreferred = preferred.includes(b.id);
-      
-      if (aIsPreferred && !bIsPreferred) return -1;
-      if (!aIsPreferred && bIsPreferred) return 1;
-      
-      // 如果都在或都不在首选列表，检查是否是默认模型
-      if (a.isDefault && !b.isDefault) return -1;
-      if (!a.isDefault && b.isDefault) return 1;
-      
-      // 最后按ID排序，确保一致性
+      // 优先选择默认模型
+      if (a.isDefault) return -1;
+      if (b.isDefault) return 1;
+      // 然后按ID排序
       return a.id.localeCompare(b.id);
     });
-    
-    // 3. 检查并返回第一个可用模型
-    for (const model of sortedModels) {
-      try {
-        const status = await this.checkConnectionStatus(model.id);
-        if (status === 'connected') {
-          this.setCurrentModel(model.id, true);
-          return model.id;
-        }
-      } catch (error) {
-        console.warn(`模型 ${model.id} 不可用: ${error}`);
-      }
+
+    // 返回第一个可用模型
+    if (sortedModels.length > 0) {
+      return sortedModels[0].id;
     }
-    
-    // 4. 如果没有可用模型，返回当前模型（即使可能不可用）
+
+    // 如果没有可用模型，返回当前模型（会触发错误处理）
     return currentModel.id;
+  }
+
+  /**
+   * 生成响应
+   * @param prompt 用户输入的提示词
+   * @param options 可选配置，包括流式响应回调等
+   * @returns 生成的响应文本
+   */
+  async generateResponse(prompt: string, options?: {
+    onDelta?: (chunk: string) => void;
+    signal?: AbortSignal;
+    context?: {[key: string]: any};
+  }): Promise<string> {
+    try {
+      // 记录性能开始时间
+      const startTime = Date.now();
+      const modelId = this.getCurrentModel().id;
+      
+      // 检查缓存
+      const cacheKey = this.generateCacheKey(prompt, modelId, {}, 'conversation');
+      const cachedResponse = this.responseCache.get(cacheKey);
+      if (cachedResponse) {
+        this.cacheStats.hits++;
+        this.cacheStats.totalRequests++;
+        if (options?.onDelta) {
+          options.onDelta(cachedResponse.response);
+        }
+        return cachedResponse.response;
+      }
+      
+      this.cacheStats.misses++;
+      this.cacheStats.totalRequests++;
+      
+      // 构建对话历史
+      const session = this.getCurrentSession();
+      const history = session?.messages || [];
+      const maxHistory = this.modelConfig.max_history || 10;
+      const optimizedHistory = this.optimizeConversationHistory(history, prompt, maxHistory);
+      
+      // 构建请求消息
+      const systemMessage = {
+        role: 'system',
+        content: this.generateDynamicPrompt(this.modelConfig.system_prompt, options?.context),
+        timestamp: Date.now()
+      };
+      
+      const userMessage = {
+        role: 'user',
+        content: prompt,
+        timestamp: Date.now()
+      };
+      
+      const messages = [systemMessage, ...optimizedHistory, userMessage];
+      
+      // 获取API基础URL和密钥
+      const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+      const useProxy = !!apiBase;
+      
+      // 调用真实的LLM API
+      let fullResponse: string;
+      
+      if (useProxy) {
+        // 使用代理服务
+        fullResponse = await this.callApiViaProxy(modelId, messages, options);
+      } else {
+        // 直接调用模型API
+        fullResponse = await this.callModelApiDirectly(modelId, messages, options);
+      }
+      
+      // 更新缓存
+      this.updateCache(prompt, modelId, fullResponse);
+      
+      // 更新对话历史
+      if (session) {
+        session.messages.push(userMessage, { role: 'assistant', content: fullResponse, timestamp: Date.now() });
+        session.updatedAt = Date.now();
+        session.lastMessageTimestamp = Date.now();
+        this.saveSessions();
+      }
+      
+      // 记录性能结束时间
+      const endTime = Date.now();
+      
+      // 更新性能数据
+      this.updatePerformanceData({
+        modelId,
+        startTime,
+        endTime,
+        responseTime: endTime - startTime,
+        success: true,
+        timestamp: Date.now()
+      });
+      
+      return fullResponse;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      console.error('生成响应失败:', errorMessage);
+      
+      // 记录性能数据（失败情况）
+      this.updatePerformanceData({
+        modelId: this.getCurrentModel().id,
+        startTime: Date.now(),
+        endTime: Date.now(),
+        responseTime: 0,
+        success: false,
+        error: errorMessage,
+        timestamp: Date.now()
+      });
+      
+      return this.getFallbackResponse(this.getCurrentModel().id, errorMessage);
+    }
   }
   
   /**
-   * 检查模型是否有有效的API密钥
+   * 通过代理服务调用API
+   */
+  private async callApiViaProxy(modelId: string, messages: Message[], options?: {
+    onDelta?: (chunk: string) => void;
+    signal?: AbortSignal;
+  }): Promise<string> {
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+    const apiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) || '';
+    
+    const response = await fetch(`${apiBase}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+        stream: !!options?.onDelta,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+      }),
+      signal: options?.signal,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+    }
+    
+    if (options?.onDelta) {
+      // 处理流式响应
+      return this.handleStreamingResponse(response, options.onDelta);
+    } else {
+      // 处理非流式响应
+      const data = await response.json();
+      return data.choices[0]?.message?.content || '未获取到响应';
+    }
+  }
+  
+  /**
+   * 直接调用模型API
+   */
+  private async callModelApiDirectly(modelId: string, messages: Message[], options?: {
+    onDelta?: (chunk: string) => void;
+    signal?: AbortSignal;
+  }): Promise<string> {
+    // 根据不同模型构建请求
+    switch (modelId) {
+      case 'kimi':
+        return this.callKimiApi(messages, options);
+      case 'deepseek':
+        return this.callDeepseekApi(messages, options);
+      case 'qwen':
+        return this.callQwenApi(messages, options);
+      default:
+        throw new Error(`不支持的模型类型: ${modelId}`);
+    }
+  }
+  
+  /**
+   * 调用Kimi API
+   */
+  private async callKimiApi(messages: Message[], options?: {
+    onDelta?: (chunk: string) => void;
+    signal?: AbortSignal;
+  }): Promise<string> {
+    const apiKey = this.modelConfig.kimi_api_key;
+    if (!apiKey) {
+      throw new Error('Kimi API密钥未配置');
+    }
+    
+    const response = await fetch(`${this.modelConfig.kimi_base_url}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.modelConfig.kimi_model,
+        messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+        stream: !!options?.onDelta,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+      }),
+      signal: options?.signal,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Kimi API请求失败: ${response.status} ${response.statusText}`);
+    }
+    
+    if (options?.onDelta) {
+      // 处理流式响应
+      return this.handleStreamingResponse(response, options.onDelta);
+    } else {
+      // 处理非流式响应
+      const data = await response.json();
+      return data.choices[0]?.message?.content || '未获取到响应';
+    }
+  }
+  
+  /**
+   * 调用Deepseek API
+   */
+  private async callDeepseekApi(messages: Message[], options?: {
+    onDelta?: (chunk: string) => void;
+    signal?: AbortSignal;
+  }): Promise<string> {
+    const apiKey = this.modelConfig.deepseek_api_key;
+    if (!apiKey) {
+      throw new Error('Deepseek API密钥未配置');
+    }
+    
+    const response = await fetch(`${this.modelConfig.deepseek_base_url}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.modelConfig.deepseek_model,
+        messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+        stream: !!options?.onDelta,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+      }),
+      signal: options?.signal,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Deepseek API请求失败: ${response.status} ${response.statusText}`);
+    }
+    
+    if (options?.onDelta) {
+      // 处理流式响应
+      return this.handleStreamingResponse(response, options.onDelta);
+    } else {
+      // 处理非流式响应
+      const data = await response.json();
+      return data.choices[0]?.message?.content || '未获取到响应';
+    }
+  }
+  
+  /**
+   * 调用通义千问API
+   */
+  private async callQwenApi(messages: Message[], options?: {
+    onDelta?: (chunk: string) => void;
+    signal?: AbortSignal;
+  }): Promise<string> {
+    const apiKey = this.modelConfig.qwen_api_key;
+    if (!apiKey) {
+      throw new Error('通义千问API密钥未配置');
+    }
+    
+    const response = await fetch(`${this.modelConfig.qwen_base_url}/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.modelConfig.qwen_model,
+        messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+        stream: !!options?.onDelta,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+      }),
+      signal: options?.signal,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`通义千问API请求失败: ${response.status} ${response.statusText}`);
+    }
+    
+    if (options?.onDelta) {
+      // 处理流式响应
+      return this.handleStreamingResponse(response, options.onDelta);
+    } else {
+      // 处理非流式响应
+      const data = await response.json();
+      return data.output?.text || data.choices[0]?.message?.content || '未获取到响应';
+    }
+  }
+  
+  /**
+   * 处理流式响应
+   */
+  private async handleStreamingResponse(response: Response, onDelta: (chunk: string) => void): Promise<string> {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('无法获取响应流');
+    }
+    
+    const decoder = new TextDecoder('utf-8');
+    let fullResponse = '';
+    
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine === '') continue;
+          if (trimmedLine.startsWith('data: ')) {
+            const data = trimmedLine.slice(6);
+            if (data === '[DONE]') continue;
+            
+            try {
+              const jsonData = JSON.parse(data);
+              const content = jsonData.choices[0]?.delta?.content || '';
+              if (content) {
+                fullResponse += content;
+                onDelta(content);
+              }
+            } catch (error) {
+              console.error('解析流式响应失败:', error);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    
+    return fullResponse;
+  }
+
+  /**
+   * 检查API密钥是否有效
    */
   private hasValidApiKey(modelId: string, useProxy: boolean): boolean {
+    // 如果使用代理，不需要检查API密钥
     if (useProxy) {
-      return true; // 代理模式下，假设所有模型都已配置
-    } else {
-      const envKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[`VITE_${modelId.toUpperCase()}_API_KEY`]) || '';
-      const storedKey = localStorage.getItem(`${modelId.toUpperCase()}_API_KEY`) || '';
-      return !!(storedKey || envKey);
+      return true;
+    }
+
+    // 根据模型ID检查API密钥
+    switch (modelId) {
+      case 'kimi':
+        return !!this.modelConfig.kimi_api_key;
+      case 'deepseek':
+        return !!this.modelConfig.deepseek_api_key;
+      case 'qwen':
+        return !!this.modelConfig.qwen_api_key;
+      case 'chatgpt':
+        return !!this.modelConfig.openai_api_key;
+      case 'gemini':
+        return !!this.modelConfig.gemini_api_key;
+      case 'zhipu':
+        return !!this.modelConfig.zhipu_api_key;
+      default:
+        return false;
     }
   }
 }
 
-/**
- * LLM服务实例
- */
+// 导出LLM服务实例
 export const llmService = new LLMService();
-
-// 同时添加默认导出，兼容旧的导入方式
-export default llmService;

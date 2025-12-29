@@ -307,10 +307,20 @@ export default defineConfig({
     compress: true,
     // 设置端口为3000
     port: 3000,
+    // 自动打开浏览器
+    open: true,
     // 优化热更新
     hmr: {
       timeout: 3000,
       overlay: true,
+      // 确保HMR连接正常，允许Trae IDE自动刷新
+      clientPort: 3000,
+      // 强制使用WebSocket连接，确保IDE能正确接收更新
+      protocol: 'ws',
+      // 禁用客户端自动重连，让IDE处理连接
+      reconnect: true,
+      // 启用完整重载作为后备选项
+      fullReload: true,
     },
     // 添加开发服务器代理配置
     proxy: {

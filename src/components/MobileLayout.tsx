@@ -646,8 +646,9 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
       
       {/* 主内容区 */}
       <main className={clsx(
-        'flex-1 overflow-y-auto',
-        isDark ? 'pb-16' : 'pb-20'
+        'flex-1 overflow-y-auto relative',
+        isDark ? 'pb-16' : 'pb-20',
+        'min-w-0' // 确保主内容区不会超出容器
       )}>
         {children}
       </main>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -42,20 +42,101 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
+  // 快捷操作类型定义
+  interface ShortcutAction {
+    id: string;
+    label: string;
+    icon: string;
+    action: () => void;
+    visible: boolean;
+  }
+
   // 根据当前页面动态生成预设问题
   const getPresetQuestions = () => {
     const pageQuestions: Record<string, string[]> = {
-      '/': ['平台上如何创作', '如何使用AI生成功能', '如何分享我的作品', '平台有哪些功能'],
-      '/cultural-knowledge': ['文化知识如何分类', '如何搜索特定文化内容', '如何收藏文化知识', '如何参与文化讨论'],
-      '/creation-workshop': ['如何开始创作', 'AI生成功能怎么用', '如何导出我的作品', '如何查看创作数据'],
-      '/marketplace': ['如何购买文创产品', '如何成为卖家', '如何评价商品', '如何查看订单'],
-      '/community': ['如何参与社区活动', '如何关注其他用户', '如何创建话题', '如何获取社区积分'],
-      '/my-works': ['如何管理我的作品', '如何编辑已发布作品', '如何查看作品统计', '如何设置作品隐私'],
-      '/explore': ['如何搜索作品', '如何筛选作品', '如何点赞收藏', '如何查看热门作品'],
-      '/create': ['如何使用创作工具', '如何添加素材', '如何使用AI辅助创作', '如何保存草稿']
+      '/': ['平台上如何创作', '如何使用AI生成功能', '如何分享我的作品', '平台有哪些功能', '如何获取创作灵感'],
+      '/cultural-knowledge': ['文化知识如何分类', '如何搜索特定文化内容', '如何收藏文化知识', '如何参与文化讨论', '如何贡献文化知识'],
+      '/creation-workshop': ['如何开始创作', 'AI生成功能怎么用', '如何导出我的作品', '如何查看创作数据', '如何使用创作模板'],
+      '/marketplace': ['如何购买文创产品', '如何成为卖家', '如何评价商品', '如何查看订单', '如何设置店铺'],
+      '/community': ['如何参与社区活动', '如何关注其他用户', '如何创建话题', '如何获取社区积分', '如何加入兴趣小组'],
+      '/my-works': ['如何管理我的作品', '如何编辑已发布作品', '如何查看作品统计', '如何设置作品隐私', '如何批量操作作品'],
+      '/explore': ['如何搜索作品', '如何筛选作品', '如何点赞收藏', '如何查看热门作品', '如何关注热门创作者'],
+      '/create': ['如何使用创作工具', '如何添加素材', '如何使用AI辅助创作', '如何保存草稿', '如何使用快捷键'],
+      '/dashboard': ['如何查看创作数据', '如何查看收益情况', '如何设置通知', '如何管理账户信息', '如何查看系统通知'],
+      '/settings': ['如何修改密码', '如何绑定手机号', '如何设置隐私', '如何管理API密钥', '如何清除缓存']
     };
     
-    return pageQuestions[currentPath] || ['平台上如何创作', '如何使用AI生成功能', '如何分享我的作品', '如何查看创作数据', '如何参与社区活动'];
+    // 获取基础预设问题
+    let questions = pageQuestions[currentPath] || ['平台上如何创作', '如何使用AI生成功能', '如何分享我的作品', '如何查看创作数据', '如何参与社区活动'];
+    
+    // 根据对话历史调整预设问题，避免重复
+    const recentUserMessages = messages.filter(msg => msg.role === 'user').slice(-5).map(msg => msg.content);
+    questions = questions.filter(q => !recentUserMessages.some(msg => msg.includes(q)));
+    
+    // 如果过滤后问题太少，添加一些通用问题
+    if (questions.length < 3) {
+      const generalQuestions = ['如何使用平台', '平台有哪些AI功能', '如何获取帮助', '如何联系客服', '如何反馈问题'];
+      const additionalQuestions = generalQuestions.filter(q => !recentUserMessages.some(msg => msg.includes(q))).slice(0, 3 - questions.length);
+      questions = [...questions, ...additionalQuestions];
+    }
+    
+    return questions;
+  };
+
+  // 生成快捷操作
+  const getShortcutActions = (): ShortcutAction[] => {
+    const actions: ShortcutAction[] = [
+      {
+        id: 'new-conversation',
+        label: '新对话',
+        icon: '💬',
+        action: () => {
+          llmService.createSession('新对话');
+          setMessages([]);
+        },
+        visible: true
+      },
+      {
+        id: 'clear-history',
+        label: '清空历史',
+        icon: '🗑️',
+        action: () => {
+          if (confirm('确定要清空对话历史吗？')) {
+            llmService.clearHistory();
+            setMessages([]);
+          }
+        },
+        visible: messages.length > 0
+      },
+      {
+        id: 'toggle-settings',
+        label: '设置',
+        icon: '⚙️',
+        action: () => setShowSettings(!showSettings),
+        visible: true
+      },
+      {
+        id: 'feedback',
+        label: '反馈',
+        icon: '📝',
+        action: () => {
+          // 这里可以添加反馈功能
+          alert('反馈功能开发中，敬请期待！');
+        },
+        visible: true
+      },
+      {
+        id: 'help',
+        label: '帮助',
+        icon: '❓',
+        action: () => {
+          navigate('/help');
+        },
+        visible: true
+      }
+    ];
+    
+    return actions.filter(action => action.visible);
   };
   
   // 动态预设问题
@@ -216,12 +297,125 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }
   }, [currentPage, messages.length]);
 
-  // 自动滚动到底部
-  useEffect(() => {
-    if (chatContainerRef.current && autoScroll) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+  // 检测手动滚动，当用户手动滚动时禁用autoScroll，滚动到底部时重新启用
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // 检查是否接近底部（50px以内）
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+      if (!isNearBottom && autoScroll) {
+        setAutoScroll(false);
+      } else if (isNearBottom && !autoScroll) {
+        // 当用户滚动回底部时，重新启用autoScroll
+        setAutoScroll(true);
+      }
     }
-  }, [messages, autoScroll]);
+  };
+
+  // 通用的滚动到底部函数
+  const scrollToBottom = useCallback(() => {
+    if (chatContainerRef.current && autoScroll) {
+      const container = chatContainerRef.current;
+      
+      // 强制滚动到底部，不依赖autoScroll状态
+      container.scrollTop = container.scrollHeight;
+      
+      // 额外的滚动方法，确保在各种浏览器中都能正常工作
+      container.scroll({ top: container.scrollHeight, behavior: 'instant' });
+    }
+  }, [autoScroll]);
+
+  // 自动滚动到底部 - 当消息变化时
+  useEffect(() => {
+    // 延迟执行，确保所有DOM更新完成
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+      // 再执行一次，确保滚动到底部
+      const secondTimeoutId = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(secondTimeoutId);
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages, scrollToBottom]);
+
+  // 当autoScroll变化时，也尝试滚动到底部
+  useEffect(() => {
+    if (autoScroll) {
+      scrollToBottom();
+      // 延迟再滚动一次，确保可靠
+      const timeoutId = setTimeout(scrollToBottom, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [autoScroll, scrollToBottom]);
+
+  // 添加滚动事件监听和内容变化监听
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current;
+    if (!chatContainer) return;
+
+    // 滚动事件处理
+    const handleContainerScroll = () => {
+      handleScroll();
+    };
+
+    // 创建ResizeObserver监测内容变化
+    const resizeObserver = new ResizeObserver(() => {
+      if (autoScroll) {
+        scrollToBottom();
+      }
+    });
+
+    // 监听滚动事件
+    chatContainer.addEventListener('scroll', handleContainerScroll);
+    // 监测聊天容器内容变化
+    resizeObserver.observe(chatContainer);
+
+    return () => {
+      chatContainer.removeEventListener('scroll', handleContainerScroll);
+      resizeObserver.disconnect();
+    };
+  }, [autoScroll, scrollToBottom]);
+
+  // 在组件挂载和更新时都确保滚动到底部
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      const container = chatContainerRef.current;
+      
+      // 添加MutationObserver监测DOM变化
+      const observer = new MutationObserver(() => {
+        if (autoScroll) {
+          scrollToBottom();
+        }
+      });
+
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true
+      });
+
+      return () => {
+        observer.disconnect();
+      };
+    }
+  }, [autoScroll, scrollToBottom]);
+
+  // 监听输入框聚焦事件，确保滚动到底部
+  useEffect(() => {
+    if (inputRef.current && chatContainerRef.current) {
+      const handleFocus = () => {
+        if (autoScroll) {
+          scrollToBottom();
+        }
+      };
+      
+      inputRef.current.addEventListener('focus', handleFocus);
+      return () => {
+        inputRef.current?.removeEventListener('focus', handleFocus);
+      };
+    }
+  }, [autoScroll, scrollToBottom]);
 
   // 处理发送消息
   const handleSendMessage = async () => {
@@ -236,6 +430,11 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsGenerating(true);
+    
+    // 立即触发滚动到底部，确保用户消息显示在视野中
+    setTimeout(() => {
+      scrollToBottom();
+    }, 0);
 
     try {
       // 简单的数字映射回答和页面跳转
@@ -356,11 +555,102 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }
   };
 
-  // 初始化位置
+  // 初始化位置，从localStorage读取保存的位置，如果没有则使用默认位置
   useEffect(() => {
-    // 设置固定位置，确保按钮始终可见
+    const savedPosition = localStorage.getItem('aiAssistantPosition');
+    if (savedPosition) {
+      try {
+        const { x, y } = JSON.parse(savedPosition);
+        setPositionStyle({ x, y });
+        return;
+      } catch (error) {
+        console.error('Failed to parse saved position:', error);
+      }
+    }
+    // 使用默认位置
     setPositionStyle({ x: 20, y: window.innerHeight - 100 });
   }, []);
+
+  // 智能定位算法，根据视口位置动态调整AI助手位置
+  // 只在聊天窗口打开且确实需要调整时才调整位置
+  const updatePositionBasedOnViewport = () => {
+    if (!isOpen) return;
+
+    // 计算阈值：距离底部20%视口高度或100px，取较大值
+    const calculateThreshold = () => {
+      return Math.max(window.innerHeight * 0.2, 100);
+    };
+
+    // 获取当前滚动位置和视口高度
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    const threshold = calculateThreshold();
+    
+    // 计算当前位置距离文档底部的距离
+    const distanceFromBottom = documentHeight - (scrollTop + windowHeight);
+    
+    // 聊天窗口的实际高度（考虑响应式设计）
+    const getChatWindowHeight = () => {
+      const isMobile = window.innerWidth < 768;
+      const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+      if (isMobile) return 400;
+      if (isTablet) return 500;
+      return 700; // 桌面设备使用最大高度
+    };
+
+    const chatWindowHeight = getChatWindowHeight();
+    let shouldUpdate = false;
+    let newPosition = { ...positionStyle };
+    
+    // 检查是否接近底部，只有在这种情况下才调整Y轴位置
+    if (distanceFromBottom < threshold) {
+      // 调整AI助手位置，确保内容可见
+      const newY = Math.max(20, scrollTop + windowHeight - chatWindowHeight - 20);
+      if (newY !== positionStyle.y) {
+        newPosition.y = newY;
+        shouldUpdate = true;
+      }
+    }
+    // 注意：移除了正常位置的调整逻辑，这样不会在打开时重置位置
+
+    // 确保AI助手不会超出视口左边界
+    const chatWindowWidth = window.innerWidth < 768 ? 320 : 384;
+    const newX = Math.max(20, Math.min(positionStyle.x, window.innerWidth - chatWindowWidth - 20));
+    if (newX !== positionStyle.x) {
+      newPosition.x = newX;
+      shouldUpdate = true;
+    }
+
+    if (shouldUpdate) {
+      setPositionStyle(newPosition);
+      // 只有在位置发生变化时才保存到localStorage
+      localStorage.setItem('aiAssistantPosition', JSON.stringify(newPosition));
+    }
+  };
+
+  // 滚动事件监听，实现滚动感知机制
+  useEffect(() => {
+    // 滚动事件处理函数
+    const handleScroll = () => {
+      updatePositionBasedOnViewport();
+    };
+
+    // 窗口大小变化事件处理函数
+    const handleResize = () => {
+      updatePositionBasedOnViewport();
+    };
+
+    // 添加事件监听
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+
+    // 组件卸载时移除事件监听
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, positionStyle]);
 
   // 切换AI助手显示/隐藏
   const toggleAssistant = () => {
@@ -402,11 +692,15 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     newY = Math.max(0, Math.min(newY, window.innerHeight - buttonHeight));
     
     setPositionStyle({ x: newX, y: newY });
+    // 拖动过程中就保存位置，确保实时更新
+    localStorage.setItem('aiAssistantPosition', JSON.stringify({ x: newX, y: newY }));
   };
 
   // 处理拖动结束
   const handleDragEnd = () => {
     setIsDragging(false);
+    // 拖动结束时也保存一次，确保位置被正确保存
+    localStorage.setItem('aiAssistantPosition', JSON.stringify(positionStyle));
   };
 
   // 添加全局拖动事件监听
@@ -442,79 +736,131 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="fixed z-40"
+      className="fixed"
       style={{
         left: `${positionStyle.x}px`,
         top: `${positionStyle.y}px`,
-        transform: 'translate(0, 0)'
+        transform: 'translate(0, 0)',
+        zIndex: 1000 // 确保AI助手在最顶层显示
       }}
     >
       {/* 聊天界面 */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className={`w-full max-w-[320px] sm:max-w-[384px] h-[450px] rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} overflow-hidden`}
+            initial={{ opacity: 0, scale: 0.9, y: 20, x: 0 }}
+            animate={{
+              opacity: 1, 
+              scale: 1, 
+              y: 0, 
+              x: 0,
+              // 添加轻微的浮动动画，增强漂浮感
+              translateY: [0, -5, 0, 5, 0],
+            }}
+            exit={{ opacity: 0, scale: 0.9, y: 20, x: 0 }}
+            transition={{
+              duration: 0.2,
+              // 浮动动画循环播放
+              translateY: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            }}
+            className={`rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} overflow-hidden`}
+            style={{
+              // 响应式宽度 - 手机端更小
+              width: window.innerWidth < 768 ? '85vw' : (window.innerWidth < 1024 ? '75vw' : '384px'),
+              // 响应式高度 - 调整为更大的值，确保输入区域可见
+              minHeight: window.innerWidth < 768 ? '300px' : (window.innerWidth < 1024 ? '400px' : '450px'),
+              maxHeight: window.innerWidth < 768 ? '80vh' : '70vh',
+              // 悬浮效果：显示在按钮上方
+              position: 'absolute',
+              bottom: '100%',
+              left: '50%',
+              transform: 'translateX(-50%) translateY(-10px) translateZ(10)',
+              // 增强悬浮感的多层次阴影
+              boxShadow: isDark ? 
+                '0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)' : 
+                '0 10px 30px rgba(0, 0, 0, 0.2), 0 4px 15px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              // 确保不会超出视口
+              maxWidth: '85vw',
+              // 确保在最顶层显示
+              zIndex: 999,
+              // 高DPI屏幕优化
+              imageRendering: 'pixelated',
+              // 添加背景模糊效果，增强漂浮感
+              backdropFilter: 'blur(10px)',
+              backgroundBlendMode: 'overlay',
+              // 确保内容不会溢出
+              overflow: 'hidden',
+              // 确保容器使用flex布局，并且子元素能够正确分配空间
+              display: 'flex',
+              flexDirection: 'column'
+            }}
           >
-            {/* 聊天头部 */}
-            <div className={`p-3 border-b ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} flex justify-between items-center shadow-sm`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-500'} text-white shadow-md`}>
-                  <i className="fas fa-robot text-lg"></i>
+            {/* 聊天头部 - 手机端优化 */}
+            <div className={`p-2 border-b ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} flex justify-between items-center shadow-sm`}>
+              <div className="flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-500'} text-white shadow-md`}>
+                  <i className="fas fa-robot text-base"></i>
                 </div>
-                <h3 className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI助手</h3>
+                <h3 className="font-bold text-base sm:text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI助手</h3>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 {/* 设置按钮 */}
-                <button
+                <motion.button
                   onClick={() => setShowSettings(!showSettings)}
-                  className={`p-2 rounded-full transition-all ${isDark ? 'hover:bg-gray-700 hover:scale-110' : 'hover:bg-gray-100 hover:scale-110'} transform`}
+                  className={`p-1.5 rounded-full transition-all ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transform`}
                   aria-label="设置"
+                  whileHover={{ scale: 1.1, rotate: 15 }}
+                  whileTap={{ scale: 0.95, rotate: 0 }}
                 >
-                  <i className={`fas fa-cog ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-                </button>
+                  <i className={`fas fa-cog text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
+                </motion.button>
                 {/* 关闭按钮 */}
-                <button
+                <motion.button
                   onClick={toggleAssistant}
-                  className={`p-2 rounded-full transition-all ${isDark ? 'hover:bg-gray-700 hover:scale-110' : 'hover:bg-gray-100 hover:scale-110'} transform`}
+                  className={`p-1.5 rounded-full transition-all ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transform`}
                   aria-label="关闭"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <i className={`fas fa-times ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-                </button>
+                  <i className={`fas fa-times text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
+                </motion.button>
               </div>
             </div>
 
             {/* 聊天内容和设置面板的容器 */}
-            <div className="flex-1 flex">
+            <div className="flex-1 flex flex-col overflow-hidden">
               {/* 聊天内容 */}
               <AnimatePresence mode="wait">
                 {!showSettings ? (
                   <motion.div
-                    key="chat"
-                    initial={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex-1 overflow-y-auto p-3 space-y-4"
-                    style={{
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: isDark ? '#4B5563 #1F2937' : '#9CA3AF #F3F4F6'
-                    }}
-                    ref={chatContainerRef}
-                  >
+                  key="chat"
+                  initial={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex-1 p-2 sm:p-3 space-y-3 ${window.innerWidth < 768 ? 'space-y-3' : 'space-y-4'} overflow-auto`}
+                  style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: isDark ? '#4B5563 #1F2937' : '#9CA3AF #F3F4F6',
+                    // 强制显示滚动条
+                    msOverflowStyle: 'auto',
+                    scrollbarWidth: 'auto',
+                    // 确保在各种浏览器中都能正常工作
+                    WebkitOverflowScrolling: 'touch',
+                    boxSizing: 'border-box'
+                  }}
+                  ref={chatContainerRef}
+                >
                     {messages.map((message, index) => (
                       <motion.div
                         key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} ${window.innerWidth < 768 ? 'mb-3' : 'mb-4'}`}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.1 }}
                       >
                         <div className="max-w-[85%]">
                           <div
-                            className={`p-4 rounded-xl ${message.role === 'user' ? 
+                            className={`${window.innerWidth < 768 ? 'p-3' : 'p-4'} rounded-xl ${message.role === 'user' ? 
                               (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg' : 'bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg') : 
                               (isDark ? 'bg-gray-700 text-gray-200 border border-gray-600' : 'bg-gray-100 text-gray-800 border border-gray-200')
                             } transition-all hover:shadow-xl`}
@@ -530,41 +876,51 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                               {/* 评分按钮 */}
                               {!feedbackRatings[index] && (
                                 <div className="flex gap-1">
-                                  <button
+                                  <motion.button
                                     onClick={() => handleRating(index, 1)}
-                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-red-400' : 'hover:text-red-500'}`}
+                                    className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-red-400' : 'hover:text-red-500'}`}
                                     aria-label="非常不满意"
+                                    whileHover={{ scale: 1.2, rotate: -10 }}
+                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-down text-xs"></i>
-                                  </button>
-                                  <button
+                                  </motion.button>
+                                  <motion.button
                                     onClick={() => handleRating(index, 2)}
-                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-yellow-400' : 'hover:text-yellow-500'}`}
+                                    className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-yellow-400' : 'hover:text-yellow-500'}`}
                                     aria-label="不满意"
+                                    whileHover={{ scale: 1.2 }}
+                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-down-half-alt text-xs"></i>
-                                  </button>
-                                  <button
+                                  </motion.button>
+                                  <motion.button
                                     onClick={() => handleRating(index, 3)}
-                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-500'}`}
+                                    className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-500'}`}
                                     aria-label="一般"
+                                    whileHover={{ scale: 1.2 }}
+                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-meh text-xs"></i>
-                                  </button>
-                                  <button
+                                  </motion.button>
+                                  <motion.button
                                     onClick={() => handleRating(index, 4)}
-                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
+                                    className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
                                     aria-label="满意"
+                                    whileHover={{ scale: 1.2 }}
+                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-up-half-alt text-xs"></i>
-                                  </button>
-                                  <button
+                                  </motion.button>
+                                  <motion.button
                                     onClick={() => handleRating(index, 5)}
-                                    className={`p-1 rounded-full transition-all hover:scale-110 ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
+                                    className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
                                     aria-label="非常满意"
+                                    whileHover={{ scale: 1.2, rotate: 10 }}
+                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-up text-xs"></i>
-                                  </button>
+                                  </motion.button>
                                 </div>
                               )}
                               
@@ -752,6 +1108,28 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
               </AnimatePresence>
             </div>
 
+            {/* 快捷操作 */}
+            {messages.length <= 1 && !isGenerating && (
+              <div className={`px-3 py-2 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                <p className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'} font-medium`}>快捷操作</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {getShortcutActions().map((action, index) => (
+                    <motion.button
+                      key={index}
+                      onClick={action.action}
+                      className={`px-2.5 py-1.25 text-xs rounded-full ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'} transition-all transform hover:scale-105`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      title={action.label}
+                    >
+                      <span className="mr-1">{action.icon}</span>
+                      <span>{action.label}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 预设问题 */}
             {messages.length <= 1 && !isGenerating && (
               <div className={`px-3 pb-2 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
@@ -772,9 +1150,9 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
               </div>
             )}
 
-            {/* 输入区域 */}
-            <div className={`p-3 border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} shadow-inner`}>
-              <div className="flex gap-1.5 items-center">
+            {/* 输入区域 - 手机端优化 */}
+            <div className={`${window.innerWidth < 768 ? 'p-2' : 'p-3'} border-t ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'} shadow-inner`}>
+              <div className="flex gap-1 items-center">
                 <input
                   ref={inputRef}
                   type="text"
@@ -783,12 +1161,12 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                   onKeyPress={handleKeyPress}
                   placeholder="输入你的问题..."
                   disabled={isGenerating}
-                  className={`flex-1 px-3 py-2.5 rounded-full border ${isDark ? 'border-gray-700 bg-gray-800 text-white placeholder-gray-500 focus:border-blue-500' : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm text-sm`}
+                  className={`flex-1 px-2.5 py-2 rounded-full border ${isDark ? 'border-gray-700 bg-gray-800 text-white placeholder-gray-500 focus:border-blue-500' : 'border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm text-sm`}
                 />
                 <motion.button
                   onClick={handleSendMessage}
                   disabled={isGenerating || !inputMessage.trim()}
-                  className={`p-2.5 rounded-full transition-all shadow-md ${isGenerating || !inputMessage.trim() ? 
+                  className={`${window.innerWidth < 768 ? 'p-2' : 'p-2.5'} rounded-full transition-all shadow-md ${isGenerating || !inputMessage.trim() ? 
                     (isDark ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed') : 
                     (isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white')
                   }`}
@@ -796,7 +1174,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                   whileTap={{ scale: isGenerating || !inputMessage.trim() ? 1 : 0.95 }}
                   aria-label="发送"
                 >
-                  <i className="fas fa-paper-plane text-sm"></i>
+                  <i className="fas fa-paper-plane text-xs sm:text-sm"></i>
                 </motion.button>
               </div>
             </div>
@@ -807,19 +1185,47 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
       {/* 悬浮按钮 */}
       <motion.button
         ref={buttonRef}
-        initial={{ scale: 1, opacity: 1 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
+        initial={{ scale: 1, opacity: 1, y: 0 }}
+        animate={{
+          scale: 1, 
+          opacity: 1,
+          // 添加轻微的浮动动画，与聊天窗口呼应
+          y: [0, -3, 0, 3, 0],
+        }}
+        transition={{
+          duration: 0.4, 
+          type: 'spring', 
+          stiffness: 200, 
+          damping: 15,
+          // 浮动动画循环播放
+          y: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+        }}
         onClick={toggleAssistant}
         onMouseDown={handleDragStart}
         onTouchStart={handleDragStart}
         className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-[100] transition-all duration-300 transform hover:scale-125 ${isDark ? 'bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white cursor-${isDragging ? 'grabbing' : 'grab'}`}
         aria-label="AI助手"
-        whileHover={{ scale: 1.25, boxShadow: '0 8px 20px rgba(59, 130, 246, 0.4)' }}
-        whileTap={{ scale: 1.1 }}
+        whileHover={{
+          scale: 1.25, 
+          boxShadow: isDark ? 
+            '0 12px 28px rgba(99, 102, 241, 0.5), 0 4px 12px rgba(99, 102, 241, 0.3)' : 
+            '0 12px 28px rgba(59, 130, 246, 0.5), 0 4px 12px rgba(59, 130, 246, 0.3)',
+          // 悬停时增强浮动效果
+          y: -5
+        }}
+        whileTap={{ scale: 1.1, y: 0 }}
         style={{
           position: 'relative',
-          zIndex: 100
+          zIndex: 100,
+          // 添加多层次阴影，增强立体感
+          boxShadow: isDark ? 
+            '0 8px 25px rgba(0, 0, 0, 0.4), 0 2px 10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1)' : 
+            '0 8px 25px rgba(0, 0, 0, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+          // 添加发光效果，增强漂浮感
+          animation: 'pulse-glow 2s ease-in-out infinite alternate',
+          // 确保按钮在拖动时有更好的视觉反馈
+          transformStyle: 'preserve-3d',
+          backfaceVisibility: 'hidden'
         }}
       >
         <motion.i 
@@ -832,8 +1238,13 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
           <motion.div
             className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg"
             initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+            animate={{ scale: 1, y: [0, -2, 0, 2, 0] }}
+            transition={{ 
+              type: 'spring', 
+              stiffness: 500, 
+              damping: 15,
+              y: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            }}
           >
             {messages.length - 1}
           </motion.div>

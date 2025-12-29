@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '@/hooks/useTheme'
+import { Link } from 'react-router-dom'
 
 import ModelSelector from '@/components/ModelSelector'
 import ThemePreviewModal from '@/components/ThemePreviewModal'
@@ -265,15 +266,18 @@ export default function Settings() {
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-md p-6`}>
             <h2 className="font-medium mb-3">账户</h2>
             <div className="space-y-3">
-              <button className={`w-full text-left px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-colors`}>
-                编辑个人资料
-              </button>
-              <button className={`w-full text-left px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-colors`}>
-                修改密码
-              </button>
-              <button className={`w-full text-left px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-colors`}>
-                账号安全设置
-              </button>
+              <Link to="/profile/edit" className={`w-full text-left px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-colors flex items-center justify-between`}>
+                <span>编辑个人资料</span>
+                <i className="fas fa-chevron-right text-sm opacity-50"></i>
+              </Link>
+              <Link to="/password/change" className={`w-full text-left px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-colors flex items-center justify-between`}>
+                <span>修改密码</span>
+                <i className="fas fa-chevron-right text-sm opacity-50"></i>
+              </Link>
+              <Link to="/account/security" className={`w-full text-left px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} transition-colors flex items-center justify-between`}>
+                <span>账号安全设置</span>
+                <i className="fas fa-chevron-right text-sm opacity-50"></i>
+              </Link>
             </div>
           </div>
           

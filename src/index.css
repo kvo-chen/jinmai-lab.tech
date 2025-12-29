@@ -100,6 +100,19 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 
+/* 确保页面布局固定，避免滚动条变化影响宽度 */
+html {
+  overflow-x: hidden;
+  scrollbar-gutter: stable; /* 防止滚动条出现时的布局跳动 */
+}
+
+body {
+  overflow-x: hidden;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
 /* 自定义字体类 */
 .font-tianjin {
   font-family: 'SimSun', 'STSong', serif;
@@ -1015,36 +1028,7 @@ details p {
   }
 }
 
-/* 应用到所有卡片和章节 */
-section, article {
-  animation: fadeInUp 0.6s ease-out forwards;
-  opacity: 0;
-}
 
-/* 错开动画延迟 */
-section:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-section:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-section:nth-child(4) {
-  animation-delay: 0.3s;
-}
-
-article {
-  animation-delay: 0.4s;
-}
-
-article:nth-child(2) {
-  animation-delay: 0.5s;
-}
-
-section:nth-child(5) {
-  animation-delay: 0.6s;
-}
 
 /* 悬停浮动动画 */
 .animate-float {

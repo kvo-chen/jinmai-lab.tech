@@ -88,7 +88,6 @@ const SimplifiedARPreview: React.FC<{
   const [isControlsOpen, setIsControlsOpen] = useState(false);
   
   // 引用
-  const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const textureLoaderRef = useRef<THREE.TextureLoader | null>(null);
   const modelRef = useRef<THREE.Mesh | null>(null);
@@ -508,48 +507,39 @@ const SimplifiedARPreview: React.FC<{
           </div>
         )}
 
-        {/* AR按钮和兼容性提示 */}
+        {/* AR功能提示 */}
         <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-3">
           {isSupported === null ? (
             <div className="flex flex-col gap-2">
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg opacity-50 cursor-not-allowed">
-                检查AR支持...
-              </button>
               <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg backdrop-blur-sm">
                 正在检测设备AR兼容性
               </div>
             </div>
           ) : isSupported ? (
             <div className="flex flex-col gap-2">
+              <div className="text-white text-sm bg-blue-900 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
+                💡 AR功能说明：
+                <br />1. 确保设备支持WebXR
+                <br />2. 使用Chrome或Edge浏览器
+                <br />3. 在明亮环境中使用
+                <br />4. 将设备对准平面表面
+                <br /><br />温馨提示：目前仅在移动设备上支持完整AR功能
+              </div>
               <button
                 onClick={() => {
-                  setIsARMode(true);
-                  // 改进提示信息，提供更详细的AR使用说明
-                  alert('📱 AR模式使用说明：\n1. 确保您的设备支持WebXR\n2. 使用Chrome或Edge浏览器\n3. 在明亮的环境中打开\n4. 将设备对准平面表面\n\n温馨提示：目前仅在移动设备上支持完整AR功能。');
+                  alert('📱 AR功能暂不可用\n\n开发团队正在努力开发中，敬请期待！\n\n您可以继续使用3D预览功能查看模型。');
                 }}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transition-all duration-200 hover:translate-y-[-2px]"
               >
                 <i className="fas fa-vr-cardboard mr-2"></i>
-                进入AR模式
+                AR功能说明
               </button>
-              <div className="text-white text-sm bg-blue-900 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
-                💡 提示：使用支持WebXR的浏览器（如Chrome或Edge）并在移动设备上打开，可获得最佳AR体验
-              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <button 
-                onClick={() => {
-                  // 即使不支持AR，也可以显示提示信息
-                  alert('📱 您的设备不支持AR功能\n\n建议使用：\n• Chrome 90+（Android）\n• Edge 90+（Android）\n• Safari 15+（iOS 15+）\n\n您仍然可以在3D预览模式下查看模型。');
-                }}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                <i className="fas fa-info-circle mr-2"></i>
-                了解AR要求
-              </button>
               <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
-                📱 AR功能需要支持WebXR的设备和浏览器。建议使用：
+                📱 您的设备不支持AR功能
+                <br /><br />建议使用：
                 <ul className="mt-1 list-disc list-inside text-xs opacity-90">
                   <li>Chrome 90+（Android）</li>
                   <li>Edge 90+（Android）</li>
@@ -612,50 +602,6 @@ const SimplifiedARPreview: React.FC<{
           </div>
         )}
       </div>
-
-      {/* AR DOM Overlay容器 - 独立容器，避免影响整个页面 */}
-      <div 
-        ref={overlayRef} 
-        className="xr-overlay"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 1000,
-          display: isARMode ? 'block' : 'none'
-        }}
-      >
-        {/* AR模式下的UI元素可以放在这里 */}
-        {isARMode && (
-          <div 
-            className="absolute top-4 left-0 right-0 flex justify-center"
-            style={{ pointerEvents: 'auto' }}
-          >
-            <button
-              onClick={() => setIsARMode(false)}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg"
-            >
-              退出AR模式
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 样式隔离 - 确保AR模式不影响页面其他部分 */}
-      <style>{`
-        /* 隔离AR预览的样式，确保不影响main元素 */
-        .xr-overlay {
-          all: unset;
-        }
-        
-        /* 确保模态框不影响页面其他元素的z-index */
-        [data-ar-mode="true"] {
-          /* AR模式下的全局样式 */
-        }
-      `}</style>
     </div>
   );
 };

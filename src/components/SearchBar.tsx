@@ -1,19 +1,38 @@
 import React, { useCallback, useRef, memo } from 'react'
 
+// 搜索结果类型枚举
+export enum SearchResultType {
+  WORK = 'work',
+  USER = 'user',
+  CATEGORY = 'category',
+  TAG = 'tag',
+  PAGE = 'page'
+}
+
+// 搜索建议项类型
+interface SearchSuggestion {
+  id: string
+  text: string
+  type: SearchResultType
+  icon?: string
+}
+
 interface SearchBarProps {
   search: string
   setSearch: (value: string) => void
   showSuggest: boolean
   setShowSuggest: (value: boolean) => void
-  suggestions: string[]
+  suggestions: SearchSuggestion[]
   isDark: boolean
+  onSearch: (query: string) => void
+  onSuggestionSelect: (suggestion: SearchSuggestion) => void
 }
 
 // 搜索建议项组件
 interface SuggestionItemProps {
-  suggestion: string
+  suggestion: SearchSuggestion
   isDark: boolean
-  onSelect: (suggestion: string) => void
+  onSelect: (suggestion: SearchSuggestion) => void
 }
 
 const SuggestionItem = memo(({ suggestion, isDark, onSelect }: SuggestionItemProps) => {
@@ -22,6 +41,44 @@ const SuggestionItem = memo(({ suggestion, isDark, onSelect }: SuggestionItemPro
     ? 'hover:bg-gray-700' 
     : 'hover:bg-gray-50'
 
+  // 根据类型获取图标和颜色
+  const getTypeIcon = (type: SearchResultType) => {
+    switch (type) {
+      case SearchResultType.WORK:
+        return { icon: 'fas fa-image', color: 'text-blue-500' }
+      case SearchResultType.USER:
+        return { icon: 'fas fa-user', color: 'text-green-500' }
+      case SearchResultType.CATEGORY:
+        return { icon: 'fas fa-folder', color: 'text-purple-500' }
+      case SearchResultType.TAG:
+        return { icon: 'fas fa-tag', color: 'text-yellow-500' }
+      case SearchResultType.PAGE:
+        return { icon: 'fas fa-file', color: 'text-indigo-500' }
+      default:
+        return { icon: 'fas fa-search', color: 'text-gray-500' }
+    }
+  }
+
+  // 根据类型获取显示名称
+  const getTypeName = (type: SearchResultType) => {
+    switch (type) {
+      case SearchResultType.WORK:
+        return '作品'
+      case SearchResultType.USER:
+        return '用户'
+      case SearchResultType.CATEGORY:
+        return '分类'
+      case SearchResultType.TAG:
+        return '标签'
+      case SearchResultType.PAGE:
+        return '页面'
+      default:
+        return '搜索结果'
+    }
+  }
+
+  const typeInfo = getTypeIcon(suggestion.type)
+
   const handleSelect = useCallback(() => {
     onSelect(suggestion)
   }, [suggestion, onSelect])
@@ -29,9 +86,15 @@ const SuggestionItem = memo(({ suggestion, isDark, onSelect }: SuggestionItemPro
   return (
     <div 
       onMouseDown={handleSelect} 
-      className={`${itemClassName} px-3 py-2 text-sm cursor-pointer`}
+      className={`${itemClassName} px-3 py-2 text-sm cursor-pointer flex items-center justify-between`}
     >
-      {suggestion}
+      <div className="flex items-center gap-2">
+        <i className={`${typeInfo.icon} ${typeInfo.color} text-sm`}></i>
+        <span>{suggestion.text}</span>
+      </div>
+      <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+        {getTypeName(suggestion.type)}
+      </span>
     </div>
   )
 })
@@ -42,23 +105,16 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
   showSuggest,
   setShowSuggest,
   suggestions,
-  isDark
+  isDark,
+  onSearch,
+  onSuggestionSelect
 }) => {
-  // 防抖计时器引用
-  const debounceRef = useRef<NodeJS.Timeout | null>(null)
-
-  // 优化事件处理函数
+  // 优化事件处理函数 - 移除不必要的防抖，确保输入流畅
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     
-    // 防抖处理，减少状态更新频率
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-    }
-    
-    debounceRef.current = setTimeout(() => {
-      setSearch(value)
-    }, 300) // 300ms防抖延迟
+    // 立即更新搜索状态，确保输入流畅
+    setSearch(value)
     
     setShowSuggest(true)
   }, [setSearch, setShowSuggest])
@@ -71,10 +127,23 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
     setTimeout(() => setShowSuggest(false), 150)
   }, [setShowSuggest])
 
-  const handleSuggestionSelect = useCallback((suggestion: string) => {
-    setSearch(suggestion)
+  const handleSuggestionSelect = useCallback((suggestion: SearchSuggestion) => {
+    setSearch(suggestion.text)
     setShowSuggest(false)
-  }, [setSearch, setShowSuggest])
+    onSuggestionSelect(suggestion)
+  }, [setSearch, setShowSuggest, onSuggestionSelect])
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setShowSuggest(false)
+      onSearch(search.trim())
+    }
+  }, [search, onSearch, setShowSuggest])
+
+  const handleSearchButtonClick = useCallback(() => {
+    setShowSuggest(false)
+    onSearch(search.trim())
+  }, [search, onSearch, setShowSuggest])
 
   // 预先计算样式类名
   const inputBaseClassName = isDark 
@@ -89,14 +158,16 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
     ? 'bg-gray-800 text-white ring-gray-700 shadow-lg' 
     : 'bg-white text-gray-900 ring-gray-200 shadow-lg'
 
+  const buttonClassName = isDark 
+    ? 'bg-red-600 hover:bg-red-700 text-white' 
+    : 'bg-red-600 hover:bg-red-700 text-white'
+
   return (
     <div className="relative">
-      <div className="flex items-center rounded-full shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div className="flex items-center rounded-lg ring-1 bg-white ring-gray-200 px-3 py-2 transition-all duration-300 hover:shadow-lg">
         {/* 搜索图标 */}
-        <div className={`${inputContainerClassName} px-4 py-2 flex items-center justify-center`}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+        <div className="flex items-center justify-center text-gray-500 mr-2">
+          <i className="fas fa-search"></i>
         </div>
         
         <input 
@@ -104,17 +175,27 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
           onChange={handleSearchChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className={`${inputBaseClassName} flex-1 px-4 py-2 border-0 focus:outline-none focus:ring-0 transition-all duration-300`} 
-          placeholder="搜索标题/评论/风格/题材（支持 style:国潮 / topic:京剧）" 
+          onKeyPress={handleKeyPress}
+          className={`${inputBaseClassName} flex-1 px-2 py-2 border-0 focus:outline-none focus:ring-0 transition-all duration-300`} 
+          placeholder="搜索作品、素材或用户" 
           aria-label="搜索内容" 
         />
+        
+        {/* 搜索按钮 */}
+        <button 
+          onClick={handleSearchButtonClick}
+          className={`ml-2 px-3 py-1 rounded-md ${buttonClassName} text-sm font-medium transition-all duration-300 hover:shadow-md transform hover:-translate-y-0.5`}
+          aria-label="搜索"
+        >
+          搜索
+        </button>
       </div>
       
       {showSuggest && suggestions.length > 0 && (
         <div className={`${suggestBoxClassName} absolute z-10 mt-2 w-full rounded-xl ring-1 max-h-48 overflow-auto transition-all duration-300 transform origin-top scale-100 opacity-100`}>
-          {suggestions.map((suggestion, index) => (
+          {suggestions.map((suggestion) => (
             <SuggestionItem 
-              key={`${suggestion}-${index}`} 
+              key={suggestion.id} 
               suggestion={suggestion} 
               isDark={isDark} 
               onSelect={handleSuggestionSelect}

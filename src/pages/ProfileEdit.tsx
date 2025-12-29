@@ -1,0 +1,264 @@
+import { useState, useContext } from 'react'
+import { AuthContext } from '@/contexts/authContext'
+import { useTheme } from '@/hooks/useTheme'
+import { Link, useNavigate } from 'react-router-dom'
+
+export default function ProfileEdit() {
+  const { user, updateUser } = useContext(AuthContext)
+  const { isDark } = useTheme()
+  const navigate = useNavigate()
+  
+  const [formData, setFormData] = useState({
+    username: user?.username || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    age: user?.age?.toString() || '',
+    interests: user?.interests?.join(', ') || '',
+    avatar: user?.avatar || ''
+  })
+  
+  const [avatarPreview, setAvatarPreview] = useState<string>(user?.avatar || '')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+  
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        setError('请选择图片文件')
+        return
+      }
+      
+      // 检查文件大小（最大5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        setError('图片大小不能超过5MB')
+        return
+      }
+      
+      setAvatarFile(file)
+      
+      // 创建预览URL
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setAvatarPreview(result)
+        setFormData(prev => ({ ...prev, avatar: result }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const updatedUser = {
+        username: formData.username,
+        phone: formData.phone,
+        age: formData.age ? parseInt(formData.age) : undefined,
+        interests: formData.interests ? formData.interests.split(',').map(interest => interest.trim()) : [],
+        avatar: avatarPreview
+      }
+      
+      updateUser(updatedUser)
+      setSuccess('个人资料更新成功！')
+      
+      // 1秒后跳转回设置页面
+      setTimeout(() => {
+        navigate('/settings')
+      }, 1000)
+    } catch (err) {
+      setError('更新失败，请重试')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  return (
+    <main className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">编辑个人资料</h1>
+        <Link 
+          to="/settings" 
+          className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'}`}
+        >
+          <i className="fas fa-arrow-left mr-2"></i>返回设置
+        </Link>
+      </div>
+      
+      <div className={`max-w-2xl mx-auto rounded-2xl shadow-md p-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 rounded-lg">
+            {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-lg">
+            {success}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 头像上传 */}
+          <div className="space-y-3">
+            <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              头像
+            </label>
+            <div className="flex items-center space-x-6">
+              {/* 头像预览 */}
+              <div className="relative">
+                <div className={`w-24 h-24 rounded-full overflow-hidden border-4 ${isDark ? 'border-gray-700' : 'border-gray-200'} shadow-md`}>
+                  {avatarPreview ? (
+                    <img 
+                      src={avatarPreview} 
+                      alt="头像预览" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                      <i className="fas fa-user text-4xl ${isDark ? 'text-gray-500' : 'text-gray-400'}"></i>
+                    </div>
+                  )}
+                </div>
+                {/* 编辑按钮 */}
+                <div className="absolute bottom-0 right-0 bg-red-600 text-white p-2 rounded-full shadow-lg">
+                  <i className="fas fa-camera text-sm"></i>
+                </div>
+              </div>
+              
+              {/* 上传按钮 */}
+              <div>
+                <label htmlFor="avatar-upload" className={`cursor-pointer px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} flex items-center space-x-2`}>
+                  <i className="fas fa-upload"></i>
+                  <span>选择图片</span>
+                </label>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+                <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                  支持 JPG、PNG 格式，最大 5MB
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              用户名
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              className={`w-full px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' : 'bg-white border-gray-300 text-gray-800 focus:border-blue-500'} border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+              placeholder="请输入用户名"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              邮箱
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              disabled
+              className={`w-full px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed' : 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'} border`}
+              placeholder="请输入邮箱"
+            />
+            <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              邮箱不可直接修改，请联系管理员
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              手机号
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className={`w-full px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' : 'bg-white border-gray-300 text-gray-800 focus:border-blue-500'} border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+              placeholder="请输入手机号"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              年龄
+            </label>
+            <input
+              type="number"
+              name="age"
+              value={formData.age}
+              onChange={handleChange}
+              min="0"
+              max="120"
+              className={`w-full px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' : 'bg-white border-gray-300 text-gray-800 focus:border-blue-500'} border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+              placeholder="请输入年龄"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <label className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              兴趣爱好
+            </label>
+            <textarea
+              name="interests"
+              value={formData.interests}
+              onChange={handleChange}
+              rows={3}
+              className={`w-full px-4 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' : 'bg-white border-gray-300 text-gray-800 focus:border-blue-500'} border focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+              placeholder="请输入兴趣爱好，用逗号分隔"
+            ></textarea>
+          </div>
+          
+          <div className="flex space-x-4 pt-4">
+            <button
+              type="button"
+              onClick={() => navigate('/settings')}
+              className={`flex-1 py-3 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'}`}
+              disabled={isLoading}
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              className={`flex-1 py-3 rounded-lg transition-colors ${isDark ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <><i className="fas fa-spinner fa-spin mr-2"></i>保存中...</>
+              ) : (
+                '保存修改'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  )
+}

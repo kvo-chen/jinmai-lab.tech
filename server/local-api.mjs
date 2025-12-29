@@ -116,7 +116,7 @@ try {
 }
 
 // 端口配置
-const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3008
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3009
 
 // Volcengine TTS config (server-side only)
 const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''

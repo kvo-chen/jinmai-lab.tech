@@ -20,6 +20,7 @@ import Neo from "@/pages/Neo";
 import NewsDetail from "@/pages/NewsDetail";
 import EventDetail from "@/pages/EventDetail";
 import TestBasic from "@/pages/TestBasic";
+import SearchResults from "@/pages/SearchResults";
 
 // 优化懒加载策略：根据页面访问频率和大小重新分类
 
@@ -27,6 +28,10 @@ import TestBasic from "@/pages/TestBasic";
 const Create = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Create"));
 const Tools = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Tools"));
 const Settings = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Settings"));
+// 账户设置相关页面 - 懒加载
+const ProfileEdit = lazy(() => import(/* webpackChunkName: "account-pages" */ "@/pages/ProfileEdit"));
+const ChangePassword = lazy(() => import(/* webpackChunkName: "account-pages" */ "@/pages/ChangePassword"));
+const AccountSecurity = lazy(() => import(/* webpackChunkName: "account-pages" */ "@/pages/AccountSecurity"));
 
 // 3. 中频访问页面 - 懒加载，按功能模块分组
 // 创作和工具相关
@@ -74,6 +79,7 @@ const GitHubImageTestPage = lazy(() => import(/* webpackChunkName: "auxiliary-pa
 // 其他低频页面
 const Terms = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Terms"));
 const Help = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Help"));
+const Privacy = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Privacy"));
 const BrandGuide = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/BrandGuide"));
 const Authenticity = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Authenticity"));
 const Wizard = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Wizard"));
@@ -443,11 +449,12 @@ export default function App() {
                       全部已读
                     </button>
                     <button
-                      className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors hover:underline focus:outline-none focus:ring-2 focus:ring-gray-300 focus:rounded"
                       onClick={() => {
                         setShowCommunityMessages(false);
-                        window.location.href = '/community';
-                      }}>
+                        navigate('/community');
+                      }}
+                      aria-label="查看全部社区消息">
                       查看全部
                     </button>
                   </div>
@@ -591,6 +598,19 @@ export default function App() {
           </RouteCache>
         } />
         
+        {/* 搜索结果页面 */}
+        <Route path="/search" element={
+          <RouteCache>
+            <AnimatedPage>
+              {isMobile ? (
+                <MobileLayout><SearchResults /></MobileLayout>
+              ) : (
+                <SidebarLayout><SearchResults /></SidebarLayout>
+              )}
+            </AnimatedPage>
+          </RouteCache>
+        } />
+        
         {/* 不需要布局的页面 */}
         <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
         <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
@@ -626,6 +646,7 @@ export default function App() {
           {/* 大型组件和低频访问页面使用懒加载 */}
           <Route path="/particle-art" element={<LazyComponent><ParticleArt /></LazyComponent>} />
           <Route path="/collaboration" element={<LazyComponent><CollaborationDemo /></LazyComponent>} />
+          <Route path="/privacy" element={<LazyComponent><Privacy /></LazyComponent>} />
           <Route path="/terms" element={<LazyComponent><Terms /></LazyComponent>} />
           <Route path="/help" element={<LazyComponent><Help /></LazyComponent>} />
           <Route path="/leaderboard" element={<LazyComponent><Leaderboard /></LazyComponent>} />
@@ -641,6 +662,10 @@ export default function App() {
           <Route path="/incentives" element={<LazyComponent><PrivateRoute><Incentives /></PrivateRoute></LazyComponent>} />
           <Route path="/drafts" element={<LazyComponent><PrivateRoute><Drafts /></PrivateRoute></LazyComponent>} />
           <Route path="/settings" element={<LazyComponent><PrivateRoute><Settings /></PrivateRoute></LazyComponent>} />
+          {/* 账户设置相关路由 */}
+          <Route path="/profile/edit" element={<LazyComponent><PrivateRoute><ProfileEdit /></PrivateRoute></LazyComponent>} />
+          <Route path="/password/change" element={<LazyComponent><PrivateRoute><ChangePassword /></PrivateRoute></LazyComponent>} />
+          <Route path="/account/security" element={<LazyComponent><PrivateRoute><AccountSecurity /></PrivateRoute></LazyComponent>} />
           <Route path="/analytics" element={<LazyComponent><PrivateRoute><AnalyticsPage /></PrivateRoute></LazyComponent>} />
           <Route path="/collection" element={<LazyComponent><PrivateRoute><UserCollection /></PrivateRoute></LazyComponent>} />
           <Route path="/knowledge" element={<LazyComponent><PrivateRoute><CulturalKnowledge /></PrivateRoute></LazyComponent>} />

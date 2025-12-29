@@ -903,7 +903,7 @@ export default memo(function TianjinCreativeActivities({ search: propSearch = ''
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`p-6 rounded-xl ${isDark ? 'bg-gray-800/50 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-100'} shadow-lg flex-1 flex flex-col md:flex-row gap-6`}
+      className={`p-4 md:p-6 rounded-xl ${isDark ? 'bg-gray-800/50 backdrop-blur-sm border border-gray-700' : 'bg-white/80 backdrop-blur-sm border border-gray-100'} shadow-lg flex-1 flex flex-col md:flex-row gap-6`}
     >
       {/* 左侧主内容区 */}
       <div className="w-full md:w-2/3">
@@ -918,7 +918,7 @@ export default memo(function TianjinCreativeActivities({ search: propSearch = ''
           role="tablist"
           aria-label="津味共创活动类别"
           ref={tabListRef}
-          className="flex space-x-2 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-2"
+          className="flex space-x-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory px-2 pb-2"
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'ArrowRight') scrollTabs('right');
@@ -937,7 +937,7 @@ export default memo(function TianjinCreativeActivities({ search: propSearch = ''
               role="tab"
               aria-selected={activeTab === tab.id}
               title={tab.name}
-              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 ${
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 ${
                 activeTab === tab.id 
                   ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg scale-105' 
                   : isDark 
@@ -974,81 +974,93 @@ export default memo(function TianjinCreativeActivities({ search: propSearch = ''
       
       {/* 主题活动内容 */}
       {activeTab === 'activities' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {filteredActivities.map((activity) => (
             <motion.div
               key={activity.id}
-              className={`rounded-xl overflow-hidden shadow-md border ${
-                isDark ? 'border-gray-700' : 'border-gray-200'
+              className={`rounded-2xl overflow-hidden shadow-lg border transition-all duration-300 ${
+                isDark ? 'border-gray-700 bg-gray-800 hover:shadow-xl' : 'border-gray-200 bg-white hover:shadow-xl'
               }`}
               whileHover={{ y: -5 }}
+              whileTap={{ scale: 0.98 }}
             >
               <div className="relative">
                 <TianjinImage 
                   src={activity.image} 
                   alt={activity.title} 
-                  className="cursor-pointer"
+                  className="cursor-pointer w-full aspect-[16/9] object-cover transition-transform duration-500 hover:scale-105"
                   ratio="landscape"
                   rounded="none"
                   onClick={() => openActivityDetail(activity)}
                 />
-                <div className="absolute top-3 left-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
+                <div className="absolute top-4 left-4">
+                  <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${
                     activity.status === 'ongoing' 
-                      ? 'bg-green-600 text-white' 
+                      ? 'bg-green-600 text-white shadow-lg shadow-green-600/30' 
                       : activity.status === 'upcoming'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-600 text-white'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                        : 'bg-gray-600 text-white shadow-lg'
                   }`}>
                     {activity.status === 'ongoing' ? '进行中' : 
                      activity.status === 'upcoming' ? '即将开始' : '已结束'}
                   </span>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                  <div className="flex items-center">
-                    <i className="fas fa-user-friends text-white mr-1"></i>
-                    <span className="text-white text-xs">{activity.participantCount + (joinedActivities.includes(activity.id) ? 1 : 0)}人参与</span>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                  <div className="flex items-center bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full inline-block">
+                    <i className="fas fa-user-friends text-white mr-1.5"></i>
+                    <span className="text-white text-sm font-medium">{activity.participantCount + (joinedActivities.includes(activity.id) ? 1 : 0)}人参与</span>
                   </div>
                 </div>
               </div>
-              <div className={`p-4 ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
-                <h4 className="font-bold mb-2">{activity.title}</h4>
-                <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              <div className={`p-5 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                <h4 className="font-bold text-lg mb-3 line-clamp-2 leading-tight">{activity.title}</h4>
+                <p className={`text-sm mb-4 line-clamp-3 leading-relaxed ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
                   {activity.description}
                 </p>
-                <div className="flex justify-between items-center text-sm mb-4">
-                  <span className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    <i className="far fa-calendar-alt mr-1"></i>
-                    {activity.startDate} - {activity.endDate}
-                  </span>
-                  <div className="flex gap-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
-                      <i className="fas fa-map-marker-alt mr-1"></i>
+                <div className="flex flex-col gap-3 mb-5">
+                  <div className="flex items-center text-sm">
+                    <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} flex-1`}>
+                      <i className="far fa-calendar-alt mr-2"></i>
+                      {activity.startDate} - {activity.endDate}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                      isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      <i className="fas fa-map-marker-alt mr-1.5"></i>
                       线上
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-gray-600' : 'bg-gray-100'}`}>
-                      <i className="fas fa-tag mr-1"></i>
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                      isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      <i className="fas fa-tag mr-1.5"></i>
                       设计
                     </span>
                   </div>
                 </div>
-                <TianjinButton
-                  onClick={() => handleParticipate(activity)}
-                  variant="primary"
-                  fullWidth
-                  disabled={activity.status !== 'ongoing' || joinedActivities.includes(activity.id)}
-                  loading={false}
-                >
-                  {activity.status !== 'ongoing' ? '活动已结束' : joinedActivities.includes(activity.id) ? '已参与' : '立即参与'}
-                </TianjinButton>
-                <TianjinButton 
-                  onClick={() => openActivityDetail(activity)}
-                  variant="secondary"
-                  fullWidth
-                  className="mt-2"
-                >
-                  查看详情
-                </TianjinButton>
+                <div className="space-y-3">
+                  <TianjinButton
+                    onClick={() => handleParticipate(activity)}
+                    variant="primary"
+                    fullWidth
+                    disabled={activity.status !== 'ongoing' || joinedActivities.includes(activity.id)}
+                    loading={false}
+                    className="rounded-xl py-3.5 text-sm font-semibold"
+                  >
+                    {activity.status !== 'ongoing' ? '活动已结束' : joinedActivities.includes(activity.id) ? '已参与' : '立即参与'}
+                  </TianjinButton>
+                  <TianjinButton 
+                    onClick={() => openActivityDetail(activity)}
+                    variant="secondary"
+                    fullWidth
+                    className="rounded-xl py-3.5 text-sm font-semibold"
+                  >
+                    查看详情
+                  </TianjinButton>
+                </div>
               </div>
             </motion.div>
           ))}

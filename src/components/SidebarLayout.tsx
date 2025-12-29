@@ -11,6 +11,8 @@ import useLanguage from '@/contexts/LanguageContext'
 import { useTranslation } from 'react-i18next'
 import { navigationGroups } from '@/config/navigationConfig'
 import ThemePreviewModal from './ThemePreviewModal'
+import SearchBar, { SearchSuggestion } from '@/components/SearchBar'
+import searchService from '@/services/searchService'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -57,10 +59,6 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     if (typeof localStorage === 'undefined') return
     localStorage.setItem('sidebarCollapsed', JSON.stringify(collapsed))
   }, [collapsed])
-  // 中文注释：搜索建议与最近搜索（用于提高搜索功能的使用率与转化）
-  const suggestions = useMemo(() => (
-    ['品牌设计', '国潮设计', '老字号品牌', 'IP设计', '插画设计', '工艺创新', '非遗传承', '共创向导']
-  ), [])
   // 初始化最近搜索为[]，确保服务器端和客户端渲染一致
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   
@@ -79,12 +77,47 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     }
   }, [])
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([])
   
-  // 中文注释：搜索建议列表
-  const searchSuggestions = useMemo(() => {
-    if (!search.trim()) return []
-    return suggestions.filter(s => s.toLowerCase().includes(search.toLowerCase()))
-  }, [search, suggestions])
+  // 处理搜索输入变化，生成搜索建议
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    
+    if (value.trim()) {
+      // 使用搜索服务生成搜索建议
+      const generatedSuggestions = searchService.generateSuggestions(value)
+      setSearchSuggestions(generatedSuggestions)
+      setShowSearchDropdown(true)
+    } else {
+      setSearchSuggestions([])
+      setShowSearchDropdown(false)
+    }
+  }
+  
+  // 处理搜索建议选择
+  const handleSuggestionSelect = (suggestion: SearchSuggestion) => {
+    setSearch(suggestion.text)
+    setShowSearchDropdown(false)
+    
+    // 使用搜索服务生成重定向URL
+    const url = searchService.generateRedirectUrl(suggestion.text, suggestion.type)
+    navigate(url)
+    
+    // 跟踪搜索事件
+    searchService.trackSearchEvent({
+      query: suggestion.text,
+      resultType: suggestion.type,
+      clicked: true,
+      timestamp: Date.now()
+    })
+    
+    // 更新最近搜索
+    setRecentSearches((prev) => {
+      const next = [suggestion.text, ...prev.filter((x) => x !== suggestion.text)].slice(0, 6)
+      try { localStorage.setItem('recentSearches', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
   
   // 中文注释：处理搜索框聚焦和失焦事件
   useEffect(() => {
@@ -941,6 +974,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                         </li>
                         <li>
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/collection') }}>{t('header.myCollection')}</button>
+                        </li>
+                        <li>
+                          <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/drafts') }}>{t('common.drafts')}</button>
                         </li>
                         <li>
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/settings') }}>{t('header.settings')}</button>

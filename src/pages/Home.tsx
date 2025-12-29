@@ -10,6 +10,9 @@ import { llmService } from '@/services/llmService'
 import voiceService from '@/services/voiceService'
 import { mockWorks } from '@/mock/works'
 import { useTranslation } from 'react-i18next'
+import SearchBar, { SearchResultType, SearchSuggestion } from '@/components/SearchBar'
+import searchService from '@/services/searchService'
+import PromptInput from '@/components/PromptInput'
 
 export default function Home() {
   const { theme, isDark, toggleTheme } = useTheme();
@@ -45,7 +48,11 @@ export default function Home() {
   const handleExplore = () => {
     navigate('/explore');
   };
+  
+  // 创作提示词输入状态
   const [search, setSearch] = useState('');
+  
+  // 其他状态
   const [inspireOn, setInspireOn] = useState(false);
   const [creativeDirections] = useState<string[]>([]);
   const [generatedText] = useState('');
@@ -394,7 +401,7 @@ export default function Home() {
 
   return (
     <section 
-        className={`relative w-full pt-12 ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in`}
+        className={`relative w-full pt-12 px-4 md:px-6 ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in overflow-x-hidden`}
       >
 
       
@@ -427,28 +434,12 @@ export default function Home() {
         <div className={`rounded-3xl shadow-lg ring-1 ${isDark ? 'bg-gray-800/80 backdrop-blur-sm ring-gray-700 hover:shadow-xl' : 'bg-white/80 backdrop-blur-sm ring-gray-200 hover:shadow-xl'} p-4 md:p-6 transition-all duration-300`}> 
           <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
             <div className="relative flex-1">
-              <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
-              <input
+              <PromptInput
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateClick(); }}
-                placeholder={t('home.searchPlaceholder')}
-                className={`w-full pl-10 pr-10 py-3.5 rounded-xl ${isDark ? 'bg-gray-700/95 text-white ring-2 ring-gray-600 focus:ring-primary shadow-inner shadow-gray-900/20' : 'bg-white/95 ring-2 ring-gray-300 focus:ring-primary shadow-inner shadow-gray-100'} focus:outline-none text-base transition-all duration-300 hover:ring-primary/50`}
-                autoCapitalize="none"
-                autoCorrect="off"
-                enterKeyHint="search"
-                inputMode="text"
+                onChange={setSearch}
+                isDark={isDark}
+                placeholder="输入创作提示词..."
               />
-              {search && (
-                <button
-                  aria-label="清空输入"
-                  title="清空"
-                  onClick={() => { setSearch(''); setSelectedTags([]); }}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition-all duration-300 hover:opacity-90 hover:shadow-md`}
-                >
-                  <i className="fas fa-times text-sm"></i>
-                </button>
-              )}
             </div>
             
             {/* 功能按钮组 */}
@@ -692,7 +683,7 @@ export default function Home() {
             <i className="fas fa-arrow-right ml-2"></i>
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6">
          <div
            className={`rounded-2xl overflow-hidden shadow-lg border ${isDark ? 'border-gray-700 hover:border-primary/50 bg-gradient-to-b from-gray-800 to-gray-800/90' : 'border-gray-200 hover:border-primary/50 bg-gradient-to-b from-white to-gray-50'} transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer animate-slide-up-1 group`}
            onClick={() => navigate('/tianjin')}
