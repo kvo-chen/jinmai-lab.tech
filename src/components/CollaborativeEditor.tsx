@@ -567,7 +567,7 @@ const CollaborativeEditor: React.FC<CollaborativeEditorProps> = React.memo(({
           contentEditable={!readOnly}
           suppressContentEditableWarning
           className={`min-h-[200px] p-4 rounded-lg border-2 focus:outline-none focus:border-red-500 transition-colors ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} ${readOnly ? 'cursor-not-allowed opacity-70' : ''}`}
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: content || '' }}
           onInput={handleTextInput}
           onKeyDown={handleKeyDown}
           onMouseUp={handleMouseUp}
