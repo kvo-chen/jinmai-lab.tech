@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
       <ErrorBoundary>
         <LanguageProvider>
           <ThemeProvider>
-            <BrowserRouter basename="/">
+            <BrowserRouter>
                 <AuthProvider>
                   <WorkflowProvider>
                     <App />
