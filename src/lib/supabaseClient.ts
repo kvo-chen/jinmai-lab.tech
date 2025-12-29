@@ -1,16 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
+// 环境变量清理函数，处理可能的空格、引号和反引号
+const cleanEnvValue = (value: string | undefined): string => {
+  if (!value) return '';
+  // 移除前后空格、引号、反引号
+  return value.trim().replace(/^[\s"'`]+|[\s"'`]+$/g, '');
+};
+
 // 获取环境变量，优先使用NEXT_PUBLIC_前缀，因为Vercel配置的是这个前缀
-const supabaseUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL
+const supabaseUrl = cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_URL) || 
+                   cleanEnvValue(import.meta.env.VITE_SUPABASE_URL) || 
+                   cleanEnvValue(import.meta.env.SUPABASE_URL)
 
 // 支持新格式的Publishable key和旧格式的ANON_KEY
-const supabaseKey = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
-                  import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
-                  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-                  import.meta.env.VITE_SUPABASE_ANON_KEY || 
-                  import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 
-                  import.meta.env.SUPABASE_ANON_KEY || 
-                  import.meta.env.SUPABASE_PUBLISHABLE_KEY
+const supabaseKey = cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) || 
+                   cleanEnvValue(import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY) || 
+                   cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || 
+                   cleanEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY) || 
+                   cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) || 
+                   cleanEnvValue(import.meta.env.SUPABASE_ANON_KEY) || 
+                   cleanEnvValue(import.meta.env.SUPABASE_PUBLISHABLE_KEY)
 
 // 验证环境变量并添加详细日志
 console.log('Supabase环境变量配置:')
