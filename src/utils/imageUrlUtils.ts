@@ -18,31 +18,10 @@ export function processImageUrl(url: string): string {
       return url;
     }
     
-    // 检查是否为API代理URL，在静态环境下替换为可靠的图片URL
+    // 检查是否为API代理URL
     if (url.startsWith('/api/proxy/')) {
-      // 检测是否为静态环境（GitHub Pages）
-      const isStaticEnv = window.location.hostname.includes('github.io') || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app');
-      
-      if (isStaticEnv) {
-        // 在静态环境下，将API代理URL替换为picsum.photos的随机图片
-        // 提取prompt参数用于生成更相关的图片
-        let prompt = 'design';
-        try {
-          const urlObj = new URL(url, window.location.origin);
-          const promptMatch = urlObj.search.match(/prompt=([^&]+)/);
-          if (promptMatch && promptMatch[1]) {
-            prompt = decodeURIComponent(promptMatch[1]);
-          }
-        } catch (error) {
-          // 忽略URL解析错误
-        }
-        
-        // 使用picsum.photos生成随机图片，使用id参数确保每张图片不同
-        const randomId = Math.floor(Math.random() * 1000);
-        return `https://picsum.photos/seed/${randomId}-${encodeURIComponent(prompt)}/800/600`;
-      }
-      
-      // 在非静态环境下，返回原始代理URL
+      // 直接返回原始代理URL，不进行静态环境检测
+      // Vercel可以处理API代理
       return url;
     }
     
@@ -70,15 +49,7 @@ export function processImageUrl(url: string): string {
     
     // 检查是否为已知的代理URL
     if (url.includes('trae-api-sg.mchost.guru')) {
-      // 检测是否为静态环境
-      const isStaticEnv = window.location.hostname.includes('github.io') || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app');
-      
-      if (isStaticEnv) {
-        // 在静态环境下，替换为picsum.photos图片
-        const randomId = Math.floor(Math.random() * 1000);
-        return `https://picsum.photos/seed/${randomId}-trae/800/600`;
-      }
-      
+      // 直接返回原始URL，不进行静态环境检测
       return url;
     }
     
