@@ -269,6 +269,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 注册方法
   const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<boolean> => {
     try {
+      // 密码格式验证
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        console.error('密码格式不符合要求：至少8个字符，包含大小写字母和数字');
+        return false;
+      }
+      
       if (supabase) {
         console.log('Starting Supabase signUp with:', { email, username });
         
@@ -294,6 +301,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (error) {
           console.error('注册失败:', error.message, error.code);
+          // 处理密码格式错误
+          if (error.code === 'invalid_password' || error.message.includes('password format')) {
+            console.error('密码格式不符合Supabase要求，请确保密码强度足够');
+          }
           return false;
         }
         
@@ -449,18 +460,46 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 更新会员信息
   const updateMembership = async (membershipData: Partial<User>): Promise<boolean> => {
     try {
-      // 调用API更新会员信息
-      const response = await apiClient.post<{ user: User }>('/api/membership/update', membershipData);
-      
-      if (response.ok && response.data && response.data.user) {
-        // 更新本地用户信息
-        updateUser(response.data.user);
-        return true;
-      } else {
-        // 如果API调用失败，直接更新本地信息
-        updateUser(membershipData);
-        return true;
+      if (supabase) {
+        // 直接使用Supabase更新用户元数据
+        const { data, error } = await supabase.auth.updateUser({
+          data: membershipData
+        });
+        
+        if (error) {
+          console.error('Supabase更新会员信息失败:', error);
+          // 即使API调用失败，也尝试更新本地信息
+          updateUser(membershipData);
+          return false;
+        }
+        
+        if (data.user) {
+          // 根据Supabase返回的用户信息更新本地用户数据
+          const updatedUser = {
+            id: data.user.id,
+            username: data.user.user_metadata?.username || data.user.email?.split('@')[0] || '用户',
+            email: data.user.email || '',
+            avatar: data.user.user_metadata?.avatar || '',
+            phone: data.user.user_metadata?.phone || '',
+            interests: data.user.user_metadata?.interests || [],
+            isAdmin: data.user.user_metadata?.isAdmin || false,
+            age: data.user.user_metadata?.age || 0,
+            tags: data.user.user_metadata?.tags || [],
+            membershipLevel: data.user.user_metadata?.membershipLevel || 'free',
+            membershipStart: data.user.user_metadata?.membershipStart || new Date().toISOString(),
+            membershipEnd: data.user.user_metadata?.membershipEnd,
+            membershipStatus: data.user.user_metadata?.membershipStatus || 'active',
+          };
+          
+          // 更新本地用户信息
+          updateUser(updatedUser);
+          return true;
+        }
       }
+      
+      // 如果supabase未配置，直接更新本地信息
+      updateUser(membershipData);
+      return true;
     } catch (error) {
       console.error('更新会员信息失败:', error);
       // 即使API调用失败，也尝试更新本地信息

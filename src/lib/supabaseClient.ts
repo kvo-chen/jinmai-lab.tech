@@ -51,7 +51,7 @@ if (!supabaseUrl || !supabaseKey) {
 
 // 创建并导出Supabase客户端实例
 // 只有在环境变量有效的情况下才创建客户端
-export let supabase = null
+export let supabase: ReturnType<typeof createClient> | null = null
 
 try {
   if (supabaseUrl && supabaseKey) {
@@ -97,15 +97,20 @@ export async function getPosts() {
 }
 
 // 示例：创建帖子
-export async function createPost(postData: any) {
+export async function createPost(postData: Record<string, any>) {
   if (!supabase) {
     console.error('Supabase客户端未配置，无法创建帖子')
     return null
   }
-  const { data, error } = await supabase.from('posts').insert([postData])
-  if (error) {
-    console.error('创建帖子失败:', error)
+  try {
+    const { data, error } = await supabase.from('posts').insert([postData] as any[])
+    if (error) {
+      console.error('创建帖子失败:', error)
+      return null
+    }
+    return data ? data[0] : null
+  } catch (error) {
+    console.error('创建帖子异常:', error)
     return null
   }
-  return data ? data[0] : null
 }
