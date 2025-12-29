@@ -4,20 +4,35 @@ import { createClient } from '@supabase/supabase-js'
 let supabaseUrl = ''
 let supabaseKey = ''
 
+// 添加详细的调试日志
+console.log('当前环境变量import.meta.env:', import.meta.env)
+
 // 尝试从不同前缀的环境变量中获取配置
 if (import.meta.env) {
+  console.log('尝试获取Supabase URL:')
+  console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
+  console.log('NEXT_PUBLIC_SUPABASE_URL:', import.meta.env.NEXT_PUBLIC_SUPABASE_URL)
+  console.log('SUPABASE_URL:', import.meta.env.SUPABASE_URL)
+  
   supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || ''
+  
+  console.log('尝试获取Supabase密钥:')
+  console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY)
+  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  console.log('SUPABASE_PUBLISHABLE_KEY:', import.meta.env.SUPABASE_PUBLISHABLE_KEY)
+  console.log('SUPABASE_ANON_KEY:', import.meta.env.SUPABASE_ANON_KEY)
+  
   supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.SUPABASE_ANON_KEY || ''
 }
 
 // 验证环境变量
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase环境变量未配置完整')
-  console.error('当前环境变量:', {
-    VITE_SUPABASE_URL: import.meta.env?.VITE_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_URL: import.meta.env?.NEXT_PUBLIC_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: import.meta.env?.VITE_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: import.meta.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  console.error('最终获取到的配置:', {
+    supabaseUrl,
+    supabaseKey,
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseKey
   })
 }
 
