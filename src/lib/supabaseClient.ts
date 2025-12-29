@@ -1,17 +1,29 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 获取环境变量，同时支持VITE_*和NEXT_PUBLIC_*前缀
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+// 获取环境变量，同时支持多种前缀格式
+let supabaseUrl = ''
+let supabaseKey = ''
+
+// 尝试从不同前缀的环境变量中获取配置
+if (import.meta.env) {
+  supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+}
 
 // 验证环境变量
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase环境变量未配置完整')
-  console.error('请确保环境变量中包含VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY或NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  console.error('当前环境变量:', {
+    VITE_SUPABASE_URL: import.meta.env?.VITE_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_URL: import.meta.env?.NEXT_PUBLIC_SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: import.meta.env?.VITE_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: import.meta.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  })
 }
 
 // 创建并导出Supabase客户端实例
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// 只有在环境变量有效的情况下才创建客户端
+export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null
 
 // 确保supabase不会被tree-shaking移除
 if (typeof window !== 'undefined') {
@@ -21,26 +33,38 @@ if (typeof window !== 'undefined') {
 
 // 示例：获取用户列表
 export async function getUsers() {
+  if (!supabase) {
+    console.error('Supabase客户端未配置，无法获取用户列表')
+    return []
+  }
   const { data, error } = await supabase.from('users').select('*')
   if (error) {
     console.error('获取用户列表失败:', error)
     return []
   }
-  return data
+  return data || []
 }
 
 // 示例：获取帖子列表
 export async function getPosts() {
+  if (!supabase) {
+    console.error('Supabase客户端未配置，无法获取帖子列表')
+    return []
+  }
   const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false })
   if (error) {
     console.error('获取帖子列表失败:', error)
     return []
   }
-  return data
+  return data || []
 }
 
 // 示例：创建帖子
 export async function createPost(postData: any) {
+  if (!supabase) {
+    console.error('Supabase客户端未配置，无法创建帖子')
+    return null
+  }
   const { data, error } = await supabase.from('posts').insert([postData])
   if (error) {
     console.error('创建帖子失败:', error)
