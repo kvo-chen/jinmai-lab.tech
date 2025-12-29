@@ -11,7 +11,14 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 // 创建并导出Supabase客户端实例
+// @ts-ignore
 export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// 确保supabase不会被tree-shaking移除
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__SUPABASE__ = supabase
+}
 
 // 示例：获取用户列表
 export async function getUsers() {

@@ -193,7 +193,7 @@ export default defineConfig({
         correctVarValueBeforeDeclaration: true,
         moduleSideEffects: (id) => {
           // 排除需要保留副作用的模块
-          return id.includes('@fortawesome') || id.includes('sonner') || id.includes('@vercel/analytics') || id.includes('@vercel/speed-insights');
+          return id.includes('@fortawesome') || id.includes('sonner') || id.includes('@vercel/analytics') || id.includes('@vercel/speed-insights') || id.includes('@supabase/supabase-js');
         }
       },
       // 外部化 Node.js 原生模块，避免打包到浏览器代码中

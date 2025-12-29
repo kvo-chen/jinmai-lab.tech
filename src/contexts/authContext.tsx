@@ -2,6 +2,7 @@ import React from "react";
 import { createContext, useState, ReactNode, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import securityService from "../services/securityService";
+import apiClient from "../lib/apiClient";
 
 // 用户类型定义
 export interface User {
@@ -192,7 +193,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     // 清理订阅
     return () => subscription.unsubscribe();
-  }, [user]);
+  }, []);
 
   // 登录方法
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -286,10 +287,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           isAdmin: false,
           age: age ? parseInt(age) : 0,
           tags: tags || [],
-          membershipLevel: 'free',
+          membershipLevel: 'free' as const,
           membershipStart: new Date().toISOString(),
           membershipEnd: undefined,
-          membershipStatus: 'active',
+          membershipStatus: 'active' as const,
         };
         
         // 存储用户信息到本地
@@ -316,10 +317,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             isAdmin: false,
             age: age ? parseInt(age) : 0,
             tags: tags || [],
-            membershipLevel: 'free',
+            membershipLevel: 'free' as const,
             membershipStart: new Date().toISOString(),
             membershipEnd: undefined,
-            membershipStatus: 'active',
+            membershipStatus: 'active' as const,
           };
           
           localStorage.setItem('user', JSON.stringify(userWithMembership));
