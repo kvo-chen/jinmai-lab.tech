@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "outputDirectory": "dist",
   "routes": [
     {
       "handle": "filesystem"
