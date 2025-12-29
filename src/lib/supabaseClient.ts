@@ -4,36 +4,19 @@ import { createClient } from '@supabase/supabase-js'
 let supabaseUrl = ''
 let supabaseKey = ''
 
-// 添加详细的调试日志
-console.log('当前环境变量import.meta.env:', import.meta.env)
-
 // 尝试从不同前缀的环境变量中获取配置
 if (import.meta.env) {
-  console.log('尝试获取Supabase URL:')
-  console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
-  console.log('NEXT_PUBLIC_SUPABASE_URL:', import.meta.env.NEXT_PUBLIC_SUPABASE_URL)
-  console.log('SUPABASE_URL:', import.meta.env.SUPABASE_URL)
-  
   supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || ''
-  
-  console.log('尝试获取Supabase密钥:')
-  console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY)
-  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-  console.log('SUPABASE_PUBLISHABLE_KEY:', import.meta.env.SUPABASE_PUBLISHABLE_KEY)
-  console.log('SUPABASE_ANON_KEY:', import.meta.env.SUPABASE_ANON_KEY)
-  
   supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.SUPABASE_ANON_KEY || ''
 }
 
 // 验证环境变量
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase环境变量未配置完整')
-  console.error('最终获取到的配置:', {
-    supabaseUrl,
-    supabaseKey,
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseKey
-  })
+  console.error('请检查Vercel环境变量配置，确保已添加正确的Supabase URL和API密钥')
+  console.error('支持的环境变量名称:')
+  console.error('- VITE_SUPABASE_URL 或 NEXT_PUBLIC_SUPABASE_URL 或 SUPABASE_URL')
+  console.error('- VITE_SUPABASE_ANON_KEY 或 NEXT_PUBLIC_SUPABASE_ANON_KEY 或 SUPABASE_PUBLISHABLE_KEY 或 SUPABASE_ANON_KEY')
 }
 
 // 创建并导出Supabase客户端实例
@@ -43,9 +26,6 @@ export let supabase = null
 try {
   if (supabaseUrl && supabaseKey) {
     supabase = createClient(supabaseUrl, supabaseKey)
-    console.log('Supabase客户端创建成功')
-  } else {
-    console.log('Supabase环境变量不完整，客户端未创建')
   }
 } catch (error) {
   console.error('创建Supabase客户端失败:', error)
