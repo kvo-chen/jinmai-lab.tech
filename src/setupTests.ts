@@ -1,4 +1,5 @@
 require('@testing-library/jest-dom');
+const React = require('react');
 
 // Simple mocks for Three.js related libraries
 jest.mock('three', () => ({

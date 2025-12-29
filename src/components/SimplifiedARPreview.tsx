@@ -26,7 +26,23 @@ const ModelViewer: React.FC<{
   rotation: [number, number, number];
   scale: number;
 }> = ({ url, onLoad, onError, position, rotation, scale }) => {
-  const { scene } = useGLTF(url);
+  let scene;
+  
+  try {
+    scene = useGLTF(url).scene;
+  } catch (error) {
+    console.error('3D模型加载错误:', error);
+    if (onError && error instanceof Error) {
+      onError(error);
+    }
+    // 返回一个简单的错误占位符，而不是null，提供更好的用户体验
+    return (
+      <mesh position={position} rotation={rotation} scale={scale}>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshStandardMaterial color="#ef4444" opacity={0.7} transparent />
+      </mesh>
+    );
+  }
   
   useEffect(() => {
     if (onLoad) {
@@ -137,6 +153,8 @@ const SimplifiedARPreview: React.FC<{
 
   // 加载资源的函数，包含进度反馈和错误处理
   const loadResource = useCallback(async () => {
+    console.log('AR Preview - loadResource called with config:', config);
+    
     if (config.type === '3d' && !config.modelUrl) {
       setLoading(false);
       return;
@@ -146,6 +164,17 @@ const SimplifiedARPreview: React.FC<{
       return;
     }
 
+    // 验证imageUrl是否有效
+    const isValidImageUrl = (url: string) => {
+      try {
+        new URL(url);
+        // 允许使用https协议的图片URL，不限制特定域名
+        return url.startsWith('https://');
+      } catch {
+        return false;
+      }
+    };
+
     try {
       setLoading(true);
       setError(null);
@@ -154,15 +183,24 @@ const SimplifiedARPreview: React.FC<{
       setModelLoaded(false);
 
       if (config.type === '2d' && config.imageUrl) {
+        // 验证imageUrl是否有效
+        const imageUrlToUse = isValidImageUrl(config.imageUrl) 
+          ? config.imageUrl 
+          : 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80';
+        
+        if (imageUrlToUse !== config.imageUrl) {
+          console.warn('AR Preview - Invalid image URL, using fallback:', config.imageUrl);
+        }
+
         const loader = new THREE.TextureLoader();
         textureLoaderRef.current = loader;
 
         await new Promise<void>((resolve, reject) => {
-          // 确保imageUrl存在时才调用loader.load
-          if (config.imageUrl) {
+          try {
             loader.load(
-              config.imageUrl,
+              imageUrlToUse,
               (loadedTexture) => {
+                console.log('AR Preview - Texture loaded successfully:', loadedTexture);
                 setTexture(loadedTexture);
                 setLoadingProgress(100);
                 resolve();
@@ -178,12 +216,13 @@ const SimplifiedARPreview: React.FC<{
                 }
               },
               (error) => {
-                console.error('Error loading texture:', error);
-                reject(new Error('资源加载失败，请重试'));
+                console.error('AR Preview - Error loading texture:', error);
+                reject(new Error('图像资源加载失败，请重试'));
               }
             );
-          } else {
-            reject(new Error('缺少图像URL'));
+          } catch (innerErr) {
+            console.error('AR Preview - Unexpected error in texture loader:', innerErr);
+            reject(new Error('图像加载过程中发生错误，请重试'));
           }
         });
       } else if (config.type === '3d') {
@@ -194,7 +233,7 @@ const SimplifiedARPreview: React.FC<{
 
       setLoading(false);
     } catch (err) {
-      console.error('Resource loading failed:', err);
+      console.error('AR Preview - Resource loading failed:', err);
       setError(err instanceof Error ? err.message : '资源加载失败，请重试');
       setLoading(false);
     }
@@ -219,8 +258,8 @@ const SimplifiedARPreview: React.FC<{
 
     // 清理函数
       return () => {
-        // 清理纹理资源
-        if (texture) {
+        // 清理纹理资源 - 确保dispose方法存在
+        if (texture && typeof texture.dispose === 'function') {
           texture.dispose();
         }
         // 注意：THREE.TextureLoader没有cancel方法，所以移除这个调用
@@ -311,16 +350,25 @@ const SimplifiedARPreview: React.FC<{
             <meshStandardMaterial color="#e2e8f0" />
           </mesh>
 
-          {/* 2D图像 - 添加变换控制 */}
+          {/* 2D图像 - 添加变换控制和更好的视觉效果 */}
           {config.type === '2d' && texture && (
             <mesh 
               ref={modelRef}
               position={[position.x, position.y, position.z]}
               rotation={[rotation.x, rotation.y, rotation.z]}
               scale={scale}
+              castShadow
+              receiveShadow
             >
               <planeGeometry args={[3, 3]} />
-              <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
+              <meshPhysicalMaterial 
+                map={texture} 
+                transparent 
+                side={THREE.DoubleSide} 
+                roughness={0.5} 
+                metalness={0.2}
+                transmission={0.1}
+              />
             </mesh>
           )}
 
@@ -467,7 +515,7 @@ const SimplifiedARPreview: React.FC<{
               <button className="px-6 py-3 bg-blue-600 text-white rounded-lg opacity-50 cursor-not-allowed">
                 检查AR支持...
               </button>
-              <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg">
+              <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg backdrop-blur-sm">
                 正在检测设备AR兼容性
               </div>
             </div>
@@ -476,23 +524,31 @@ const SimplifiedARPreview: React.FC<{
               <button
                 onClick={() => {
                   setIsARMode(true);
-                  // 简化版本，不实际进入AR模式，只显示提示
-                  alert('AR模式需要在支持WebXR的设备上运行。请使用支持WebXR的浏览器（如Chrome或Edge）并在移动设备上打开以体验完整AR功能。');
+                  // 改进提示信息，提供更详细的AR使用说明
+                  alert('📱 AR模式使用说明：\n1. 确保您的设备支持WebXR\n2. 使用Chrome或Edge浏览器\n3. 在明亮的环境中打开\n4. 将设备对准平面表面\n\n温馨提示：目前仅在移动设备上支持完整AR功能。');
                 }}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transition-all duration-200"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transition-all duration-200 hover:translate-y-[-2px]"
               >
+                <i className="fas fa-vr-cardboard mr-2"></i>
                 进入AR模式
               </button>
-              <div className="text-white text-sm bg-blue-900 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs">
+              <div className="text-white text-sm bg-blue-900 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
                 💡 提示：使用支持WebXR的浏览器（如Chrome或Edge）并在移动设备上打开，可获得最佳AR体验
               </div>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg opacity-50 cursor-not-allowed">
-                设备不支持AR
+              <button 
+                onClick={() => {
+                  // 即使不支持AR，也可以显示提示信息
+                  alert('📱 您的设备不支持AR功能\n\n建议使用：\n• Chrome 90+（Android）\n• Edge 90+（Android）\n• Safari 15+（iOS 15+）\n\n您仍然可以在3D预览模式下查看模型。');
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <i className="fas fa-info-circle mr-2"></i>
+                了解AR要求
               </button>
-              <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs">
+              <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
                 📱 AR功能需要支持WebXR的设备和浏览器。建议使用：
                 <ul className="mt-1 list-disc list-inside text-xs opacity-90">
                   <li>Chrome 90+（Android）</li>

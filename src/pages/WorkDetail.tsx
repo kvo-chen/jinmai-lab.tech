@@ -290,7 +290,8 @@ export default function WorkDetail() {
               }>
                 <ARPreview
                   config={{
-                    imageUrl: work?.thumbnail || 'https://images.unsplash.com/photo-1614850526283-3a3560210a5a?w=800&h=600&fit=crop&q=80',
+                    // 使用作品的实际图片URL
+                    imageUrl: work.thumbnail,
                     // 暂时移除3D模型支持，只使用2D模式
                     modelUrl: '',
                     // 所有作品都使用2D模式，避免3D模型加载失败
