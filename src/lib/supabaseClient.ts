@@ -63,12 +63,23 @@ try {
       console.error('❌ Supabase密钥长度过短，可能是无效密钥:', supabaseKey)
     }
     
-    // 创建客户端时使用更简单的配置，使用默认的auth endpoints
+    // 创建客户端时明确指定auth端点，确保使用正确的URL
     supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        // 明确指定auth端点，确保使用正确的URL
+        endpoints: {
+          signUp: `${supabaseUrl}/auth/v1/signup`,
+          signIn: `${supabaseUrl}/auth/v1/token?grant_type=password`,
+          refreshToken: `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+          signOut: `${supabaseUrl}/auth/v1/logout`,
+          getUser: `${supabaseUrl}/auth/v1/user`,
+          resetPasswordForEmail: `${supabaseUrl}/auth/v1/recover`,
+          updateUser: `${supabaseUrl}/auth/v1/user`,
+          getSession: `${supabaseUrl}/auth/v1/session`
+        }
       }
     })
     
