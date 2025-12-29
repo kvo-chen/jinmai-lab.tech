@@ -334,6 +334,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               membershipStatus: 'active' as const,
             };
             
+            // 将用户信息保存到users表中
+            try {
+              const { error: dbError } = await supabase.from('users').insert([userWithMembership]);
+              if (dbError) {
+                console.error('将用户信息保存到数据库失败:', dbError);
+                // 即使保存到数据库失败，仍然允许用户登录
+              } else {
+                console.log('用户信息已成功保存到数据库');
+              }
+            } catch (dbException) {
+              console.error('保存用户信息到数据库时发生异常:', dbException);
+              // 即使发生异常，仍然允许用户登录
+            }
+            
             // 存储用户信息到本地
             localStorage.setItem('user', JSON.stringify(userWithMembership));
             
@@ -363,6 +377,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 membershipEnd: undefined,
                 membershipStatus: 'active' as const,
               };
+              
+              // 将用户信息保存到users表中
+              try {
+                const { error: dbError } = await supabase.from('users').insert([userWithMembership]);
+                if (dbError) {
+                  console.error('将用户信息保存到数据库失败:', dbError);
+                } else {
+                  console.log('用户信息已成功保存到数据库');
+                }
+              } catch (dbException) {
+                console.error('保存用户信息到数据库时发生异常:', dbException);
+              }
               
               localStorage.setItem('user', JSON.stringify(userWithMembership));
               setIsAuthenticated(true);
