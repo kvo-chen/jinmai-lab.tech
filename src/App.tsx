@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy, useRef, useMemo, useCallback } from 'react';
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { useTheme } from '@/hooks/useTheme';
 import { Routes, Route, Outlet, useLocation, useNavigationType, Link, Navigate } from "react-router-dom";
 
@@ -574,6 +575,7 @@ export default function App() {
   return (
     <div className="relative min-h-screen bg-white dark:bg-[var(--bg-primary)]">
       <Analytics />
+      <SpeedInsights />
       <Routes>
         {/* 核心页面直接渲染，无需懒加载，添加缓存和动画 */}
         {/* 确保根路径是第一个路由，提高匹配优先级 */}
