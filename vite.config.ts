@@ -144,7 +144,7 @@ function getPlugins() {
 
 export default defineConfig({
   base: './',
-  plugins: getPlugins(),
+  plugins: process.env.NODE_ENV === 'production' ? [react(), tsconfigPaths()] : getPlugins(),
   resolve: {
     // 为数据库相关的 Node.js 原生模块创建别名，避免在浏览器环境中打包
     alias: {
