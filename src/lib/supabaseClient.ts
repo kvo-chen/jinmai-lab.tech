@@ -12,13 +12,14 @@ const supabaseUrl = cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_URL) ||
                    cleanEnvValue(import.meta.env.VITE_SUPABASE_URL) || 
                    cleanEnvValue(import.meta.env.SUPABASE_URL)
 
-// 支持新格式的Publishable key和旧格式的ANON_KEY
-const supabaseKey = cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) || 
-                   cleanEnvValue(import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY) || 
-                   cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || 
+// 优先使用旧格式的JWT密钥，因为当前SDK版本可能不支持新格式的Publishable key
+const supabaseKey = cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || 
                    cleanEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY) || 
-                   cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) || 
                    cleanEnvValue(import.meta.env.SUPABASE_ANON_KEY) || 
+                   // 旧格式密钥不可用时，才使用新格式的Publishable key
+                   cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) || 
+                   cleanEnvValue(import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY) || 
+                   cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) || 
                    cleanEnvValue(import.meta.env.SUPABASE_PUBLISHABLE_KEY)
 
 // 验证环境变量并添加详细日志
