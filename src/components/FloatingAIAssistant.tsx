@@ -843,7 +843,6 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                     scrollbarColor: isDark ? '#4B5563 #1F2937' : '#9CA3AF #F3F4F6',
                     // 强制显示滚动条
                     msOverflowStyle: 'auto',
-                    scrollbarWidth: 'auto',
                     // 确保在各种浏览器中都能正常工作
                     WebkitOverflowScrolling: 'touch',
                     boxSizing: 'border-box'
