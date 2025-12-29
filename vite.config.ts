@@ -11,7 +11,7 @@ function getPlugins() {
     tsconfigPaths(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'icons/*.svg', 'fonts/*.ttf', 'fonts/*.woff2', 'images/*.png', 'images/*.jpg'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'assets/*.svg', 'assets/*.woff2'],
       manifest: {
         name: '津脉智坊 - 津门老字号共创平台',
         short_name: '津脉智坊',
@@ -22,13 +22,13 @@ function getPlugins() {
         orientation: 'portrait',
         icons: [
           {
-            src: 'icons/icon-192x192.svg',
+            src: 'assets/icon-192x192-DWYkQd48-DWYkQd48.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
             purpose: 'any maskable'
           },
           {
-            src: 'icons/icon-512x512.svg',
+            src: 'assets/icon-512x512-xvIyFQRJ-xvIyFQRJ.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable'
@@ -334,7 +334,7 @@ export default defineConfig({
           template: 'sunburst', // 更直观的可视化模板
           sourcemap: false,
         }),
-      ].filter(Boolean)
+      ].filter(Boolean) as any[]
     },
   },
   // 优化开发体验和构建速度
