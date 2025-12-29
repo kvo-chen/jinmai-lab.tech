@@ -63,31 +63,60 @@ try {
     console.log('正在创建Supabase客户端...')
     console.log('- URL:', supabaseUrl)
     console.log('- 密钥前缀:', supabaseKey.substring(0, 20) + '...')
+    console.log('- 完整URL:', supabaseUrl)
+    console.log('- 密钥长度:', supabaseKey.length)
     
-    // 创建客户端时禁用自动刷新令牌，避免不必要的网络请求
+    // 验证URL格式
+    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+      console.error('❌ Supabase URL格式不正确，必须以http://或https://开头:', supabaseUrl)
+    }
+    
+    // 验证密钥格式
+    if (supabaseKey.length < 30) {
+      console.error('❌ Supabase密钥长度过短，可能是无效密钥:', supabaseKey)
+    }
+    
+    // 创建客户端时使用更简单的配置，避免不必要的功能
     supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
-        autoRefreshToken: true,
+        // 简化配置，只保留必要的认证功能
+        autoRefreshToken: false,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: false,
+        // 明确指定auth端点，避免自动检测失败
+        endpoints: {
+          // 明确指定认证端点，确保使用正确的URL
+          signUp: `${supabaseUrl}/auth/v1/signup`,
+          signIn: `${supabaseUrl}/auth/v1/token?grant_type=password`,
+          refreshToken: `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+          signOut: `${supabaseUrl}/auth/v1/logout`,
+          getUser: `${supabaseUrl}/auth/v1/user`,
+          resetPasswordForEmail: `${supabaseUrl}/auth/v1/recover`,
+          updateUser: `${supabaseUrl}/auth/v1/user`,
+          getSession: `${supabaseUrl}/auth/v1/session`
+        }
       },
-      // 添加更严格的重试策略
-      retry: {
-        initialDelay: 1000,
-        maxDelay: 10000,
-        maxRetries: 3
-      },
-      // 禁用Realtime，避免WebSocket连接错误
+      // 禁用所有不必要的功能，只保留核心功能
       realtime: {
+        enabled: false
+      },
+      storage: {
         enabled: false
       }
     })
     
     console.log('✅ Supabase客户端创建成功')
+    console.log('✅ Supabase auth对象:', typeof supabase.auth)
+    console.log('✅ Supabase auth.signUp方法:', typeof supabase.auth.signUp)
+  } else {
+    console.error('❌ 无法创建Supabase客户端，环境变量不完整:')
+    console.error('- URL:', supabaseUrl || '未设置')
+    console.error('- 密钥:', supabaseKey ? '已设置但为空' : '未设置')
   }
 } catch (error) {
   console.error('❌ 创建Supabase客户端失败:', error)
   console.error('错误详情:', error instanceof Error ? error.message : String(error))
+  console.error('错误堆栈:', error instanceof Error ? error.stack : '')
   supabase = null
 }
 
