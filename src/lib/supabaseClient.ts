@@ -1,17 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 获取环境变量
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// 获取环境变量，同时支持VITE_*和NEXT_PUBLIC_*前缀
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 // 验证环境变量
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase环境变量未配置完整')
-  console.error('请确保.env文件中包含VITE_SUPABASE_URL和VITE_SUPABASE_ANON_KEY')
+  console.error('请确保环境变量中包含VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY或NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
 // 创建并导出Supabase客户端实例
-// @ts-ignore
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // 确保supabase不会被tree-shaking移除
