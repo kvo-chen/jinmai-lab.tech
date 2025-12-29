@@ -4,42 +4,49 @@ import { createClient } from '@supabase/supabase-js'
 let supabaseUrl = ''
 let supabaseKey = ''
 
-// 添加详细日志，查看所有可用的环境变量
-console.log('所有可用的环境变量:', import.meta.env)
+// 直接从import.meta.env中获取VITE_前缀的环境变量
+// 浏览器控制台显示这些变量确实存在，所以直接获取
+const viteSupabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const viteSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// 尝试从环境变量中获取配置
-if (import.meta.env) {
-  // 首先尝试VITE_前缀的环境变量（Vite标准）
-  supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/^[\s`']+|[\s`']+$/g, '')
-  supabaseKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').replace(/^[\s`']+|[\s`']+$/g, '')
+// 检查并清理环境变量值
+if (viteSupabaseUrl) {
+  supabaseUrl = viteSupabaseUrl.replace(/^[\s`']+|[\s`']+$/g, '')
+}
+
+if (viteSupabaseAnonKey) {
+  supabaseKey = viteSupabaseAnonKey.replace(/^[\s`']+|[\s`']+$/g, '')
+}
+
+// 如果VITE_前缀的环境变量不存在，尝试其他前缀作为备选
+if (!supabaseUrl || !supabaseKey) {
+  console.log('尝试使用其他前缀的环境变量...')
   
-  // 如果VITE_前缀的环境变量不存在，尝试其他前缀
-  if (!supabaseUrl || !supabaseKey) {
-    console.log('未找到VITE_前缀的环境变量，尝试其他前缀...')
-    
-    // 尝试NEXT_PUBLIC_前缀（Next.js标准）
-    supabaseUrl = supabaseUrl || (import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/^[\s`']+|[\s`']+$/g, '')
-    supabaseKey = supabaseKey || (import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '').replace(/^[\s`']+|[\s`']+$/g, '')
-    
-    // 尝试直接使用SUPABASE_前缀
-    supabaseUrl = supabaseUrl || (import.meta.env.SUPABASE_URL || '').replace(/^[\s`']+|[\s`']+$/g, '')
-    supabaseKey = supabaseKey || (import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY || '').replace(/^[\s`']+|[\s`']+$/g, '')
-  }
+  // 尝试NEXT_PUBLIC_前缀
+  const nextPublicUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL
+  const nextPublicKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  
+  // 尝试直接使用SUPABASE_前缀
+  const directUrl = import.meta.env.SUPABASE_URL
+  const directKey = import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY
+  
+  // 选择第一个可用的URL和密钥
+  supabaseUrl = supabaseUrl || (nextPublicUrl || '').replace(/^[\s`']+|[\s`']+$/g, '') || (directUrl || '').replace(/^[\s`']+|[\s`']+$/g, '')
+  supabaseKey = supabaseKey || (nextPublicKey || '').replace(/^[\s`']+|[\s`']+$/g, '') || (directKey || '').replace(/^[\s`']+|[\s`']+$/g, '')
 }
 
 // 验证环境变量并添加详细日志
-console.log('最终获取到的Supabase配置:', {
-  supabaseUrl,
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseKey
-})
+console.log('Supabase环境变量配置:')
+console.log('- VITE_SUPABASE_URL:', viteSupabaseUrl)
+console.log('- VITE_SUPABASE_ANON_KEY:', viteSupabaseAnonKey ? '已找到' : '未找到')
+console.log('- 最终清理后URL:', supabaseUrl)
+console.log('- 最终清理后密钥:', supabaseKey ? '已找到' : '未找到')
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase环境变量未配置完整')
+  console.error('❌ Supabase环境变量未配置完整')
   console.error('请检查Vercel环境变量配置，确保已添加正确的Supabase URL和API密钥')
-  console.error('建议使用Vite标准的VITE_前缀环境变量:')
-  console.error('- VITE_SUPABASE_URL')
-  console.error('- VITE_SUPABASE_ANON_KEY')
+} else {
+  console.log('✅ Supabase环境变量配置完整')
 }
 
 // 创建并导出Supabase客户端实例
