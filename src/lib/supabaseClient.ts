@@ -23,7 +23,19 @@ if (!supabaseUrl || !supabaseKey) {
 
 // 创建并导出Supabase客户端实例
 // 只有在环境变量有效的情况下才创建客户端
-export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null
+export let supabase = null
+
+try {
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey)
+    console.log('Supabase客户端创建成功')
+  } else {
+    console.log('Supabase环境变量不完整，客户端未创建')
+  }
+} catch (error) {
+  console.error('创建Supabase客户端失败:', error)
+  supabase = null
+}
 
 // 确保supabase不会被tree-shaking移除
 if (typeof window !== 'undefined') {
