@@ -1,55 +1,42 @@
 import { createClient } from '@supabase/supabase-js'
 
 // 获取环境变量，优先使用NEXT_PUBLIC_前缀，因为Vercel配置的是这个前缀
-let supabaseUrl = ''
-let supabaseKey = ''
-
-// 直接从import.meta.env中获取各种前缀的环境变量
-const nextPublicUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL
-const nextPublicKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-const viteSupabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const viteSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const directUrl = import.meta.env.SUPABASE_URL
-const directKey = import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY
-
-// 优先使用NEXT_PUBLIC_前缀的环境变量
-if (nextPublicUrl) {
-  supabaseUrl = nextPublicUrl.replace(/^[\s`']+|[\s`']+$/g, '')
-} else if (viteSupabaseUrl) {
-  supabaseUrl = viteSupabaseUrl.replace(/^[\s`']+|[\s`']+$/g, '')
-} else if (directUrl) {
-  supabaseUrl = directUrl.replace(/^[\s`']+|[\s`']+$/g, '')
-}
-
-if (nextPublicKey) {
-  supabaseKey = nextPublicKey.replace(/^[\s`']+|[\s`']+$/g, '')
-} else if (viteSupabaseAnonKey) {
-  supabaseKey = viteSupabaseAnonKey.replace(/^[\s`']+|[\s`']+$/g, '')
-} else if (directKey) {
-  supabaseKey = directKey.replace(/^[\s`']+|[\s`']+$/g, '')
-}
+const supabaseUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL
+const supabaseKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY
 
 // 验证环境变量并添加详细日志
 console.log('Supabase环境变量配置:')
-console.log('- VITE_SUPABASE_URL:', viteSupabaseUrl ? '已设置' : '未设置')
-console.log('- VITE_SUPABASE_ANON_KEY:', viteSupabaseAnonKey ? '已设置' : '未设置')
 console.log('- NEXT_PUBLIC_SUPABASE_URL:', import.meta.env.NEXT_PUBLIC_SUPABASE_URL ? '已设置' : '未设置')
 console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '已设置' : '未设置')
+console.log('- VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '已设置' : '未设置')
+console.log('- VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '已设置' : '未设置')
 console.log('- SUPABASE_URL:', import.meta.env.SUPABASE_URL ? '已设置' : '未设置')
 console.log('- SUPABASE_ANON_KEY:', import.meta.env.SUPABASE_ANON_KEY ? '已设置' : '未设置')
-console.log('- 最终清理后URL:', supabaseUrl)
-console.log('- 最终清理后密钥:', supabaseKey ? '已设置' : '未设置')
+console.log('- SUPABASE_PUBLISHABLE_KEY:', import.meta.env.SUPABASE_PUBLISHABLE_KEY ? '已设置' : '未设置')
+console.log('- 最终URL:', supabaseUrl)
+console.log('- 最终密钥:', supabaseKey ? '已设置' : '未设置')
 console.log('- 密钥长度:', supabaseKey ? supabaseKey.length : 0)
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Supabase环境变量未配置完整')
-  console.error('请检查Vercel环境变量配置，确保已添加以下环境变量:')
-  console.error('1. VITE_SUPABASE_URL 或 NEXT_PUBLIC_SUPABASE_URL')
-  console.error('2. VITE_SUPABASE_ANON_KEY 或 NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  console.error('当前配置:')
-  console.error('- URL:', supabaseUrl || '未设置')
-  console.error('- 密钥:', supabaseKey ? '已设置但为空' : '未设置')
-} else {
+// 验证环境变量是否完整
+if (!supabaseUrl) {
+  console.error('❌ Supabase URL未配置')
+  console.error('请检查Vercel环境变量配置，确保已添加以下环境变量之一:')
+  console.error('- NEXT_PUBLIC_SUPABASE_URL')
+  console.error('- VITE_SUPABASE_URL')
+  console.error('- SUPABASE_URL')
+} 
+
+if (!supabaseKey) {
+  console.error('❌ Supabase密钥未配置')
+  console.error('请检查Vercel环境变量配置，确保已添加以下环境变量之一:')
+  console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  console.error('- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
+  console.error('- VITE_SUPABASE_ANON_KEY')
+  console.error('- SUPABASE_ANON_KEY')
+  console.error('- SUPABASE_PUBLISHABLE_KEY')
+} 
+
+if (supabaseUrl && supabaseKey) {
   console.log('✅ Supabase环境变量配置完整')
 }
 
@@ -62,17 +49,17 @@ try {
     // 添加更详细的日志
     console.log('正在创建Supabase客户端...')
     console.log('- URL:', supabaseUrl)
-    console.log('- 密钥前缀:', supabaseKey.substring(0, 20) + '...')
+    console.log('- 密钥前缀:', supabaseKey ? supabaseKey.substring(0, 20) + '...' : '未设置')
     console.log('- 完整URL:', supabaseUrl)
-    console.log('- 密钥长度:', supabaseKey.length)
+    console.log('- 密钥长度:', supabaseKey ? supabaseKey.length : 0)
     
     // 验证URL格式
-    if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+    if (supabaseUrl && !supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
       console.error('❌ Supabase URL格式不正确，必须以http://或https://开头:', supabaseUrl)
     }
     
     // 验证密钥格式
-    if (supabaseKey.length < 30) {
+    if (supabaseKey && supabaseKey.length < 30) {
       console.error('❌ Supabase密钥长度过短，可能是无效密钥:', supabaseKey)
     }
     
@@ -86,8 +73,8 @@ try {
     })
     
     console.log('✅ Supabase客户端创建成功')
-    console.log('✅ Supabase auth对象:', typeof supabase.auth)
-    console.log('✅ Supabase auth.signUp方法:', typeof supabase.auth.signUp)
+    console.log('✅ Supabase auth对象:', typeof supabase?.auth)
+    console.log('✅ Supabase auth.signUp方法:', typeof supabase?.auth.signUp)
   } else {
     console.error('❌ 无法创建Supabase客户端，环境变量不完整:')
     console.error('- URL:', supabaseUrl || '未设置')
