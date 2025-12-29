@@ -84,13 +84,38 @@ try {
     }
     
     // 创建客户端，使用默认配置，让Supabase自动处理auth端点
-supabase = createClient(supabaseUrl, supabaseKey, {
+// 根据密钥格式调整配置
+const isNewKeyFormat = supabaseKey.startsWith('sb_publishable_') || supabaseKey.startsWith('sb_secret_');
+
+console.log('密钥格式:', isNewKeyFormat ? '新格式' : '旧格式');
+
+// 为新格式密钥配置正确的客户端选项
+const baseAuthConfig = {
+  autoRefreshToken: true,
+  persistSession: true,
+  detectSessionInUrl: true
+};
+
+const clientOptions = {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+    ...baseAuthConfig,
+    // 对于新格式密钥，明确指定auth端点版本，确保兼容性
+    ...(isNewKeyFormat && {
+      endpoints: {
+        signUp: `${supabaseUrl}/auth/v1/signup`,
+        signIn: `${supabaseUrl}/auth/v1/token?grant_type=password`,
+        refreshToken: `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+        signOut: `${supabaseUrl}/auth/v1/logout`,
+        getUser: `${supabaseUrl}/auth/v1/user`,
+        resetPasswordForEmail: `${supabaseUrl}/auth/v1/recover`,
+        updateUser: `${supabaseUrl}/auth/v1/user`,
+        getSession: `${supabaseUrl}/auth/v1/session`
+      }
+    })
   }
-})
+};
+
+supabase = createClient(supabaseUrl, supabaseKey, clientOptions);
     
     console.log('✅ Supabase客户端创建成功')
     console.log('✅ Supabase auth对象:', typeof supabase?.auth)
