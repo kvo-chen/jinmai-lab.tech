@@ -158,23 +158,23 @@ export default defineConfig({
   },
   build: {
     // 优化构建输出
-    minify: 'terser',
+    minify: 'esbuild', // 使用esbuild替代terser，提高构建速度
     // 启用更高效的压缩算法
     brotliSize: false, // 禁用brotli大小报告，减少构建时间
     // 优化 CSS 构建
-    cssMinify: 'esbuild', // 使用默认的CSS压缩，确保构建成功
+    cssMinify: 'esbuild', // 使用esbuild压缩CSS，确保构建成功
     // 启用CSS代码分割
     cssCodeSplit: true,
     // 生成 sourcemap（生产环境可关闭）
     sourcemap: false,
     // 设置 chunk 大小警告阈值（单位：KB）
-    chunkSizeWarningLimit: 500, // 调整为更合理的阈值，减少不必要的警告
+    chunkSizeWarningLimit: 1000, // 增大警告阈值，减少不必要的警告
     // 启用资产预加载
-    preloadAssets: true,
+    preloadAssets: false, // 禁用预加载，减少构建时间
     // 生成构建报告
     reportCompressedSize: false, // 禁用构建报告，减少构建时间
-    // 调整资产内联限制，进一步减少HTTP请求
-    assetsInlineLimit: 4096, // 4KB以下的资源内联
+    // 调整资产内联限制，减少内联资源数量
+    assetsInlineLimit: 0, // 禁用资源内联，减少构建时间
     // 禁用动态导入 polyfill，减少不必要的代码
     modulePreload: {
       polyfill: false
@@ -183,70 +183,6 @@ export default defineConfig({
     ssr: false,
     // 优化构建目标，使用更现代的ES版本
     target: 'es2022',
-    // 优化 terser 配置，减少压缩时间
-    terserOptions: {
-      compress: {
-        drop_console: true, // 始终移除控制台日志
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.warn', 'console.error', 'console.debug', 'console.info', 'console.trace', 'console.dir', 'console.table'],
-        pure_getters: true,
-        passes: 3, // 减少压缩次数，加快构建速度
-        // 更安全的压缩选项，减少构建时间
-        collapse_vars: true,
-        reduce_vars: true,
-        dead_code: true,
-        conditionals: true,
-        booleans: true,
-        unused: true,
-        if_return: true,
-        join_vars: true,
-        side_effects: true,
-        evaluate: true,
-        // 禁用不安全的优化，减少构建时间
-        unsafe: false,
-        unsafe_comps: false,
-        unsafe_math: false,
-        unsafe_symbols: false,
-        unsafe_undefined: false,
-        keep_classnames: false,
-        keep_fargs: false,
-        keep_fnames: false,
-        keep_infinity: false,
-        sequences: true,
-        properties: true,
-        comparisons: true,
-        computed_props: true,
-        arrows: true,
-        loops: true,
-        toplevel: true,
-        ie8: false
-      },
-      mangle: {
-        toplevel: true,
-        keep_classnames: false,
-        keep_fnames: false,
-        properties: {
-          regex: /^_/, // 只混淆下划线开头的私有属性
-          keep_quoted: false,
-          reserved: [],
-        },
-      },
-      format: {
-        comments: false,
-        beautify: false,
-        // 优化输出格式
-        ecma: 2022,
-        wrap_func_args: false,
-        wrap_iife: true,
-        ascii_only: false,
-        webkit: false,
-        preamble: '',
-        shebang: false,
-        indent_level: 0,
-        quote_style: 3,
-        preserve_annotations: false
-      },
-    },
     // 分割代码
     rollupOptions: {
       // 启用更严格的tree-shaking
