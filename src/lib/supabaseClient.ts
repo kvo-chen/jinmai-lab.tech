@@ -2,13 +2,23 @@ import { createClient } from '@supabase/supabase-js'
 
 // 获取环境变量，优先使用NEXT_PUBLIC_前缀，因为Vercel配置的是这个前缀
 const supabaseUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL
-const supabaseKey = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY || import.meta.env.SUPABASE_PUBLISHABLE_KEY
+
+// 支持新格式的Publishable key和旧格式的ANON_KEY
+const supabaseKey = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
+                  import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
+                  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+                  import.meta.env.VITE_SUPABASE_ANON_KEY || 
+                  import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 
+                  import.meta.env.SUPABASE_ANON_KEY || 
+                  import.meta.env.SUPABASE_PUBLISHABLE_KEY
 
 // 验证环境变量并添加详细日志
 console.log('Supabase环境变量配置:')
 console.log('- NEXT_PUBLIC_SUPABASE_URL:', import.meta.env.NEXT_PUBLIC_SUPABASE_URL ? '已设置' : '未设置')
+console.log('- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? '已设置' : '未设置')
 console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '已设置' : '未设置')
 console.log('- VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '已设置' : '未设置')
+console.log('- VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? '已设置' : '未设置')
 console.log('- VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '已设置' : '未设置')
 console.log('- SUPABASE_URL:', import.meta.env.SUPABASE_URL ? '已设置' : '未设置')
 console.log('- SUPABASE_ANON_KEY:', import.meta.env.SUPABASE_ANON_KEY ? '已设置' : '未设置')
@@ -16,6 +26,7 @@ console.log('- SUPABASE_PUBLISHABLE_KEY:', import.meta.env.SUPABASE_PUBLISHABLE_
 console.log('- 最终URL:', supabaseUrl)
 console.log('- 最终密钥:', supabaseKey ? '已设置' : '未设置')
 console.log('- 密钥长度:', supabaseKey ? supabaseKey.length : 0)
+console.log('- 密钥前缀:', supabaseKey ? supabaseKey.substring(0, 20) + '...' : '未设置')
 
 // 验证环境变量是否完整
 if (!supabaseUrl) {
