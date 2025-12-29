@@ -269,6 +269,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 注册方法
   const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<boolean> => {
     try {
+      console.log('Register function called with:', { username, email, password: '****', age, tags });
+      
       // 密码格式验证
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(password)) {
@@ -276,76 +278,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return false;
       }
       
+      console.log('Password validation passed');
+      
       if (supabase) {
-        console.log('Starting Supabase signUp with:', { email, username });
+        console.log('Supabase client is available, calling signUp...');
+        console.log('Supabase client instance:', typeof supabase);
+        console.log('Supabase auth available:', typeof supabase.auth);
         
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              username,
-              age: age ? parseInt(age) : null,
-              tags,
-              membershipLevel: 'free',
-              membershipStatus: 'active',
-              membershipStart: new Date().toISOString(),
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`
-            },
-            // 允许用户无需确认邮箱即可登录
-            emailRedirectTo: window.location.origin
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                username,
+                age: age ? parseInt(age) : null,
+                tags,
+                membershipLevel: 'free',
+                membershipStatus: 'active',
+                membershipStart: new Date().toISOString(),
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`
+              },
+              // 允许用户无需确认邮箱即可登录
+              emailRedirectTo: window.location.origin
+            }
+          });
+          
+          console.log('Supabase signUp response received:', { data, error });
+          
+          if (error) {
+            console.error('注册失败:', error);
+            console.error('错误代码:', error.code);
+            console.error('错误信息:', error.message);
+            console.error('错误详情:', JSON.stringify(error, null, 2));
+            return false;
           }
-        });
-        
-        console.log('Supabase signUp response:', { data, error });
-        
-        if (error) {
-          console.error('注册失败:', error.message, error.code);
-          // 处理密码格式错误
-          if (error.code === 'invalid_password' || error.message.includes('password format')) {
-            console.error('密码格式不符合Supabase要求，请确保密码强度足够');
-          }
-          return false;
-        }
-        
-        if (data.user) {
-          console.log('User created successfully:', data.user.id);
           
-          // 添加默认会员信息
-          const userWithMembership = {
-            id: data.user.id,
-            username,
-            email: data.user.email || '',
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
-            phone: '',
-            interests: [],
-            isAdmin: false,
-            age: age ? parseInt(age) : 0,
-            tags: tags || [],
-            membershipLevel: 'free' as const,
-            membershipStart: new Date().toISOString(),
-            membershipEnd: undefined,
-            membershipStatus: 'active' as const,
-          };
-          
-          // 存储用户信息到本地
-          localStorage.setItem('user', JSON.stringify(userWithMembership));
-          
-          // 更新状态
-          setIsAuthenticated(true);
-          setUser(userWithMembership);
-          
-          return true;
-        } else if (data.session) {
-          console.log('Session created but no user object returned, session:', data.session.user?.id);
-          
-          // 如果有session但没有user对象，尝试获取当前用户
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
+          if (data.user) {
+            console.log('User created successfully:', data.user.id);
+            
+            // 添加默认会员信息
             const userWithMembership = {
-              id: userData.user.id,
+              id: data.user.id,
               username,
-              email: userData.user.email || '',
+              email: data.user.email || '',
               avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
               phone: '',
               interests: [],
@@ -358,25 +334,63 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               membershipStatus: 'active' as const,
             };
             
+            // 存储用户信息到本地
             localStorage.setItem('user', JSON.stringify(userWithMembership));
+            
+            // 更新状态
             setIsAuthenticated(true);
             setUser(userWithMembership);
+            
+            return true;
+          } else if (data.session) {
+            console.log('Session created but no user object returned, session:', data.session.user?.id);
+            
+            // 如果有session但没有user对象，尝试获取当前用户
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const userWithMembership = {
+                id: userData.user.id,
+                username,
+                email: userData.user.email || '',
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+                phone: '',
+                interests: [],
+                isAdmin: false,
+                age: age ? parseInt(age) : 0,
+                tags: tags || [],
+                membershipLevel: 'free' as const,
+                membershipStart: new Date().toISOString(),
+                membershipEnd: undefined,
+                membershipStatus: 'active' as const,
+              };
+              
+              localStorage.setItem('user', JSON.stringify(userWithMembership));
+              setIsAuthenticated(true);
+              setUser(userWithMembership);
+              return true;
+            }
+          } else {
+            console.log('Sign up initiated, user needs to confirm email:', data);
+            // 如果需要邮箱确认，我们仍然返回成功，让用户去确认邮箱
+            // 但是不自动登录
             return true;
           }
-        } else {
-          console.log('Sign up initiated, user needs to confirm email:', data);
-          // 如果需要邮箱确认，我们仍然返回成功，让用户去确认邮箱
-          // 但是不自动登录
-          return true;
+          
+          return false;
+        } catch (error: any) {
+          console.error('Supabase signUp call failed with exception:', error);
+          console.error('Exception message:', error.message);
+          console.error('Exception stack:', error.stack);
+          return false;
         }
-        
-        return false;
       } else {
         console.error('Supabase客户端未配置，无法注册');
         return false;
       }
     } catch (error: any) {
-      console.error('注册失败:', error.message, error.stack);
+      console.error('注册函数执行失败:', error);
+      console.error('错误信息:', error.message);
+      console.error('错误堆栈:', error.stack);
       return false;
     }
   };
