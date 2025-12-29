@@ -271,10 +271,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log('Register function called with:', { username, email, password: '****', age, tags });
       
-      // 密码格式验证
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+      // 密码格式验证（与前端zod验证规则保持一致）
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(password)) {
-        console.error('密码格式不符合要求：至少8个字符，包含大小写字母和数字');
+        console.error('密码格式不符合要求：至少8个字符，包含至少一个字母和一个数字');
         return false;
       }
       

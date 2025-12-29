@@ -69,7 +69,7 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      console.log('6. Calling register function with:', { username, email, password, age, tags });
+      console.log('6. Calling register function with:', { username, email, password: '****', age, tags });
       const success = await register(username, email, password, age, tags);
       console.log('8. Register function returned:', success);
       
@@ -77,11 +77,16 @@ export default function Register() {
         toast.success('注册成功！自动登录中...');
         navigate('/dashboard');
       } else {
-        toast.error('注册失败，请稍后重试');
+        toast.error('注册失败，请检查输入信息或稍后重试');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('8. Register failed with error:', error);
-      toast.error('注册失败，请稍后重试');
+      console.error('8.1 Error message:', error.message);
+      console.error('8.2 Error stack:', error.stack);
+      
+      // 提供更详细的错误信息给用户
+      const errorMessage = error.message || '注册失败，请稍后重试';
+      toast.error(`注册失败: ${errorMessage}`);
     } finally {
       console.log('9. Setting isLoading to false');
       setIsLoading(false);
