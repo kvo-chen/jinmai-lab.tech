@@ -334,6 +334,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             // 将用户信息保存到数据库
             try {
               // 现在数据库表结构已经与代码匹配，可以正常保存用户信息
+              // 注意：移除created_at和updated_at，让数据库使用默认值
+              // 因为数据库中这些字段可能是bigint类型，而不是timestamp
               const userForDb = {
                 id: data.user.id,
                 username: data.user.user_metadata?.username || username,
@@ -347,9 +349,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 membership_level: data.user.user_metadata?.membershipLevel || 'free',
                 membership_status: data.user.user_metadata?.membershipStatus || 'active',
                 membership_start: data.user.user_metadata?.membershipStart || new Date().toISOString(),
-                membership_end: data.user.user_metadata?.membershipEnd,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                membership_end: data.user.user_metadata?.membershipEnd
+                // 移除created_at和updated_at，让数据库使用默认值
+                // created_at: new Date().toISOString(),
+                // updated_at: new Date().toISOString()
               };
               
               console.log('Attempting to save user to database with:', userForDb);
