@@ -139,19 +139,45 @@ if (typeof window !== 'undefined') {
   window.__SUPABASE__ = supabase
 }
 
+// Type definitions for Supabase tables
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  avatar_url?: string;
+  bio?: string;
+  created_at: string;
+  updated_at: string;
+  last_login?: string;
+  role: 'user' | 'admin' | 'moderator';
+  is_active: boolean;
+}
+
+export interface Post {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  likes_count?: number;
+  comments_count?: number;
+}
+
 // 示例：获取用户列表
-export async function getUsers() {
+export async function getUsers(): Promise<User[]> {
   if (!supabase) {
     console.error('Supabase客户端未配置，无法获取用户列表')
     return []
   }
   try {
-    const { data, error } = await supabase.from('users').select('*')
+    // 使用更直接的类型断言
+    const { data, error } = await (supabase as any).from('users').select('*')
     if (error) {
       console.error('获取用户列表失败:', error)
       return []
     }
-    return data || []
+    return (data as User[]) || []
   } catch (error) {
     console.error('获取用户列表异常:', error)
     return []
@@ -159,18 +185,19 @@ export async function getUsers() {
 }
 
 // 示例：获取帖子列表
-export async function getPosts() {
+export async function getPosts(): Promise<Post[]> {
   if (!supabase) {
     console.error('Supabase客户端未配置，无法获取帖子列表')
     return []
   }
   try {
-    const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false })
+    // 使用更直接的类型断言
+    const { data, error } = await (supabase as any).from('posts').select('*').order('created_at', { ascending: false })
     if (error) {
       console.error('获取帖子列表失败:', error)
       return []
     }
-    return data || []
+    return (data as Post[]) || []
   } catch (error) {
     console.error('获取帖子列表异常:', error)
     return []
@@ -178,18 +205,19 @@ export async function getPosts() {
 }
 
 // 示例：创建帖子
-export async function createPost(postData: Record<string, any>) {
+export async function createPost(postData: Omit<Post, 'id' | 'created_at' | 'updated_at'>): Promise<Post | null> {
   if (!supabase) {
     console.error('Supabase客户端未配置，无法创建帖子')
     return null
   }
   try {
-    const { data, error } = await supabase.from('posts').insert([postData] as any[])
+    // 使用更直接的类型断言
+    const { data, error } = await (supabase as any).from('posts').insert([postData]).select('*')
     if (error) {
       console.error('创建帖子失败:', error)
       return null
     }
-    return data ? data[0] : null
+    return (data as Post[]) ? data[0] : null
   } catch (error) {
     console.error('创建帖子异常:', error)
     return null

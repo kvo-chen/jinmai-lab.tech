@@ -327,7 +327,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   wenxin_base_url: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
   // 新增通义千问模型配置默认值
   qwen_model: 'qwen-plus',
-  qwen_base_url: 'https://dashscope.aliyuncs.com/api/v1',
+  qwen_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   // 新增ChatGPT模型配置默认值
   chatgpt_model: 'gpt-4o',
   chatgpt_base_url: 'https://api.openai.com/v1',
@@ -1310,6 +1310,52 @@ class LLMService {
   }
   
   /**
+   * 获取指定模型的连接状态
+   * @param modelId 模型ID
+   */
+  getConnectionStatus(modelId: string): ConnectionStatus {
+    return this.connectionStatus[modelId] || 'disconnected';
+  }
+  
+  /**
+   * 设置模型的连接状态
+   * @param modelId 模型ID
+   * @param status 连接状态
+   * @param error 错误信息（可选）
+   */
+  private setConnectionStatus(modelId: string, status: ConnectionStatus, error?: string): void {
+    this.connectionStatus[modelId] = status;
+    
+    // 触发连接状态变化事件
+    this.emitConnectionStatusChange(modelId, status, error);
+  }
+  
+  /**
+   * 触发连接状态变化事件
+   * @param modelId 模型ID
+   * @param status 连接状态
+   * @param error 错误信息（可选）
+   */
+  private emitConnectionStatusChange(modelId: string, status: ConnectionStatus, error?: string): void {
+    // 调用所有监听器
+    this.connectionStatusListeners.forEach(listener => {
+      listener(modelId, status, error);
+    });
+    
+    // 派发自定义事件
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('llm-connection-status-changed', {
+        detail: {
+          modelId,
+          status,
+          error,
+          timestamp: Date.now()
+        }
+      }));
+    }
+  }
+  
+  /**
    * 触发角色切换事件
    */
   private emitRoleChangeEvent(roleId: string): void {
@@ -1918,23 +1964,48 @@ class LLMService {
       const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
       const useProxy = !!apiBase;
       
+      // 更新连接状态为connecting
+      this.setConnectionStatus(modelId, 'connecting');
+      
       // 调用真实的LLM API
       let fullResponse: string;
       
+      // 确保messages数组中的对象符合Message接口要求
+      const typedMessages: Message[] = messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+        timestamp: msg.timestamp
+      }));
+      
       if (useProxy) {
         // 使用代理服务
-        fullResponse = await this.callApiViaProxy(modelId, messages, options);
+        fullResponse = await this.callApiViaProxy(modelId, typedMessages, options);
       } else {
         // 直接调用模型API
-        fullResponse = await this.callModelApiDirectly(modelId, messages, options);
+        fullResponse = await this.callModelApiDirectly(modelId, typedMessages, options);
       }
+      
+      // API调用成功，更新连接状态为connected
+      this.setConnectionStatus(modelId, 'connected');
       
       // 更新缓存
       this.updateCache(prompt, modelId, fullResponse);
       
       // 更新对话历史
       if (session) {
-        session.messages.push(userMessage, { role: 'assistant', content: fullResponse, timestamp: Date.now() });
+        // 确保userMessage符合Message接口要求
+        const typedUserMessage: Message = {
+          role: userMessage.role as 'user' | 'assistant' | 'system',
+          content: userMessage.content,
+          timestamp: userMessage.timestamp
+        };
+        
+        // 添加消息到对话历史
+        session.messages.push(typedUserMessage, {
+          role: 'assistant',
+          content: fullResponse,
+          timestamp: Date.now()
+        });
         session.updatedAt = Date.now();
         session.lastMessageTimestamp = Date.now();
         this.saveSessions();
@@ -1957,6 +2028,9 @@ class LLMService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       console.error('生成响应失败:', errorMessage);
+      
+      // API调用失败，更新连接状态为error
+      this.setConnectionStatus(this.getCurrentModel().id, 'error', errorMessage);
       
       // 记录性能数据（失败情况）
       this.updatePerformanceData({
@@ -2132,7 +2206,7 @@ class LLMService {
       throw new Error('通义千问API密钥未配置');
     }
     
-    const response = await fetch(`${this.modelConfig.qwen_base_url}/completions`, {
+    const response = await fetch(`${this.modelConfig.qwen_base_url}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2159,7 +2233,7 @@ class LLMService {
     } else {
       // 处理非流式响应
       const data = await response.json();
-      return data.output?.text || data.choices[0]?.message?.content || '未获取到响应';
+      return data.choices[0]?.message?.content || '未获取到响应';
     }
   }
   

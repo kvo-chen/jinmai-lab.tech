@@ -527,13 +527,37 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const onSearchSubmit = useCallback(() => {
     if (!search.trim()) return
     const q = search.trim()
-    // 中文注释：跳转到探索页并记录最近搜索（去重、限6条）
-    navigate(`/explore?q=${encodeURIComponent(q)}`)
+    
+    // 使用搜索服务分类查询
+    const classification = searchService.classifyQuery(q)
+    
+    // 根据分类结果进行导航
+    if (classification.suggestedResults.length === 1 && classification.confidence > 0.9) {
+      // 高置信度的单一结果，直接导航到对应页面
+      const suggestion = classification.suggestedResults[0]
+      const url = searchService.generateRedirectUrl(suggestion.text, suggestion.type)
+      navigate(url)
+    } else {
+      // 多结果或低置信度，导航到搜索结果页面
+      navigate(`/search?query=${encodeURIComponent(q)}`)
+    }
+    
+    // 跟踪搜索事件
+    searchService.trackSearchEvent({
+      query: q,
+      resultType: classification.primaryType,
+      clicked: false,
+      timestamp: Date.now()
+    })
+    
+    // 更新最近搜索
     setRecentSearches((prev) => {
       const next = [q, ...prev.filter((x) => x !== q)].slice(0, 6)
       try { localStorage.setItem('recentSearches', JSON.stringify(next)) } catch {}
       return next
     })
+    
+    setShowSearchDropdown(false)
   }, [search, navigate])
 
   // 防抖的预加载函数
@@ -635,96 +659,18 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
               <h2 className="text-lg font-bold">{title}</h2>
             </div>
             <div className="flex items-center space-x-3">
-              {/* 中文注释：搜索框 */}
+              {/* 中文注释：搜索框 - 使用增强的SearchBar组件 */}
               <div className="relative search-container max-w-md flex-shrink-0">
-                <div className={`flex items-center rounded-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} px-3 py-2`}>
-                  <i className={`fas fa-search ${isDark ? 'text-gray-400' : 'text-gray-500'} mr-2`}></i>
-                  <input
-                    ref={searchRef}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') onSearchSubmit(); }}
-                    onFocus={() => setShowSearchDropdown(true)}
-                    onBlur={() => {
-                      // 延迟关闭，以便点击建议项
-                      setTimeout(() => setShowSearchDropdown(false), 200)
-                    }}
-                    placeholder={t('header.searchPlaceholder')}
-                    className={`flex-1 outline-none ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
-                  />
-                  {search && (
-                    <button
-                      onClick={() => setSearch('')}
-                      className={`ml-2 p-1 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
-                      aria-label="清除搜索"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  )}
-                  <button
-                  onClick={onSearchSubmit}
-                  className={`ml-2 px-3 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-sm`}
-                  aria-label={t('header.search')}
-                >
-                  {t('header.search')}
-                </button>
-                </div>
-                {/* 搜索建议和最近搜索 */}
-                {showSearchDropdown && (
-                  <div className={`absolute right-0 mt-2 w-80 rounded-xl shadow-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'} z-50`}>
-                    {search && searchSuggestions.length > 0 && (
-                      <div className="px-4 py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}">
-                        <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>搜索建议</span>
-                        <ul className="mt-2 space-y-1">
-                          {searchSuggestions.map((suggestion, index) => (
-                            <li key={index}>
-                              <button
-                                onClick={() => {
-                                  setSearch(suggestion);
-                                  onSearchSubmit();
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-sm ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-900'}`}
-                              >
-                                <i className="fas fa-search mr-2 text-xs text-gray-400"></i>
-                                {suggestion}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {recentSearches.length > 0 && (
-                      <div className="px-4 py-2">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>最近搜索</span>
-                          <button
-                            onClick={() => {
-                              setRecentSearches([]);
-                              localStorage.removeItem('recentSearches');
-                            }}
-                            className={`text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-                          >
-                            清空
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {recentSearches.map((item, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                setSearch(item);
-                                onSearchSubmit();
-                              }}
-                              className={`px-3 py-1.5 rounded-full text-xs ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-50 text-gray-900 hover:bg-gray-100'}`}
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <SearchBar
+                  search={search}
+                  setSearch={handleSearchChange}
+                  showSuggest={showSearchDropdown}
+                  setShowSuggest={setShowSearchDropdown}
+                  suggestions={searchSuggestions}
+                  isDark={isDark}
+                  onSearch={onSearchSubmit}
+                  onSuggestionSelect={handleSuggestionSelect}
+                />
               </div>
               {/* 主题切换按钮 */}
               <button

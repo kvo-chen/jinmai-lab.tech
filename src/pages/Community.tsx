@@ -1614,7 +1614,7 @@ export default function Community() {
           transition={{ duration: 0.4 }}
         >
           <h3 className="font-medium mb-3">社群讨论区</h3>
-          <CommunityDiscussionSection isDark={isDark} messages={messages} onSend={(text: string) => {
+          <DiscussionSection isDark={isDark} messages={messages} onSend={(text: string) => {
             const user = mockCreators.find(c => c.online) || mockCreators[0]
             const next = { id: `m-${Date.now()}`, user: user.name, text, avatar: user.avatar, createdAt: Date.now(), pinned: false }
             setMessages(prev => [next, ...prev])

@@ -573,11 +573,13 @@ class AchievementService {
     if (filter) {
       // 按时间范围筛选
       if (filter.startDate) {
-        filteredRecords = filteredRecords.filter(record => record.date >= filter.startDate);
+        const startDate = filter.startDate;
+        filteredRecords = filteredRecords.filter(record => record.date >= startDate);
       }
       
       if (filter.endDate) {
-        filteredRecords = filteredRecords.filter(record => record.date <= filter.endDate);
+        const endDate = filter.endDate;
+        filteredRecords = filteredRecords.filter(record => record.date <= endDate);
       }
       
       // 按类型筛选

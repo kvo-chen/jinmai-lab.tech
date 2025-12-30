@@ -10,6 +10,8 @@ import { llmService } from '@/services/llmService'
 import { BRANDS } from '@/lib/brands'
 import imageService from '@/services/imageService'
 import { Work, mockWorks } from '@/mock/works'
+import { searchService } from '@/services/searchService'
+import { SearchResultType } from '@/components/SearchBar'
 
 
 // 中文注释：本页专注作品探索，社区相关内容已迁移到创作者社区页面
@@ -49,6 +51,14 @@ export default function Explore() {
   const featuredScrollRef = useRef<HTMLDivElement>(null);
   const tagsContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  
+  // 搜索建议相关状态
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  // 搜索历史记录状态
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [maxHistoryItems, setMaxHistoryItems] = useState(10);
   
   // 分页和无限滚动
   const [page, setPage] = useState(1);
@@ -319,6 +329,9 @@ export default function Explore() {
 
   // 处理搜索
   const handleSearch = () => {
+    if (searchQuery.trim()) {
+      saveSearchHistory(searchQuery.trim());
+    }
     setIsSearching(true);
     navigate(`/explore?search=${encodeURIComponent(searchQuery)}`, { replace: true });
     setTimeout(() => {
@@ -347,6 +360,45 @@ export default function Explore() {
     }
   };
 
+  // 防抖函数
+  const debounce = (func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func.apply(null, args), delay);
+    };
+  };
+
+  // 生成搜索建议
+  const generateSuggestions = debounce(async (query: string) => {
+    if (query.trim().length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+    
+    setIsLoadingSuggestions(true);
+    try {
+      const suggestions = searchService.generateSuggestions(query);
+      setSearchSuggestions(suggestions);
+    } catch (error) {
+      console.error('Failed to generate search suggestions:', error);
+      setSearchSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, 300);
+
+  // 监听搜索查询变化，生成搜索建议
+  useEffect(() => {
+    if (searchQuery && showSearchBar) {
+      generateSuggestions(searchQuery);
+      setShowSuggestions(true);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [searchQuery, showSearchBar]);
+
   // 聚焦搜索输入框
   useEffect(() => {
     if (showSearchBar && searchInputRef.current) {
@@ -354,17 +406,80 @@ export default function Explore() {
     }
   }, [showSearchBar]);
 
+  // 加载搜索历史记录
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('searchHistory');
+      if (savedHistory) {
+        setSearchHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error('Failed to load search history:', error);
+    }
+  }, []);
+
+  // 保存搜索历史记录
+  const saveSearchHistory = (query: string) => {
+    if (!query.trim() || searchHistory.includes(query)) {
+      return;
+    }
+    
+    const updatedHistory = [query, ...searchHistory].slice(0, maxHistoryItems);
+    setSearchHistory(updatedHistory);
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Failed to save search history:', error);
+    }
+  };
+
+  // 清除搜索历史记录
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+    try {
+      localStorage.removeItem('searchHistory');
+    } catch (error) {
+      console.error('Failed to clear search history:', error);
+    }
+  };
+
+  // 从搜索历史记录中移除单个项目
+  const removeFromHistory = (query: string) => {
+    const updatedHistory = searchHistory.filter(item => item !== query);
+    setSearchHistory(updatedHistory);
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Failed to update search history:', error);
+    }
+  };
+
+  // 点击外部关闭搜索建议
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const searchContainer = document.querySelector('.search-container');
+      if (searchContainer && !searchContainer.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
       {/* 顶部红色框 - 优化版 */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-red-700 py-6 px-4 sm:py-8 sm:px-6 rounded-3xl mx-4 mt-4 shadow-2xl">
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-red-700 py-6 px-4 sm:py-8 sm:px-6 rounded-3xl mx-4 mt-4 shadow-2xl max-w-[90vw] mx-auto max-w-9xl">
         {/* 静态装饰性背景元素 */}
         <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 bg-white/15 rounded-full blur-3xl -mr-16 -mt-16 sm:-mr-24 sm:-mt-24"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-36 sm:h-36 bg-white/15 rounded-full blur-3xl -ml-12 -mb-12 sm:-ml-18 sm:-mb-18"></div>
         {/* 中心装饰元素 */}
         <div className="absolute top-1/2 left-1/2 w-[150%] h-[150%] bg-gradient-to-r from-red-500/20 to-pink-500/20 blur-3xl -translate-x-1/2 -translate-y-1/2 rotate-45"></div>
         
-        <div className="container mx-auto relative z-10">
+        <div className="relative z-10">
           {/* 标题和副标题 - 简化动画 */}
           <div className="mb-6 sm:mb-10 text-center md:text-left">
             <h1 
@@ -403,20 +518,20 @@ export default function Explore() {
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </button>
             ))}
+            </div>
           </div>
-        </div>
       </div>
 
       {/* 搜索区 */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
-          <div className="flex-1 max-w-2xl">
-            <div className="relative">
+          <div className="flex-1 max-w-3xl">
+            <div className="relative search-container">
               {showSearchBar ? (
-                <div className="flex items-center rounded-2xl shadow-xl overflow-hidden transition-all duration-400 dark:shadow-gray-700/50 hover:shadow-2xl border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center rounded-3xl shadow-xl overflow-hidden transition-all duration-500 dark:shadow-gray-700/50 hover:shadow-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-850 transform hover:-translate-y-1 sm:shadow-2xl sm:hover:shadow-3xl">
                   {/* 搜索图标 */}
-                  <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="px-4 py-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center sm:px-6 sm:py-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600 dark:text-red-400 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
@@ -425,7 +540,7 @@ export default function Explore() {
                     ref={searchInputRef}
                     type="text"
                     placeholder="搜索作品、设计师或标签..."
-                    className="flex-1 px-5 py-4 border-0 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-0 text-base"
+                    className="flex-1 px-4 py-4 border-0 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-0 text-base font-medium placeholder-gray-400 dark:placeholder-gray-500 sm:px-6 sm:py-5 sm:text-lg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -434,16 +549,16 @@ export default function Explore() {
                   {/* 搜索按钮 */}
                   <button
                     onClick={handleSearch}
-                    className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:via-blue-700 hover:to-blue-800 text-white px-7 py-4 rounded-r-2xl flex items-center gap-2 font-medium transition-all duration-400 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white px-4 py-4 rounded-r-3xl flex items-center gap-2 font-semibold transition-all duration-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 sm:px-8 sm:py-5 sm:gap-3 sm:shadow-xl sm:hover:shadow-2xl"
                   >
                     {isSearching ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin sm:w-6 sm:h-6"></div>
                     ) : (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        <span>搜索</span>
+                        <span className="text-sm sm:text-lg">搜索</span>
                       </>
                     )}
                   </button>
@@ -455,9 +570,9 @@ export default function Explore() {
                       setSearchQuery('');
                       navigate('/explore', { replace: true });
                     }}
-                    className="mr-3 bg-white dark:bg-gray-850 hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 hover:shadow-xl"
+                    className="mr-2 bg-white dark:bg-gray-850 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-full shadow-md transition-all duration-300 transform hover:scale-110 hover:shadow-lg sm:mr-4 sm:p-2.5 sm:shadow-lg sm:hover:shadow-xl"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-300" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-300 sm:h-6 sm:w-6" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -465,20 +580,135 @@ export default function Explore() {
               ) : (
                 <button
                   onClick={() => setShowSearchBar(true)}
-                  className="w-full flex items-center justify-between px-6 py-4.5 bg-gradient-to-r from-white to-gray-50 dark:from-gray-850 dark:to-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-400 transform hover:-translate-y-0.5 border border-gray-100 dark:border-gray-700"
+                  className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-white to-gray-50 dark:from-gray-850 dark:to-gray-800 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 border-2 border-red-100 dark:border-red-900/30 hover:border-red-200 dark:hover:border-red-800/50 sm:px-8 sm:py-5.5"
                 >
-                  <div className="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600 dark:text-red-400 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <span className="text-gray-500 dark:text-gray-400 font-medium text-base">搜索作品、设计师或标签...</span>
+                    <span className="text-gray-500 dark:text-gray-400 font-semibold text-base sm:text-lg">搜索作品、设计师或标签...</span>
                   </div>
-                  <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 sm:p-3.5 sm:shadow-xl sm:hover:shadow-2xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
                 </button>
+              )}
+              
+              {/* 搜索建议下拉菜单 */}
+              {showSuggestions && ((searchSuggestions.length > 0 || isLoadingSuggestions) || searchHistory.length > 0) && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-850 rounded-3xl shadow-3xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                >
+                  {/* 搜索历史记录 */}
+                  {searchHistory.length > 0 && !searchQuery && (
+                    <div>
+                      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                          <span className="text-red-600 dark:text-red-400">🕒</span>
+                          搜索历史
+                        </h4>
+                        <button
+                          onClick={clearSearchHistory}
+                          className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        >
+                          清除
+                        </button>
+                      </div>
+                      <ul>
+                        {searchHistory.map((item, index) => (
+                          <li key={index}>
+                            <button
+                              onClick={() => {
+                                setSearchQuery(item);
+                                setShowSuggestions(false);
+                                handleSearch();
+                              }}
+                              className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200 group"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-red-600 dark:text-red-400">🔍</span>
+                                <span className="font-medium text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                                  {item}
+                                </span>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeFromHistory(item);
+                                }}
+                                className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* 搜索建议 */}
+                  {isLoadingSuggestions ? (
+                    <div className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-gray-500 dark:text-gray-400">加载搜索建议...</span>
+                      </div>
+                    </div>
+                  ) : searchSuggestions.length > 0 ? (
+                    <div>
+                      {searchHistory.length > 0 && !searchQuery && (
+                        <div className="border-b border-gray-200 dark:border-gray-700"></div>
+                      )}
+                      <ul className="max-h-96 overflow-y-auto">
+                        {searchSuggestions.map((suggestion, index) => (
+                          <li key={index}>
+                            <button
+                              onClick={() => {
+                                setSearchQuery(suggestion.text);
+                                setShowSuggestions(false);
+                                handleSearch();
+                              }}
+                              className="w-full text-left px-6 py-4 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200 group"
+                            >
+                              <div className="text-red-600 dark:text-red-400 text-lg">
+                                {suggestion.type === SearchResultType.WORK && '🎨'}
+                                {suggestion.type === SearchResultType.USER && '👤'}
+                                {suggestion.type === SearchResultType.TAG && '🏷️'}
+                                {suggestion.type === SearchResultType.CATEGORY && '📁'}
+                                {suggestion.type === SearchResultType.PAGE && '📄'}
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                                  {suggestion.text}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {suggestion.type === SearchResultType.WORK && '作品'}
+                                  {suggestion.type === SearchResultType.USER && '设计师'}
+                                  {suggestion.type === SearchResultType.TAG && '标签'}
+                                  {suggestion.type === SearchResultType.CATEGORY && '分类'}
+                                  {suggestion.type === SearchResultType.PAGE && '页面'}
+                                </div>
+                              </div>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : !isLoadingSuggestions && searchQuery ? (
+                    <div className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                      未找到相关搜索建议
+                    </div>
+                  ) : null}
+                </motion.div>
               )}
             </div>
           </div>
@@ -880,22 +1110,52 @@ export default function Explore() {
             ))
           ) : pagedWorks.length === 0 ? (
             // 无结果状态
-            <div className="col-span-full text-center py-16">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="col-span-full text-center py-20 bg-white dark:bg-gray-850 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-red-500 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">未找到相关作品</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">尝试调整搜索条件或浏览其他分类</p>
-              <button
-                onClick={() => {
-                  setSelectedCategory('全部');
-                  setSearchQuery('');
-                  navigate('/explore', { replace: true });
-                }}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                浏览全部作品
-              </button>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">未找到相关作品</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                尝试调整搜索关键词，或浏览推荐分类和热门作品，发现更多精彩内容
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => {
+                    setSelectedCategory('全部');
+                    setSearchQuery('');
+                    navigate('/explore', { replace: true });
+                  }}
+                  className="px-8 py-3 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl"
+                >
+                  浏览全部作品
+                </button>
+                <button
+                  onClick={() => setShowSearchBar(true)}
+                  className="px-8 py-3 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300 transform hover:-translate-y-1 shadow-md hover:shadow-lg"
+                >
+                  重新搜索
+                </button>
+              </div>
+              
+              {/* 推荐分类 */}
+              <div className="mt-12 max-w-md mx-auto">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">推荐分类</h4>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {categories.slice(1, 7).map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setSearchQuery('');
+                        navigate('/explore', { replace: true });
+                      }}
+                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-gray-200 dark:border-gray-600"
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             // 作品列表

@@ -207,7 +207,30 @@ class SearchService {
   // 生成搜索建议
   generateSuggestions(query: string): SearchResult[] {
     const classification = this.classifyQuery(query)
+    
+    // 优化搜索建议排序，优先显示最相关的结果
     return classification.suggestedResults
+      .sort((a, b) => {
+        // 按类型优先级排序
+        const typePriority = {
+          [SearchResultType.PAGE]: 5,
+          [SearchResultType.WORK]: 4,
+          [SearchResultType.USER]: 3,
+          [SearchResultType.CATEGORY]: 2,
+          [SearchResultType.TAG]: 1
+        };
+        
+        // 按文本长度排序（更具体的建议优先）
+        const lengthDiff = a.text.length - b.text.length;
+        
+        return typePriority[b.type] - typePriority[a.type] || lengthDiff;
+      })
+      // 去重，避免重复建议
+      .filter((suggestion, index, self) =>
+        index === self.findIndex((s) => s.text === suggestion.text && s.type === suggestion.type)
+      )
+      // 限制建议数量，避免过多结果
+      .slice(0, 8);
   }
 
   // 根据查询和类型生成重定向URL
@@ -248,13 +271,37 @@ class SearchService {
   } {
     const lowerQuery = query.toLowerCase().trim()
 
-    // 搜索作品
-    const works = mockWorks.filter(work => 
-      work.title.toLowerCase().includes(lowerQuery) ||
-      work.description?.toLowerCase().includes(lowerQuery) ||
-      work.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-      work.creator.toLowerCase().includes(lowerQuery)
-    )
+    // 搜索作品并按相关性排序
+    const works = mockWorks
+      .map(work => {
+        let score = 0;
+        const titleLower = work.title.toLowerCase();
+        const descLower = work.description?.toLowerCase() || '';
+        const creatorLower = work.creator.toLowerCase();
+        
+        // 精确匹配权重
+        if (titleLower === lowerQuery) score += 100;
+        if (creatorLower === lowerQuery) score += 80;
+        if (work.tags.some(tag => tag.toLowerCase() === lowerQuery)) score += 60;
+        
+        // 前缀匹配权重
+        if (titleLower.startsWith(lowerQuery)) score += 50;
+        if (creatorLower.startsWith(lowerQuery)) score += 40;
+        if (work.tags.some(tag => tag.toLowerCase().startsWith(lowerQuery))) score += 30;
+        
+        // 包含匹配权重
+        if (titleLower.includes(lowerQuery)) score += 20;
+        if (descLower.includes(lowerQuery)) score += 15;
+        if (work.tags.some(tag => tag.toLowerCase().includes(lowerQuery))) score += 10;
+        if (creatorLower.includes(lowerQuery)) score += 10;
+        
+        // 热门度加权
+        score += work.likes * 0.1 + work.views * 0.01;
+        
+        return { ...work, score };
+      })
+      .filter(work => work.score > 0)
+      .sort((a, b) => b.score - a.score)
 
     // 搜索用户
     const users = this.mockUsers.filter(user => 

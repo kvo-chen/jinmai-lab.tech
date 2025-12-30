@@ -361,25 +361,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               // 这是为了解决外键约束问题，因为auth.users记录可能还没有完全提交
               let dbError;
               
-              // 先尝试插入
-              const { error: insertError } = await supabase.from('users').insert([userForDb]);
-              
-              if (insertError) {
-                console.log('插入用户信息失败，尝试更新:', insertError.message);
+              // 确保supabase不为null
+              if (supabase) {
+                // 先尝试插入
+                const { error: insertError } = await supabase.from('users').insert([userForDb]);
                 
-                // 如果插入失败，尝试更新
-                const { error: updateError } = await supabase.from('users').update(userForDb).eq('id', data.user.id);
-                
-                if (updateError) {
-                  console.error('将用户信息保存到数据库失败:', updateError);
-                  console.error('数据库错误代码:', updateError.code);
-                  console.error('数据库错误信息:', updateError.message);
-                  dbError = updateError;
+                if (insertError) {
+                  console.log('插入用户信息失败，尝试更新:', insertError.message);
+                  
+                  // 如果插入失败，尝试更新
+                  const { error: updateError } = await supabase.from('users').update(userForDb).eq('id', data.user.id);
+                  
+                  if (updateError) {
+                    console.error('将用户信息保存到数据库失败:', updateError);
+                    console.error('数据库错误代码:', updateError.code);
+                    console.error('数据库错误信息:', updateError.message);
+                    dbError = updateError;
+                  } else {
+                    console.log('用户信息已成功更新到数据库');
+                  }
                 } else {
-                  console.log('用户信息已成功更新到数据库');
+                  console.log('用户信息已成功保存到数据库');
                 }
               } else {
-                console.log('用户信息已成功保存到数据库');
+                console.error('Supabase客户端未初始化，无法保存用户信息到数据库');
               }
             } catch (dbException) {
               console.error('保存用户信息到数据库时发生异常:', dbException);
@@ -425,11 +430,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // 暂时保持模拟，后续可以扩展为真实的第三方登录
     return new Promise((resolve) => {
       setTimeout(() => {
+        const username = provider === 'wechat' ? '微信用户' : provider === 'phone' ? '手机号用户' : '第三方用户';
         const baseUser: User = {
           id: `quick-${provider}-${Date.now()}`,
-          username: provider === 'wechat' ? '微信用户' : provider === 'phone' ? '手机号用户' : '第三方用户',
+          username: username,
           email: `${provider}-${Date.now()}@example.com`,
-          avatar: "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=User%20avatar",
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=256`,
           tags: ['国潮爱好者'],
           // 初始会员信息
           membershipLevel: 'free',

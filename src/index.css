@@ -104,6 +104,7 @@
 html {
   overflow-x: hidden;
   scrollbar-gutter: stable; /* 防止滚动条出现时的布局跳动 */
+  font-size: 16px; /* 设置基础字体大小 */
 }
 
 body {
@@ -111,6 +112,79 @@ body {
   width: 100vw;
   margin: 0;
   padding: 0;
+}
+
+/* 移动端响应式字体大小调整 */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px; /* 移动端减小基础字体大小 */
+  }
+}
+
+/* 小屏移动端进一步调整 */
+@media (max-width: 480px) {
+  html {
+    font-size: 13px; /* 小屏移动端进一步减小字体大小 */
+  }
+}
+
+/* 移动端元素尺寸优化 */
+@media (max-width: 768px) {
+  /* 按钮尺寸优化 */
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  /* 输入框尺寸优化 */
+  input, textarea, select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  /* 标题尺寸优化 */
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+  }
+  
+  /* 卡片间距优化 */
+  .card, section, article {
+    margin-bottom: 1rem;
+  }
+  
+  /* 网格布局优化 */
+  .grid {
+    gap: 1rem;
+  }
+  
+  /* 移动端通用内边距优化 */
+  .px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .px-6 {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  
+  .py-4 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .py-6 {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
 }
 
 /* 自定义字体类 */

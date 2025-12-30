@@ -220,8 +220,8 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <div className="flex flex-col md:flex-row items-center md:items-start">
-              <div className="relative mb-4 md:mb-0 md:mr-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start p-2 md:p-0">
+              <div className="relative mb-6 md:mb-0 md:mr-6">
                 <img 
                   src={user?.avatar || 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop'} 
                   alt={user?.username || '用户头像'} 
@@ -233,12 +233,12 @@ export default function Dashboard() {
                 </div>
               </div>
               
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-3">
-                  <div>
-                    <h2 className="text-xl font-bold mb-1">{user?.username}</h2>
-                    <div className="flex items-center">
-                      <span className="bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full mr-2">
+              <div className="flex-1 w-full">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                  <div className="mb-4 md:mb-0">
+                    <h2 className="text-xl font-bold mb-2">{user?.username}</h2>
+                    <div className="flex items-center flex-wrap gap-2">
+                      <span className="bg-blue-100 text-blue-600 text-sm px-3 py-1 rounded-full">
                         {creatorLevelInfo.currentLevel.name} {creatorLevelInfo.currentLevel.icon}
                       </span>
                       <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -247,11 +247,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                     {/* 会员中心入口 */}
                     <Link 
                       to="/membership"
-                      className={`mt-3 md:mt-0 px-4 py-2 rounded-lg min-h-[44px] bg-red-600 hover:bg-red-700 text-white transition-colors text-sm flex items-center justify-center`}
+                      className={`w-full px-4 py-3 rounded-lg min-h-[44px] bg-red-600 hover:bg-red-700 text-white transition-colors text-sm flex items-center justify-center`}
                     >
                       <i className="fas fa-crown mr-1.5"></i>
                       会员中心
@@ -260,7 +260,7 @@ export default function Dashboard() {
                     {/* 中文注释：移动端优化——详情切换按钮触控区统一至少44px，并增加无障碍属性 */}
                     <button 
                       onClick={() => setShowCreatorProfile(!showCreatorProfile)}
-                      className={`mt-3 md:mt-0 px-4 py-2 rounded-lg min-h-[44px] ${
+                      className={`w-full px-4 py-3 rounded-lg min-h-[44px] ${
                         isDark 
                           ? 'bg-gray-700 hover:bg-gray-600' 
                           : 'bg-gray-100 hover:bg-gray-200'
@@ -274,12 +274,12 @@ export default function Dashboard() {
                 </div>
               
               {/* 等级进度条 */}
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
+              <div className="mb-5">
+                <div className="flex justify-between text-sm mb-2">
                   <span>{creatorLevelInfo.currentLevel.name}</span>
-                  <span>{creatorLevelInfo.nextLevel ? `${creatorLevelInfo.nextLevel.name} (${creatorLevelInfo.nextLevel.requiredPoints}积分)` : '已达最高等级'}</span>
+                  <span className="text-right">{creatorLevelInfo.nextLevel ? `${creatorLevelInfo.nextLevel.name} (${creatorLevelInfo.nextLevel.requiredPoints}积分)` : '已达最高等级'}</span>
                 </div>
-                <div className={`h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <div className={`h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'} mb-1`}>
                   <div 
                     className="h-full rounded-full bg-gradient-to-r from-blue-500 to-red-600"
                     style={{ width: `${creatorLevelInfo.levelProgress}%` }}
@@ -288,11 +288,11 @@ export default function Dashboard() {
               </div>
               
               {/* 成就徽章 */}
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {achievements.slice(0, 4).map((achievement) => (
                   <div 
                     key={achievement.id}
-                    className={`flex items-center px-3 py-1.5 rounded-full text-sm ${
+                    className={`flex items-center px-3 py-2 rounded-full text-sm ${
                       isDark ? 'bg-gray-700' : 'bg-gray-100'
                     }`}
                   >

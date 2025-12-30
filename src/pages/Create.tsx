@@ -9,7 +9,7 @@ import AIReview from '@/components/AIReview';
  
 import LLMCommandPanel from '@/components/LLMCommandPanel';
 import ModelSelector from '@/components/ModelSelector';
-import PerformanceMonitor from '@/components/PerformanceMonitor';
+
 import { HaiheBoatTransition, TianjinImage } from '@/components/TianjinStyleComponents';
 
 import { llmService } from '../services/llmService';
@@ -107,8 +107,7 @@ export default function Create() {
   } | null>(null);
   const [aiExplanation, setAiExplanation] = useState('');
   const [explainCollapsed, setExplainCollapsed] = useState(false);
-  // 中文注释：默认选择豆包作为生图引擎，点击“生成”时直接调用豆包接口
-  const [engine, setEngine] = useState<'sdxl' | 'doubao'>('doubao');
+  
   const [fusionMode, setFusionMode] = useState<boolean>(false);
   // 中文注释：预览图点击触发豆包重新生成时的加载状态
   const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
@@ -136,7 +135,7 @@ export default function Create() {
   const [streamStatus, setStreamStatus] = useState<'idle' | 'running' | 'paused' | 'completed' | 'error'>('idle');
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [filterIntensity, setFilterIntensity] = useState<number>(5);
-  const [autoGenerate, setAutoGenerate] = useState<boolean>(true);
+  const [autoGenerate, setAutoGenerate] = useState<boolean>(false);
   const [showQuickActions, setShowQuickActions] = useState<boolean>(false);
   // 中文注释：用于“更多玩法”下拉的容器引用，以便检测外部点击关闭
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
@@ -461,26 +460,8 @@ export default function Create() {
       setCurrentStep(2);
       toast.success('AI创作完成！请选择一个方案进行编辑');
       
-      if (engine === 'doubao') {
-        try {
-          const input = stylePreset ? `${prompt}；风格：${stylePreset}` : prompt;
-          const r = await doubao.generateImage({ prompt: input, size: '1024x1024', n: Math.min(Math.max(generateCount, 1), 6), response_format: 'url', watermark: true })
-          const list = (r as any)?.data?.data || []
-          const urls = list.map((d: any) => {
-            if (d?.url) return d.url
-            if (d?.b64_json) return `data:image/png;base64,${d.b64_json}`
-            return ''
-          }).filter((u: string) => !!u)
-          if (urls.length) {
-            const mapped = urls.map((u: string, idx: number) => ({ id: idx + 1, thumbnail: u, score: 80 }))
-            setGeneratedResults(mapped)
-          } else {
-            setGeneratedResults(aiGeneratedResults)
-          }
-        } catch {
-          setGeneratedResults(aiGeneratedResults)
-        }
-      }
+      // 移除硬编码的豆包调用，使用AI生成的文本结果
+      setGeneratedResults(aiGeneratedResults);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         setStreamStatus('idle');
@@ -509,8 +490,8 @@ export default function Create() {
       });
     }
     if (autoGenerate) {
-      generateThreeVariantsWithDoubao();
-    }
+        generateThreeVariants();
+      }
   };
 
   const applyFilterToPrompt = () => {
@@ -525,8 +506,8 @@ export default function Create() {
       return nextArr;
     });
     if (autoGenerate) {
-      generateThreeVariantsWithDoubao();
-    }
+        generateThreeVariants();
+      }
   };
 
   const renderToolSettingsPanel = () => {
@@ -784,7 +765,7 @@ export default function Create() {
       const finalPrompt = merged || `${a} 与 ${b} 的融合设计`;
       setPrompt(finalPrompt);
       setFusionMode(true);
-      await generateThreeVariantsWithDoubao();
+      await generateThreeVariants();
       toast.success('融合生成完成，已更新三张方案');
       setCurrentStep(2);
     } catch {
@@ -1194,11 +1175,6 @@ export default function Create() {
           </div>
           
       <div className="flex items-center space-x-4">
-            <div className="hidden md:flex items-center gap-2">
-              <span className="text-sm">生成引擎</span>
-              <button onClick={() => setEngine('sdxl')} className={`px-3 py-1.5 rounded-full text-sm ${engine==='sdxl' ? 'bg-red-600 text-white' : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}>SDXL</button>
-              <button onClick={() => setEngine('doubao')} className={`px-3 py-1.5 rounded-full text-sm ${engine==='doubao' ? 'bg-red-600 text-white' : (isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')}`}>Doubao</button>
-            </div>
             <button 
               onClick={() => setShowCollaborationPanel(true)}
               className={`px-4 py-2 rounded-full transition-colors ${
@@ -1230,8 +1206,7 @@ export default function Create() {
               AI点评
             </button>
             
-            {/* 性能监控组件 */}
-            <PerformanceMonitor />
+            
 
             {/* 中文注释：自动保存设置（开关与间隔） */}
             <div className="hidden md:flex items-center gap-2">

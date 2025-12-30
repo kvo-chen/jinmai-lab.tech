@@ -177,7 +177,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
           onBlur={handleBlur}
           onKeyPress={handleKeyPress}
           className={`${inputBaseClassName} flex-1 px-2 py-2 border-0 focus:outline-none focus:ring-0 transition-all duration-300`} 
-          placeholder="搜索作品、素材或用户" 
+          placeholder="搜索作品、用户、分类、标签或页面" 
           aria-label="搜索内容" 
         />
         

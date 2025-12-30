@@ -30,6 +30,46 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
   const [isListening, setIsListening] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
   const [showSidebarDrawer, setShowSidebarDrawer] = useState(false)
+  // 通知状态管理
+  const [showNotifications, setShowNotifications] = useState(false)
+  // 通知数据类型
+  type Notification = {
+    id: string
+    title: string
+    description: string
+    time: string
+    read: boolean
+    type: 'info' | 'success' | 'warning' | 'error'
+    category: string
+  }
+  // 初始化通知数据
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    try {
+      const stored = localStorage.getItem('notifications')
+      if (stored) return JSON.parse(stored)
+    } catch (error) {
+      console.error('Failed to load notifications from localStorage:', error)
+    }
+    // 默认通知数据
+    return [
+      { id: 'n1', title: '新消息', description: '您有一条新的私信', time: '刚刚', read: false, type: 'info', category: 'message' },
+      { id: 'n2', title: '活动提醒', description: '共创活动将于明天开始', time: '1 小时前', read: false, type: 'warning', category: 'event' },
+      { id: 'n3', title: '系统通知', description: '新功能已上线，快来体验', time: '昨天', read: true, type: 'success', category: 'system' },
+      { id: 'n4', title: '作品点赞', description: '您的作品获得了新的点赞', time: '2 天前', read: true, type: 'success', category: 'like' },
+      { id: 'n5', title: '关注通知', description: '有人关注了您', time: '3 天前', read: true, type: 'info', category: 'follow' },
+      { id: 'n6', title: '错误通知', description: '上传失败，请重试', time: '4 小时前', read: false, type: 'error', category: 'creation' },
+    ]
+  })
+  // 未读通知数量
+  const unreadNotificationCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications])
+  // 保存通知到本地存储
+  useEffect(() => {
+    try {
+      localStorage.setItem('notifications', JSON.stringify(notifications))
+    } catch (error) {
+      console.error('Failed to save notifications to localStorage:', error)
+    }
+  }, [notifications])
   
   // 使用 useMemo 优化主题相关的样式计算
   const themeStyles = useMemo(() => {
@@ -153,7 +193,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
       {/* 顶部搜索栏 - 增强视觉层次感 */}
       {showSearch ? (
         <div className={clsx(
-          'sticky top-0 z-40 border-b py-2 px-4 transition-all duration-300 ease-in-out',
+          'sticky top-0 z-40 border-b py-1.5 px-3 transition-all duration-300 ease-in-out',
           isDark ? 'bg-gray-800/95 backdrop-blur-2xl border-gray-700 shadow-lg' : 
           theme === 'pink' ? 'bg-pink-100/95 backdrop-blur-2xl border-pink-200 shadow-lg' : 
           'bg-white/95 backdrop-blur-2xl border-gray-200 shadow-lg'
@@ -214,7 +254,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
         </div>
       ) : (
         <div className={clsx(
-          'sticky top-0 z-40 border-b py-2 px-4 transition-all duration-300 ease-in-out',
+          'sticky top-0 z-40 border-b py-1.5 px-3 transition-all duration-300 ease-in-out',
           isDark ? 'bg-gray-800/95 backdrop-blur-2xl border-gray-700 shadow-lg' : 
           theme === 'pink' ? 'bg-pink-100/95 backdrop-blur-2xl border-pink-200 shadow-lg' : 
           'bg-white/95 backdrop-blur-2xl border-gray-200 shadow-lg'
@@ -226,37 +266,37 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
               <button
                 onClick={() => setShowSidebarDrawer(true)}
                 className={clsx(
-                  'w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 active:scale-95 mr-3',
+                  'w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 active:scale-95 mr-2',
                   isDark ? 'text-gray-500 hover:bg-gray-700' : 
                   theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
                   'text-gray-700 hover:bg-gray-200'
                 )}
                 aria-label="打开侧边栏"
               >
-                <i className="fas fa-bars text-lg"></i>
+                <i className="fas fa-bars text-base"></i>
               </button>
               <NavLink
                 to="/"
                 onTouchStart={() => prefetchRoute('/')}
                 className={clsx(
-                  'flex items-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95 group',
+                  'flex items-center gap-1.5 transition-all duration-300 hover:scale-105 active:scale-95 group',
                   isDark ? 'text-white' : 
                   theme === 'pink' ? 'text-pink-900' : 
                   'text-gray-900'
                 )}
               >
                 <div className={clsx(
-                  'w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 hover:scale-110 group-hover:shadow-xl',
+                  'w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 hover:scale-110 group-hover:shadow-xl',
                   `bg-gradient-to-br ${themeStyles.logoBackground}`,
                   'relative overflow-hidden'
                 )}>
-                  <span className="text-lg font-extrabold z-10 transform transition-transform duration-300 group-hover:scale-125">{themeStyles.logoText}</span>
+                  <span className="text-base font-extrabold z-10 transform transition-transform duration-300 group-hover:scale-125">{themeStyles.logoText}</span>
                   <div className={clsx(
                     'absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-300',
                     `bg-gradient-to-tr from-white to-transparent`
                   )}></div>
                 </div>
-                <span className="ml-1 text-xl font-extrabold tracking-tight align-baseline bg-clip-text text-transparent bg-gradient-to-r"
+                <span className="ml-1 text-lg font-extrabold tracking-tight align-baseline bg-clip-text text-transparent bg-gradient-to-r"
                   style={{ 
                     backgroundImage: isDark ? 'linear-gradient(to right, #60a5fa, #a78bfa)' : 
                                      theme === 'pink' ? 'linear-gradient(to right, #ec4899, #f472b6)' : 
@@ -268,50 +308,102 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
             </div>
             
             {/* 右侧按钮组 - 向右靠紧 */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               {/* 搜索按钮 */}
               <button
                 onClick={() => setShowSearch(true)}
                 className={clsx(
-                  'w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 active:scale-95',
+                  'w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 active:scale-95',
                   isDark ? 'text-gray-500 hover:bg-gray-700' : 
                   theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
                   'text-gray-700 hover:bg-gray-200'
                 )}
                 aria-label="搜索"
               >
-                <i className="fas fa-search text-lg"></i>
+                <i className="fas fa-search text-base"></i>
               </button>
               
               {/* 通知按钮 - 优化通知徽章 */}
               <button
                 className={clsx(
-                  'w-11 h-11 flex items-center justify-center rounded-full relative transition-all duration-300 hover:scale-110 active:scale-95',
+                  'w-9 h-9 flex items-center justify-center rounded-full relative transition-all duration-300 hover:scale-110 active:scale-95',
                   isDark ? 'text-gray-500 hover:bg-gray-700' : 
                   theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
                   'text-gray-700 hover:bg-gray-200'
                 )}
                 aria-label="通知"
+                onClick={() => setShowNotifications(!showNotifications)}
               >
-                <i className="fas fa-bell text-lg"></i>
-                {unreadCount > 0 && (
+                <i className="fas fa-bell text-base"></i>
+                {unreadNotificationCount > 0 && (
                   <span className={clsx(
-                    'absolute -top-1 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all duration-300 animate-bounce',
+                    'absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full flex items-center justify-center text-white text-[10px] font-bold transition-all duration-300 animate-bounce',
                     isDark ? 'bg-blue-500 shadow-lg' : 
                     theme === 'pink' ? 'bg-pink-500 shadow-lg' : 
                     'bg-orange-500 shadow-lg'
                   )}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                   </span>
                 )}
               </button>
+              {/* 通知列表下拉 */}
+              {showNotifications && (
+                <div className="fixed top-0 left-0 w-full h-full z-50 flex justify-end items-start pt-20 px-4 pointer-events-none">
+                  {/* 点击外部关闭通知列表 */}
+                  <div className="absolute inset-0 bg-black/10 pointer-events-auto" onClick={() => setShowNotifications(false)}></div>
+                  <div className={`relative w-full max-w-xs rounded-xl shadow-2xl ring-2 overflow-hidden pointer-events-auto ${isDark ? 'bg-gray-800 ring-gray-700' : theme === 'pink' ? 'bg-white ring-pink-300' : 'bg-white ring-gray-300'}`} role="dialog" aria-label="通知列表">
+                    {/* 通知列表头部 */}
+                    <div className={`px-4 py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between bg-gradient-to-r ${isDark ? 'from-gray-800 to-gray-900' : theme === 'pink' ? 'from-pink-50 to-white' : 'from-gray-50 to-white'}`}>
+                      <h4 className="font-medium">最新通知</h4>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className={`text-xs px-3 py-1.5 rounded-lg transition-all duration-300 ${isDark ? 'bg-gray-700 text-white hover:bg-blue-900/50 hover:text-blue-400' : 'bg-gray-100 text-gray-900 hover:bg-blue-50 hover:text-blue-700'}`}
+                          onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}>
+                          <i className="fas fa-check-double mr-1"></i>
+                          全部已读
+                        </button>
+                        <button
+                          className={`text-xs px-3 py-1.5 rounded-lg transition-all duration-300 ${isDark ? 'bg-gray-700 text-white hover:bg-red-900/50 hover:text-red-400' : 'bg-gray-100 text-gray-900 hover:bg-red-50 hover:text-red-700'}`}
+                          onClick={() => setNotifications([])}>
+                          <i className="fas fa-trash mr-1"></i>
+                          清空
+                        </button>
+                      </div>
+                    </div>
+                    {/* 通知列表内容 */}
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <i className="fas fa-bell-slash text-3xl text-gray-400 mb-2"></i>
+                        <p className="text-sm text-gray-500">暂无通知</p>
+                      </div>
+                    ) : (
+                      <div className="max-h-[300px] overflow-y-auto">
+                        {notifications.map((notification) => (
+                          <div key={notification.id} className={`p-4 border-b last:border-b-0 transition-all duration-200 hover:bg-opacity-90 ${isDark ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                            <div className="flex items-start gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${notification.type === 'success' ? (isDark ? 'bg-green-700' : 'bg-green-500') : notification.type === 'error' ? (isDark ? 'bg-red-700' : 'bg-red-500') : notification.type === 'warning' ? (isDark ? 'bg-yellow-700' : 'bg-yellow-500') : (isDark ? 'bg-blue-700' : 'bg-blue-500')}`}>
+                                {notification.type === 'success' ? '✓' : notification.type === 'error' ? '✗' : notification.type === 'warning' ? '!' : 'i'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{notification.title}</p>
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notification.description}</p>
+                                <p className="text-xs text-gray-400 mt-2">{notification.time}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {/* 用户菜单 - 增强视觉效果 */}
               {isAuthenticated ? (
                 <div className="relative group">
                   <button
                     className={clsx(
-                      'flex items-center justify-center w-11 h-11 rounded-full transition-all duration-300 hover:scale-110 active:scale-95',
+                      'flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 hover:scale-110 active:scale-95',
                       isDark ? 'text-gray-300 hover:bg-gray-800' : 
                       theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
                       'text-gray-700 hover:bg-gray-200'
@@ -319,12 +411,12 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                     aria-label="用户菜单"
                   >
                     <div className={clsx(
-                      'w-10 h-10 rounded-full overflow-hidden border-2 shadow-md transition-all duration-300 hover:ring-2',
+                      'w-8 h-8 rounded-full overflow-hidden border-2 shadow-md transition-all duration-300 hover:ring-2',
                       isDark ? 'border-gray-700 hover:ring-blue-500' : 
                       theme === 'pink' ? 'border-pink-300 hover:ring-pink-500' : 
                       'border-gray-300 hover:ring-orange-500'
                     )}>
-                      {user?.avatar ? (
+                      {user?.avatar && user.avatar.trim() ? (
                         <TianjinImage
                           src={user.avatar}
                           alt={user.username}
@@ -332,7 +424,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                         />
                       ) : (
                         <div className={clsx(
-                          'w-full h-full flex items-center justify-center text-white font-bold text-lg',
+                          'w-full h-full flex items-center justify-center text-white font-bold text-base',
                           isDark ? 'bg-gray-800' : 
                           theme === 'pink' ? 'bg-pink-300' : 
                           'bg-gray-300'
@@ -352,57 +444,96 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                   )}>
                     <div className="py-2">
                       <NavLink
-                        to="/dashboard"
-                        onTouchStart={() => prefetchRoute('/dashboard')}
-                        className={clsx(
-                          'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
-                          isDark ? 'text-gray-300 hover:bg-gray-700' : 
-                          theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
-                          'text-gray-900 hover:bg-gray-100'
-                        )}
-                      >
-                        <i className="fas fa-user mr-3"></i>
-                        {t('header.profile')}
-                      </NavLink>
-                      <NavLink
-                        to="/membership"
-                        onTouchStart={() => prefetchRoute('/membership')}
-                        className={clsx(
-                          'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
-                          isDark ? 'text-gray-300 hover:bg-gray-700' : 
-                          theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
-                          'text-gray-900 hover:bg-gray-100'
-                        )}
-                      >
-                        <i className="fas fa-crown mr-3"></i>
-                        {t('header.membershipCenter')}
-                      </NavLink>
-                      <NavLink
-                        to="/create"
-                        onTouchStart={() => prefetchRoute('/create')}
-                        className={clsx(
-                          'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
-                          isDark ? 'text-gray-300 hover:bg-gray-700' : 
-                          theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
-                          'text-gray-900 hover:bg-gray-100'
-                        )}
-                      >
-                        <i className="fas fa-paint-brush mr-3"></i>
-                        {t('common.create')}
-                      </NavLink>
-                      <NavLink
-                        to="/settings"
-                        onTouchStart={() => prefetchRoute('/settings')}
-                        className={clsx(
-                          'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
-                          isDark ? 'text-gray-300 hover:bg-gray-700' : 
-                          theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
-                          'text-gray-900 hover:bg-gray-100'
-                        )}
-                      >
-                        <i className="fas fa-cog mr-3"></i>
-                        {t('header.settings')}
-                      </NavLink>
+                      to="/dashboard"
+                      onTouchStart={() => prefetchRoute('/dashboard')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-user mr-3"></i>
+                      {t('header.profile')}
+                    </NavLink>
+                    <NavLink
+                      to="/analytics"
+                      onTouchStart={() => prefetchRoute('/analytics')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-chart-bar mr-3"></i>
+                      数据分析
+                    </NavLink>
+                    <NavLink
+                      to="/drafts"
+                      onTouchStart={() => prefetchRoute('/drafts')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-file-alt mr-3"></i>
+                      草稿箱
+                    </NavLink>
+                    <NavLink
+                      to="/collections"
+                      onTouchStart={() => prefetchRoute('/collections')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-heart mr-3"></i>
+                      我的收藏
+                    </NavLink>
+                    <NavLink
+                      to="/membership"
+                      onTouchStart={() => prefetchRoute('/membership')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-crown mr-3"></i>
+                      {t('header.membershipCenter')}
+                    </NavLink>
+                    <NavLink
+                      to="/create"
+                      onTouchStart={() => prefetchRoute('/create')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-paint-brush mr-3"></i>
+                      {t('common.create')}
+                    </NavLink>
+                    <NavLink
+                      to="/settings"
+                      onTouchStart={() => prefetchRoute('/settings')}
+                      className={clsx(
+                        'block px-4 py-3 text-sm transition-all duration-200 hover:translate-x-1',
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                        theme === 'pink' ? 'text-pink-900 hover:bg-pink-200' : 
+                        'text-gray-900 hover:bg-gray-100'
+                      )}
+                    >
+                      <i className="fas fa-cog mr-3"></i>
+                      {t('header.settings')}
+                    </NavLink>
                       <div className={clsx(
                         'border-t my-2',
                         isDark ? 'border-gray-700' : 
@@ -429,18 +560,33 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                   </div>
                 </div>
               ) : (
-                /* 未登录状态 - 增强按钮效果 */
+                /* 未登录状态 - 显示用户图标 */
                 <NavLink
                   to="/login"
                   onTouchStart={() => prefetchRoute('/login')}
                   className={clsx(
-                    'px-5 py-3 rounded-full font-medium transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg',
-                    isDark ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-500/30' : 
-                    theme === 'pink' ? 'bg-pink-500 text-white hover:bg-pink-600 hover:shadow-pink-500/30' : 
-                    'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-orange-500/30'
+                    'flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 hover:scale-110 active:scale-95',
+                    isDark ? 'text-gray-300 hover:bg-gray-700' : 
+                    theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
+                    'text-gray-700 hover:bg-gray-200'
                   )}
+                  aria-label="登录"
                 >
-                  {t('header.login')}
+                  <div className={clsx(
+                    'w-8 h-8 rounded-full overflow-hidden border-2 shadow-md transition-all duration-300 hover:ring-2',
+                    isDark ? 'border-gray-700 hover:ring-blue-500' : 
+                    theme === 'pink' ? 'border-pink-300 hover:ring-pink-500' : 
+                    'border-gray-300 hover:ring-orange-500'
+                  )}>
+                    <div className={clsx(
+                      'w-full h-full flex items-center justify-center text-white font-bold text-base',
+                      isDark ? 'bg-gray-800' : 
+                      theme === 'pink' ? 'bg-pink-300' : 
+                      'bg-gray-300'
+                    )}>
+                      <i className="fas fa-user"></i>
+                    </div>
+                  </div>
                 </NavLink>
               )}
             </div>
@@ -466,38 +612,38 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
         )} style={{ width: '85.71%' }}>
           {/* 抽屉头部 */}
           <div className={clsx(
-            'p-4 flex items-center justify-between border-b',
+            'p-3 flex items-center justify-between border-b',
             isDark ? 'border-gray-800' : 
             theme === 'pink' ? 'border-pink-200' : 
             'border-gray-200'
           )}>
             <div className="flex items-center">
               <div className={clsx(
-                'w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold',
+                'w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold',
                 themeStyles.logoBackground
               )}>
                 {themeStyles.logoText}
               </div>
-              <span className="ml-2 text-xl font-bold">津脉智坊</span>
+              <span className="ml-2 text-lg font-bold">津脉智坊</span>
             </div>
             <button
               onClick={() => setShowSidebarDrawer(false)}
               className={clsx(
-                'p-3 rounded-full transition-colors duration-200',
+                'p-2 rounded-full transition-colors duration-200',
                 isDark ? 'text-gray-300 hover:bg-gray-800' : 
                 theme === 'pink' ? 'text-pink-700 hover:bg-pink-200' : 
                 'text-gray-700 hover:bg-gray-200'
               )}
               aria-label="关闭侧边栏"
             >
-              <i className="fas fa-times"></i>
+              <i className="fas fa-times text-sm"></i>
             </button>
           </div>
           
           {/* 主题切换快捷入口 */}
-          <div className={clsx('p-4 rounded-lg transition-all duration-300', isDark ? 'bg-gray-800' : theme === 'pink' ? 'bg-pink-100' : 'bg-gray-100')}>
-            <h3 className={clsx('text-sm font-semibold mb-3 uppercase tracking-wider', isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-700' : 'text-gray-600')}>{t('header.toggleTheme')}</h3>
-            <div className="grid grid-cols-4 gap-3">
+          <div className={clsx('p-3 rounded-lg transition-all duration-300', isDark ? 'bg-gray-800' : theme === 'pink' ? 'bg-pink-100' : 'bg-gray-100')}>
+            <h3 className={clsx('text-xs font-semibold mb-2 uppercase tracking-wider', isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-700' : 'text-gray-600')}>{t('header.toggleTheme')}</h3>
+            <div className="grid grid-cols-4 gap-2">
               {availableThemes.map((themeOption) => (
                 <button
                   key={themeOption.value}
@@ -505,10 +651,10 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                     setTheme(themeOption.value);
                     toast.success(`已切换到${themeOption.label}主题`);
                   }}
-                  className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${theme === themeOption.value ? (isDark ? 'bg-blue-600 text-white' : theme === 'pink' ? 'bg-pink-500 text-white' : 'bg-orange-500 text-white') : (isDark ? 'bg-gray-700 hover:bg-gray-600' : theme === 'pink' ? 'bg-pink-200 hover:bg-pink-300' : 'bg-gray-200 hover:bg-gray-300')}`}
+                  className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${theme === themeOption.value ? (isDark ? 'bg-blue-600 text-white' : theme === 'pink' ? 'bg-pink-500 text-white' : 'bg-orange-500 text-white') : (isDark ? 'bg-gray-700 hover:bg-gray-600' : theme === 'pink' ? 'bg-pink-200 hover:bg-pink-300' : 'bg-gray-200 hover:bg-gray-300')}`}
                   title={themeOption.label}
                 >
-                  <i className={`${themeOption.icon} text-xl mb-1`}></i>
+                  <i className={`${themeOption.icon} text-lg mb-1`}></i>
                   <span className="text-xs">{themeOption.label}</span>
                 </button>
               ))}
@@ -516,9 +662,9 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
           </div>
           
           {/* 语言切换快捷入口 */}
-          <div className={clsx('p-4 rounded-lg transition-all duration-300', isDark ? 'bg-gray-800' : theme === 'pink' ? 'bg-pink-100' : 'bg-gray-100')}>
-            <h3 className={clsx('text-sm font-semibold mb-3 uppercase tracking-wider', isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-700' : 'text-gray-600')}>{t('common.language')}</h3>
-            <div className="grid grid-cols-2 gap-3">
+          <div className={clsx('p-3 rounded-lg transition-all duration-300', isDark ? 'bg-gray-800' : theme === 'pink' ? 'bg-pink-100' : 'bg-gray-100')}>
+            <h3 className={clsx('text-xs font-semibold mb-2 uppercase tracking-wider', isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-700' : 'text-gray-600')}>{t('common.language')}</h3>
+            <div className="grid grid-cols-2 gap-2">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
@@ -526,39 +672,39 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                     changeLanguage(lang.code);
                     toast.success(`已切换到${lang.name}`);
                   }}
-                  className={`flex items-center justify-center p-4 rounded-lg transition-all duration-200 ${currentLanguage === lang.code ? (isDark ? 'bg-blue-600 text-white' : theme === 'pink' ? 'bg-pink-500 text-white' : 'bg-orange-500 text-white') : (isDark ? 'bg-gray-700 hover:bg-gray-600' : theme === 'pink' ? 'bg-pink-200 hover:bg-pink-300' : 'bg-gray-200 hover:bg-gray-300')}`}
+                  className={`flex items-center justify-center p-3 rounded-lg transition-all duration-200 ${currentLanguage === lang.code ? (isDark ? 'bg-blue-600 text-white' : theme === 'pink' ? 'bg-pink-500 text-white' : 'bg-orange-500 text-white') : (isDark ? 'bg-gray-700 hover:bg-gray-600' : theme === 'pink' ? 'bg-pink-200 hover:bg-pink-300' : 'bg-gray-200 hover:bg-gray-300')}`}
                   title={lang.name}
                 >
-                  <span className="text-sm">{lang.name}</span>
+                  <span className="text-xs">{lang.name}</span>
                 </button>
               ))}
             </div>
           </div>
           
           {/* 导航菜单 */}
-          <nav className="p-4 space-y-6">
+          <nav className="p-3 space-y-4">
             {/* 常用功能 */}
             <div>
-              <h3 className={clsx('text-sm font-semibold mb-3 uppercase tracking-wider', isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-700' : 'text-gray-600')}>{t('sidebar.commonFunctions')}</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <NavLink to="/" title="首页" onTouchStart={() => prefetchRoute('/')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
-                  <i className="fas fa-home text-xl mb-1"></i>
+              <h3 className={clsx('text-xs font-semibold mb-2 uppercase tracking-wider', isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-700' : 'text-gray-600')}>{t('sidebar.commonFunctions')}</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <NavLink to="/" title="首页" onTouchStart={() => prefetchRoute('/')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
+                  <i className="fas fa-home text-lg mb-1"></i>
                   <span className="text-xs">{t('common.home')}</span>
                 </NavLink>
-                <NavLink to="/explore" title="探索作品" onTouchStart={() => prefetchRoute('/explore')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
-                  <i className="fas fa-compass text-xl mb-1"></i>
+                <NavLink to="/explore" title="探索作品" onTouchStart={() => prefetchRoute('/explore')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
+                  <i className="fas fa-compass text-lg mb-1"></i>
                   <span className="text-xs">{t('common.explore')}</span>
                 </NavLink>
-                <NavLink to="/particle-art" title="粒子艺术" onTouchStart={() => prefetchRoute('/particle-art')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
-                  <i className="fas fa-palette text-xl mb-1"></i>
+                <NavLink to="/particle-art" title="粒子艺术" onTouchStart={() => prefetchRoute('/particle-art')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
+                  <i className="fas fa-palette text-lg mb-1"></i>
                   <span className="text-xs">{t('common.particleArt')}</span>
                 </NavLink>
-                <NavLink to="/tools" title="创作中心" onTouchStart={() => prefetchRoute('/tools')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
-                  <i className="fas fa-tools text-xl mb-1"></i>
+                <NavLink to="/tools" title="创作中心" onTouchStart={() => prefetchRoute('/tools')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
+                  <i className="fas fa-tools text-lg mb-1"></i>
                   <span className="text-xs">{t('common.create')}</span>
                 </NavLink>
-                <NavLink to="/neo" title="灵感引擎" onTouchStart={() => prefetchRoute('/neo')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
-                  <i className="fas fa-bolt text-xl mb-1"></i>
+                <NavLink to="/neo" title="灵感引擎" onTouchStart={() => prefetchRoute('/neo')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
+                  <i className="fas fa-bolt text-lg mb-1"></i>
                   <span className="text-xs">{t('common.neo')}</span>
                 </NavLink>
               </div>

@@ -210,11 +210,11 @@ class ErrorLogger {
       if (filters.severity) {
         result = result.filter(error => error.severity === filters.severity);
       }
-      if (filters.startTime) {
-        result = result.filter(error => error.timestamp >= filters.startTime);
+      if (filters.startTime !== undefined) {
+        result = result.filter(error => error.timestamp >= filters.startTime!);
       }
-      if (filters.endTime) {
-        result = result.filter(error => error.timestamp <= filters.endTime);
+      if (filters.endTime !== undefined) {
+        result = result.filter(error => error.timestamp <= filters.endTime!);
       }
       if (filters.errorType) {
         result = result.filter(error => error.errorType === filters.errorType);
@@ -513,11 +513,11 @@ class ErrorLogger {
       if (filters.isResolved !== undefined) {
         result = result.filter(alert => alert.isResolved === filters.isResolved);
       }
-      if (filters.startTime) {
-        result = result.filter(alert => alert.timestamp >= filters.startTime);
+      if (filters.startTime !== undefined) {
+        result = result.filter(alert => alert.timestamp >= filters.startTime!);
       }
-      if (filters.endTime) {
-        result = result.filter(alert => alert.timestamp <= filters.endTime);
+      if (filters.endTime !== undefined) {
+        result = result.filter(alert => alert.timestamp <= filters.endTime!);
       }
     }
 

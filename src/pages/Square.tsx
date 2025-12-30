@@ -229,17 +229,15 @@ export default function Square() {
   const navigate = useNavigate()
   const [posts, setPosts] = useState<Post[]>([])
   
-  // 性能监控实例
-  const performanceMonitorRef = useRef<PerformanceMonitor | null>(null)
+  // 性能监控状态
+  const [showPerformancePanel, setShowPerformancePanel] = useState(false)
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null)
+  
+  // 性能测试实例
   const performanceTestRef = useRef<PerformanceTest | null>(null)
   
-  // 初始化性能监控和性能测试
+  // 初始化性能测试
   useEffect(() => {
-    if (!performanceMonitorRef.current) {
-      performanceMonitorRef.current = new PerformanceMonitor()
-      performanceMonitorRef.current.startMonitoring()
-    }
-    
     // 初始化性能测试
     if (!performanceTestRef.current) {
       performanceTestRef.current = new PerformanceTest()
@@ -260,7 +258,6 @@ export default function Square() {
     }
     
     const handleImageLoaded = (event: CustomEvent) => {
-      performanceMonitorRef.current?.markImageLoad()
       // 记录图片加载性能
       if (event.detail && event.detail.url) {
         performanceTestRef.current?.markImageLoadComplete(event.detail.url)
@@ -271,10 +268,6 @@ export default function Square() {
     window.addEventListener('performance:imageLoaded', handleImageLoaded as EventListener)
     
     return () => {
-      // 组件卸载时输出性能报告
-      if (performanceMonitorRef.current) {
-        performanceMonitorRef.current.logMetrics('Square组件')
-      }
       if (performanceTestRef.current && process.env.NODE_ENV === 'development') {
         console.log('📊 Square组件性能测试报告:', performanceTestRef.current.getSummary())
       }
@@ -282,29 +275,6 @@ export default function Square() {
       window.removeEventListener('performance:imageLoaded', handleImageLoaded as EventListener)
     }
   }, [])
-  
-  // 性能监控：标记每次渲染（优化：减少监控频率）
-  useEffect(() => {
-    // 只在开发环境下启用性能监控
-    if (process.env.NODE_ENV === 'development') {
-      performanceMonitorRef.current?.markRender()
-    }
-  })
-  
-  // 性能监控面板状态
-  const [showPerformancePanel, setShowPerformancePanel] = useState(false)
-  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null)
-  
-  // 更新性能监控面板
-  useEffect(() => {
-    if (showPerformancePanel && performanceMonitorRef.current) {
-      const interval = setInterval(() => {
-        setPerformanceMetrics(performanceMonitorRef.current?.getMetrics() || null)
-      }, 1000)
-      
-      return () => clearInterval(interval)
-    }
-  }, [showPerformancePanel])
   
   // 中文注释：热门话题标签（支持按点击热度排序）
   const DEFAULT_TAGS = ['国潮设计', '非遗传承', '品牌联名', '校园活动', '文旅推广']
@@ -345,7 +315,7 @@ export default function Square() {
           setTagMeta(data.meta)
           
           // 性能监控：标记标签加载完成（缓存命中）
-          performanceMonitorRef.current?.markTagLoad()
+
           return
         }
       }
@@ -374,7 +344,7 @@ export default function Square() {
         setTagMeta(meta)
         
         // 性能监控：标记标签加载完成
-        performanceMonitorRef.current?.markTagLoad()
+
       } else {
         setTags(DEFAULT_TAGS)
         setTagsError(resp.error || '加载失败')
@@ -425,7 +395,7 @@ export default function Square() {
           setFeaturedCommunities(data)
           
           // 性能监控：标记社群加载完成（缓存命中）
-          performanceMonitorRef.current?.markCommunityLoad()
+  
           return
         }
       }
@@ -456,7 +426,7 @@ export default function Square() {
         setFeaturedCommunities(items)
         
         // 性能监控：标记社群加载完成
-        performanceMonitorRef.current?.markCommunityLoad()
+
       } else {
         setFeaturedCommunities(DEFAULT_FEATURED)
         setFeatError(resp.error || '加载失败')
@@ -881,14 +851,14 @@ export default function Square() {
               {/* 优化：虚拟滚动标签容器 */}
               <div 
                 ref={tagContainerRef}
-                className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide"
+                className="flex gap-1 mb-3 overflow-x-auto scrollbar-hide"
                 onScroll={handleTagScroll}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {tagsLoading && (
-                  <div className="flex gap-2 w-full">
+                  <div className="flex gap-1 w-full">
                     {[...Array(5)].map((_, i) => (
-                      <div key={i} className={`animate-pulse h-7 px-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                      <div key={i} className={`animate-pulse h-6 px-6 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
                     ))}
                   </div>
                 )}
@@ -901,19 +871,17 @@ export default function Square() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); incTagClick(tag); gotoCommunity(`?tag=${encodeURIComponent(tag)}`) } }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    className={`text-xs px-2.5 py-1.5 min-h-[28px] rounded-full transition-all duration-150 ease-out focus:outline-none focus:ring-2 flex-shrink-0 ${
-                      isDark 
+                    className={`text-[8px] sm:text-xs px-1.25 sm:px-4 py-0.5 sm:py-2 min-h-[18px] sm:min-h-[32px] rounded-full transition-all duration-150 ease-out focus:outline-none focus:ring-2 flex-shrink-0 ${isDark 
                         ? 'bg-gray-700 text-gray-200 ring-1 ring-gray-600 hover:bg-gray-600 focus:ring-blue-400' 
-                        : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 hover:bg-gray-200 focus:ring-blue-500'
-                    }`}
+                        : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 hover:bg-gray-200 focus:ring-blue-500'}`}
                     style={{ willChange: 'transform' }}
                     title={tagMeta[tag]?.desc || tagMeta[tag]?.group || ''}
                   >
-                    <i className="fas fa-hashtag mr-1"></i>
+                    <i className="fas fa-hashtag mr-0.25 sm:mr-1 text-[7px] sm:text-xs"></i>
                     {tag}
-                    <span className={`ml-1 inline-flex items-center px-1.5 py-[1px] rounded-full text-[10px] ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} title="点击热度">3</span>
+                    <span className={`ml-0.25 sm:ml-1 inline-flex items-center px-0.75 sm:px-2 py-[0.25px] sm:py-0.5 rounded-full text-[7px] sm:text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`} title="点击热度">3</span>
                     {hotTagSet.has(tag) && (
-                      <i className={`fas fa-fire ml-1 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} title="热度较高"></i>
+                      <i className={`fas fa-fire ml-0.25 sm:ml-1 ${isDark ? 'text-orange-400' : 'text-orange-500'} text-[7px] sm:text-xs`} title="热度较高"></i>
                     )}
                   </motion.button>
                 ))}
@@ -1202,7 +1170,11 @@ export default function Square() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => performanceMonitorRef.current?.logMetrics('Square组件')}
+                    onClick={() => {
+                      if (performanceTestRef.current) {
+                        console.log('📊 Square组件性能测试报告:', performanceTestRef.current.getSummary())
+                      }
+                    }}
                     className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
                     title="输出性能报告到控制台"
                   >
