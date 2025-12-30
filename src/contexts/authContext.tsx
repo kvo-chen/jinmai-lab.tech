@@ -357,14 +357,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               
               console.log('Attempting to save user to database with:', userForDb);
               
-              const { error: dbError } = await supabase.from('users').upsert([userForDb], { 
-                onConflict: 'id'
-              });
+              // 尝试直接插入，如果失败则使用update
+              // 这是为了解决外键约束问题，因为auth.users记录可能还没有完全提交
+              let dbError;
               
-              if (dbError) {
-                console.error('将用户信息保存到数据库失败:', dbError);
-                console.error('数据库错误代码:', dbError.code);
-                console.error('数据库错误信息:', dbError.message);
+              // 先尝试插入
+              const { error: insertError } = await supabase.from('users').insert([userForDb]);
+              
+              if (insertError) {
+                console.log('插入用户信息失败，尝试更新:', insertError.message);
+                
+                // 如果插入失败，尝试更新
+                const { error: updateError } = await supabase.from('users').update(userForDb).eq('id', data.user.id);
+                
+                if (updateError) {
+                  console.error('将用户信息保存到数据库失败:', updateError);
+                  console.error('数据库错误代码:', updateError.code);
+                  console.error('数据库错误信息:', updateError.message);
+                  dbError = updateError;
+                } else {
+                  console.log('用户信息已成功更新到数据库');
+                }
               } else {
                 console.log('用户信息已成功保存到数据库');
               }
