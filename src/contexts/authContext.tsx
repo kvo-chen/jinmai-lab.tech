@@ -331,21 +331,57 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               membershipStatus: data.user.user_metadata?.membershipStatus || 'active',
             };
             
-            // 将用户信息保存到users表中
+            // 将用户信息保存到users表中，只发送数据库中实际存在的字段
             try {
-              const { error: dbError } = await supabase.from('users').upsert([userWithMembership], { 
+              // 只发送数据库中实际存在的核心字段，避免schema不匹配问题
+              const minimalUserFields = {
+                id: data.user.id,
+                username: data.user.user_metadata?.username || username,
+                email: data.user.email || '',
+                // 移除avatar、phone和interests字段，因为schema缓存中可能没有这些字段
+                // avatar: data.user.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+                // phone: data.user.user_metadata?.phone || '',
+                // interests: data.user.user_metadata?.interests || [],
+                is_admin: data.user.user_metadata?.isAdmin || false,
+                age: data.user.user_metadata?.age || (age ? parseInt(age) : 0),
+                tags: data.user.user_metadata?.tags || (tags || []),
+                membership_level: data.user.user_metadata?.membershipLevel || 'free',
+                membership_status: data.user.user_metadata?.membershipStatus || 'active',
+                membership_start: data.user.user_metadata?.membershipStart || new Date().toISOString()
+              };
+              
+              const { error: dbError } = await supabase.from('users').upsert([minimalUserFields], { 
                 onConflict: 'id'
               });
               
               if (dbError) {
                 console.error('将用户信息保存到数据库失败:', dbError);
-                // 即使保存到数据库失败，仍然允许用户登录
+                console.error('数据库错误代码:', dbError.code);
+                console.error('数据库错误信息:', dbError.message);
+                
+                // 尝试更简单的方式，只发送必填字段
+                console.log('尝试使用最小字段集插入...');
+                const requiredOnlyFields = {
+                  id: data.user.id,
+                  username: data.user.user_metadata?.username || username,
+                  email: data.user.email || ''
+                };
+                
+                const { error: minimalError } = await supabase.from('users').upsert([requiredOnlyFields], { 
+                  onConflict: 'id'
+                });
+                
+                if (minimalError) {
+                  console.error('最小字段集插入也失败:', minimalError);
+                } else {
+                  console.log('最小字段集插入成功');
+                }
               } else {
                 console.log('用户信息已成功保存到数据库');
               }
             } catch (dbException) {
               console.error('保存用户信息到数据库时发生异常:', dbException);
-              // 即使发生异常，仍然允许用户登录
+              console.error('异常堆栈:', dbException.stack);
             }
             
             // 存储用户信息到本地
