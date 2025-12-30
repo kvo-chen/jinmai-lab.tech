@@ -331,30 +331,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               membershipStatus: data.user.user_metadata?.membershipStatus || 'active',
             };
             
-            // 将用户信息保存到数据库，根据实际schema调整字段
+            // 将用户信息保存到数据库
             try {
-              // 注意：根据错误信息，数据库users表：
-              // 1. ID列是integer类型，不是UUID
-              // 2. 没有is_admin列
-              // 3. schema缓存可能不包含我们尝试插入的很多字段
+              // 现在数据库表结构已经与代码匹配，可以正常保存用户信息
+              const userForDb = {
+                id: data.user.id,
+                username: data.user.user_metadata?.username || username,
+                email: data.user.email || '',
+                avatar: data.user.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+                phone: data.user.user_metadata?.phone || '',
+                interests: data.user.user_metadata?.interests || [],
+                is_admin: data.user.user_metadata?.isAdmin || false,
+                age: data.user.user_metadata?.age || (age ? parseInt(age) : 0),
+                tags: data.user.user_metadata?.tags || (tags || []),
+                membership_level: data.user.user_metadata?.membershipLevel || 'free',
+                membership_status: data.user.user_metadata?.membershipStatus || 'active',
+                membership_start: data.user.user_metadata?.membershipStart || new Date().toISOString(),
+                membership_end: data.user.user_metadata?.membershipEnd,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              };
               
-              // 因此，我们暂时跳过数据库保存，因为：
-              // 1. Supabase auth已经成功创建了用户
-              // 2. 数据库schema与我们的代码期望不匹配
-              // 3. 即使跳过数据库保存，用户仍然可以正常登录和使用平台
-              // 4. 后续可以在数据库端调整schema，或者在代码中进一步适配
+              console.log('Attempting to save user to database with:', userForDb);
               
-              console.log('Note: Skipping database save due to schema mismatch. User auth is already successful.');
-              console.log('Database schema issue:');
-              console.log('- Users table ID column is likely integer type, not UUID');
-              console.log('- Users table may not have is_admin column');
-              console.log('- Schema cache is missing expected columns');
+              const { error: dbError } = await supabase.from('users').upsert([userForDb], { 
+                onConflict: 'id'
+              });
               
-              // 我们仍然可以正常使用平台，因为：
-              // - Supabase auth已经成功创建了用户
-              // - 用户会话已经建立
-              // - 本地状态已经更新
-              
+              if (dbError) {
+                console.error('将用户信息保存到数据库失败:', dbError);
+                console.error('数据库错误代码:', dbError.code);
+                console.error('数据库错误信息:', dbError.message);
+              } else {
+                console.log('用户信息已成功保存到数据库');
+              }
             } catch (dbException) {
               console.error('保存用户信息到数据库时发生异常:', dbException);
               console.error('异常堆栈:', dbException.stack);
