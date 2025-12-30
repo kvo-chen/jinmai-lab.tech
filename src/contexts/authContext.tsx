@@ -324,7 +324,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (supabase) {
         console.log('Attempting to save user to database...');
         try {
-          const { data: savedUser, error: dbError } = await supabase.from('users').upsert([userWithMembership], { 
+          // 只发送数据库中实际存在的必要字段，避免avatar等字段导致的PGRST204错误
+          const dbSafeUser = {
+            id: mockUserId,
+            username,
+            email,
+            // 移除avatar、phone和interests字段，因为schema缓存中可能没有这些字段
+            is_admin: false,
+            age: age ? parseInt(age) : 0,
+            tags: tags || [],
+            membership_level: 'free',
+            membership_status: 'active',
+            membership_start: now
+          };
+          
+          console.log('Sending DB-safe user data:', dbSafeUser);
+          
+          const { data: savedUser, error: dbError } = await supabase.from('users').upsert([dbSafeUser], { 
             onConflict: 'id',
             ignoreDuplicates: false 
           });
@@ -333,13 +349,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             console.error('Failed to save user to database:', dbError);
             console.error('Database error code:', dbError.code);
             console.error('Database error message:', dbError.message);
-            // 数据库保存失败但仍允许注册，只是记录错误
+            
+            // 尝试更简单的方法，只发送必填字段
+            console.log('Trying with minimal required fields only...');
+            const minimalUser = {
+              id: mockUserId,
+              username,
+              email
+            };
+            
+            const { data: minimalSaved, error: minimalError } = await supabase.from('users').upsert([minimalUser], { 
+              onConflict: 'id'
+            });
+            
+            if (minimalError) {
+              console.error('Minimal insert also failed:', minimalError);
+            } else {
+              console.log('Minimal user inserted successfully:', minimalSaved);
+            }
           } else {
             console.log('User successfully saved to database:', savedUser);
           }
         } catch (dbException) {
           console.error('Exception when saving user to database:', dbException);
-          // 数据库异常但仍允许注册
+          console.error('Exception stack:', dbException.stack);
         }
       } else {
         console.error('Supabase client not available, skipping database save');
