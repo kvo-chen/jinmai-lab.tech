@@ -311,6 +311,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             return false;
           }
           
+          // 检查data是否存在
+          if (!data) {
+            console.error('注册失败: supabase.auth.signUp返回null数据');
+            return false;
+          }
+          
+          // 检查user是否存在
           if (data.user) {
             console.log('User created successfully:', data.user.id);
             
