@@ -70,14 +70,15 @@ export default function Register() {
     
     try {
       console.log('6. Calling register function with:', { username, email, password: '****', age, tags });
-      const success = await register(username, email, password, age, tags);
-      console.log('8. Register function returned:', success);
+      const result = await register(username, email, password, age, tags);
+      console.log('8. Register function returned:', result);
       
-      if (success) {
+      if (result.success) {
         toast.success('注册成功！自动登录中...');
         navigate('/dashboard');
       } else {
-        toast.error('注册失败，请检查输入信息或稍后重试');
+        const errorMessage = result.error || '注册失败，请检查输入信息或稍后重试';
+        toast.error(errorMessage);
       }
     } catch (error: any) {
       console.error('8. Register failed with error:', error);

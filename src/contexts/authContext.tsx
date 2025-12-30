@@ -27,7 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string, age?: string, tags?: string[]) => Promise<boolean>;
+  register: (username: string, email: string, password: string, age?: string, tags?: string[]) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setIsAuthenticated: (value: boolean) => void;
   quickLogin: (provider: 'wechat' | 'phone' | 'alipay' | 'qq' | 'weibo') => Promise<boolean>;
@@ -54,7 +54,7 @@ export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   user: null,
   login: async () => false,
-  register: async () => false,
+  register: async () => ({ success: false, error: '默认注册方法未实现' }),
   logout: () => {},
   setIsAuthenticated: () => {},
   quickLogin: async () => false,
@@ -267,15 +267,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // 注册方法
-  const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<boolean> => {
+  const register = async (username: string, email: string, password: string, age?: string, tags?: string[]): Promise<{ success: boolean; error?: string }> => {
     try {
       console.log('Register function called with:', { username, email, password: '****', age, tags });
       
       // 密码格式验证（与前端zod验证规则保持一致）
       const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(password)) {
-        console.error('密码格式不符合要求：至少8个字符，包含至少一个字母和一个数字');
-        return false;
+        const errorMsg = '密码格式不符合要求：至少8个字符，包含至少一个字母和一个数字';
+        console.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
       
       console.log('Password validation passed');
@@ -308,13 +309,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             console.error('注册失败:', error);
             console.error('错误代码:', error.code);
             console.error('错误信息:', error.message);
-            return false;
+            // 根据错误代码返回更友好的错误信息
+            let errorMsg = error.message;
+            if (error.code === 'user_already_registered') {
+              errorMsg = '该邮箱已被注册';
+            } else if (error.code === 'invalid_password') {
+              errorMsg = '密码格式不符合要求';
+            } else if (error.code === 'invalid_email') {
+              errorMsg = '请输入有效的邮箱地址';
+            }
+            return { success: false, error: errorMsg };
           }
           
           // 检查data是否存在
           if (!data) {
-            console.error('注册失败: supabase.auth.signUp返回null数据');
-            return false;
+            const errorMsg = '注册失败: 服务器返回无效数据';
+            console.error(errorMsg);
+            return { success: false, error: errorMsg };
           }
           
           // 检查user是否存在
@@ -406,30 +417,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setIsAuthenticated(true);
             setUser(userWithMembership);
             
-            return true;
+            return { success: true };
           } else if (data.session) {
             console.log('Session created but no user object returned, session:', data.session.user?.id);
-            return true;
+            return { success: true };
           } else {
             console.log('Sign up initiated, user needs to confirm email:', data);
             // 如果需要邮箱确认，我们仍然返回成功，让用户去确认邮箱
-            return true;
+            return { success: true };
           }
         } catch (error: any) {
           console.error('Supabase signUp call failed with exception:', error);
           console.error('Exception message:', error.message);
           console.error('Exception stack:', error.stack);
-          return false;
+          return { success: false, error: error.message || '注册失败，请稍后重试' };
         }
       } else {
-        console.error('Supabase客户端未配置，无法注册');
-        return false;
+        const errorMsg = 'Supabase客户端未配置，无法注册';
+        console.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (error: any) {
       console.error('注册函数执行失败:', error);
       console.error('错误信息:', error.message);
       console.error('错误堆栈:', error.stack);
-      return false;
+      return { success: false, error: error.message || '注册失败，请稍后重试' };
     }
   };
 
