@@ -280,46 +280,101 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       console.log('Password validation passed');
       
-      // 生成简单的数字ID，避免UUID与integer类型不匹配问题
-      const mockUserId = Date.now().toString();
-      const now = new Date().toISOString();
-      
-      // 简化的前端用户格式
-      const frontendUserFormat = {
-        id: mockUserId,
-        username,
-        email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
-        phone: '',
-        interests: [],
-        isAdmin: false,
-        age: age ? parseInt(age) : 0,
-        tags: tags || [],
-        membershipLevel: 'free' as const,
-        membershipStart: now,
-        membershipEnd: undefined,
-        membershipStatus: 'active' as const,
-      };
-      
-      // 存储用户信息到本地，使用前端需要的驼峰命名格式
-      localStorage.setItem('user', JSON.stringify(frontendUserFormat));
-      localStorage.setItem('isAuthenticated', 'true');
-      
-      // 更新状态，使用前端需要的驼峰命名格式
-      setIsAuthenticated(true);
-      setUser(frontendUserFormat);
-      
-      console.log('Registration successful (local only):', mockUserId);
-      console.log('Note: Database save is skipped due to publishable key limitations and schema mismatches');
-      
-      // 暂时跳过数据库保存，因为当前配置下存在多个问题：
-      // 1. 使用的是sb_publishable_密钥，权限有限
-      // 2. 数据库schema缓存不包含我们尝试插入的字段
-      // 3. 模拟ID格式与数据库期望的类型不匹配
-      // 后续需要在服务端环境下使用正确的密钥配置才能实现完整的数据库保存功能
-      
-      return true;
-      
+      if (supabase) {
+        console.log('Supabase client is available, calling signUp with secret key...');
+        
+        try {
+          // 使用Supabase真实注册功能，现在有了secret key应该可以正常工作
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                username,
+                age: age ? parseInt(age) : null,
+                tags,
+                membershipLevel: 'free',
+                membershipStatus: 'active',
+                membershipStart: new Date().toISOString(),
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`
+              },
+              emailRedirectTo: window.location.origin
+            }
+          });
+          
+          console.log('Supabase signUp response received:', { data, error });
+          
+          if (error) {
+            console.error('注册失败:', error);
+            console.error('错误代码:', error.code);
+            console.error('错误信息:', error.message);
+            return false;
+          }
+          
+          if (data.user) {
+            console.log('User created successfully:', data.user.id);
+            
+            // 添加默认会员信息
+            const userWithMembership = {
+              id: data.user.id,
+              username: data.user.user_metadata?.username || username,
+              email: data.user.email || '',
+              avatar: data.user.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`,
+              phone: data.user.user_metadata?.phone || '',
+              interests: data.user.user_metadata?.interests || [],
+              isAdmin: data.user.user_metadata?.isAdmin || false,
+              age: data.user.user_metadata?.age || (age ? parseInt(age) : 0),
+              tags: data.user.user_metadata?.tags || (tags || []),
+              membershipLevel: data.user.user_metadata?.membershipLevel || 'free',
+              membershipStart: data.user.user_metadata?.membershipStart || new Date().toISOString(),
+              membershipEnd: data.user.user_metadata?.membershipEnd,
+              membershipStatus: data.user.user_metadata?.membershipStatus || 'active',
+            };
+            
+            // 将用户信息保存到users表中
+            try {
+              const { error: dbError } = await supabase.from('users').upsert([userWithMembership], { 
+                onConflict: 'id'
+              });
+              
+              if (dbError) {
+                console.error('将用户信息保存到数据库失败:', dbError);
+                // 即使保存到数据库失败，仍然允许用户登录
+              } else {
+                console.log('用户信息已成功保存到数据库');
+              }
+            } catch (dbException) {
+              console.error('保存用户信息到数据库时发生异常:', dbException);
+              // 即使发生异常，仍然允许用户登录
+            }
+            
+            // 存储用户信息到本地
+            localStorage.setItem('user', JSON.stringify(userWithMembership));
+            localStorage.setItem('isAuthenticated', 'true');
+            
+            // 更新状态
+            setIsAuthenticated(true);
+            setUser(userWithMembership);
+            
+            return true;
+          } else if (data.session) {
+            console.log('Session created but no user object returned, session:', data.session.user?.id);
+            return true;
+          } else {
+            console.log('Sign up initiated, user needs to confirm email:', data);
+            // 如果需要邮箱确认，我们仍然返回成功，让用户去确认邮箱
+            return true;
+          }
+        } catch (error: any) {
+          console.error('Supabase signUp call failed with exception:', error);
+          console.error('Exception message:', error.message);
+          console.error('Exception stack:', error.stack);
+          return false;
+        }
+      } else {
+        console.error('Supabase客户端未配置，无法注册');
+        return false;
+      }
     } catch (error: any) {
       console.error('注册函数执行失败:', error);
       console.error('错误信息:', error.message);
