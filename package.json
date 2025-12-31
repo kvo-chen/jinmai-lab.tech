@@ -25,7 +25,7 @@
     "@mediapipe/hands": "0.4.1675469240",
     "@neondatabase/neon-js": "0.1.0-beta.19",
     "@neondatabase/serverless": "1.0.2",
-    "@react-three/drei": "9.80.0",
+    "@react-three/drei": "9.122.0",
     "@react-three/fiber": "8.15.0",
     "@supabase/supabase-js": "2.89.0",
     "@vercel/analytics": "1.6.1",
@@ -94,7 +94,6 @@
     "vite-tsconfig-paths": "5.1.4",
     "ws": "8.18.3"
   },
-
   "resolutions": {
     "react-reconciler": "^0.28.0"
   },
