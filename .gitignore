@@ -66,3 +66,6 @@ fix_syntax.py
 fixed_skeleton.tsx
 .vercel
 .env*.local
+
+# gh-pages-check directory (contains nested git repo)
+gh-pages-check/
