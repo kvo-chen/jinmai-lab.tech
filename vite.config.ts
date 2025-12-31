@@ -288,9 +288,7 @@ export default defineConfig({
       'mongodb': '@/utils/databaseStub',
       'pg': '@/utils/databaseStub',
       '@neondatabase/serverless': '@/utils/databaseStub',
-      'ws': '@/utils/databaseStub',
-      'react-reconciler/constants': '@/utils/reactReconcilerStub',
-      'react-reconciler': '@/utils/reactReconcilerStub',
+      'ws': '@/utils/databaseStub'
     }
   },
   build: {
