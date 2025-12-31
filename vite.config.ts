@@ -61,7 +61,7 @@ function getPlugins() {
     // 简化PWA配置，解决构建失败问题
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'icons/*'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'assets/*.svg', 'assets/*.woff2', 'icons/*'],
       manifest: {
         name: '津脉智坊 - 津门老字号共创平台',
         short_name: '津脉智坊',
@@ -86,12 +86,37 @@ function getPlugins() {
         ]
       },
       workbox: {
-        // 简化workbox配置，只保留必要选项
+        // 优化workbox配置，添加离线支持
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,gif,woff2,ttf}'],
         navigateFallback: '/index.html',
         skipWaiting: true,
         clientsClaim: true,
-        globIgnores: ['**/*.map', '**/node_modules/**']
+        globIgnores: ['**/*.map', '**/node_modules/**'],
+        // 添加基本的runtimeCaching配置
+        runtimeCaching: [
+          {
+            urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|avif)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          {
+            urlPattern: /^https?:\/\/.*\.(js|css)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
+              }
+            }
+          }
+        ]
       }
     })
   ];
@@ -147,8 +172,8 @@ export default defineConfig({
       disable: process.env.NODE_ENV === 'development',
       // 仅优化src目录下的图片
       include: /\.(png|jpe?g|gif|svg|webp|avif)$/i,
-      // 排除node_modules目录
-      exclude: /node_modules/
+      // 排除node_modules目录和有问题的图片
+      exclude: [/node_modules/, /fallback\.jpg$/, /placeholder-image\.jpg$/]
     }),
     VitePWA({
       registerType: 'autoUpdate',
@@ -364,9 +389,19 @@ export default defineConfig({
               return 'vendor-react';
             }
             
-            // Three.js相关库 - 合并为一个chunk
-            if (id.includes('three') || id.includes('@react-three')) {
+            // Three.js核心库
+            if (id.includes('three/lib') || id.includes('three/build')) {
               return 'three-core';
+            }
+            
+            // React Three Fiber相关库
+            if (id.includes('@react-three')) {
+              return 'three-react';
+            }
+            
+            // Three.js扩展库
+            if (id.includes('three-stdlib')) {
+              return 'three-stdlib';
             }
             
             // 动画库
@@ -404,6 +439,11 @@ export default defineConfig({
               return 'state-zustand';
             }
             
+            // 数据库相关库
+            if (id.includes('@supabase') || id.includes('@neondatabase')) {
+              return 'db-libs';
+            }
+            
             // 其他第三方库合并为一个chunk
             return 'vendor-other';
           }
@@ -436,6 +476,10 @@ export default defineConfig({
             }
             if (id.includes('Membership') || id.includes('membership')) {
               return 'pages-membership';
+            }
+            // 拆分TianjinMap页面到单独chunk
+            if (id.includes('TianjinMap')) {
+              return 'pages-tianjin-map';
             }
             return 'pages-other';
           }
