@@ -1,19 +1,4 @@
 {
-  "version": 2,
-  "routes": [
-    {
-      "src": "/api/proxy/trae-api/(.*)",
-      "dest": "https://trae-api-sg.mchost.guru/$1",
-      "headers": {
-        "Access-Control-Allow-Origin": "*"
-      }
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/"
-    }
-  ]
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm run build"
 }
