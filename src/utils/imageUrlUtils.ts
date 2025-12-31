@@ -129,21 +129,15 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     
     // 检查是否为API代理URL
     if (url.startsWith('/api/proxy/')) {
-      // API代理URL处理，添加缓存控制参数
-      // 确保URL格式正确，并添加适当的缓存参数
-      const newUrl = new URL(url, window.location.origin);
-      
-      // 添加缓存控制参数，减少重复请求
-      if (!newUrl.searchParams.has('cache')) {
-        newUrl.searchParams.set('cache', 'true');
+      // API代理URL处理，直接返回原始URL，避免添加不必要的参数或转换
+      return url;
+    } else if (url.startsWith('/api/proxy/unsplash')) {
+        // 对于Unsplash代理，直接返回原始URL，Vercel会处理
+        return url;
       }
       
-      // 限制图片尺寸，避免过大的图片请求
-      if (!newUrl.searchParams.has('max_width')) {
-        newUrl.searchParams.set('max_width', '1200');
-      }
-      
-      return newUrl.toString();
+      // 其他代理URL，直接返回原始URL
+      return url;
     }
     
     // 检查是否为相对路径
