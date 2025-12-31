@@ -1,6 +1,7 @@
-import React, { useCallback, memo } from 'react'
+import React, { useCallback, memo, useEffect, useState, useRef } from 'react'
 import { Post } from '../services/postService'
 import LazyImage from './LazyImage'
+import VirtualList from './VirtualList'
 
 interface PostGridProps {
   posts: Post[]
@@ -18,7 +19,7 @@ interface PostItemProps {
   isDark: boolean
 }
 
-const PostItem = memo(({ post, index, onPostClick, isDark }: PostItemProps) => {
+const PostItem = memo(({ post, index, onPostClick, onLike, isDark }: PostItemProps & { onLike: (postId: string) => void }) => {
   // 使用useCallback优化点击事件
   const handlePostClick = useCallback(() => {
     onPostClick(post)
@@ -44,16 +45,16 @@ const PostItem = memo(({ post, index, onPostClick, isDark }: PostItemProps) => {
           ratio="square"
           fit="cover"
           loading="lazy"
-          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
         />
         <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
           {post.likes} ❤️
         </div>
       </div>
       
-      <div className="p-3">
-        <h3 className="font-semibold text-sm mb-1 line-clamp-2">{post.title}</h3>
-        <div className="flex justify-between items-center text-xs text-gray-500">
+      <div className="p-2 sm:p-3">
+        <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">{post.title}</h3>
+        <div className="flex justify-between items-center text-xs sm:text-sm text-gray-500">
           <span>{post.category}</span>
           <span>{post.likes} ❤️</span>
         </div>
@@ -69,22 +70,88 @@ const PostGrid: React.FC<PostGridProps> = ({
   onComment, 
   isDark 
 }) => {
+  // 基于屏幕尺寸动态调整列数
+  const [columns, setColumns] = useState<number>(3);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // 响应式列数处理
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      
+      let newColumns = 3;
+      if (window.innerWidth < 640) {
+        newColumns = 1;
+      } else if (window.innerWidth < 768) {
+        newColumns = 2;
+      } else if (window.innerWidth < 1024) {
+        newColumns = 3;
+      } else if (window.innerWidth < 1280) {
+        newColumns = 4;
+      } else {
+        newColumns = 5;
+      }
+      
+      setColumns(newColumns);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // 计算动态项高，根据列数调整
+  const itemHeight = columns > 3 ? 250 : 300;
+  
   // 使用useCallback优化回调函数
   const handlePostClick = useCallback((post: Post) => {
     onPostClick(post)
   }, [onPostClick])
 
+  // 渲染单个帖子项
+  const renderPostItem = useCallback((post: Post, index: number) => (
+    <PostItem 
+      key={post.id} 
+      post={post}
+      index={index}
+      onPostClick={handlePostClick}
+      onLike={onLike}
+      isDark={isDark}
+    />
+  ), [handlePostClick, isDark, onLike])
+
+  // 如果帖子数量较少，直接渲染，避免虚拟滚动的复杂性
+  if (posts.length < 20) {
+    return (
+      <div className="w-full">
+        <div className="grid gap-4 p-2" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+          {posts.map((post, index) => (
+            <PostItem 
+              key={post.id} 
+              post={post}
+              index={index}
+              onPostClick={handlePostClick}
+              onLike={onLike}
+              isDark={isDark}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // 帖子数量较多时，使用虚拟滚动优化性能
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {posts.map((post, index) => (
-        <PostItem 
-          key={post.id} 
-          post={post}
-          index={index}
-          onPostClick={handlePostClick}
-          isDark={isDark}
-        />
-      ))}
+    <div ref={containerRef} className="w-full" style={{ minHeight: '500px' }}>
+      <VirtualList 
+        items={posts} 
+        renderItem={renderPostItem} 
+        columns={columns} 
+        isDark={isDark}
+        height="auto" // 使用auto高度，让VirtualList自适应内容
+        itemHeight={itemHeight} // 根据列数动态调整项高
+        overscan={5} // 预渲染5个额外的项目，优化滚动体验
+      />
     </div>
   )
 }

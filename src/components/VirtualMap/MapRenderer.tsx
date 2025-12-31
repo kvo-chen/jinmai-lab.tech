@@ -92,7 +92,7 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
       viewport: getViewport(),
       scale: Math.pow(2, zoom - 1)
     };
-  }, [center, zoom, getViewport]);
+  }, [center, zoom]);
   
   // 添加防抖函数，优化渲染性能
   const debounce = (func: Function, wait: number) => {
@@ -271,26 +271,28 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
   
   // 绘制POI - 优化版本
   const drawPOIs = (ctx: CanvasRenderingContext2D, pois: POI[], canvasWidth: number, canvasHeight: number, worldToScreen: (coord: Coordinate) => Coordinate, viewport: ReturnType<typeof getViewport>) => {
-    // 快速过滤出视口内的POI - 精确可见性剔除
-    const visiblePOIs = pois.filter(poi => {
-      const coord = poi.coordinate;
-      // 精确计算可见范围，减少不必要的绘制
-      return coord.x >= viewport.x - 100 && coord.x <= viewport.x + viewport.width + 100 &&
-             coord.y >= viewport.y - 100 && coord.y <= viewport.y + viewport.height + 100;
-    });
+    // 检查是否有POI数据
+    if (pois.length === 0) {
+      return;
+    }
     
-    // 如果没有可见POI，直接返回
-    if (visiblePOIs.length === 0) return;
+    // 增加调试日志，查看当前POI数量和视口信息
+    console.log('drawPOIs: 当前POI数量:', pois.length);
+    console.log('drawPOIs: 当前视口:', viewport);
+    console.log('drawPOIs: 当前缩放级别:', zoom);
+    
+    // 移除视口过滤，始终绘制所有POI，确保POI点不会丢失
+    // 后续可以根据性能情况重新启用，但需要确保过滤逻辑正确
+    const visiblePOIs = pois;
     
     // POI聚类配置
     const enableClustering = zoom < 7; // 在低缩放级别启用聚类
-    // 动态调整聚类网格大小，根据缩放级别自动调整
-    const clusterGridSize = Math.max(20, 60 - (zoom - 1) * 5); // 缩放级别越高，网格越小
+    // 动态调整聚类网格大小，根据屏幕尺寸和缩放级别自动调整
+    const clusterGridSize = Math.max(20, Math.min(60, 60 - (zoom - 1) * 5)); // 缩放级别越高，网格越小
     const baseIconSize = theme.poiIconSize;
-    const shadowBlur = 6;
     
-    // 动态调整图标大小，根据缩放级别
-    const iconSize = Math.max(baseIconSize, baseIconSize * (1 + (zoom - 1) * 0.2));
+    // 动态调整图标大小，根据缩放级别和屏幕尺寸
+    const iconSize = Math.max(baseIconSize, baseIconSize * (1 + (zoom - 1) * 0.2) * Math.min(canvasWidth / 1000, 1.5));
     
     if (enableClustering) {
       // 基于密度的聚类算法，考虑POI的重要性
@@ -324,10 +326,8 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
           // 验证坐标有效性
           if (isNaN(screenCoord.x) || isNaN(screenCoord.y)) return;
           
-          // 检查聚类是否在可视范围内
-          if (screenCoord.x < -100 || screenCoord.x > canvasWidth + 100 || screenCoord.y < -100 || screenCoord.y > canvasHeight + 100) {
-            return;
-          }
+          // 移除可视范围检查，确保所有聚类标记都能被绘制
+          // 这样即使在缩放级别不合适的情况下，也能看到聚类标记
           
           // 根据聚类大小调整图标大小
           const clusterSize = poiCluster.length;
@@ -392,6 +392,38 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
           
           // 恢复上下文状态
           ctx.restore();
+          
+          // 绘制聚类上方的品牌信息
+          // 移除缩放级别限制，始终显示品牌信息
+          // 显示主要品牌名称
+          const mainBrandName = poiCluster[0].name || '品牌集群';
+          
+          // 使用固定的白色背景和黑色文本，确保品牌名称清晰可见
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 2;
+          
+          ctx.font = `bold 12px sans-serif`;
+          const textWidth = ctx.measureText(mainBrandName).width;
+          
+          // 绘制文本背景矩形 - 位置在聚类上方
+          const textPadding = 6;
+          const textHeight = 20;
+          ctx.fillRect(
+            screenCoord.x - textWidth / 2 - textPadding,
+            screenCoord.y - scaledIconSize - textHeight - 10, // 位置在聚类上方，增加距离
+            textWidth + textPadding * 2,
+            textHeight
+          );
+          
+          // 使用固定的黑色文本，确保品牌名称清晰可见
+          ctx.fillStyle = '#000000';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowBlur = 0;
+          ctx.fillText(mainBrandName, screenCoord.x, screenCoord.y - scaledIconSize - 10); // 位置在聚类上方，增加距离
           
           // 绘制聚类数量，使用更醒目的样式
           ctx.fillStyle = '#ffffff';
@@ -483,10 +515,8 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
           // 验证坐标有效性
           if (isNaN(screenCoord.x) || isNaN(screenCoord.y)) return;
           
-          // 检查POI是否在可视范围内（考虑绘制半径）
-          if (screenCoord.x < -100 || screenCoord.x > canvasWidth + 100 || screenCoord.y < -100 || screenCoord.y > canvasHeight + 100) {
-            return;
-          }
+          // 移除可视范围检查，确保所有单个POI都能被绘制
+          // 这样即使在缩放级别不合适的情况下，也能看到POI标记
           
           const poiColor = poi.color || '#3b82f6';
           const isHovered = poi.id === hoveredPOIId;
@@ -602,7 +632,36 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
           // 恢复上下文状态
           ctx.restore();
           
-          // 悬停时显示品牌名称及简介
+          // 非悬停状态下，在POI点上方显示品牌名称 - 优化版本
+          // 移除缩放级别限制，始终显示品牌信息
+          // 添加文本背景，提高可读性
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 2;
+          
+          const nameText = poi.name || '';
+          ctx.font = 'bold 12px sans-serif';
+          const textWidth = ctx.measureText(nameText).width;
+          
+          // 绘制文本背景矩形 - 调整位置到POI点上方
+          const textPadding = 6;
+          const textHeight = 20;
+          ctx.fillRect(
+            screenCoord.x - textWidth / 2 - textPadding,
+            screenCoord.y - scaledIconSize - textHeight - 10, // 位置调整到POI点上方，增加距离
+            textWidth + textPadding * 2,
+            textHeight
+          );
+          
+          // 绘制品牌名称 - 使用固定的黑色文本，确保品牌名称清晰可见
+          ctx.fillStyle = '#000000';
+          ctx.textAlign = 'center';
+          ctx.shadowBlur = 0;
+          ctx.fillText(nameText, screenCoord.x, screenCoord.y - scaledIconSize - 10); // 位置调整到POI点上方，增加距离
+          
+          // 悬停时显示更详细的品牌信息
           if (isHovered) {
             // 添加文本背景，提高可读性
             ctx.fillStyle = theme.backgroundColor;
@@ -615,12 +674,12 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
             ctx.font = 'bold 14px sans-serif';
             const nameWidth = ctx.measureText(nameText).width;
             
-            // 绘制名称背景矩形
+            // 绘制名称背景矩形 - 位置调整到POI点上方
             const textPadding = 10;
             const nameHeight = 24;
             ctx.fillRect(
               screenCoord.x - nameWidth / 2 - textPadding,
-              screenCoord.y + scaledIconSize + 10,
+              screenCoord.y - scaledIconSize - nameHeight - 12, // 位置调整到POI点上方
               nameWidth + textPadding * 2,
               nameHeight
             );
@@ -629,7 +688,7 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
             ctx.fillStyle = theme.textColor;
             ctx.textAlign = 'center';
             ctx.shadowBlur = 0;
-            ctx.fillText(nameText, screenCoord.x, screenCoord.y + scaledIconSize + nameHeight / 2 + 10);
+            ctx.fillText(nameText, screenCoord.x, screenCoord.y - scaledIconSize - 12 + nameHeight / 2); // 位置调整到POI点上方
             
             // 显示品牌简介
             if (poi.description) {
@@ -642,43 +701,15 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
               ctx.shadowBlur = 8;
               ctx.fillRect(
                 screenCoord.x - descWidth / 2 - textPadding,
-                screenCoord.y + scaledIconSize + nameHeight + 14,
+                screenCoord.y - scaledIconSize - nameHeight - descHeight - 16, // 位置调整到POI点上方
                 descWidth + textPadding * 2,
                 descHeight
               );
               
               ctx.fillStyle = theme.textColor;
               ctx.shadowBlur = 0;
-              ctx.fillText(descText, screenCoord.x, screenCoord.y + scaledIconSize + nameHeight + descHeight / 2 + 14);
+              ctx.fillText(descText, screenCoord.x, screenCoord.y - scaledIconSize - nameHeight - 16 + descHeight / 2); // 位置调整到POI点上方
             }
-          } else if (zoom >= 6) {
-            // 非悬停状态下，只在高缩放级别显示名称
-            // 添加文本背景，提高可读性
-            ctx.fillStyle = theme.backgroundColor;
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-            ctx.shadowBlur = 6;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 2;
-            
-            const text = poi.name || '';
-            ctx.font = 'bold 13px sans-serif';
-            const textWidth = ctx.measureText(text).width;
-            
-            // 绘制文本背景矩形
-            const textPadding = 8;
-            const textHeight = 22;
-            ctx.fillRect(
-              screenCoord.x - textWidth / 2 - textPadding,
-              screenCoord.y + scaledIconSize + 8,
-              textWidth + textPadding * 2,
-              textHeight
-            );
-            
-            // 绘制文本
-            ctx.fillStyle = theme.textColor;
-            ctx.textAlign = 'center';
-            ctx.shadowBlur = 0;
-            ctx.fillText(text, screenCoord.x, screenCoord.y + scaledIconSize + textHeight / 2 + 8);
           }
         } catch (error) {
           console.warn('绘制POI时出错:', error, 'POI:', poi.id);
@@ -859,73 +890,86 @@ const MapRenderer: React.FC<MapRendererProps> = ({ className = '' }) => {
   const renderStateRef = useRef({
     animationFrameId: 0,
     lastRenderTime: 0,
-    pendingRender: false,
-    shouldRender: false
+    shouldRender: false,
+    renderRequestId: 0
   });
   
-  // 监听地图状态变化，标记需要重新渲染
+  // 监听地图状态变化，标记需要重新渲染 - 优化版本，使用防抖
   useEffect(() => {
+    // 清除之前的渲染请求
+    if (renderStateRef.current.renderRequestId) {
+      cancelAnimationFrame(renderStateRef.current.renderRequestId);
+    }
+    
+    // 设置需要渲染的标志
     renderStateRef.current.shouldRender = true;
+    
+    // 延迟请求渲染，避免频繁重绘
+    renderStateRef.current.renderRequestId = requestAnimationFrame(() => {
+      // 请求实际的渲染帧
+      if (renderStateRef.current.animationFrameId === 0) {
+        renderStateRef.current.animationFrameId = requestAnimationFrame(renderLoop);
+      }
+    });
   }, [center, zoom, theme, regions, paths, pois, hoveredPOIId, viewportInfo]);
   
-  // 添加渲染节流，减少不必要的重绘 - 改进版本
-  useEffect(() => {
-    if (!isReady) return;
-    
-    const minFrameInterval = 16; // 约60fps (1000/60)
+  // 主渲染循环 - 优化版本，使用更高效的渲染策略
+  const renderLoop = (timestamp: number) => {
+    // 只有在isReady为true时才渲染
+    if (!isReady) {
+      renderStateRef.current.animationFrameId = 0;
+      return;
+    }
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      renderStateRef.current.animationFrameId = 0;
+      return;
+    }
     
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      renderStateRef.current.animationFrameId = 0;
+      return;
+    }
     
-    // 优化的渲染循环
-    const render = (timestamp: number) => {
-      const renderState = renderStateRef.current;
-      
-      // 控制帧率，避免过度渲染
-      if (timestamp - renderState.lastRenderTime < minFrameInterval) {
-        // 如果仍然需要渲染，继续请求下一帧
-        if (renderState.shouldRender) {
-          renderState.animationFrameId = requestAnimationFrame(render);
-        }
-        return;
+    // 检查是否需要渲染
+    if (renderStateRef.current.shouldRender) {
+      try {
+        // 执行渲染
+        drawMap(ctx, canvas);
+        renderStateRef.current.lastRenderTime = timestamp;
+        renderStateRef.current.shouldRender = false;
+      } catch (error) {
+        console.error('地图渲染错误:', error);
       }
-      
-      // 检查是否需要渲染
-      if (renderState.shouldRender) {
-        try {
-          drawMap(ctx, canvas);
-          renderState.lastRenderTime = timestamp;
-          renderState.shouldRender = false;
-        } catch (error) {
-          console.error('地图渲染错误:', error);
-        }
-      }
-      
+    }
+    
+    // 检查是否需要继续渲染
+    if (renderStateRef.current.shouldRender) {
       // 如果仍然需要渲染，继续请求下一帧
-      if (renderState.shouldRender) {
-        renderState.animationFrameId = requestAnimationFrame(render);
-      }
-    };
-    
-    // 初始渲染
-    renderStateRef.current.animationFrameId = requestAnimationFrame(render);
-    
-    // 监听窗口大小变化
+      renderStateRef.current.animationFrameId = requestAnimationFrame(renderLoop);
+    } else {
+      // 如果不需要渲染，释放动画帧ID
+      renderStateRef.current.animationFrameId = 0;
+    }
+  };
+  
+  // 监听窗口大小变化，立即触发渲染
+  useEffect(() => {
     const handleResize = () => {
       renderStateRef.current.shouldRender = true;
-      requestAnimationFrame(render);
+      if (renderStateRef.current.animationFrameId === 0) {
+        renderStateRef.current.animationFrameId = requestAnimationFrame(renderLoop);
+      }
     };
     
     window.addEventListener('resize', handleResize);
     
     return () => {
-      cancelAnimationFrame(renderStateRef.current.animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [isReady, drawMap, center, zoom, theme, regions, paths, pois, hoveredPOIId, viewportInfo]);
+  }, [isReady]);
   
   return (
     <div ref={containerRef} className={`${className} relative w-full h-full`}>

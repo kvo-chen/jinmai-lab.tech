@@ -5,8 +5,11 @@
 // Export empty objects/functions to prevent runtime errors
 // when database modules are imported in the browser
 
+// Stub for better-sqlite3, mongodb, pg, neon, and ws
+// All exports are named exports, no default export
+
 // Stub for better-sqlite3
-export default class Database {
+export class Database {
   constructor() {
     console.warn('better-sqlite3 is a Node.js native module and should not be used in the browser');
   }
@@ -85,6 +88,3 @@ export class WebSocket {
   static CLOSING = 2;
   static CLOSED = 3;
 }
-
-// Default export for ws
-export default WebSocket;

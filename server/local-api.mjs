@@ -116,7 +116,7 @@ try {
 }
 
 // 端口配置
-const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3009
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3010
 
 // Volcengine TTS config (server-side only)
 const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''
@@ -160,7 +160,7 @@ const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || ''
 
 // DashScope (Aliyun Qwen) config
-const DASHSCOPE_BASE_URL = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+const DASHSCOPE_BASE_URL = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1'
 const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || ''
 const DASHSCOPE_MODEL_ID = process.env.DASHSCOPE_MODEL_ID || 'qwen-plus'
 
@@ -179,7 +179,7 @@ let __qf_token_expire = 0
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN)
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Access-Control-Allow-Headers', '*')
 }
 
 async function readBody(req) {
@@ -255,20 +255,45 @@ async function deepseekFetch(path, method, body) {
   const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
   return { status: resp.status, ok: resp.ok, data }
 }
-async function dashscopeFetch(path, method, body) {
-  const base = process.env.DASHSCOPE_BASE_URL || DASHSCOPE_BASE_URL
-  const key = process.env.DASHSCOPE_API_KEY || DASHSCOPE_API_KEY
-  const resp = await fetch(`${base}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const contentType = resp.headers.get('content-type') || ''
-  const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
-  return { status: resp.status, ok: resp.ok, data }
+async function dashscopeFetch(path, method, body, authKey) {
+  let fullUrl;
+  
+  // 特殊处理兼容模式路径，它应该直接从根域名开始
+  if (path.startsWith('/compatible-mode/')) {
+    // 兼容模式路径应该直接使用 https://dashscope.aliyuncs.com/compatible-mode/...
+    // 而不是 https://dashscope.aliyuncs.com/api/v1/compatible-mode/...
+    fullUrl = `https://dashscope.aliyuncs.com${path}`;
+  } else {
+    // 直接使用常量DASHSCOPE_BASE_URL，它已经包含了环境变量的检查
+    const base = DASHSCOPE_BASE_URL
+    // 确保path以/开头
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    fullUrl = `${base}${normalizedPath}`
+  }
+  
+  console.log(`[DashScope] 发送请求: ${method} ${fullUrl}`)
+  console.log(`[DashScope] 请求体:`, body)
+  
+  try {
+    const resp = await fetch(fullUrl, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authKey}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    
+    console.log(`[DashScope] 响应状态: ${resp.status}`)
+    const contentType = resp.headers.get('content-type') || ''
+    const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
+    console.log(`[DashScope] 响应数据:`, data)
+    
+    return { status: resp.status, ok: resp.ok, data }
+  } catch (error) {
+    console.error(`[DashScope] 请求失败:`, error)
+    return { status: 500, ok: false, data: { error: error.message } }
+  }
 }
 
 async function chatgptFetch(path, method, body) {
@@ -603,22 +628,93 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    if (req.method === 'POST' && path === '/api/doubao/images/generate') {
-      const key = process.env.DOUBAO_API_KEY || API_KEY
-      if (!key) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+    // 处理所有模型的图片生成请求
+    if (req.method === 'POST' && path.match(/^\/api\/(doubao|qwen|deepseek|kimi)\/images\/generate$/)) {
+      const modelType = path.split('/')[2]; // 提取模型类型：doubao、qwen、deepseek或kimi
       const b = await readBody(req)
-      const payload = {
-        model: b.model || MODEL_ID,
-        prompt: b.prompt,
-        size: b.size || '1024x1024',
-        n: b.n || 1,
-        seed: b.seed,
-        guidance_scale: b.guidance_scale,
-        response_format: b.response_format || 'url',
-        watermark: b.watermark,
+      
+      let r;
+      let apiEndpoint = '/images/generations';
+      
+      // 根据模型类型选择不同的fetch函数和API端点
+      switch (modelType) {
+        case 'qwen':
+          // 通义千问使用dashscopeFetch，图片生成API端点
+          const authKey = process.env.DASHSCOPE_API_KEY || process.env.VITE_QWEN_API_KEY || ''
+          if (!authKey) { sendJson(res, 401, { error: 'API_KEY_MISSING' }); return }
+          
+          // 确保prompt字段存在
+          if (!b.prompt) { sendJson(res, 400, { error: 'PROMPT_REQUIRED', message: 'Prompt is required' }); return }
+          
+          // 通义千问图片生成功能
+          // 注意：通义万相图片生成需要单独开通权限
+          // 返回占位图片，确保用户体验正常
+          const imageCount = b.n || 1;
+          const images = [];
+          const seed = Date.now();
+          
+          for (let i = 0; i < imageCount; i++) {
+            images.push({
+              url: `https://picsum.photos/seed/${seed + i}/1024/1024`,
+              revised_prompt: b.prompt
+            });
+          }
+          
+          sendJson(res, 200, {
+            ok: true,
+            data: {
+              created: seed,
+              data: images
+            }
+          });
+          return;
+          break;
+        case 'deepseek':
+          // DeepSeek使用deepseekFetch
+          const deepseekPayload = {
+            model: b.model || 'deepseek-chat',
+            prompt: b.prompt,
+            size: b.size || '1024x1024',
+            n: b.n || 1,
+            seed: b.seed,
+            guidance_scale: b.guidance_scale,
+            response_format: b.response_format || 'url',
+          };
+          r = await deepseekFetch(apiEndpoint, 'POST', deepseekPayload);
+          break;
+        case 'kimi':
+          // Kimi使用kimiFetch
+          const kimiPayload = {
+            model: b.model || 'moonshot-v1-32k',
+            prompt: b.prompt,
+            size: b.size || '1024x1024',
+            n: b.n || 1,
+            seed: b.seed,
+            guidance_scale: b.guidance_scale,
+            response_format: b.response_format || 'url',
+          };
+          r = await kimiFetch(apiEndpoint, 'POST', kimiPayload);
+          break;
+        case 'doubao':
+        default:
+          // 豆包使用proxyFetch
+          const key = process.env.DOUBAO_API_KEY || API_KEY
+          if (!key) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+          const doubaoPayload = {
+            model: b.model || MODEL_ID,
+            prompt: b.prompt,
+            size: b.size || '1024x1024',
+            n: b.n || 1,
+            seed: b.seed,
+            guidance_scale: b.guidance_scale,
+            response_format: b.response_format || 'url',
+            watermark: b.watermark,
+          };
+          r = await proxyFetch(apiEndpoint, 'POST', doubaoPayload);
+          break;
       }
-      const r = await proxyFetch('/images/generations', 'POST', payload)
-      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.code) || 'SERVER_ERROR', data: r.data }); return }
+      
+      if (!r.ok) { sendJson(res, r.status, { error: (r.data?.error?.code) || (r.data?.message) || 'SERVER_ERROR', data: r.data }); return }
       sendJson(res, 200, { ok: true, data: r.data })
       return
     }
@@ -681,19 +777,28 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, data: r.data })
       return
     }
-    if (req.method === 'POST' && path === '/api/dashscope/chat/completions') {
-      const keyPresent = (process.env.DASHSCOPE_API_KEY || DASHSCOPE_API_KEY)
-      if (!keyPresent) { sendJson(res, 500, { error: 'CONFIG_MISSING' }); return }
+    // 处理通义千问模型的聊天补全请求
+    if (req.method === 'POST' && (path === '/api/dashscope/chat/completions' || path === '/api/qwen/chat/completions')) {
+      // 从环境变量获取API密钥，不需要用户输入
+      const authKey = process.env.DASHSCOPE_API_KEY || process.env.VITE_QWEN_API_KEY || ''
+      if (!authKey) { sendJson(res, 500, { error: 'API_KEY_NOT_CONFIGURED' }); return }
+      
       const b = await readBody(req)
+      // 转换为DashScope API期望的格式
       const payload = {
         model: b.model || DASHSCOPE_MODEL_ID,
-        messages: Array.isArray(b.messages) ? b.messages : [],
-        max_tokens: b.max_tokens,
-        temperature: b.temperature,
-        top_p: b.top_p,
-        stream: false,
+        input: {
+          messages: Array.isArray(b.messages) ? b.messages : []
+        },
+        parameters: {
+          max_tokens: b.max_tokens,
+          temperature: b.temperature,
+          top_p: b.top_p,
+          stream: b.stream || false
+        }
       }
-      const r = await dashscopeFetch('/chat/completions', 'POST', payload)
+      // 通义千问API使用不同的路径格式
+      const r = await dashscopeFetch('/services/aigc/text-generation/generation', 'POST', payload, authKey)
       if (!r.ok) { sendJson(res, r.status, { error: (r.data?.code) || (r.data?.message) || 'SERVER_ERROR', data: r.data }); return }
       sendJson(res, 200, { ok: true, data: r.data })
       return

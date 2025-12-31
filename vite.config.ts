@@ -3,15 +3,64 @@ import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import path from 'path'
 
 function getPlugins() {
   const plugins = [
     react(), 
     tsconfigPaths(),
+    ViteImageOptimizer({
+      // 启用WebP和AVIF格式转换
+      png: {
+        quality: 80,
+        compressionLevel: 9,
+        force: true
+      },
+      jpeg: {
+        quality: 80,
+        force: true
+      },
+      webp: {
+        quality: 85,
+        force: true
+      },
+      avif: {
+        quality: 75,
+        force: true
+      },
+      // 启用响应式图片生成
+      generateResponsiveImages: true,
+      // 响应式图片尺寸配置
+      responsive: {
+        adapter: {
+          name: 'sharp',
+          options: {
+            sizes: [320, 640, 1024, 1600, 2048],
+            format: ['webp', 'avif'],
+            quality: [85, 75]
+          }
+        }
+      },
+      // 输出路径配置
+      svg: {
+        quality: 85,
+        force: true
+      },
+      gif: {
+        quality: 85,
+        force: true
+      },
+      // 仅在构建时优化
+      disable: process.env.NODE_ENV === 'development',
+      // 仅优化src目录下的图片
+      include: /\.(png|jpe?g|gif|svg|webp|avif)$/i,
+      // 排除node_modules目录
+      exclude: /node_modules/
+    }),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'assets/*.svg', 'assets/*.woff2'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'assets/*.svg', 'assets/*.woff2', 'icons/*', 'images/*'],
       manifest: {
         name: '津脉智坊 - 津门老字号共创平台',
         short_name: '津脉智坊',
@@ -22,13 +71,13 @@ function getPlugins() {
         orientation: 'portrait',
         icons: [
           {
-            src: 'assets/icon-192x192-DWYkQd48-DWYkQd48.svg',
+            src: 'icons/icon-192x192.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
             purpose: 'any maskable'
           },
           {
-            src: 'assets/icon-512x512-xvIyFQRJ-xvIyFQRJ.svg',
+            src: 'icons/icon-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable'
@@ -144,7 +193,43 @@ function getPlugins() {
 
 export default defineConfig({
   base: '/',
-  plugins: process.env.NODE_ENV === 'production' ? [react(), tsconfigPaths()] : getPlugins(),
+  plugins: process.env.NODE_ENV === 'production' ? [
+    react(), 
+    tsconfigPaths(),
+    ViteImageOptimizer({
+      png: {
+        quality: 80,
+        compressionLevel: 9,
+        force: true
+      },
+      jpeg: {
+        quality: 80,
+        force: true
+      },
+      webp: {
+        quality: 85,
+        force: true
+      },
+      avif: {
+        quality: 75,
+        force: true
+      },
+      svg: {
+        quality: 85,
+        force: true
+      },
+      gif: {
+        quality: 85,
+        force: true
+      },
+      // 仅在构建时优化
+      disable: process.env.NODE_ENV === 'development',
+      // 仅优化src目录下的图片
+      include: /\.(png|jpe?g|gif|svg|webp|avif)$/i,
+      // 排除node_modules目录
+      exclude: /node_modules/
+    })
+  ] : getPlugins(),
   resolve: {
     // 为数据库相关的 Node.js 原生模块创建别名，避免在浏览器环境中打包
     alias: {
@@ -154,13 +239,28 @@ export default defineConfig({
       'pg': '@/utils/databaseStub',
       '@neondatabase/serverless': '@/utils/databaseStub',
       'ws': '@/utils/databaseStub',
+      'react-reconciler/constants': '@/utils/reactReconcilerStub',
+      'react-reconciler': '@/utils/reactReconcilerStub',
     }
   },
   build: {
     // 优化构建输出
-    minify: 'esbuild', // 使用esbuild替代terser，提高构建速度
+    minify: 'terser', // 使用terser进行更高级的压缩
+    terserOptions: {
+      compress: {
+        drop_console: true, // 移除console.log
+        drop_debugger: true, // 移除debugger
+        pure_funcs: ['console.debug', 'console.info'], // 移除特定console方法
+        passes: 2 // 执行多次压缩
+      },
+      mangle: {
+        toplevel: true, // 顶级变量名混淆
+        keep_classnames: false,
+        keep_fnames: false
+      }
+    },
     // 启用更高效的压缩算法
-    brotliSize: false, // 禁用brotli大小报告，减少构建时间
+    brotliSize: true, // 启用brotli压缩
     // 优化 CSS 构建
     cssMinify: 'esbuild', // 使用esbuild压缩CSS，确保构建成功
     // 启用CSS代码分割
@@ -168,13 +268,13 @@ export default defineConfig({
     // 生成 sourcemap（生产环境可关闭）
     sourcemap: false,
     // 设置 chunk 大小警告阈值（单位：KB）
-    chunkSizeWarningLimit: 1000, // 增大警告阈值，减少不必要的警告
+    chunkSizeWarningLimit: 800, // 降低警告阈值，确保chunk大小合理
     // 启用资产预加载
-    preloadAssets: false, // 禁用预加载，减少构建时间
+    preloadAssets: true, // 启用预加载，优化加载性能
     // 生成构建报告
-    reportCompressedSize: false, // 禁用构建报告，减少构建时间
+    reportCompressedSize: true, // 启用构建报告，便于分析
     // 调整资产内联限制，减少内联资源数量
-    assetsInlineLimit: 0, // 禁用资源内联，减少构建时间
+    assetsInlineLimit: 4096, // 内联小于4KB的资源
     // 禁用动态导入 polyfill，减少不必要的代码
     modulePreload: {
       polyfill: false
@@ -187,17 +287,13 @@ export default defineConfig({
     rollupOptions: {
       // 启用更严格的tree-shaking
       treeshake: {
+        moduleSideEffects: 'no-external',
         propertyReadSideEffects: false,
         tryCatchDeoptimization: false,
-        // 新增tree-shake选项
-        correctVarValueBeforeDeclaration: true,
-        moduleSideEffects: (id) => {
-          // 排除需要保留副作用的模块
-          return id.includes('@fortawesome') || id.includes('sonner') || id.includes('@vercel/analytics') || id.includes('@vercel/speed-insights') || id.includes('@supabase/supabase-js');
-        }
+        correctVarValueBeforeDeclaration: true
       },
-      // 外部化 Node.js 原生模块，避免打包到浏览器代码中
-      external: ['better-sqlite3', 'mongodb', 'pg', '@neondatabase/serverless', 'ws'],
+      // 外部化 Node.js 原生模块和不兼容的依赖，避免打包到浏览器代码中
+      external: ['better-sqlite3', 'mongodb', 'pg', '@neondatabase/serverless', 'ws', 'react-reconciler', 'react-reconciler/constants'],
       // 优化输入选项
       input: {
         main: 'index.html',
@@ -207,20 +303,20 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash:8][extname]',
         chunkFileNames: 'chunks/[name]-[hash:8].js',
         entryFileNames: 'entries/[name]-[hash:8].js',
-        // 启用代码分割，优化chunk大小
-        experimentalMinChunkSize: 10000, // 增大最小chunk大小到10KB，减少小chunk数量
+        // 优化chunk大小
+        experimentalMinChunkSize: 5000, // 减小最小chunk大小，增加代码分割粒度
         // 启用动态导入支持
         dynamicImportInCjs: true,
-        // 简化代码分割策略，减少构建时间
+        // 优化代码分割策略
         manualChunks(id) {
-          // 只分割大型库，减少chunk数量
+          // 第三方库优化分割
           if (id.includes('node_modules')) {
             // React核心库 - 合并为一个chunk
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
               return 'vendor-react';
             }
             
-            // Three.js相关库 - 合并为更少的chunk
+            // Three.js相关库 - 合并为一个chunk
             if (id.includes('three') || id.includes('@react-three')) {
               return 'three-core';
             }
@@ -240,23 +336,107 @@ export default defineConfig({
               return 'ui-sonner';
             }
             
-            // 手势识别库 - 合并为一个chunk
+            // 手势识别库
             if (id.includes('@mediapipe') || id.includes('@tensorflow')) {
               return 'gesture-ml';
             }
             
-            // 其他第三方库合并为一个chunk，减少构建时间
+            // 图标库
+            if (id.includes('@fortawesome')) {
+              return 'icons-fontawesome';
+            }
+            
+            // 国际化库
+            if (id.includes('i18next') || id.includes('react-i18next')) {
+              return 'i18n';
+            }
+            
+            // 状态管理库
+            if (id.includes('zustand')) {
+              return 'state-zustand';
+            }
+            
+            // 其他第三方库合并为一个chunk
             return 'vendor-other';
           }
           
-          // 按页面分割代码，只分割大型页面
+          // 按页面功能模块分割代码
           if (id.includes('src/pages/')) {
-            return 'pages';
+            if (id.includes('Admin') || id.includes('admin')) {
+              return 'pages-admin';
+            }
+            if (id.includes('Create') || id.includes('create')) {
+              return 'pages-create';
+            }
+            if (id.includes('Explore') || id.includes('explore')) {
+              return 'pages-explore';
+            }
+            if (id.includes('Community') || id.includes('community')) {
+              return 'pages-community';
+            }
+            if (id.includes('Dashboard') || id.includes('dashboard')) {
+              return 'pages-dashboard';
+            }
+            if (id.includes('Cultural') || id.includes('cultural')) {
+              return 'pages-cultural';
+            }
+            if (id.includes('Lab') || id.includes('lab')) {
+              return 'pages-experimental';
+            }
+            if (id.includes('Test') || id.includes('test')) {
+              return 'pages-test';
+            }
+            if (id.includes('Membership') || id.includes('membership')) {
+              return 'pages-membership';
+            }
+            return 'pages-other';
           }
           
-          // 大型组件合并为一个chunk
-          if (id.includes('src/components/') && id.includes('.tsx')) {
-            return 'components';
+          // 按组件功能模块分割代码
+          if (id.includes('src/components/')) {
+            if (id.includes('VirtualMap')) {
+              return 'components-virtual-map';
+            }
+            if (id.includes('AR')) {
+              return 'components-ar';
+            }
+            if (id.includes('Game') || id.includes('game')) {
+              return 'components-game';
+            }
+            if (id.includes('Admin')) {
+              return 'components-admin';
+            }
+            if (id.includes('Analytics')) {
+              return 'components-analytics';
+            }
+            if (id.includes('Community')) {
+              return 'components-community';
+            }
+            if (id.includes('Creator') || id.includes('creator')) {
+              return 'components-core';
+            }
+            if (id.includes('PWA') || id.includes('pwa')) {
+              return 'components-auxiliary';
+            }
+            if (id.includes('Floating') || id.includes('floating')) {
+              return 'components-ui';
+            }
+            if (id.includes('UserFeedback') || id.includes('feedback')) {
+              return 'components-auxiliary';
+            }
+            if (id.includes('FirstLaunchGuide')) {
+              return 'components-auxiliary';
+            }
+            if (id.includes('LazyImage') || id.includes('OptimizedImage')) {
+              return 'components-media';
+            }
+            if (id.includes('Skeleton')) {
+              return 'components-ui';
+            }
+            if (id.includes('MobileLayout') || id.includes('SidebarLayout')) {
+              return 'components-layout';
+            }
+            return 'components-other';
           }
         },
       },
@@ -383,5 +563,18 @@ export default defineConfig({
         },
       },
     },
+    // 确保预览服务器也使用相同的resolve配置
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+        'better-sqlite3': '@/utils/databaseStub',
+        'mongodb': '@/utils/databaseStub',
+        'pg': '@/utils/databaseStub',
+        '@neondatabase/serverless': '@/utils/databaseStub',
+        'ws': '@/utils/databaseStub',
+        'react-reconciler/constants': '@/utils/reactReconcilerStub',
+        'react-reconciler': '@/utils/reactReconcilerStub',
+      }
+    }
   },
 });

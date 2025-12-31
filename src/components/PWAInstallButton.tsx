@@ -16,7 +16,14 @@ declare global {
   }
 }
 
-const PWAInstallButton: React.FC = () => {
+interface PWAInstallButtonProps {
+  asMenuItem?: boolean;
+  isDark?: boolean;
+  hideFixedButton?: boolean;
+  forceShow?: boolean;
+}
+
+const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false, isDark = false, hideFixedButton = false, forceShow = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -55,6 +62,11 @@ const PWAInstallButton: React.FC = () => {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
+      // 如果deferredPrompt不存在，给用户一个提示
+      setInstallStatus('dismissed');
+      setTimeout(() => {
+        setInstallStatus('idle');
+      }, 3000);
       return;
     }
 
@@ -96,14 +108,10 @@ const PWAInstallButton: React.FC = () => {
     return 'BeforeInstallPromptEvent' in window;
   };
 
-  if (!showInstallButton && !showGuide && installStatus === 'idle') {
-    return null;
-  }
-
   return (
     <>
       {/* 安装引导 */}
-      {showGuide && isPWASupported() && (
+      {!asMenuItem && showGuide && isPWASupported() && (
         <div className="fixed bottom-20 right-6 z-40 max-w-xs">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-start mb-3">
@@ -137,19 +145,31 @@ const PWAInstallButton: React.FC = () => {
       )}
 
       {/* 安装按钮 */}
-      {showInstallButton && isPWASupported() && (
-        <div className="fixed bottom-6 left-6 z-40">
-          <button
-            onClick={handleInstallClick}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
-          >
-            <i className="fas fa-download text-lg"></i>
-            <span>安装应用</span>
-          </button>
-        </div>
+      {asMenuItem ? (
+        /* 作为菜单项时，直接返回按钮本身 */
+        <button
+          onClick={handleInstallClick}
+          className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+        >
+          <i className="fas fa-download mr-3"></i>
+          <span>安装应用</span>
+        </button>
+      ) : (
+        /* 否则，保持原来的固定定位，但可以通过hideFixedButton隐藏 */
+        showInstallButton && isPWASupported() && !hideFixedButton && (
+          <div className="fixed bottom-6 left-6 z-40">
+            <button
+              onClick={handleInstallClick}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-8 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
+            >
+              <i className="fas fa-download text-lg"></i>
+              <span>安装应用</span>
+            </button>
+          </div>
+        )
       )}
 
-      {/* 安装状态提示 */}
+      {/* 安装状态提示 - 无论是否为菜单项模式，都显示 */}
       {installStatus !== 'idle' && (
         <div className="fixed bottom-6 left-6 z-40">
           <div className={`flex items-center gap-3 px-5 py-3 rounded-full shadow-lg transition-all duration-300 ${installStatus === 'installing' ? 'bg-yellow-100 text-yellow-800' : installStatus === 'installed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -168,7 +188,7 @@ const PWAInstallButton: React.FC = () => {
             {installStatus === 'dismissed' && (
               <>
                 <i className="fas fa-times-circle"></i>
-                <span>已取消安装</span>
+                <span>当前环境不支持直接安装应用</span>
               </>
             )}
           </div>

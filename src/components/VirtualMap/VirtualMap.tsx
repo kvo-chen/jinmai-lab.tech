@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import MapRenderer from './MapRenderer';
 import MapController from './MapController';
 import MapControls from './MapControls';
@@ -41,24 +41,8 @@ const VirtualMap: React.FC<VirtualMapProps> = ({
     updateTheme
   } = useMapState();
   
-  // 初始化地图数据
-  useEffect(() => {
-    try {
-      console.log('VirtualMap: 初始化地图数据', {
-        regionsCount: initialRegions.length,
-        poisCount: initialPOIs.length,
-        pathsCount: initialPaths.length
-      });
-      // 设置初始数据
-      setInitialData({
-        regions: initialRegions,
-        pois: initialPOIs,
-        paths: initialPaths
-      });
-    } catch (error) {
-      console.error('初始化地图数据时出错:', error);
-    }
-  }, [initialRegions, initialPOIs, initialPaths, setInitialData]);
+  // 添加尺寸初始化状态，确保尺寸初始化完成后再加载数据
+  const [sizeInitialized, setSizeInitialized] = useState(false);
   
   // 获取容器尺寸
   const updateContainerSize = () => {
@@ -73,6 +57,11 @@ const VirtualMap: React.FC<VirtualMapProps> = ({
     
     // 更新地图状态中的尺寸
     setSize(newWidth, newHeight);
+    
+    // 标记尺寸已初始化
+    if (!sizeInitialized && newWidth > 0 && newHeight > 0) {
+      setSizeInitialized(true);
+    }
   };
   
   // 初始化尺寸和事件监听
@@ -87,12 +76,38 @@ const VirtualMap: React.FC<VirtualMapProps> = ({
     return () => {
       window.removeEventListener('resize', updateContainerSize);
     };
-  }, [setSize]);
+  }, [setSize, sizeInitialized]);
 
   // 当width或height属性变化时更新尺寸
   useEffect(() => {
     updateContainerSize();
-  }, [width, height, setSize]);
+  }, [width, height, setSize, sizeInitialized]);
+  
+  // 初始化地图数据 - 优化：确保尺寸初始化完成后再加载数据
+  useEffect(() => {
+    try {
+      // 数据验证：确保初始数据有效
+      const validatedRegions = initialRegions || [];
+      const validatedPOIs = initialPOIs || [];
+      const validatedPaths = initialPaths || [];
+      
+      console.log('VirtualMap: 初始化地图数据', {
+        regionsCount: validatedRegions.length,
+        poisCount: validatedPOIs.length,
+        pathsCount: validatedPaths.length,
+        sizeInitialized: sizeInitialized
+      });
+      
+      // 无论尺寸是否初始化完成，都设置初始数据，确保数据能被正确保存
+      setInitialData({
+        regions: validatedRegions,
+        pois: validatedPOIs,
+        paths: validatedPaths
+      });
+    } catch (error) {
+      console.error('初始化地图数据时出错:', error);
+    }
+  }, [initialRegions, initialPOIs, initialPaths, setInitialData]);
   
   // 处理POI点击事件
   const handlePOIClickInternal = (poiId: string) => {

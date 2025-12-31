@@ -1,16 +1,18 @@
 import React, { useCallback, useRef, memo } from 'react'
 
 // 搜索结果类型枚举
-export enum SearchResultType {
-  WORK = 'work',
-  USER = 'user',
-  CATEGORY = 'category',
-  TAG = 'tag',
-  PAGE = 'page'
-}
+export const SearchResultType = {
+  WORK: 'work',
+  USER: 'user',
+  CATEGORY: 'category',
+  TAG: 'tag',
+  PAGE: 'page'
+} as const;
+
+export type SearchResultType = typeof SearchResultType[keyof typeof SearchResultType];
 
 // 搜索建议项类型
-interface SearchSuggestion {
+export interface SearchSuggestion {
   id: string
   text: string
   type: SearchResultType

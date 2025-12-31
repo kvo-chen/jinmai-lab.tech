@@ -45,7 +45,7 @@ class SearchService {
   // 分析查询意图，确定主要结果类型
   classifyQuery(query: string): SearchClassificationResult {
     const lowerQuery = query.toLowerCase().trim()
-    let primaryType = SearchResultType.WORK
+    let primaryType: SearchResultType = SearchResultType.WORK
     let confidence = 0.5
     const suggestedResults: SearchResult[] = []
 
@@ -265,7 +265,7 @@ class SearchService {
   // 搜索所有类型的结果
   searchAll(query: string): {
     works: typeof mockWorks
-    users: typeof this.mockUsers
+    users: typeof SearchService.prototype.mockUsers
     categories: string[]
     tags: string[]
   } {

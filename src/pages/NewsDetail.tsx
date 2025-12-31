@@ -22,24 +22,21 @@ export default function NewsDetail() {
   const { isDark } = useTheme();
   const [news, setNews] = useState<NewsItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // 模拟数据加载
-  useEffect(() => {
-    setIsLoading(true);
-    
-    // 模拟API请求延迟
-    setTimeout(() => {
-      // 模拟新闻详情数据
-      const newsDetail: NewsItem = {
-        id: parseInt(id || '1'),
-        title: '全国非物质文化遗产保护工作会议在京召开',
-        description: '会议总结了近年来非遗保护工作成果，部署了下一阶段重点任务，强调要加强非遗的活态传承和创新发展。',
-        image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=National%20intangible%20cultural%20heritage%20protection%20work%20conference%20Beijing',
-        date: '2025-12-03',
-        category: '政策动态',
-        source: '文化和旅游部',
-        views: 12563,
-        content: `12月3日，全国非物质文化遗产保护工作会议在北京召开。文化和旅游部部长胡和平出席会议并讲话，副部长李群主持会议。
+  // 模拟完整的资讯数据列表
+  const newsItems: NewsItem[] = [
+    // 政策动态
+    {
+      id: 1,
+      title: '全国非物质文化遗产保护工作会议在京召开',
+      description: '会议总结了近年来非遗保护工作成果，部署了下一阶段重点任务，强调要加强非遗的活态传承和创新发展。',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=National%20intangible%20cultural%20heritage%20protection%20work%20conference%20Beijing',
+      date: '2025-12-03',
+      category: '政策动态',
+      source: '文化和旅游部',
+      views: 12563,
+      content: `12月3日，全国非物质文化遗产保护工作会议在北京召开。文化和旅游部部长胡和平出席会议并讲话，副部长李群主持会议。
 
 会议总结了近年来我国非物质文化遗产保护工作取得的显著成效。截至目前，我国已建立了国家、省、市、县四级非物质文化遗产保护体系，认定了国家级非物质文化遗产代表性项目1557项，国家级非物质文化遗产代表性传承人3068名，设立了23个国家级文化生态保护区。
 
@@ -50,11 +47,129 @@ export default function NewsDetail() {
 会议还表彰了全国非物质文化遗产保护工作先进集体和先进个人，并对2026年重点工作进行了部署。
 
 来自全国各省、自治区、直辖市文化和旅游厅（局）主要负责同志，以及有关专家学者、非遗代表性传承人代表等共300余人参加了会议。`
-      };
-      
-      setNews(newsDetail);
-      setIsLoading(false);
-    }, 500);
+    },
+    {
+      id: 2,
+      title: '《中国传统工艺振兴计划》实施成效显著',
+      description: '五年来，该计划推动了1500余项传统工艺项目的保护和发展，带动了200多万从业人员就业增收。',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=China%20traditional%20craft%20revitalization%20plan%20implementation%20achievements',
+      date: '2025-11-28',
+      category: '政策动态',
+      source: '光明日报',
+      views: 15678,
+      content: `五年来，《中国传统工艺振兴计划》实施成效显著，推动了1500余项传统工艺项目的保护和发展，带动了200多万从业人员就业增收。
+
+该计划自2020年实施以来，以振兴传统工艺为目标，以传承人为核心，以产业发展为导向，以创新设计为动力，通过政策支持、人才培养、市场拓展、国际交流等多种方式，推动传统工艺实现创造性转化和创新性发展。
+
+截至目前，全国已建立了100个传统工艺工作站，培训了10万人次以上的传统工艺从业者，支持了1000余项传统工艺创新项目，推动了传统工艺产品销售额增长了50%以上。
+
+同时，该计划还推动了传统工艺与旅游、文化创意、数字经济等产业的融合发展，形成了一批具有影响力的传统工艺品牌和产品，提高了传统工艺的市场竞争力和社会影响力。
+
+下一步，文化和旅游部将继续深入实施《中国传统工艺振兴计划》，进一步加强传统工艺的保护和传承，推动传统工艺实现更高质量的发展。`
+    },
+    {
+      id: 3,
+      title: '中国传统音乐保护与传承工程启动',
+      description: '工程将通过录制、整理、研究等方式，对中国传统音乐进行系统保护和传承，预计历时五年完成。',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=China%20traditional%20music%20protection%20and%20transmission%20project%20launch',
+      date: '2025-11-15',
+      category: '政策动态',
+      source: '中国音乐家协会',
+      views: 10345,
+      content: `中国传统音乐保护与传承工程于11月15日正式启动，该工程将通过录制、整理、研究等方式，对中国传统音乐进行系统保护和传承，预计历时五年完成。
+
+该工程由中国音乐家协会牵头，联合教育部、文化和旅游部等部门共同实施，旨在全面保护和传承中国传统音乐文化，推动传统音乐的创造性转化和创新性发展。
+
+工程将重点开展以下工作：一是对全国范围内的传统音乐资源进行全面普查和录制；二是建立中国传统音乐数据库和数字图书馆；三是加强传统音乐理论研究和人才培养；四是推动传统音乐的创新发展和传播推广；五是加强传统音乐的国际交流与合作。
+
+中国传统音乐是中华民族优秀传统文化的重要组成部分，具有悠久的历史和丰富的内涵。该工程的实施将有助于更好地保护和传承中国传统音乐文化，推动传统音乐在新时代焕发新的活力。`
+    },
+    {
+      id: 4,
+      title: '《文化产业数字化战略实施方案》正式发布',
+      description: '方案提出到2035年，实现文化产业数字化转型全面完成，数字文化产业成为国民经济支柱性产业。',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=Cultural%20industry%20digitalization%20strategy%20implementation%20plan%20release',
+      date: '2025-11-08',
+      category: '政策动态',
+      source: '新华社',
+      views: 18923,
+      content: `《文化产业数字化战略实施方案》于11月8日正式发布，方案提出到2035年，实现文化产业数字化转型全面完成，数字文化产业成为国民经济支柱性产业。
+
+该方案由文化和旅游部、国家发展改革委、工业和信息化部等部门联合发布，是指导我国文化产业数字化发展的纲领性文件。
+
+方案提出了以下主要目标：到2027年，文化产业数字化转型取得显著成效，数字文化产业占文化产业比重达到50%以上；到2035年，文化产业数字化转型全面完成，数字文化产业成为国民经济支柱性产业，我国成为全球数字文化产业创新中心。
+
+方案还明确了以下重点任务：一是加强数字文化基础设施建设；二是推动文化产业数字化转型；三是培育数字文化新业态新模式；四是加强数字文化内容创作生产；五是完善数字文化产业生态；六是加强数字文化国际合作。
+
+该方案的发布将为我国文化产业数字化发展提供重要指导，推动我国文化产业实现高质量发展。`
+    },
+    // 赛事活动
+    {
+      id: 7,
+      title: '2025中国传统文化创意设计大赛启动',
+      description: '本次大赛以"传统与现代融合"为主题，面向全球设计师征集优秀作品，推动传统文化的创造性转化和创新性发展。',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=2025%20China%20traditional%20culture%20creative%20design%20competition%20launch',
+      date: '2025-12-01',
+      category: '赛事活动',
+      source: '中国文化产业协会',
+      views: 8921,
+      content: `2025中国传统文化创意设计大赛于12月1日正式启动，本次大赛以"传统与现代融合"为主题，面向全球设计师征集优秀作品，推动传统文化的创造性转化和创新性发展。
+
+本次大赛由中国文化产业协会主办，中国设计协会承办，旨在通过创意设计的方式，挖掘和传承中国传统文化，推动传统文化与现代设计的融合发展。
+
+大赛设有以下参赛类别：视觉设计、产品设计、空间设计、数字创意设计等。参赛作品要求以中国传统文化元素为核心，结合现代设计理念和技术，具有创新性、实用性和艺术性。
+
+大赛奖项设置如下：金奖10名，奖金各10万元；银奖20名，奖金各5万元；铜奖30名，奖金各2万元；优秀奖100名，颁发证书。
+
+大赛报名截止日期为2026年3月1日，评审结果将于2026年5月公布。获奖作品将在全国范围内进行巡展，并推荐给相关企业进行产业化合作。
+
+本次大赛的举办将有助于推动传统文化的创造性转化和创新性发展，培育一批具有国际影响力的传统文化创意设计作品和人才。`
+    },
+    {
+      id: 8,
+      title: '2025国际非遗博览会在济南开幕',
+      description: '博览会吸引了来自全球40多个国家和地区的非遗项目参展，展示了丰富的人类非物质文化遗产。',
+      image: '/api/proxy/trae-api/api/ide/v1/text_to_image?image_size=landscape_4_3&prompt=2025%20International%20intangible%20cultural%20heritage%20expo%20Jinan',
+      date: '2025-11-20',
+      category: '赛事活动',
+      source: '中国非物质文化遗产保护中心',
+      views: 12345,
+      content: `2025国际非遗博览会于11月20日在济南开幕，博览会吸引了来自全球40多个国家和地区的非遗项目参展，展示了丰富的人类非物质文化遗产。
+
+本次博览会由文化和旅游部、山东省人民政府主办，济南市人民政府、山东省文化和旅游厅承办，以"传承文化遗产，促进文明互鉴"为主题，旨在通过展览、展示、交流、交易等方式，推动非遗的保护和传承，促进不同国家和地区之间的文明交流互鉴。
+
+博览会设有以下展区：国际展区、国内展区、互动体验区、成果展区等。参展项目涵盖了传统音乐、传统舞蹈、传统戏剧、传统技艺、传统美术等多个门类。
+
+博览会期间，还将举办非遗保护国际论坛、非遗项目展演、非遗产品交易等活动。预计将有超过100万人次参观本次博览会。
+
+本次博览会的举办将有助于推动非遗的保护和传承，促进不同国家和地区之间的文明交流互鉴，提升我国在国际非遗领域的影响力和话语权。`
+    }
+  ];
+  
+  // 数据加载
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    
+    // 模拟API请求延迟
+    setTimeout(() => {
+      try {
+        const newsId = parseInt(id || '1');
+        const foundNews = newsItems.find(item => item.id === newsId);
+        
+        if (foundNews) {
+          setNews(foundNews);
+        } else {
+          setError('未找到该资讯内容');
+          setNews(null);
+        }
+      } catch (err) {
+        setError('加载资讯详情失败，请稍后重试');
+        console.error('Failed to load news detail:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
   }, [id]);
   
   if (isLoading) {
@@ -82,18 +197,25 @@ export default function NewsDetail() {
     );
   }
   
-  if (!news) {
+  if (error || !news) {
     return (
       <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen py-12 px-4 sm:px-6 lg:px-8`}>
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-md max-w-4xl mx-auto text-center`}>
-          <h2 className="text-2xl font-bold mb-4">资讯不存在</h2>
-          <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>您访问的资讯不存在或已被删除。</p>
-          <button
-            onClick={() => navigate('/')}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full text-sm font-medium transition-all shadow-md hover:shadow-lg"
-          >
-            返回首页
-          </button>
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-4">
+              <i className="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+            </div>
+            <h2 className="text-2xl font-bold mb-2">{error || '资讯不存在'}</h2>
+            <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {error ? '请稍后重试或返回资讯列表' : '您访问的资讯不存在或已被删除。'}
+            </p>
+            <button
+              onClick={() => navigate('/news')}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full text-sm font-medium transition-all shadow-md hover:shadow-lg"
+            >
+              返回资讯列表
+            </button>
+          </div>
         </div>
       </div>
     );

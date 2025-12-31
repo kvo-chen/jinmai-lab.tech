@@ -753,15 +753,11 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
               opacity: 1, 
               scale: 1, 
               y: 0, 
-              x: 0,
-              // 添加轻微的浮动动画，增强漂浮感
-              translateY: [0, -5, 0, 5, 0],
+              x: 0
             }}
             exit={{ opacity: 0, scale: 0.9, y: 20, x: 0 }}
             transition={{
-              duration: 0.2,
-              // 浮动动画循环播放
-              translateY: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+              duration: 0.2
             }}
             className={`rounded-2xl shadow-2xl flex flex-col ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} overflow-hidden`}
             style={{
@@ -805,25 +801,21 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
               </div>
               <div className="flex gap-1">
                 {/* 设置按钮 */}
-                <motion.button
+                <button
                   onClick={() => setShowSettings(!showSettings)}
                   className={`p-1.5 rounded-full transition-all ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transform`}
                   aria-label="设置"
-                  whileHover={{ scale: 1.1, rotate: 15 }}
-                  whileTap={{ scale: 0.95, rotate: 0 }}
                 >
                   <i className={`fas fa-cog text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-                </motion.button>
+                </button>
                 {/* 关闭按钮 */}
-                <motion.button
+                <button
                   onClick={toggleAssistant}
                   className={`p-1.5 rounded-full transition-all ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transform`}
                   aria-label="关闭"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   <i className={`fas fa-times text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}></i>
-                </motion.button>
+                </button>
               </div>
             </div>
 
@@ -850,12 +842,10 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                   ref={chatContainerRef}
                 >
                     {messages.map((message, index) => (
-                      <motion.div
+                      <div
                         key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} ${window.innerWidth < 768 ? 'mb-3' : 'mb-4'}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} ${window.innerWidth < 768 ? 'mb-3' : 'mb-4'} opacity-0 animate-fade-in`}
+                        style={{ animationDelay: `${index * 0.1}s`, animationDuration: '0.3s', animationFillMode: 'forwards' }}
                       >
                         <div className="max-w-[85%]">
                           <div
@@ -875,51 +865,41 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                               {/* 评分按钮 */}
                               {!feedbackRatings[index] && (
                                 <div className="flex gap-1">
-                                  <motion.button
+                                  <button
                                     onClick={() => handleRating(index, 1)}
                                     className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-red-400' : 'hover:text-red-500'}`}
                                     aria-label="非常不满意"
-                                    whileHover={{ scale: 1.2, rotate: -10 }}
-                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-down text-xs"></i>
-                                  </motion.button>
-                                  <motion.button
+                                  </button>
+                                  <button
                                     onClick={() => handleRating(index, 2)}
                                     className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-yellow-400' : 'hover:text-yellow-500'}`}
                                     aria-label="不满意"
-                                    whileHover={{ scale: 1.2 }}
-                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-down-half-alt text-xs"></i>
-                                  </motion.button>
-                                  <motion.button
+                                  </button>
+                                  <button
                                     onClick={() => handleRating(index, 3)}
                                     className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-500'}`}
                                     aria-label="一般"
-                                    whileHover={{ scale: 1.2 }}
-                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-meh text-xs"></i>
-                                  </motion.button>
-                                  <motion.button
+                                  </button>
+                                  <button
                                     onClick={() => handleRating(index, 4)}
                                     className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
                                     aria-label="满意"
-                                    whileHover={{ scale: 1.2 }}
-                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-up-half-alt text-xs"></i>
-                                  </motion.button>
-                                  <motion.button
+                                  </button>
+                                  <button
                                     onClick={() => handleRating(index, 5)}
                                     className={`p-1 rounded-full transition-all ${isDark ? 'hover:text-green-400' : 'hover:text-green-500'}`}
                                     aria-label="非常满意"
-                                    whileHover={{ scale: 1.2, rotate: 10 }}
-                                    whileTap={{ scale: 0.9 }}
                                   >
                                     <i className="fas fa-thumbs-up text-xs"></i>
-                                  </motion.button>
+                                  </button>
                                 </div>
                               )}
                               
@@ -964,7 +944,7 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
                             </div>
                           )}
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
 
                     {/* 正在生成指示器 */}

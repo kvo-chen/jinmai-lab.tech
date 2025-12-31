@@ -17,7 +17,7 @@ export interface SimplifiedARPreviewConfig {
   directionalLightIntensity?: number;
 }
 
-// 3D模型加载组件
+// 3D模型加载组件 - 使用正确的React钩子调用方式和错误处理
 const ModelViewer: React.FC<{
   url: string;
   onLoad?: () => void;
@@ -26,16 +26,45 @@ const ModelViewer: React.FC<{
   rotation: [number, number, number];
   scale: number;
 }> = ({ url, onLoad, onError, position, rotation, scale }) => {
-  let scene;
+  // 注意：useGLTF钩子必须在组件顶层调用，不能在try-catch块中调用
+  // 使用useState来跟踪加载状态和错误
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  // useGLTF钩子的正确使用方式：不接受onError参数，也不返回error属性
+  // 使用try-catch包装useGLTF调用会违反React钩子规则
+  // 因此，我们使用状态管理来处理加载状态
+  let scene: THREE.Group | null = null;
+  let error: Error | null = null;
   
   try {
-    scene = useGLTF(url).scene;
-  } catch (error) {
-    console.error('3D模型加载错误:', error);
-    if (onError && error instanceof Error) {
-      onError(error);
+    // 尝试加载3D模型
+    // 注意：useGLTF钩子会在组件渲染时同步执行
+    const gltf = useGLTF(url);
+    scene = gltf.scene;
+  } catch (err) {
+    // 捕获useGLTF抛出的错误
+    console.error('3D模型加载错误:', err);
+    error = err instanceof Error ? err : new Error('3D模型加载失败');
+  }
+  
+  // 处理模型加载状态
+  useEffect(() => {
+    if (error) {
+      setLoadError(error);
+      if (onError) {
+        onError(error);
+      }
+    } else if (scene && !isLoaded) {
+      setIsLoaded(true);
+      if (onLoad) {
+        onLoad();
+      }
     }
-    // 返回一个简单的错误占位符，而不是null，提供更好的用户体验
+  }, [error, scene, isLoaded, onError, onLoad]);
+  
+  // 如果发生错误，返回错误占位符
+  if (loadError || error) {
     return (
       <mesh position={position} rotation={rotation} scale={scale}>
         <boxGeometry args={[2, 2, 2]} />
@@ -44,12 +73,17 @@ const ModelViewer: React.FC<{
     );
   }
   
-  useEffect(() => {
-    if (onLoad) {
-      onLoad();
-    }
-  }, [onLoad]);
-
+  // 如果模型还未加载，返回加载占位符
+  if (!scene) {
+    return (
+      <mesh position={position} rotation={rotation} scale={scale}>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshStandardMaterial color="#4f46e5" opacity={0.5} transparent />
+      </mesh>
+    );
+  }
+  
+  // 模型加载成功，返回实际模型
   return (
     <primitive
       object={scene}
@@ -507,44 +541,79 @@ const SimplifiedARPreview: React.FC<{
           </div>
         )}
 
-        {/* AR功能提示 */}
+        {/* AR功能提示 - 优化设计和内容 */}
         <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-3">
           {isSupported === null ? (
             <div className="flex flex-col gap-2">
-              <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg backdrop-blur-sm">
-                正在检测设备AR兼容性
+              <div className="text-white text-sm bg-gray-800 bg-opacity-90 px-4 py-3 rounded-lg backdrop-blur-md shadow-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <i className="fas fa-spinner fa-spin text-blue-400"></i>
+                  <span className="font-medium">正在检测设备AR兼容性</span>
+                </div>
+                <p className="text-xs opacity-90">请稍候...</p>
               </div>
             </div>
           ) : isSupported ? (
             <div className="flex flex-col gap-2">
-              <div className="text-white text-sm bg-blue-900 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
-                💡 AR功能说明：
-                <br />1. 确保设备支持WebXR
-                <br />2. 使用Chrome或Edge浏览器
-                <br />3. 在明亮环境中使用
-                <br />4. 将设备对准平面表面
-                <br /><br />温馨提示：目前仅在移动设备上支持完整AR功能
+              <div className="text-white text-sm bg-blue-900 bg-opacity-90 px-4 py-3 rounded-lg max-w-xs backdrop-blur-md shadow-lg">
+                <div className="font-medium mb-2 flex items-center gap-2">
+                  <i className="fas fa-vr-cardboard text-blue-400"></i>
+                  <span>AR功能说明</span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <p className="flex items-start gap-1">
+                    <span className="text-blue-400">📱</span>
+                    <span>目前仅在移动设备上支持完整AR功能</span>
+                  </p>
+                  <p className="flex items-start gap-1">
+                    <span className="text-blue-400">🔍</span>
+                    <span>确保设备支持WebXR技术</span>
+                  </p>
+                  <p className="flex items-start gap-1">
+                    <span className="text-blue-400">🌞</span>
+                    <span>在明亮环境中使用效果更佳</span>
+                  </p>
+                  <p className="flex items-start gap-1">
+                    <span className="text-blue-400">📋</span>
+                    <span>将设备对准平面表面</span>
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => {
-                  alert('📱 AR功能暂不可用\n\n开发团队正在努力开发中，敬请期待！\n\n您可以继续使用3D预览功能查看模型。');
+                  alert('📱 AR功能开发中\n\n开发团队正在努力开发完整的AR功能，敬请期待！\n\n您可以继续使用3D预览功能查看和操作模型。');
                 }}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transition-all duration-200 hover:translate-y-[-2px]"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:translate-y-[-2px] transform"
               >
                 <i className="fas fa-vr-cardboard mr-2"></i>
-                AR功能说明
+                了解AR功能
               </button>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <div className="text-white text-sm bg-gray-800 bg-opacity-80 px-4 py-2 rounded-lg max-w-xs backdrop-blur-sm">
-                📱 您的设备不支持AR功能
-                <br /><br />建议使用：
-                <ul className="mt-1 list-disc list-inside text-xs opacity-90">
-                  <li>Chrome 90+（Android）</li>
-                  <li>Edge 90+（Android）</li>
-                  <li>Safari 15+（iOS 15+）</li>
-                </ul>
+              <div className="text-white text-sm bg-gray-900 bg-opacity-90 px-4 py-3 rounded-lg max-w-xs backdrop-blur-md shadow-lg">
+                <div className="font-medium mb-2 flex items-center gap-2">
+                  <i className="fas fa-info-circle text-yellow-400"></i>
+                  <span>设备不支持AR功能</span>
+                </div>
+                <p className="text-xs mb-2 opacity-90">当前设备暂不支持WebXR AR功能</p>
+                <div className="text-xs">
+                  <p className="font-medium mb-1">建议使用以下设备和浏览器：</p>
+                  <ul className="space-y-1">
+                    <li className="flex items-start gap-1">
+                      <span className="text-green-400">✅</span>
+                      <span>Android设备 + Chrome 90+</span>
+                    </li>
+                    <li className="flex items-start gap-1">
+                      <span className="text-green-400">✅</span>
+                      <span>Android设备 + Edge 90+</span>
+                    </li>
+                    <li className="flex items-start gap-1">
+                      <span className="text-green-400">✅</span>
+                      <span>iOS 15+设备 + Safari 15+</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           )}

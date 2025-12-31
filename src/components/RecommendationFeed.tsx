@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import recommendationService, { RecommendedItem, RecommendationFeedbackType } from '../services/recommendationService';
 import { TianjinImage } from './TianjinStyleComponents';
+import VirtualList from './VirtualList';
 
 interface RecommendationFeedProps {
   userId: string;
@@ -22,6 +23,28 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'posts' | 'challenges' | 'templates'>('all');
   const [feedbackStatus, setFeedbackStatus] = useState<Record<string, RecommendationFeedbackType>>({});
+  const [isDark, setIsDark] = useState(false);
+
+  // 检测主题模式
+  useEffect(() => {
+    const checkTheme = () => {
+      if (typeof window !== 'undefined') {
+        const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setIsDark(darkMode);
+      }
+    };
+
+    checkTheme();
+    if (typeof window !== 'undefined') {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', checkTheme);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', checkTheme);
+      }
+    };
+  }, []);
 
   // 加载推荐内容
   useEffect(() => {
@@ -76,6 +99,129 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
     }
   };
 
+  // 渲染单个推荐项
+  const renderRecommendationItem = useCallback((item: RecommendedItem, index: number) => (
+    <motion.div
+      key={item.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      onClick={() => handleItemClick(item)}
+      className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer shadow-sm hover:shadow-md"
+    >
+      {/* 缩略图 */}
+      {item.thumbnail && (
+        <div className="sm:w-32 sm:h-24 flex-shrink-0">
+          <TianjinImage
+            src={item.thumbnail}
+            alt={item.title}
+            ratio="landscape"
+            fit="cover"
+            rounded="lg"
+            className="w-full h-full"
+          />
+        </div>
+      )}
+      
+      {/* 内容信息 */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white truncate">{item.title}</h3>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.type === 'post' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : item.type === 'challenge' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}`}>
+            {getTypeName(item.type)}
+          </span>
+        </div>
+        
+        {/* 推荐理由 */}
+        {showReason && item.reason && (
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{item.reason}</p>
+        )}
+        
+        {/* 元数据信息 */}
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+            </svg>
+            推荐指数: {Math.round(item.score * 10) / 10}
+          </span>
+          
+          {/* 互动数据 */}
+          {item.metadata && (
+            <div className="flex gap-3">
+              {item.metadata.likes !== undefined && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                  </svg>
+                  {item.metadata.likes}
+                </span>
+              )}
+              
+              {item.metadata.views !== undefined && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                  </svg>
+                  {item.metadata.views}
+                </span>
+              )}
+              
+              {item.metadata.participants !== undefined && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  {item.metadata.participants}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* 推荐反馈按钮 */}
+        <div className="flex gap-2 mt-2">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => handleFeedback(e, item, 'like')}
+            className={`p-1.5 rounded-full text-xs transition-colors duration-200 ${feedbackStatus[item.id] === 'like' ? 'text-red-500 bg-red-100 dark:bg-red-900 dark:text-red-200' : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:text-red-200'}`}
+            title="喜欢"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+            </svg>
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => handleFeedback(e, item, 'dislike')}
+            className={`p-1.5 rounded-full text-xs transition-colors duration-200 ${feedbackStatus[item.id] === 'dislike' ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900 dark:hover:text-yellow-200'}`}
+            title="不喜欢"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.828 5.172a4 4 0 010 5.656L10 17.657l-6.828-6.829a4 4 0 015.656-5.656L10 6.343l1.172-1.171a4 4 0 015.656 0z" clipRule="evenodd" />
+            </svg>
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => handleFeedback(e, item, 'hide')}
+            className={`p-1.5 rounded-full text-xs transition-colors duration-200 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300`}
+            title="隐藏"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
+  ), [handleItemClick, handleFeedback, feedbackStatus]);
+
   // 获取推荐类型的中文名称
   const getTypeName = (type: string): string => {
     switch (type) {
@@ -117,128 +263,16 @@ const RecommendationFeed: React.FC<RecommendationFeedProps> = ({
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
         </div>
       ) : filteredRecommendations.length > 0 ? (
-        <div className="space-y-4">
-          {filteredRecommendations.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => handleItemClick(item)}
-              className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer shadow-sm hover:shadow-md"
-            >
-              {/* 缩略图 */}
-              {item.thumbnail && (
-                <div className="sm:w-32 sm:h-24 flex-shrink-0">
-                  <TianjinImage
-                    src={item.thumbnail}
-                    alt={item.title}
-                    ratio="landscape"
-                    fit="cover"
-                    rounded="lg"
-                    className="w-full h-full"
-                  />
-                </div>
-              )}
-              
-              {/* 内容信息 */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-lg font-semibold text-gray-800 truncate">{item.title}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.type === 'post' ? 'bg-purple-100 text-purple-800' : item.type === 'challenge' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                    {getTypeName(item.type)}
-                  </span>
-                </div>
-                
-                {/* 推荐理由 */}
-                {showReason && item.reason && (
-                  <p className="text-sm text-gray-600 mb-2">{item.reason}</p>
-                )}
-                
-                {/* 元数据信息 */}
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                    推荐指数: {Math.round(item.score * 10) / 10}
-                  </span>
-                  
-                  {/* 互动数据 */}
-                  {item.metadata && (
-                    <div className="flex gap-3">
-                      {item.metadata.likes !== undefined && (
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                          </svg>
-                          {item.metadata.likes}
-                        </span>
-                      )}
-                      
-                      {item.metadata.views !== undefined && (
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                          </svg>
-                          {item.metadata.views}
-                        </span>
-                      )}
-                      
-                      {item.metadata.participants !== undefined && (
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                          </svg>
-                          {item.metadata.participants}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* 推荐反馈按钮 */}
-                <div className="flex gap-2 mt-2">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleFeedback(e, item, 'like')}
-                    className={`p-1.5 rounded-full text-xs transition-colors duration-200 ${feedbackStatus[item.id] === 'like' ? 'text-red-500 bg-red-100' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
-                    title="喜欢"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                    </svg>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleFeedback(e, item, 'dislike')}
-                    className={`p-1.5 rounded-full text-xs transition-colors duration-200 ${feedbackStatus[item.id] === 'dislike' ? 'text-yellow-500 bg-yellow-100' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}
-                    title="不喜欢"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.828 5.172a4 4 0 010 5.656L10 17.657l-6.828-6.829a4 4 0 015.656-5.656L10 6.343l1.172-1.171a4 4 0 015.656 0z" clipRule="evenodd" />
-                    </svg>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleFeedback(e, item, 'hide')}
-                    className={`p-1.5 rounded-full text-xs transition-colors duration-200 text-gray-400 hover:text-gray-600 hover:bg-gray-100`}
-                    title="隐藏"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+        <div className="h-[500px] overflow-hidden">
+          <VirtualList 
+            items={filteredRecommendations} 
+            renderItem={renderRecommendationItem} 
+            columns={1} 
+            isDark={isDark}
+            height={500}
+            itemHeight={150} // 估计的单个推荐项高度
+            overscan={2} // 预渲染2个额外的项目
+          />
         </div>
       ) : (
         <div className="text-center py-12">

@@ -596,7 +596,7 @@ export default function Home() {
             <div className="mt-2 flex items-center gap-2 flex-wrap">
               <button onClick={speakOptimizations} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-accent hover:bg-accent/90 text-white' : 'bg-accent hover:bg-accent/90 text-white'} transition-all duration-300 hover:shadow-sm`}>朗读建议</button>
               <button onClick={copyOptimizations} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900 ring-1 ring-gray-300'} transition-all duration-300 hover:shadow-sm`}>复制建议</button>
-              <button onClick={() => { navigate(`/tools?from=home&query=${encodeURIComponent(optimizationSummary || search)}`) }} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-primary hover:bg-primary/90 text-white'} transition-all duration-300 hover:shadow-sm`}>应用到创作中心</button>
+              <button onClick={() => { navigate(`/create?from=home&query=${encodeURIComponent(optimizationSummary || search)}`) }} className={`text-xs px-3 py-1 rounded ${isDark ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-primary hover:bg-primary/90 text-white'} transition-all duration-300 hover:shadow-sm`}>应用到创作中心</button>
             </div>
             {optimizeAudioUrl && (<audio controls src={optimizeAudioUrl} className={`mt-2 w-full rounded-lg ring-1 ${isDark ? 'ring-gray-700' : 'ring-gray-200'}`} />)}
           </div>

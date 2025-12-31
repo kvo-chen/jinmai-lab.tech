@@ -1,10 +1,10 @@
 import clsx from 'clsx';
 
-// 骨架屏动画样式 - 优化为更平滑的动画
-const skeletonAnimation = 'animate-pulse transition-all duration-300';
+// 骨架屏动画样式 - 优化为更平滑、更自然的动画效果
+const skeletonAnimation = 'animate-[pulse_1.5s_cubic-bezier(0.4,0,0.6,1)_infinite] transition-all duration-300 ease-in-out';
 
-// 统一的骨架屏颜色方案
-const skeletonColor = 'bg-gray-200 dark:bg-gray-700';
+// 统一的骨架屏颜色方案 - 使用渐变效果增强视觉体验
+const skeletonColor = 'bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800';
 const skeletonRounded = 'rounded-md';
 const skeletonRoundedFull = 'rounded-full';
 

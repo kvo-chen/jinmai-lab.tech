@@ -13,8 +13,15 @@ export default function SearchResults() {
   
   // 从URL参数中获取搜索查询
   const [query, setQuery] = useState('')
+  // 搜索结果类型定义
+  interface SearchResults {
+    works: any[];
+    users: any[];
+    categories: string[];
+    tags: string[];
+  }
   // 搜索结果
-  const [searchResults, setSearchResults] = useState({
+  const [searchResults, setSearchResults] = useState<SearchResults>({
     works: [],
     users: [],
     categories: [],
@@ -185,10 +192,9 @@ export default function SearchResults() {
                 
                 <TianjinButton
                   variant="secondary"
-                  size="small"
+                  size="sm"
                   className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation()
+                  onClick={() => {
                     handleResultClick(SearchResultType.USER, user.name)
                   }}
                 >

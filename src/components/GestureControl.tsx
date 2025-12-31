@@ -25,6 +25,12 @@ export default memo(function GestureControl({ videoElement, previewCanvas, onGes
   // 优化：设备性能检测
   const devicePerformanceRef = useRef<'low' | 'medium' | 'high'>('medium');
   
+  // 优化：动画帧请求ID引用
+  const animationFrameRef = useRef<number | null>(null);
+  
+  // 优化：canvas更新队列
+  const canvasUpdateQueue = useRef<{ results: any }[]>([]);
+  
   // 全局console日志过滤已在App.tsx中实现，此处不再需要本地保存
   
   // 加载外部脚本 - 优化：添加超时处理和重试机制
@@ -105,6 +111,15 @@ export default memo(function GestureControl({ videoElement, previewCanvas, onGes
     updateStatus('手势控制已禁用', 'text-yellow-400');
     
     // 全局console.log已由App.tsx管理，此处无需恢复
+    
+    // 停止动画帧请求
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // 清空canvas更新队列
+    canvasUpdateQueue.current = [];
     
     // 停止相机
     if (cameraUtilsRef.current) {
@@ -286,13 +301,10 @@ export default memo(function GestureControl({ videoElement, previewCanvas, onGes
       let lastGestureDetectTime = 0;
       let lastScale = 1.0;
       
-      // 使用requestAnimationFrame优化canvas绘制
-      const canvasUpdateQueue = useRef<{ results: any }[]>([]);
-      
-      // 优化：使用requestAnimationFrame处理canvas更新
+      // 优化的updateCanvas函数
       const updateCanvas = useCallback(() => {
         if (canvasUpdateQueue.current.length > 0) {
-          const { results } = canvasUpdateQueue.current.pop()!;
+          const { results } = canvasUpdateQueue.current.shift()!;
           
           if (!previewCtxRef.current) return;
           
@@ -322,12 +334,17 @@ export default memo(function GestureControl({ videoElement, previewCanvas, onGes
           previewCtx.restore();
         }
         
-        // 继续请求下一帧
-        requestAnimationFrame(updateCanvas);
-      }, []);
-      
-      // 启动canvas更新循环
-      requestAnimationFrame(updateCanvas);
+        // 只有在启用状态下才继续请求下一帧
+        if (isEnabled) {
+          animationFrameRef.current = requestAnimationFrame(updateCanvas);
+        } else {
+          // 确保动画帧请求被取消
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+          }
+        }
+      }, [isEnabled]);
       
       function onResults(results: any) {
           const now = performance.now();
@@ -339,7 +356,12 @@ export default memo(function GestureControl({ videoElement, previewCanvas, onGes
           lastGestureDetectTime = now;
           
           // 添加到canvas更新队列
-          canvasUpdateQueue.current = [{ results }];
+          canvasUpdateQueue.current.push({ results });
+          
+          // 只在动画帧未请求时才请求
+          if (!animationFrameRef.current) {
+            animationFrameRef.current = requestAnimationFrame(updateCanvas);
+          }
           
           if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             // 调用回调通知手势检测到

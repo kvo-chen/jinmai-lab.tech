@@ -200,7 +200,10 @@ const Form = forwardRef<HTMLFormElement, FormProps>(({
   const register = (name: string, options: RegisterOptions = {}) => {
     // 保存验证规则
     if (options.validate) {
-      setValidationRules(prev => ({ ...prev, [name]: options.validate }));
+      setValidationRules(prev => ({
+        ...prev,
+        [name]: options.validate as ValidateOptions
+      }));
     }
 
     return {

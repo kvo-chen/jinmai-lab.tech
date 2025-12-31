@@ -320,22 +320,8 @@ const debounceStore: Map<string, NodeJS.Timeout> = new Map()
 const throttleStore: Map<string, { lastRan: number; inThrottle: boolean }> = new Map()
 
 const getBaseUrl = () => {
-  const envUrl = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined
-  if (envUrl && envUrl.trim()) return envUrl
-  // 中文注释：自动判断本地开发环境（localhost/127.0.0.1/file协议），统一指向本地服务端 3001
-  try {
-    const w = typeof window !== 'undefined' ? window : undefined
-    if (w) {
-      const { protocol, hostname, port } = w.location
-      const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
-      const isFile = protocol === 'file:'
-      const isDev = isLocalHost || isFile
-      // 中文注释：当前端端口不是 3007（避免自指），使用后端端口 3007
-      if (isDev && port !== '3007') return 'http://localhost:3007'
-    }
-  } catch {}
-  // 中文注释：默认返回空字符串，使用相对路径（生产环境由同源后端提供路由）
-  return ''
+  // 硬编码返回后端服务器地址，确保API请求发送到正确的端口
+  return 'http://localhost:3010'
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -452,7 +438,9 @@ export async function apiRequest<TResp, TBody = unknown>(
   options: RequestOptions<TBody> = {}
 ): Promise<ApiResponse<TResp>> {
   const base = getBaseUrl()
+  console.log(`[API Client] getBaseUrl() 返回: ${base}`)
   const url = base ? `${base}${path}` : path
+  console.log(`[API Client] 构建的URL: ${url}`)
   const altUrl = path
   const method = options.method || 'GET'
   const headers: Record<string, string> = {
@@ -507,8 +495,8 @@ export async function apiRequest<TResp, TBody = unknown>(
     }
   }
   
-  // 定义实际请求函数
-  const actualRequest = async (): Promise<ApiResponse<TResp>> => {
+  // 定义实际请求函数（使用函数声明，解决调用前未定义的问题）
+  async function actualRequest(): Promise<ApiResponse<TResp>> {
     let attempt = 0
     let useFallback = false
     

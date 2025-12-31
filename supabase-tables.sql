@@ -190,6 +190,52 @@ CREATE TABLE IF NOT EXISTS community_announcements (
 -- 为community_announcements表添加索引
 CREATE INDEX IF NOT EXISTS idx_community_announcements_community_id ON community_announcements(community_id);
 
+-- 12. 好友请求表（friend_requests）
+-- 用于存储好友请求
+CREATE TABLE IF NOT EXISTS friend_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(sender_id, receiver_id)
+);
+
+-- 为friend_requests表添加索引
+CREATE INDEX IF NOT EXISTS idx_friend_requests_sender_id ON friend_requests(sender_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver_id ON friend_requests(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_status ON friend_requests(status);
+
+-- 13. 好友关系表（friends）
+-- 用于存储已建立的好友关系
+CREATE TABLE IF NOT EXISTS friends (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    friend_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_note VARCHAR(255),
+    friend_note VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, friend_id)
+);
+
+-- 为friends表添加索引
+CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
+
+-- 14. 用户状态表（user_status）
+-- 用于跟踪用户在线状态
+CREATE TABLE IF NOT EXISTS user_status (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('online', 'offline', 'away')),
+    last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 为user_status表添加索引
+CREATE INDEX IF NOT EXISTS idx_user_status_status ON user_status(status);
+
 -- 添加RLS策略，确保数据安全
 -- 用户表策略
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -243,6 +289,46 @@ CREATE POLICY "Community members can send messages" ON messages FOR INSERT WITH 
         SELECT 1 FROM community_members 
         WHERE community_id = messages.community_id AND user_id = auth.uid()
     )
+);
+
+-- 好友请求表策略
+ALTER TABLE friend_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their sent and received requests" ON friend_requests FOR SELECT USING (
+    sender_id = auth.uid() OR receiver_id = auth.uid()
+);
+CREATE POLICY "Users can send friend requests" ON friend_requests FOR INSERT WITH CHECK (
+    sender_id = auth.uid() AND sender_id != receiver_id
+);
+CREATE POLICY "Users can update their own requests" ON friend_requests FOR UPDATE USING (
+    sender_id = auth.uid() OR receiver_id = auth.uid()
+);
+CREATE POLICY "Users can delete their own requests" ON friend_requests FOR DELETE USING (
+    sender_id = auth.uid() OR receiver_id = auth.uid()
+);
+
+-- 好友关系表策略
+ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own friends" ON friends FOR SELECT USING (
+    user_id = auth.uid()
+);
+CREATE POLICY "Users can create friendships" ON friends FOR INSERT WITH CHECK (
+    user_id = auth.uid() AND user_id != friend_id
+);
+CREATE POLICY "Users can update their own friends" ON friends FOR UPDATE USING (
+    user_id = auth.uid()
+);
+CREATE POLICY "Users can delete their own friendships" ON friends FOR DELETE USING (
+    user_id = auth.uid()
+);
+
+-- 用户状态表策略
+ALTER TABLE user_status ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view any user status" ON user_status FOR SELECT USING (true);
+CREATE POLICY "Users can update their own status" ON user_status FOR UPDATE USING (
+    user_id = auth.uid()
+);
+CREATE POLICY "Users can upsert their own status" ON user_status FOR INSERT WITH CHECK (
+    user_id = auth.uid()
 );
 
 -- 插入初始数据

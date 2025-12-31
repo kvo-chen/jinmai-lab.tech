@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo, useRef, useCallback, lazy, Suspense } fro
 import { useParams, useNavigate } from 'react-router-dom'
 import postsApi, { Post } from '@/services/postService'
 import PerformanceTest from '@/utils/performanceTest'
+import { SearchResultType } from '@/components/SearchBar'
 
 import GradientHero from '@/components/GradientHero'
 import { mockWorks } from '@/mock/works'
@@ -451,6 +452,8 @@ export default function Square() {
   const [page, setPage] = useState(1) // 中文注释：分页页码
   const pageSize = 18 // 中文注释：每页展示数量（适配3列×6行）
   const [active, setActive] = useState<Post | null>(null) // 中文注释：详情弹窗当前帖子
+  const [activeLoading, setActiveLoading] = useState(false) // 中文注释：详情加载状态
+  const [activeError, setActiveError] = useState<string | null>(null) // 中文注释：详情加载错误
   const [favorites, setFavorites] = useState<string[]>(() => {
     // 中文注释：本地收藏列表（按帖子id存储）
     try { const raw = localStorage.getItem('jmzf_favs'); return raw ? JSON.parse(raw) : [] } catch { return [] }
@@ -490,16 +493,54 @@ export default function Square() {
       setIsLoading(false)
     })
   }, [])
+  // 动态加载资讯详情数据
+  const loadPostDetail = async (id: string) => {
+    setActiveLoading(true)
+    setActiveError(null)
+    
+    try {
+      // 模拟从服务器获取最新数据的延迟
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // 从API获取最新的帖子数据
+      const allPosts = postsApi.getPosts()
+      let found = allPosts.find(p => p.id === id)
+      
+      if (!found) {
+        // 如果在API数据中找不到，尝试从种子数据中查找
+        found = SEED.find(s => s.id === id) || EXTRA_SEED.find(s => s.id === id) || EXPANDED_EXPLORE_SEEDS.find(s => s.id === id)
+      }
+      
+      if (found) {
+        setActive(found)
+      } else {
+        setActiveError('未找到该资讯内容')
+      }
+    } catch (error) {
+      setActiveError('加载资讯详情失败，请稍后重试')
+      console.error('Failed to load post detail:', error)
+    } finally {
+      setActiveLoading(false)
+    }
+  }
+
   useEffect(() => {
     // 中文注释：支持通过路由参数直接打开详情
     const id = params.id
     if (id) {
-      const list: Post[] = [...posts]
-      SEED.forEach(s => { if (!list.find(p => p.id === s.id)) list.push(s) })
-      const found = list.find(p => p.id === id)
-      if (found) setActive(found)
+      loadPostDetail(id)
     }
-  }, [params.id, posts])
+  }, [params.id])
+
+  // 当posts状态更新时，如果当前有激活的帖子，确保它是最新的
+  useEffect(() => {
+    if (active) {
+      const updatedPost = postsApi.getPosts().find(p => p.id === active.id)
+      if (updatedPost) {
+        setActive(updatedPost)
+      }
+    }
+  }, [posts])
   // 中文注释：风格与题材词库（简单关键词匹配，用于社区分类）
   const STYLE_LIST = ['全部', '国潮', '极简', '复古', '赛博朋克', '手绘插画', '黑白线稿', '蓝白瓷']
   const TOPIC_LIST = ['全部', '老字号', '非遗', '京剧', '景德镇', '校园社团']
@@ -586,8 +627,11 @@ export default function Square() {
   const like = (id: string) => {
     postsApi.likePost(id)
     const current = postsApi.getPosts()
-    const seedMerged = SEED.map(s => s.id === id ? { ...s, likes: s.likes + 1 } : s)
-    setPosts([...current, ...seedMerged])
+    setPosts(current)
+    // 更新active状态中的点赞数
+    if (active && active.id === id) {
+      setActive(prev => prev ? { ...prev, likes: prev.likes + 1 } : null)
+    }
   }
   const addComment = (id: string) => {
     const txt = commentText[id]
@@ -595,7 +639,14 @@ export default function Square() {
     postsApi.addComment(id, txt)
     setCommentText(prev => ({ ...prev, [id]: '' }))
     const current = postsApi.getPosts()
-    setPosts([...current, ...SEED])
+    setPosts(current)
+    // 更新active状态中的评论
+    if (active && active.id === id) {
+      const updatedPost = current.find(p => p.id === id)
+      if (updatedPost) {
+        setActive(updatedPost)
+      }
+    }
   }
   const share = () => {
     const url = location.origin + '/square'
@@ -674,9 +725,17 @@ export default function Square() {
   const suggestions = useMemo(() => {
     // 中文注释：根据输入生成联想（风格/题材优先）
     const q = search.trim().toLowerCase()
-    if (!q) return [] as string[]
-    const styleSug = topStyles.map(([name]) => `风格:${String(name)}`).filter(s => s.toLowerCase().includes(q))
-    const topicSug = topTopics.map(([name]) => `题材:${String(name)}`).filter(s => s.toLowerCase().includes(q))
+    if (!q) return []
+    const styleSug = topStyles.map(([name]) => ({ 
+      id: `style-${name}`, 
+      text: `风格:${String(name)}`, 
+      type: SearchResultType.CATEGORY 
+    })).filter(s => s.text.toLowerCase().includes(q))
+    const topicSug = topTopics.map(([name]) => ({ 
+      id: `topic-${name}`, 
+      text: `题材:${String(name)}`, 
+      type: SearchResultType.TAG 
+    })).filter(s => s.text.toLowerCase().includes(q))
     return [...styleSug, ...topicSug].slice(0, 8)
   }, [search, topStyles, topTopics])
 
@@ -693,36 +752,8 @@ export default function Square() {
     }
   }, [communityOpen, dataLoaded])
   
-  // 优化：虚拟滚动状态管理
-  const [visibleTags, setVisibleTags] = useState<string[]>([])
-  const [visibleStartIndex, setVisibleStartIndex] = useState(0)
-  const [visibleEndIndex, setVisibleEndIndex] = useState(5) // 初始显示5个标签
+  // 移除复杂的虚拟滚动逻辑，直接渲染所有标签
   const tagContainerRef = useRef<HTMLDivElement>(null)
-  
-  // 优化：计算可见标签
-  useEffect(() => {
-    if (tags.length > 0) {
-      setVisibleTags(tags.slice(visibleStartIndex, visibleEndIndex))
-    }
-  }, [tags, visibleStartIndex, visibleEndIndex])
-  
-  // 优化：滚动时动态加载更多标签
-  const handleTagScroll = useCallback(() => {
-    if (!tagContainerRef.current) return
-    
-    const container = tagContainerRef.current
-    const scrollLeft = container.scrollLeft
-    const scrollWidth = container.scrollWidth
-    const clientWidth = container.clientWidth
-    
-    // 当滚动到右侧80%时，加载更多标签
-    if (scrollLeft + clientWidth > scrollWidth * 0.8) {
-      const newEndIndex = Math.min(visibleEndIndex + 3, tags.length)
-      if (newEndIndex > visibleEndIndex) {
-        setVisibleEndIndex(newEndIndex)
-      }
-    }
-  }, [tags.length, visibleEndIndex])
   
   const gotoCommunity = (path?: string) => {
     // 中文注释：健壮的社群跳转——兼容绝对路径与查询参数，避免出现 /community/community 双重前缀
@@ -762,7 +793,7 @@ export default function Square() {
     setTitle('')
     setThumb('')
     const current = postsApi.getPosts()
-    setPosts([...current, ...SEED])
+    setPosts(current)
   }
   const generateThumbFromTitle = () => {
     // 中文注释：根据标题自动生成封面URL
@@ -786,7 +817,7 @@ export default function Square() {
   const getFallbackThumb = (p: Post) => `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(p.title)}&image_size=1024x1024`
   return (
 
-      <main className="container mx-auto px-4 py-10">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 py-6 w-full">
         {/* 中文注释：统一使用通用渐变英雄组件 */}
         <GradientHero
           title="共创广场"
@@ -848,12 +879,16 @@ export default function Square() {
                   aria-label="查看全部社群"
                 >查看全部</button>
               </div>
-              {/* 优化：虚拟滚动标签容器 */}
+              {/* 横向滚动标签容器 */}
               <div 
                 ref={tagContainerRef}
-                className="flex gap-1 mb-3 overflow-x-auto scrollbar-hide"
-                onScroll={handleTagScroll}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className="flex gap-1 mb-3 overflow-x-auto scrollbar-hide pb-1"
+                style={{ 
+                  scrollbarWidth: 'none', 
+                  msOverflowStyle: 'none',
+                  scrollBehavior: 'smooth',
+                  WebkitOverflowScrolling: 'touch'
+                }}
               >
                 {tagsLoading && (
                   <div className="flex gap-1 w-full">
@@ -862,7 +897,7 @@ export default function Square() {
                     ))}
                   </div>
                 )}
-                {!tagsLoading && visibleTags.map((tag, index) => (
+                {!tagsLoading && tags.map((tag, index) => (
                   <motion.button
                     key={tag}
                     onClick={() => { incTagClick(tag); gotoCommunity(`?tag=${encodeURIComponent(tag)}`) }}
@@ -871,7 +906,7 @@ export default function Square() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); incTagClick(tag); gotoCommunity(`?tag=${encodeURIComponent(tag)}`) } }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    className={`text-[8px] sm:text-xs px-1.25 sm:px-4 py-0.5 sm:py-2 min-h-[18px] sm:min-h-[32px] rounded-full transition-all duration-150 ease-out focus:outline-none focus:ring-2 flex-shrink-0 ${isDark 
+                    className={`text-[8px] sm:text-xs px-1.25 sm:px-4 py-0.5 sm:py-2 min-h-[18px] sm:min-h-[32px] rounded-full transition-all duration-150 ease-out focus:outline-none focus:ring-2 flex-shrink-0 whitespace-nowrap ${isDark 
                         ? 'bg-gray-700 text-gray-200 ring-1 ring-gray-600 hover:bg-gray-600 focus:ring-blue-400' 
                         : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 hover:bg-gray-200 focus:ring-blue-500'}`}
                     style={{ willChange: 'transform' }}
@@ -885,11 +920,6 @@ export default function Square() {
                     )}
                   </motion.button>
                 ))}
-                {!tagsLoading && tags.length > visibleEndIndex && (
-                  <div className="flex items-center text-xs opacity-50 flex-shrink-0">
-                    +{tags.length - visibleEndIndex} 更多
-                  </div>
-                )}
                 {!tagsLoading && tagsError && (
                   <div className={`text-[11px] mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>标签加载失败，已使用默认列表</div>
                 )}
@@ -1049,6 +1079,14 @@ export default function Square() {
                   setShowSuggest={setShowSuggest}
                   suggestions={suggestions}
                   isDark={isDark}
+                  onSearch={(query) => {
+                    setSearch(query);
+                    setShowSuggest(false);
+                  }}
+                  onSuggestionSelect={(suggestion) => {
+                    setSearch(suggestion.text);
+                    setShowSuggest(false);
+                  }}
                 />
               </Suspense>
             </div>
@@ -1061,32 +1099,32 @@ export default function Square() {
         </div>
         {/* 中文注释：广场卡片列表固定为三列布局 */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-sm p-4 animate-pulse">
-                <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 rounded-lg mb-3"></div>
-                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+              <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm p-3 animate-pulse">
+                <div className="w-full aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg mb-3"></div>
+                <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 sm:w-20"></div>
               </div>
             ))}
           </div>
         ) : (
           <Suspense fallback={
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-2xl shadow-sm p-4 animate-pulse">
-                  <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 rounded-lg mb-3"></div>
-                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm p-3 animate-pulse">
+                  <div className="w-full aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg mb-3"></div>
+                  <div className="h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                  <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                  <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 sm:w-20"></div>
                 </div>
               ))}
             </div>
           }>
             <PostGrid 
               posts={viewList}
-              onPostClick={setActive}
+              onPostClick={(post) => { loadPostDetail(post.id); navigate(`/square/${post.id}`) }}
               onLike={like}
               onComment={addComment}
               isDark={isDark}
@@ -1099,35 +1137,73 @@ export default function Square() {
             <button onClick={() => setPage(prev => prev + 1)} className="px-4 py-2 rounded-lg bg-gray-200">加载更多</button>
           </div>
         )}
-        {active && (
+        {(active || activeLoading) && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} w-full max-w-2xl rounded-2xl shadow-lg p-6`}>
               <div className="flex justify-between items-center mb-4">
-                <div className="font-bold text-lg">{active.title}</div>
-                <button onClick={() => { setActive(null); navigate('/square') }} className="px-3 py-1 rounded bg-gray-200">关闭</button>
+                <div className="font-bold text-lg">
+                  {activeLoading ? '加载中...' : active?.title || '资讯详情'}
+                </div>
+                <button 
+                  onClick={() => { 
+                    setActive(null); 
+                    setActiveLoading(false);
+                    setActiveError(null);
+                    navigate('/square') 
+                  }} 
+                  className={`px-3 py-1 rounded ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-900'}`}
+                >
+                  关闭
+                </button>
               </div>
-              <LazyImage 
-                src={active.thumbnail} 
-                alt={active.title} 
-                className="w-full h-64 object-cover rounded-lg mb-4" 
-              />
-              <div className="flex items-center gap-4 text-sm mb-2">
-                <span><i className="far fa-thumbs-up mr-1"></i>{active.likes}</span>
-                <span>{new Date(active.date).toLocaleString()}</span>
-              </div>
-              <div className="text-sm opacity-80">全部评论（{active.comments.length}）</div>
-              <div className="mt-2 max-h-48 overflow-y-auto">
-                {active.comments.length === 0 ? (
-                  <div className="text-sm opacity-60">暂无评论</div>
-                ) : (
-                  active.comments.map(c => (
-                    <div key={c.id} className={`${isDark ? 'border-gray-700' : 'border-gray-200'} border-t py-2 text-sm`}>
-                      <span className="opacity-60 mr-2">{new Date(c.date).toLocaleString()}</span>
-                      <span>{c.content}</span>
-                    </div>
-                  ))
-                )}
-              </div>
+              
+              {activeLoading ? (
+                // 加载状态指示器
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className="text-sm opacity-70">正在加载资讯详情...</p>
+                </div>
+              ) : activeError ? (
+                // 错误信息显示
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-4">
+                    <i className="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                  </div>
+                  <p className="text-sm text-red-500 mb-4">{activeError}</p>
+                  <button 
+                    onClick={() => active && loadPostDetail(active.id)}
+                    className={`px-4 py-2 rounded ${isDark ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`}
+                  >
+                    重试
+                  </button>
+                </div>
+              ) : active ? (
+                // 正常显示详情内容
+                <>
+                  <LazyImage 
+                    src={active.thumbnail} 
+                    alt={active.title} 
+                    className="w-full h-64 object-cover rounded-lg mb-4" 
+                  />
+                  <div className="flex items-center gap-4 text-sm mb-2">
+                    <span><i className="far fa-thumbs-up mr-1"></i>{active.likes}</span>
+                    <span>{new Date(active.date).toLocaleString()}</span>
+                  </div>
+                  <div className="text-sm opacity-80">全部评论（{active.comments.length}）</div>
+                  <div className="mt-2 max-h-48 overflow-y-auto">
+                    {active.comments.length === 0 ? (
+                      <div className="text-sm opacity-60">暂无评论</div>
+                    ) : (
+                      active.comments.map(c => (
+                        <div key={c.id} className={`${isDark ? 'border-gray-700' : 'border-gray-200'} border-t py-2 text-sm`}>
+                          <span className="opacity-60 mr-2">{new Date(c.date).toLocaleString()}</span>
+                          <span>{c.content}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         )}

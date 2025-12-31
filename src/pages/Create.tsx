@@ -687,38 +687,40 @@ export default function Create() {
     setCurrentStep(3);
   };
 
-  // 中文注释：点击预览图时，使用当前提示词调用豆包重新生成，并替换选中方案的缩略图
-  const regenerateSelectedWithDoubao = async () => {
+  // 中文注释：点击预览图时，使用当前提示词重新生成，并替换选中方案的缩略图
+  const regenerateSelected = async () => {
     if (!selectedResult) {
       toast.error('请先在上一步选择一个方案');
       return;
     }
     const input = (prompt || '天津文化设计灵感').trim();
+    const currentModel = llmService.getCurrentModel();
     setIsRegenerating(true);
     try {
-      const r = await doubao.generateImage({ prompt: input, size: '1024x1024', n: 1, response_format: 'url', watermark: true })
+      const r = await llmService.generateImage({ prompt: input, size: '1024x1024', n: 1, response_format: 'url', watermark: true })
       const list = (r as any)?.data?.data || []
       const url = list[0]?.url || (list[0]?.b64_json ? `data:image/png;base64,${list[0].b64_json}` : '')
       if (url) {
         setGeneratedResults(prev => prev.map(item => item.id === selectedResult ? { ...item, thumbnail: url } : item))
-        toast.success('豆包已重新生成并更新预览')
+        toast.success(`${currentModel.name}已重新生成并更新预览`)
       } else {
-        toast.info('豆包未返回图片，保持原图不变')
+        toast.info(`${currentModel.name}未返回图片，保持原图不变`)
       }
     } catch (e) {
-      toast.error('豆包生成失败，请稍后重试')
+      toast.error(`${currentModel.name}生成失败，请稍后重试`)
     } finally {
       setIsRegenerating(false)
     }
   }
 
-  // 中文注释：像生成引擎一样调用豆包，生成3张图片方案并替换当前方案列表
-  const generateThreeVariantsWithDoubao = async () => {
+  // 中文注释：像生成引擎一样调用当前模型，生成3张图片方案并替换当前方案列表
+  const generateThreeVariants = async () => {
     const inputBase = (prompt || '天津文化设计灵感').trim();
     const input = stylePreset ? `${inputBase}；风格：${stylePreset}` : inputBase;
+    const currentModel = llmService.getCurrentModel();
     setIsEngineGenerating(true);
     try {
-      const r = await doubao.generateImage({ prompt: input, size: '1024x1024', n: Math.min(Math.max(generateCount, 1), 6), response_format: 'url', watermark: true })
+      const r = await llmService.generateImage({ prompt: input, size: '1024x1024', n: Math.min(Math.max(generateCount, 1), 6), response_format: 'url', watermark: true })
       const list = (r as any)?.data?.data || []
       const urls = list.map((d: any) => {
         if (d?.url) return d.url
@@ -730,7 +732,7 @@ export default function Create() {
         setGeneratedResults(mapped)
         setSelectedResult(mapped[0]?.id ?? null)
         setCurrentStep(2)
-        toast.success(`豆包已生成${urls.length}张方案`)
+        toast.success(`${currentModel.name}已生成${urls.length}张方案`)
       } else {
         // 中文注释：豆包未返回内容时，回退占位图，保证界面可用
         const fallback = [
@@ -741,10 +743,10 @@ export default function Create() {
         setGeneratedResults(fallback)
         setSelectedResult(1)
         setCurrentStep(2)
-        toast.info('豆包未返回图片，已提供占位图')
+        toast.info(`${currentModel.name}未返回图片，已提供占位图`)
       }
     } catch (e) {
-      toast.error('豆包生成失败，已保留现有方案')
+      toast.error(`${currentModel.name}生成失败，已保留现有方案`)
     } finally {
       setIsEngineGenerating(false)
     }
@@ -784,7 +786,7 @@ export default function Create() {
     const base = (prompt || '天津文化设计灵感').trim();
     setIsRegenerating(true);
     try {
-      const r = await doubao.generateImage({ prompt: `${base} 的创意变体`, size: '1024x1024', n: 1, response_format: 'url', watermark: true });
+      const r = await llmService.generateImage({ prompt: `${base} 的创意变体`, size: '1024x1024', n: 1, response_format: 'url', watermark: true });
       const list = (r as any)?.data?.data || [];
       const url = list[0]?.url || (list[0]?.b64_json ? `data:image/png;base64,${list[0].b64_json}` : '');
       if (url) {
@@ -1055,7 +1057,7 @@ export default function Create() {
     setPrompt(next);
     toast.success('已切换为图案平铺风格');
     if (autoGenerate) {
-      generateThreeVariantsWithDoubao();
+      generateThreeVariants();
     }
   };
   
@@ -2031,7 +2033,7 @@ export default function Create() {
                           ratio="square" 
                           rounded="xl" 
                           fit="contain"
-                          onClick={regenerateSelectedWithDoubao}
+                          onClick={regenerateSelected}
                           className="cursor-pointer"
                         />
                         {overlayText && (
@@ -2043,10 +2045,10 @@ export default function Create() {
                         )}
                         {showQuickActions && (
                           <div className="absolute inset-x-3 bottom-3 flex flex-wrap gap-2 items-center justify-center">
-                            <button type="button" onClick={generateThreeVariantsWithDoubao} disabled={isEngineGenerating} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-white/90 hover:bg-white text-gray-900 ring-1 ring-gray-200'} ${isEngineGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                            <button type="button" onClick={generateThreeVariants} disabled={isEngineGenerating} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-white/90 hover:bg-white text-gray-900 ring-1 ring-gray-200'} ${isEngineGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}>
                               {isEngineGenerating ? '生成中…' : '一键生成(3)'}
                             </button>
-                            <button type="button" onClick={regenerateSelectedWithDoubao} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-white/90 hover:bg-white text-gray-900 ring-1 ring-gray-200'}`}>重新生成</button>
+                            <button type="button" onClick={regenerateSelected} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-white/90 hover:bg-white text-gray-900 ring-1 ring-gray-200'}`}>重新生成</button>
                             <button type="button" onClick={downloadSelected} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-white/90 hover:bg-white text-gray-900 ring-1 ring-gray-200'}`}>下载图片</button>
                             <button type="button" onClick={copySelectedLink} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white ring-1 ring-gray-700' : 'bg-white/90 hover:bg-white text-gray-900 ring-1 ring-gray-200'}`}>复制链接</button>
                             <button type="button" onClick={generateVideoForSelected} disabled={videoGenerating} className={`px-2.5 py-1.5 rounded-md text-xs ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} ${videoGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}>生成视频</button>
@@ -2103,7 +2105,7 @@ export default function Create() {
                     {/* 中文注释：主按钮样式，默认采用红色主色并在生成中禁用 */}
                     <button
                       type="button"
-                      onClick={generateThreeVariantsWithDoubao}
+                      onClick={generateThreeVariants}
                       disabled={isEngineGenerating}
                       className={`flex-1 px-3 py-1.5 rounded-md text-sm bg-red-600 hover:bg-red-700 text-white transition-colors ${isEngineGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >

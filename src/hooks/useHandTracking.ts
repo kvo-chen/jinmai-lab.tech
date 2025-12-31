@@ -72,81 +72,91 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
       
       // 临时拦截console.log，过滤WebAssembly内存地址日志
       console.log = function(...args) {
-        // 过滤掉看起来像内存地址的日志
-        let isMemoryAddressLog = false;
-        
-        // 将所有参数转换为字符串，便于统一检查
-        const allArgsString = args.map(arg => String(arg)).join(' ');
-        
-        // 优化的正则表达式，匹配各种格式的内存地址日志
-        const memoryAddressRegex = /0x[0-9a-f]{8,}/gi;
-        const bracketedMemoryAddressRegex = /^\[(\s*0x[0-9a-f]{8,}\s*)+\]$/i;
-        const pureMemoryAddressRegex = /^0x[0-9a-f]{8,}$/i;
-        
-        // 检查字符串中是否包含多个内存地址
-        const memoryAddressCount = (allArgsString.match(memoryAddressRegex) || []).length;
-        if (memoryAddressCount >= 2) {
-          isMemoryAddressLog = true;
-        }
-        
-        // 检查是否是括号包裹的内存地址数组
-        if (bracketedMemoryAddressRegex.test(allArgsString)) {
-          isMemoryAddressLog = true;
-        }
-        
-        // 检查每个参数
-        for (const arg of args) {
-          const argStr = String(arg);
+        try {
+          // 过滤掉看起来像内存地址的日志
+          let isMemoryAddressLog = false;
           
-          // 检查纯内存地址字符串
-          if (pureMemoryAddressRegex.test(argStr)) {
+          // 将所有参数转换为字符串，便于统一检查
+          const allArgsString = args.map(arg => String(arg)).join(' ');
+          
+          // 优化的正则表达式，匹配各种格式的内存地址日志
+          const memoryAddressRegex = /0x[0-9a-f]{8,}/gi;
+          const bracketedMemoryAddressRegex = /^\[(\s*0x[0-9a-f]{8,}\s*)+\]$/i;
+          const pureMemoryAddressRegex = /^0x[0-9a-f]{8,}$/i;
+          
+          // 检查字符串中是否包含多个内存地址
+          const memoryAddressCount = (allArgsString.match(memoryAddressRegex) || []).length;
+          if (memoryAddressCount >= 2) {
             isMemoryAddressLog = true;
-            break;
           }
           
-          // 检查实际的数组参数，可能包含多个内存地址
-          if (Array.isArray(arg)) {
-            // 如果数组包含多个内存地址，过滤
-            let arrayMemoryAddressCount = 0;
-            for (const item of arg) {
-              if (pureMemoryAddressRegex.test(String(item)) || 
-                  (typeof item === 'number' && item > 0 && item.toString(16).length >= 8)) {
-                arrayMemoryAddressCount++;
-              }
-            }
-            if (arrayMemoryAddressCount >= 2) {
+          // 检查是否是括号包裹的内存地址数组
+          if (bracketedMemoryAddressRegex.test(allArgsString)) {
+            isMemoryAddressLog = true;
+          }
+          
+          // 检查是否是类似"[0xc008cfebe0 0xc008cfec10]"格式的日志
+          const bracketWithMemoryAddressesRegex = /^\[\s*0x[0-9a-f]{8,}\s+0x[0-9a-f]{8,}\s*\]$/i;
+          if (bracketWithMemoryAddressesRegex.test(allArgsString)) {
+            isMemoryAddressLog = true;
+          }
+          
+          // 检查每个参数
+          for (const arg of args) {
+            const argStr = String(arg);
+            
+            // 检查纯内存地址字符串
+            if (memoryAddressRegex.test(argStr)) {
               isMemoryAddressLog = true;
-              break;
+            }
+            
+            // 检查实际的数组参数，可能包含多个内存地址
+            if (Array.isArray(arg)) {
+              // 如果数组包含多个内存地址，过滤
+              let arrayMemoryAddressCount = 0;
+              for (const item of arg) {
+                if (pureMemoryAddressRegex.test(String(item)) || 
+                    (typeof item === 'number' && item > 0 && item.toString(16).length >= 8)) {
+                  arrayMemoryAddressCount++;
+                }
+              }
+              if (arrayMemoryAddressCount >= 2) {
+                isMemoryAddressLog = true;
+              }
+            }
+            
+            // 检查对象中是否包含大量内存地址
+            if (typeof arg === 'object' && arg !== null) {
+              try {
+                const objStr = JSON.stringify(arg);
+                const objMemoryAddressCount = (objStr.match(memoryAddressRegex) || []).length;
+                if (objMemoryAddressCount >= 2) {
+                  isMemoryAddressLog = true;
+                }
+              } catch (e) {
+                // 忽略JSON.stringify错误
+              }
             }
           }
           
-          // 检查对象中是否包含大量内存地址
-          if (typeof arg === 'object' && arg !== null) {
-            try {
-              const objStr = JSON.stringify(arg);
-              const objMemoryAddressCount = (objStr.match(memoryAddressRegex) || []).length;
-              if (objMemoryAddressCount >= 2) {
-                isMemoryAddressLog = true;
-                break;
-              }
-            } catch (e) {
-              // 忽略JSON.stringify错误
-            }
+          // 检查是否是多个独立的内存地址参数
+          const multipleMemoryAddresses = args.length >= 2 && args.every(arg => {
+            const argStr = String(arg);
+            return pureMemoryAddressRegex.test(argStr);
+          });
+          if (multipleMemoryAddresses) {
+            isMemoryAddressLog = true;
           }
-        }
-        
-        // 检查是否是多个独立的内存地址参数
-        const multipleMemoryAddresses = args.length >= 2 && args.every(arg => {
-          const argStr = String(arg);
-          return pureMemoryAddressRegex.test(argStr);
-        });
-        if (multipleMemoryAddresses) {
-          isMemoryAddressLog = true;
-        }
-        
-        if (!isMemoryAddressLog && originalConsoleLogRef.current) {
-          // 使用原始console.log输出
-          originalConsoleLogRef.current.apply(console, args);
+          
+          if (!isMemoryAddressLog && originalConsoleLogRef.current) {
+            // 使用原始console.log输出
+            originalConsoleLogRef.current.apply(console, args);
+          }
+        } catch (e) {
+          // 防止拦截机制本身引发错误
+          if (originalConsoleLogRef.current) {
+            originalConsoleLogRef.current.apply(console, args);
+          }
         }
       };
     }
@@ -281,32 +291,42 @@ const useHandTracking = (config: HandTrackingConfig = {}) => {
           // 处理单只手
           if (handsCount >= 1) {
             const landmarks = results.multiHandLandmarks[0];
-            const fingerCount = countFingers(landmarks);
-            newHandData.fingerCount = fingerCount;
-            newHandData.gestureType = recognizeGesture(landmarks, fingerCount);
-            
-            // 计算食指指尖到拇指指尖的距离（张合程度）
-            const indexTip = landmarks[8];
-            const thumbTip = landmarks[4];
-            const distance = calculateDistance(indexTip, thumbTip);
-            // 归一化到0.5-2.0范围
-            newHandData.scale = 0.5 + Math.min(distance * 5, 1.5);
-            
-            // 记录手部位置
-            newHandData.handPosition = landmarks.map((lm: any) => ({
-              x: lm.x,
-              y: lm.y,
-              z: lm.z
-            }));
+            if (landmarks && landmarks.length > 0) {
+              const fingerCount = countFingers(landmarks);
+              newHandData.fingerCount = fingerCount;
+              newHandData.gestureType = recognizeGesture(landmarks, fingerCount);
+              
+              // 计算食指指尖到拇指指尖的距离（张合程度）
+              const indexTip = landmarks[8];
+              const thumbTip = landmarks[4];
+              if (indexTip && thumbTip) {
+                const distance = calculateDistance(indexTip, thumbTip);
+                // 归一化到0.5-2.0范围
+                newHandData.scale = 0.5 + Math.min(distance * 5, 1.5);
+              }
+              
+              // 记录手部位置
+              newHandData.handPosition = landmarks.map((lm: any) => ({
+                x: lm.x,
+                y: lm.y,
+                z: lm.z
+              }));
+            }
           }
 
           // 处理两只手的距离
           if (handsCount === 2) {
-            const hand1 = results.multiHandLandmarks[0][0]; // 手腕
-            const hand2 = results.multiHandLandmarks[1][0]; // 手腕
-            const distance = calculateDistance(hand1, hand2);
-            // 归一化到0-100范围
-            newHandData.spread = Math.min(distance * 200, 100);
+            const hand1Landmarks = results.multiHandLandmarks[0];
+            const hand2Landmarks = results.multiHandLandmarks[1];
+            if (hand1Landmarks && hand1Landmarks.length > 0 && hand2Landmarks && hand2Landmarks.length > 0) {
+              const hand1 = hand1Landmarks[0]; // 手腕
+              const hand2 = hand2Landmarks[0]; // 手腕
+              if (hand1 && hand2) {
+                const distance = calculateDistance(hand1, hand2);
+                // 归一化到0-100范围
+                newHandData.spread = Math.min(distance * 200, 100);
+              }
+            }
           }
         }
 

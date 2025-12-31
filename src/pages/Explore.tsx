@@ -9,9 +9,11 @@ import { TianjinImage, TianjinButton } from '@/components/TianjinStyleComponents
 import { llmService } from '@/services/llmService'
 import { BRANDS } from '@/lib/brands'
 import imageService from '@/services/imageService'
-import { Work, mockWorks } from '@/mock/works'
+import postsApi from '@/services/postService'
 import { searchService } from '@/services/searchService'
 import { SearchResultType } from '@/components/SearchBar'
+// 导入mock数据
+import { mockWorks } from '@/mock/works'
 
 
 // 中文注释：本页专注作品探索，社区相关内容已迁移到创作者社区页面
@@ -29,7 +31,8 @@ export default function Explore() {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [filteredWorks, setFilteredWorks] = useState(mockWorks);
+  const [filteredWorks, setFilteredWorks] = useState<any[]>([]);
+  const [allWorks, setAllWorks] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popularity' | 'newest' | 'mostViewed' | 'mostCommented' | 'originalOrder'>('originalOrder');
@@ -45,7 +48,8 @@ export default function Explore() {
   const [tagsOpen, setTagsOpen] = useState(false);
   const [tagQuery, setTagQuery] = useState('');
   const [favoriteTags, setFavoriteTags] = useState<string[]>([]);
-  const [liked, setLiked] = useState<Record<number, boolean>>({});
+  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
   const [featuredAtStart, setFeaturedAtStart] = useState(true);
   const [featuredAtEnd, setFeaturedAtEnd] = useState(false);
   const featuredScrollRef = useRef<HTMLDivElement>(null);
@@ -62,8 +66,24 @@ export default function Explore() {
   
   // 分页和无限滚动
   const [page, setPage] = useState(1);
-  // 优化分页大小，增加每次加载的作品数量，减少滚动时的加载频率
-  const pageSize = 18; // 从12调整为18
+  // 优化分页大小，减少初始加载的图片数量，避免请求拥堵
+  const pageSize = 9; // 从18调整为9，减少初始加载的图片数量
+  
+  // 初始化作品数据 - 直接使用mockWorks，避免多余的localStorage操作
+  useEffect(() => {
+    setAllWorks(mockWorks);
+    setFilteredWorks(mockWorks);
+  }, []);
+
+  // 初始化收藏状态
+  useEffect(() => {
+    const bookmarkedIds = postsApi.getUserBookmarks();
+    const initialBookmarked = {};
+    bookmarkedIds.forEach(id => {
+      initialBookmarked[id] = true;
+    });
+    setBookmarked(initialBookmarked);
+  }, []);
   
   // 简化标签处理逻辑，减少计算复杂度
   // 移除复杂的标签计数和排序逻辑
@@ -162,7 +182,8 @@ export default function Explore() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get('category');
-    const search = params.get('search');
+    const search = params.get('search') || params.get('q'); // 支持q和search参数
+    const tags = params.get('tags');
     
     // 只在URL参数与当前状态不一致时更新，避免重复渲染
     if (category && category !== selectedCategory) {
@@ -171,6 +192,17 @@ export default function Explore() {
     if (search && search !== searchQuery) {
       setSearchQuery(search);
       setShowSearchBar(true);
+    }
+    // 处理tags参数
+    if (tags) {
+      try {
+        const tagArray = tags.split(',');
+        if (tagArray.length > 0 && tagArray[0] !== '') {
+          setSelectedTags(tagArray);
+        }
+      } catch (error) {
+        console.error('Failed to parse tags parameter:', error);
+      }
     }
   }, [location.search, selectedCategory, searchQuery]);
 
@@ -249,8 +281,10 @@ export default function Explore() {
   }, [selectedCategory, searchQuery, sortBy, selectedTags]);
 
   // 获取热门作品（展示在推荐区）
+  // 限制精选作品数量，减少初始加载的图片请求
   const featuredWorks = mockWorks
-    .filter(work => work.featured);
+    .filter(work => work.featured)
+    .slice(0, 6); // 限制为6个精选作品，减少初始加载压力
   
   // 分页作品
   const pagedWorks = useMemo(() => {
@@ -789,8 +823,8 @@ export default function Explore() {
                           alt={work.title}
                           className="w-full h-48 object-cover"
                           imageTag={work.imageTag}
-                          priority={index < 3}
-                          quality={index < 6 ? 'high' : 'medium'}
+                          priority={index < 6} /* 提高精选作品的优先级 */
+                          quality={index < 12 ? 'high' : 'medium'}
                           loading="lazy"
                           disableFallback={true}
                         />
@@ -810,8 +844,8 @@ export default function Explore() {
                         alt={work.title}
                         className="w-full h-48 object-cover"
                         imageTag={work.imageTag}
-                        priority={index < 3}
-                        quality={index < 6 ? 'high' : 'medium'}
+                        priority={index < 6} /* 提高精选作品的优先级 */
+                        quality={index < 12 ? 'high' : 'medium'}
                         loading="lazy"
                         disableFallback={true}
                       />
@@ -841,7 +875,7 @@ export default function Explore() {
                     
                     {/* 标签 */}
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {work.tags.slice(0, 3).map((tag, index) => (
+                      {work.tags.slice(0, 3).map((tag: string, index: number) => (
                         <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
                           {tag}
                         </span>
@@ -1086,10 +1120,10 @@ export default function Explore() {
           </div>
 
         {/* 作品网格 */}
-        <div id="works-grid" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div id="works-grid" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {isLoading ? (
             // 加载状态
-            Array.from({ length: 8 }).map((_, index) => (
+            Array.from({ length: 12 }).map((_, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -1099,11 +1133,34 @@ export default function Explore() {
               >
                 <div className="h-48 bg-gray-200 dark:bg-gray-700"></div>
                 <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
+                  </div>
                   <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mb-3"></div>
-                  <div className="flex justify-between items-center">
-                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/4"></div>
-                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/4"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mb-3"></div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-12"></div>
+                    <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-16"></div>
+                    <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-14"></div>
+                  </div>
+                  <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    <div className="flex items-center gap-1">
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-4"></div>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-10"></div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-4"></div>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-10"></div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-4"></div>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-10"></div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-16"></div>
+                    <div className="h-7 bg-gray-300 dark:bg-gray-600 rounded-lg w-24"></div>
                   </div>
                 </div>
               </motion.div>
@@ -1179,6 +1236,7 @@ export default function Explore() {
                         alt={work.title}
                         className="w-full h-48 object-cover"
                         imageTag={work.imageTag}
+                        priority={index < 6} /* 为视频缩略图添加优先级 */
                         disableFallback={true}
                       />
                       {/* 视频播放按钮 */}
@@ -1204,8 +1262,8 @@ export default function Explore() {
                       alt={work.title}
                       className="w-full h-48 object-cover"
                       imageTag={work.imageTag}
-                      priority={index < 3}
-                      quality={index < 6 ? 'high' : 'medium'}
+                      priority={index < 6} /* 增加优先加载的图片数量 */
+                      quality={index < 12 ? 'high' : 'medium'} /* 优化质量设置 */
                       loading="lazy"
                     />
                   )}
@@ -1229,6 +1287,28 @@ export default function Explore() {
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-all duration-300 ${liked[work.id] ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-700'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </motion.button>
+                      <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const stringId = work.id.toString();
+                          setBookmarked(prev => { 
+                            const newState = { ...prev, [stringId]: !prev[stringId] }; 
+                            if (newState[stringId]) {
+                              postsApi.bookmarkPost(stringId);
+                            } else {
+                              postsApi.unbookmarkPost(stringId);
+                            }
+                            return newState; 
+                          }); 
+                        }}
+                        className="p-2 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100 transition-colors shadow-md hover:shadow-lg"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-all duration-300 ${bookmarked[work.id.toString()] ? 'fill-blue-500 text-blue-500 scale-110' : 'text-gray-700'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                         </svg>
                       </motion.button>
                       <motion.button 

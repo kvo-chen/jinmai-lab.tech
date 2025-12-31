@@ -1,6 +1,9 @@
 // 评论反应类型
 export type CommentReaction = 'like' | 'love' | 'laugh' | 'surprise' | 'sad' | 'angry';
 
+// 导入mock数据
+import { mockWorks } from '@/mock/works';
+
 // 评论接口
 export interface Comment {
   id: string;
@@ -88,21 +91,39 @@ export function addPost(p: Omit<Post, 'id' | 'likes' | 'comments' | 'date' | 'is
  * 点赞帖子
  */
 export function likePost(id: string): Post | undefined {
-  const posts = getPosts();
-  const idx = posts.findIndex(p => p.id === id);
-  if (idx >= 0) {
-    posts[idx].likes += 1;
-    posts[idx].isLiked = true;
-    
-    // 更新用户点赞记录
-    const userLikes = getUserLikes();
-    if (!userLikes.includes(id)) {
-      userLikes.push(id);
-      localStorage.setItem(USER_LIKES_KEY, JSON.stringify(userLikes));
-    }
-    
-    localStorage.setItem(KEY, JSON.stringify(posts));
-    return posts[idx];
+  // 直接更新用户点赞记录，不再依赖getPosts()
+  const userLikes = getUserLikes();
+  if (!userLikes.includes(id)) {
+    userLikes.push(id);
+    localStorage.setItem(USER_LIKES_KEY, JSON.stringify(userLikes));
+  }
+  
+  // 从mockWorks中查找对应的帖子并返回
+  const work = mockWorks.find(w => w.id.toString() === id);
+  if (work) {
+    return {
+      id: work.id.toString(),
+      title: work.title,
+      thumbnail: work.thumbnail,
+      likes: work.likes + 1,
+      comments: [],
+      date: new Date().toISOString().slice(0, 10),
+      isLiked: true,
+      isBookmarked: false,
+      category: 'design' as PostCategory,
+      tags: work.tags,
+      description: work.description || '',
+      views: work.views,
+      shares: 0,
+      isFeatured: work.featured,
+      isDraft: false,
+      completionStatus: 'published' as const,
+      creativeDirection: '',
+      culturalElements: [],
+      colorScheme: [],
+      toolsUsed: [],
+      downloadCount: 0
+    };
   }
   return undefined;
 }
@@ -111,19 +132,37 @@ export function likePost(id: string): Post | undefined {
  * 取消点赞帖子
  */
 export function unlikePost(id: string): Post | undefined {
-  const posts = getPosts();
-  const idx = posts.findIndex(p => p.id === id);
-  if (idx >= 0) {
-    posts[idx].likes = Math.max(0, posts[idx].likes - 1);
-    posts[idx].isLiked = false;
-    
-    // 更新用户点赞记录
-    const userLikes = getUserLikes();
-    const updatedLikes = userLikes.filter(postId => postId !== id);
-    localStorage.setItem(USER_LIKES_KEY, JSON.stringify(updatedLikes));
-    
-    localStorage.setItem(KEY, JSON.stringify(posts));
-    return posts[idx];
+  // 直接更新用户点赞记录，不再依赖getPosts()
+  const userLikes = getUserLikes();
+  const updatedLikes = userLikes.filter(postId => postId !== id);
+  localStorage.setItem(USER_LIKES_KEY, JSON.stringify(updatedLikes));
+  
+  // 从mockWorks中查找对应的帖子并返回
+  const work = mockWorks.find(w => w.id.toString() === id);
+  if (work) {
+    return {
+      id: work.id.toString(),
+      title: work.title,
+      thumbnail: work.thumbnail,
+      likes: Math.max(0, work.likes - 1),
+      comments: [],
+      date: new Date().toISOString().slice(0, 10),
+      isLiked: false,
+      isBookmarked: false,
+      category: 'design' as PostCategory,
+      tags: work.tags,
+      description: work.description || '',
+      views: work.views,
+      shares: 0,
+      isFeatured: work.featured,
+      isDraft: false,
+      completionStatus: 'published' as const,
+      creativeDirection: '',
+      culturalElements: [],
+      colorScheme: [],
+      toolsUsed: [],
+      downloadCount: 0
+    };
   }
   return undefined;
 }
@@ -132,20 +171,39 @@ export function unlikePost(id: string): Post | undefined {
  * 收藏帖子
  */
 export function bookmarkPost(id: string): Post | undefined {
-  const posts = getPosts();
-  const idx = posts.findIndex(p => p.id === id);
-  if (idx >= 0) {
-    posts[idx].isBookmarked = true;
-    
-    // 更新用户收藏记录
-    const userBookmarks = getUserBookmarks();
-    if (!userBookmarks.includes(id)) {
-      userBookmarks.push(id);
-      localStorage.setItem(USER_BOOKMARKS_KEY, JSON.stringify(userBookmarks));
-    }
-    
-    localStorage.setItem(KEY, JSON.stringify(posts));
-    return posts[idx];
+  // 直接更新用户收藏记录，不再依赖getPosts()
+  const userBookmarks = getUserBookmarks();
+  if (!userBookmarks.includes(id)) {
+    userBookmarks.push(id);
+    localStorage.setItem(USER_BOOKMARKS_KEY, JSON.stringify(userBookmarks));
+  }
+  
+  // 从mockWorks中查找对应的帖子并返回
+  const work = mockWorks.find(w => w.id.toString() === id);
+  if (work) {
+    return {
+      id: work.id.toString(),
+      title: work.title,
+      thumbnail: work.thumbnail,
+      likes: work.likes,
+      comments: [],
+      date: new Date().toISOString().slice(0, 10),
+      isLiked: false,
+      isBookmarked: true,
+      category: 'design' as PostCategory,
+      tags: work.tags,
+      description: work.description || '',
+      views: work.views,
+      shares: 0,
+      isFeatured: work.featured,
+      isDraft: false,
+      completionStatus: 'published' as const,
+      creativeDirection: '',
+      culturalElements: [],
+      colorScheme: [],
+      toolsUsed: [],
+      downloadCount: 0
+    };
   }
   return undefined;
 }
@@ -154,18 +212,37 @@ export function bookmarkPost(id: string): Post | undefined {
  * 取消收藏帖子
  */
 export function unbookmarkPost(id: string): Post | undefined {
-  const posts = getPosts();
-  const idx = posts.findIndex(p => p.id === id);
-  if (idx >= 0) {
-    posts[idx].isBookmarked = false;
-    
-    // 更新用户收藏记录
-    const userBookmarks = getUserBookmarks();
-    const updatedBookmarks = userBookmarks.filter(postId => postId !== id);
-    localStorage.setItem(USER_BOOKMARKS_KEY, JSON.stringify(updatedBookmarks));
-    
-    localStorage.setItem(KEY, JSON.stringify(posts));
-    return posts[idx];
+  // 直接更新用户收藏记录，不再依赖getPosts()
+  const userBookmarks = getUserBookmarks();
+  const updatedBookmarks = userBookmarks.filter(postId => postId !== id);
+  localStorage.setItem(USER_BOOKMARKS_KEY, JSON.stringify(updatedBookmarks));
+  
+  // 从mockWorks中查找对应的帖子并返回
+  const work = mockWorks.find(w => w.id.toString() === id);
+  if (work) {
+    return {
+      id: work.id.toString(),
+      title: work.title,
+      thumbnail: work.thumbnail,
+      likes: work.likes,
+      comments: [],
+      date: new Date().toISOString().slice(0, 10),
+      isLiked: false,
+      isBookmarked: false,
+      category: 'design' as PostCategory,
+      tags: work.tags,
+      description: work.description || '',
+      views: work.views,
+      shares: 0,
+      isFeatured: work.featured,
+      isDraft: false,
+      completionStatus: 'published' as const,
+      creativeDirection: '',
+      culturalElements: [],
+      colorScheme: [],
+      toolsUsed: [],
+      downloadCount: 0
+    };
   }
   return undefined;
 }
@@ -190,18 +267,66 @@ export function getUserLikes(): string[] {
  * 获取用户收藏的帖子
  */
 export function getBookmarkedPosts(): Post[] {
-  const posts = getPosts();
+  // 直接使用mockWorks数据，确保收藏的作品能正确显示
   const bookmarkedIds = getUserBookmarks();
-  return posts.filter(post => bookmarkedIds.includes(post.id));
+  return mockWorks
+    .filter(post => bookmarkedIds.includes(post.id.toString()))
+    .map(work => ({
+      id: work.id.toString(),
+      title: work.title,
+      thumbnail: work.thumbnail,
+      likes: work.likes,
+      comments: [],
+      date: new Date().toISOString().slice(0, 10),
+      isLiked: false,
+      isBookmarked: true,
+      category: 'design' as PostCategory,
+      tags: work.tags,
+      description: work.description || '',
+      views: work.views,
+      shares: 0,
+      isFeatured: work.featured,
+      isDraft: false,
+      completionStatus: 'published' as const,
+      creativeDirection: '',
+      culturalElements: [],
+      colorScheme: [],
+      toolsUsed: [],
+      downloadCount: 0
+    }));
 }
 
 /**
  * 获取用户点赞的帖子
  */
 export function getLikedPosts(): Post[] {
-  const posts = getPosts();
+  // 直接使用mockWorks数据，确保点赞的作品能正确显示
   const likedIds = getUserLikes();
-  return posts.filter(post => likedIds.includes(post.id));
+  return mockWorks
+    .filter(post => likedIds.includes(post.id.toString()))
+    .map(work => ({
+      id: work.id.toString(),
+      title: work.title,
+      thumbnail: work.thumbnail,
+      likes: work.likes,
+      comments: [],
+      date: new Date().toISOString().slice(0, 10),
+      isLiked: true,
+      isBookmarked: false,
+      category: 'design' as PostCategory,
+      tags: work.tags,
+      description: work.description || '',
+      views: work.views,
+      shares: 0,
+      isFeatured: work.featured,
+      isDraft: false,
+      completionStatus: 'published' as const,
+      creativeDirection: '',
+      culturalElements: [],
+      colorScheme: [],
+      toolsUsed: [],
+      downloadCount: 0
+    }));
 }
 
 /**
@@ -356,6 +481,8 @@ export default {
   unlikePost,
   bookmarkPost,
   unbookmarkPost,
+  getUserBookmarks,
+  getUserLikes,
   getBookmarkedPosts,
   getLikedPosts,
   addComment,

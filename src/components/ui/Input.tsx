@@ -38,7 +38,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
           ref={ref}
           type={type}
           className={clsx(
-            'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200',
+            'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200',
             icon && 'pl-10',
             error && 'border-danger focus:ring-danger',
             className

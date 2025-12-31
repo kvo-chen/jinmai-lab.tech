@@ -43,6 +43,64 @@ const PerformanceMonitor: React.FC = () => {
     return () => cancelAnimationFrame(fpsId);
   }, []);
 
+  // 核心Web Vitals监控
+  const [webVitals, setWebVitals] = useState({
+    fcp: 0,
+    lcp: 0,
+    fid: 0,
+    cls: 0,
+    ttfb: 0,
+    inp: 0
+  });
+
+  // 监听核心Web Vitals
+  useEffect(() => {
+    // 监听FCP (First Contentful Paint)
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntriesByName('first-contentful-paint');
+      if (entries.length > 0) {
+        setWebVitals(prev => ({ ...prev, fcp: Math.round(entries[0].startTime) }));
+      }
+    }).observe({ entryTypes: ['paint'] });
+
+    // 监听LCP (Largest Contentful Paint)
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      if (entries.length > 0) {
+        setWebVitals(prev => ({ ...prev, lcp: Math.round(entries[0].startTime) }));
+      }
+    }).observe({ entryTypes: ['largest-contentful-paint'] });
+
+    // 监听FID (First Input Delay)
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      if (entries.length > 0) {
+        const firstInputEntry = entries[0] as PerformanceEventTiming;
+        setWebVitals(prev => ({ ...prev, fid: Math.round(firstInputEntry.processingStart - firstInputEntry.startTime) }));
+      }
+    }).observe({ type: 'first-input', buffered: true });
+
+    // 监听CLS (Cumulative Layout Shift)
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      let cls = 0;
+      entries.forEach(entry => {
+        const layoutEntry = entry as LayoutShift;
+        if (!layoutEntry.hadRecentInput) {
+          cls += layoutEntry.value;
+        }
+      });
+      setWebVitals(prev => ({ ...prev, cls: parseFloat(cls.toFixed(3)) }));
+    }).observe({ entryTypes: ['layout-shift'] });
+
+    // 监听TTFB (Time to First Byte)
+    const navigationEntries = performance.getEntriesByType('navigation');
+    if (navigationEntries.length > 0) {
+      const navigationEntry = navigationEntries[0] as PerformanceNavigationTiming;
+      setWebVitals(prev => ({ ...prev, ttfb: Math.round(navigationEntry.responseStart) }));
+    }
+  }, []);
+
   // 定期更新统计信息
   useEffect(() => {
     const updateStats = () => {
@@ -54,20 +112,21 @@ const PerformanceMonitor: React.FC = () => {
       setErrorStats(errorService.getErrorStats(5));
       
       // 计算页面性能指标
-      const performanceEntries = performance.getEntriesByType('navigation');
-      if (performanceEntries.length > 0) {
-        const navigationEntry = performanceEntries[0] as PerformanceNavigationTiming;
-        setPageStats(prev => ({
-          ...prev,
-          loadTime: Math.round(navigationEntry.loadEventEnd - navigationEntry.loadEventStart),
-          domContentLoaded: Math.round(navigationEntry.domContentLoadedEventEnd - navigationEntry.domContentLoadedEventStart),
-          firstPaint: Math.round(performance.getEntriesByType('paint')[0]?.startTime || 0),
-          fps: fpsRef.current,
-          memoryUsage: typeof performance !== 'undefined' && 'memory' in performance 
-            ? Math.round((performance as any).memory.usedJSHeapSize / (1024 * 1024))
-            : 0
-        }));
-      }
+        const performanceEntries = performance.getEntriesByType('navigation');
+        if (performanceEntries.length > 0) {
+          const navigationEntry = performanceEntries[0] as PerformanceNavigationTiming;
+          setPageStats(prev => ({
+            ...prev,
+            loadTime: Math.round((navigationEntry.loadEventEnd || 0) - (navigationEntry.navigationStart || 0)),
+            apiTime: 0,
+            domContentLoaded: Math.round((navigationEntry.domContentLoadedEventEnd || 0) - (navigationEntry.navigationStart || 0)),
+            firstPaint: Math.round(performance.getEntriesByType('paint')[0]?.startTime || 0),
+            fps: fpsRef.current,
+            memoryUsage: typeof performance !== 'undefined' && 'memory' in performance 
+              ? Math.round((performance as any).memory.usedJSHeapSize / (1024 * 1024))
+              : 0
+          }));
+        }
     };
     
     const interval = setInterval(updateStats, 5000); // 每5秒更新一次
@@ -187,7 +246,50 @@ const PerformanceMonitor: React.FC = () => {
           {/* 页面性能统计 */}
           {activeTab === 'performance' && (
             <div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              {/* 核心Web Vitals */}
+              <h4 className="font-medium mb-3 text-gray-800 dark:text-white">核心Web Vitals</h4>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">FCP (首次内容绘制) (ms)</p>
+                  <p className={`text-xl font-bold ${webVitals.fcp > 1800 ? 'text-red-600' : webVitals.fcp > 1000 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {webVitals.fcp || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">LCP (最大内容绘制) (ms)</p>
+                  <p className={`text-xl font-bold ${webVitals.lcp > 2500 ? 'text-red-600' : webVitals.lcp > 1250 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {webVitals.lcp || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">FID (首次输入延迟) (ms)</p>
+                  <p className={`text-xl font-bold ${webVitals.fid > 300 ? 'text-red-600' : webVitals.fid > 100 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {webVitals.fid || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">CLS (累积布局偏移)</p>
+                  <p className={`text-xl font-bold ${webVitals.cls > 0.25 ? 'text-red-600' : webVitals.cls > 0.1 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {webVitals.cls || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">TTFB (首字节时间) (ms)</p>
+                  <p className={`text-xl font-bold ${webVitals.ttfb > 600 ? 'text-red-600' : webVitals.ttfb > 300 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    {webVitals.ttfb || 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">当前FPS</p>
+                  <p className={`text-xl font-bold ${pageStats.fps > 50 ? 'text-green-600' : pageStats.fps > 30 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {pageStats.fps}
+                  </p>
+                </div>
+              </div>
+
+              {/* 传统性能指标 */}
+              <h4 className="font-medium mb-3 text-gray-800 dark:text-white">传统性能指标</h4>
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
                   <p className="text-sm text-gray-500 dark:text-gray-400">页面加载时间 (ms)</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">{pageStats.loadTime}</p>
@@ -204,25 +306,20 @@ const PerformanceMonitor: React.FC = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">内存使用 (MB)</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white">{pageStats.memoryUsage}</p>
                 </div>
-                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg col-span-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">当前FPS</p>
-                  <p className="text-xl font-bold text-gray-800 dark:text-white">
-                    {pageStats.fps} 
-                    <span className={`text-xs font-normal ml-2 ${pageStats.fps > 50 ? 'text-green-600' : pageStats.fps > 30 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      ({pageStats.fps > 50 ? '流畅' : pageStats.fps > 30 ? '良好' : '卡顿'})
-                    </span>
-                  </p>
-                </div>
               </div>
               
               {/* 性能优化建议 */}
               <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg mt-4">
                 <h4 className="font-medium text-yellow-800 dark:text-yellow-300 mb-2">优化建议</h4>
                 <ul className="text-sm text-yellow-700 dark:text-yellow-400 space-y-1">
-                  {pageStats.loadTime > 2000 && <li>• 页面加载时间过长，建议优化资源加载顺序</li>}
+                  {webVitals.fcp > 1800 && <li>• FCP时间过长，建议优化关键资源加载</li>}
+                  {webVitals.lcp > 2500 && <li>• LCP时间过长，优化最大内容元素</li>}
+                  {webVitals.fid > 300 && <li>• FID过大，优化JavaScript执行时间</li>}
+                  {webVitals.cls > 0.25 && <li>• CLS过大，确保页面布局稳定</li>}
+                  {webVitals.ttfb > 600 && <li>• TTFB过大，优化服务器响应时间</li>}
+                  {pageStats.loadTime > 2000 && <li>• 页面加载时间过长，优化资源加载顺序</li>}
                   {pageStats.memoryUsage > 500 && <li>• 内存使用过高，检查是否有内存泄漏</li>}
                   {pageStats.fps < 30 && <li>• FPS较低，检查动画和渲染性能</li>}
-                  {pageStats.firstPaint > 1000 && <li>• 首次绘制时间过长，优化关键资源</li>}
                 </ul>
               </div>
             </div>

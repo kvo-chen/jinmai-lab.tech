@@ -75,52 +75,72 @@ try {
     console.log('- 密钥长度:', supabaseKey ? supabaseKey.length : 0)
     
     // 验证URL格式
-    if (supabaseUrl && !supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
-      console.error('❌ Supabase URL格式不正确，必须以http://或https://开头:', supabaseUrl)
+    let isValidUrl = false;
+    try {
+      new URL(supabaseUrl);
+      isValidUrl = true;
+    } catch (error) {
+      isValidUrl = false;
     }
     
-    // 验证密钥格式
-    if (supabaseKey && supabaseKey.length < 30) {
-      console.error('❌ Supabase密钥长度过短，可能是无效密钥:', supabaseKey)
-    }
-    
-    // 创建客户端，使用默认配置，让Supabase自动处理auth端点
-// 根据密钥格式调整配置
-const isNewKeyFormat = supabaseKey.startsWith('sb_publishable_') || supabaseKey.startsWith('sb_secret_');
+    if (isValidUrl && supabaseKey.length >= 30) {
+      try {
+        // 根据密钥格式调整配置
+        const isNewKeyFormat = supabaseKey.startsWith('sb_publishable_') || supabaseKey.startsWith('sb_secret_');
 
-console.log('密钥格式:', isNewKeyFormat ? '新格式' : '旧格式');
+        console.log('密钥格式:', isNewKeyFormat ? '新格式' : '旧格式');
 
-// 为新格式密钥配置正确的客户端选项
-const baseAuthConfig = {
-  autoRefreshToken: true,
-  persistSession: true,
-  detectSessionInUrl: true
-};
+        // 为新格式密钥配置正确的客户端选项
+        const baseAuthConfig = {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true
+        };
 
-const clientOptions = {
-  auth: {
-    ...baseAuthConfig,
-    // 对于新格式密钥，明确指定auth端点版本，确保兼容性
-    ...(isNewKeyFormat && {
-      endpoints: {
-        signUp: `${supabaseUrl}/auth/v1/signup`,
-        signIn: `${supabaseUrl}/auth/v1/token?grant_type=password`,
-        refreshToken: `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
-        signOut: `${supabaseUrl}/auth/v1/logout`,
-        getUser: `${supabaseUrl}/auth/v1/user`,
-        resetPasswordForEmail: `${supabaseUrl}/auth/v1/recover`,
-        updateUser: `${supabaseUrl}/auth/v1/user`,
-        getSession: `${supabaseUrl}/auth/v1/session`
+        const clientOptions = {
+          auth: {
+            ...baseAuthConfig,
+            // 对于新格式密钥，明确指定auth端点版本，确保兼容性
+            ...(isNewKeyFormat && {
+              endpoints: {
+                signUp: `${supabaseUrl}/auth/v1/signup`,
+                signIn: `${supabaseUrl}/auth/v1/token?grant_type=password`,
+                refreshToken: `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+                signOut: `${supabaseUrl}/auth/v1/logout`,
+                getUser: `${supabaseUrl}/auth/v1/user`,
+                resetPasswordForEmail: `${supabaseUrl}/auth/v1/recover`,
+                updateUser: `${supabaseUrl}/auth/v1/user`,
+                getSession: `${supabaseUrl}/auth/v1/session`
+              }
+            })
+          }
+        };
+
+        supabase = createClient(supabaseUrl, supabaseKey, clientOptions);
+        
+        console.log('✅ Supabase客户端创建成功')
+        console.log('✅ Supabase auth对象:', typeof supabase?.auth)
+        console.log('✅ Supabase auth.signUp方法:', typeof supabase?.auth.signUp)
+      } catch (clientError) {
+        console.error('❌ 创建Supabase客户端失败:', clientError);
+        console.error('错误详情:', clientError instanceof Error ? clientError.message : String(clientError));
+        console.error('错误堆栈:', clientError instanceof Error ? clientError.stack : '');
+        supabase = null;
       }
-    })
-  }
-};
-
-supabase = createClient(supabaseUrl, supabaseKey, clientOptions);
-    
-    console.log('✅ Supabase客户端创建成功')
-    console.log('✅ Supabase auth对象:', typeof supabase?.auth)
-    console.log('✅ Supabase auth.signUp方法:', typeof supabase?.auth.signUp)
+    } else {
+      // 处理无效URL或密钥长度不足的情况
+      if (!isValidUrl) {
+        console.error('❌ Supabase URL格式不正确:', supabaseUrl);
+        console.error('请确保URL以http://或https://开头，并且是完整的URL格式');
+      }
+      
+      if (supabaseKey.length < 30) {
+        console.error('❌ Supabase密钥长度过短，可能是无效密钥:', supabaseKey);
+        console.error('请检查密钥格式和长度，确保是有效的Supabase密钥');
+      }
+      
+      supabase = null;
+    }
   } else {
     console.error('❌ 无法创建Supabase客户端，环境变量不完整:')
     console.error('- URL:', supabaseUrl || '未设置')

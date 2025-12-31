@@ -1174,34 +1174,30 @@ export default function Neo() {
       setProgress(100)
       setGenerationStatus('正在生成图片...')
       
-      if (engine === 'doubao') {
-        // 中文注释：将返回格式改为 URL，确保后续图生视频使用公网可访问的首帧图片
-        doubao.generateImage({ prompt: (final || input), size: '1024x1024', n: 3, response_format: 'url', watermark: true }).then(r => {
-          const list = (r as any)?.data?.data || []
-          const urls = list
-            .map((d: any) => (d?.url ? String(d.url) : ''))
-            .filter((u: string) => !!u)
-          if (urls.length === 0) {
-            toast.info('豆包未返回图片，已提供占位图')
-            setImages(genImages(final))
-            setVideoByIndex(new Array(3).fill(''))
-          } else {
-            setImages(urls)
-            setVideoByIndex(new Array(urls.length).fill(''))
-            toast.success('豆包生图完成')
-          }
-          setGenerationStatus('')
-        }).catch((e) => {
-          errorService.logError(e instanceof Error ? e : 'SERVER_ERROR', { scope: 'neo-doubao', prompt: final || input })
-          toast.error('豆包生图失败，已回退为占位图')
+      // 中文注释：使用当前模型生成图片，将返回格式改为 URL，确保后续图生视频使用公网可访问的首帧图片
+      const currentModel = llmService.getCurrentModel();
+      llmService.generateImage({ prompt: (final || input), size: '1024x1024', n: 3, response_format: 'url', watermark: true }).then(r => {
+        const list = (r as any)?.data?.data || []
+        const urls = list
+          .map((d: any) => (d?.url ? String(d.url) : ''))
+          .filter((u: string) => !!u)
+        if (urls.length === 0) {
+          toast.info(`${currentModel.name}未返回图片，已提供占位图`)
           setImages(genImages(final))
           setVideoByIndex(new Array(3).fill(''))
-          setGenerationStatus('')
-        })
-      } else {
-        setImages(genImages(final))
+        } else {
+          setImages(urls)
+          setVideoByIndex(new Array(urls.length).fill(''))
+          toast.success(`${currentModel.name}生图完成`)
+        }
         setGenerationStatus('')
-      }
+      }).catch((e) => {
+        errorService.logError(e instanceof Error ? e : 'SERVER_ERROR', { scope: 'neo-doubao', prompt: final || input })
+        toast.error(`${currentModel.name}生图失败，已回退为占位图`)
+        setImages(genImages(final))
+        setVideoByIndex(new Array(3).fill(''))
+        setGenerationStatus('')
+      })
       const r = scoreAuthenticity(final || prompt, story)
       setScore(r.score)
       setFeedback(r.feedback)

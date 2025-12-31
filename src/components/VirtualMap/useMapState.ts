@@ -35,8 +35,8 @@ export const DEFAULT_THEMES: MapTheme[] = [
 // 默认地图配置
 export const DEFAULT_CONFIG: MapConfig = {
   initialCenter: { x: 500, y: 500 },
-  initialZoom: 5 as ZoomLevel,
-  minZoom: 1 as ZoomLevel,
+  initialZoom: 4 as ZoomLevel, // 降低初始缩放级别，确保所有POI点都在初始视图内
+  minZoom: 3 as ZoomLevel,      // 提高最小缩放级别，防止用户缩太小看不到POI
   maxZoom: 10 as ZoomLevel,
   tileSize: 256,
   themes: DEFAULT_THEMES
@@ -139,11 +139,35 @@ export const useMapState = create<MapState & {
     
     // 数据初始化方法
     setInitialData: (data) => {
-      console.log('setInitialData called with:', data);
+      // 数据验证和清理
+      const validatedRegions = (data.regions || []).filter(region => {
+        // 验证区域数据有效性
+        return region && region.id && region.coordinates && Array.isArray(region.coordinates) && region.coordinates.length > 0;
+      });
+      
+      const validatedPOIs = (data.pois || []).filter(poi => {
+        // 验证POI数据有效性
+        return poi && poi.id && poi.coordinate && 
+               typeof poi.coordinate.x === 'number' && !isNaN(poi.coordinate.x) &&
+               typeof poi.coordinate.y === 'number' && !isNaN(poi.coordinate.y);
+      });
+      
+      const validatedPaths = (data.paths || []).filter(path => {
+        // 验证路径数据有效性
+        return path && path.id && path.points && Array.isArray(path.points) && path.points.length > 0;
+      });
+      
+      console.log('setInitialData: 处理后的数据', {
+        regionsCount: validatedRegions.length,
+        poisCount: validatedPOIs.length,
+        pathsCount: validatedPaths.length,
+        rawPoisCount: (data.pois || []).length
+      });
+      
       set({
-        regions: data.regions || [],
-        pois: data.pois || [],
-        paths: data.paths || []
+        regions: validatedRegions,
+        pois: validatedPOIs,
+        paths: validatedPaths
       });
     },
     
@@ -255,90 +279,40 @@ export const useMapState = create<MapState & {
     drag: (coordinate) => {
       const state = get();
       if (state.isDragging && state.dragStart) {
-        const deltaX = coordinate.x - state.dragStart.x;
-        const deltaY = coordinate.y - state.dragStart.y;
+        // 降低拖动敏感度，让拖动更缓慢
+        const dragSensitivity = 0.5; // 拖动敏感度系数，越小越慢
+        const deltaX = (coordinate.x - state.dragStart.x) * dragSensitivity;
+        const deltaY = (coordinate.y - state.dragStart.y) * dragSensitivity;
         
-        // 计算拖拽速度
-        const velocityX = coordinate.x - (state.lastDragPosition?.x || coordinate.x);
-        const velocityY = coordinate.y - (state.lastDragPosition?.y || coordinate.y);
+        // 增加位置变化阈值，减少状态更新频率，提高流畅度
+        if (Math.abs(deltaX) < 1 || Math.abs(deltaY) < 1) {
+          // 位置变化太小，不更新状态，减少重绘
+          return;
+        }
         
         const newCenter = {
           x: state.center.x - deltaX,
           y: state.center.y - deltaY
         };
         
+        // 简化状态更新，只更新必要的状态值
         set({
           center: newCenter,
           targetCenter: newCenter,
           dragStart: coordinate,
-          lastDragPosition: coordinate,
-          dragVelocity: { x: velocityX, y: velocityY }
+          lastDragPosition: coordinate
         });
       }
     },
     
     endDrag: () => {
-      const state = get();
-      const velocity = state.dragVelocity || { x: 0, y: 0 };
-      
-      // 计算速度向量的大小
-      const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-      
-      // 如果拖拽速度不为0，添加惯性效果
-      if (speed > 1) {
-        // 改进的惯性算法参数
-        const initialFriction = 0.95; // 初始衰减系数，更平滑的开始
-        const minFriction = 0.85;     // 最小衰减系数，确保惯性不会太长
-        const frictionFactor = 0.05;  // 摩擦系数增加速率
-        const minVelocity = 0.5;       // 最小速度阈值
-        
-        // 初始摩擦系数
-        let currentFriction = initialFriction;
-        
-        // 惯性动画函数
-        const animateInertia = () => {
-          const currentState = get();
-          const currentVelocity = currentState.dragVelocity || { x: 0, y: 0 };
-          
-          // 计算当前速度大小
-          const currentSpeed = Math.sqrt(currentVelocity.x * currentVelocity.x + currentVelocity.y * currentVelocity.y);
-          
-          // 检查速度是否已经很小
-          if (currentSpeed < minVelocity) {
-            set({ isDragging: false, dragStart: null, dragVelocity: { x: 0, y: 0 } });
-            return;
-          }
-          
-          // 根据速度动态调整摩擦系数：速度越快，摩擦越大
-          currentFriction = Math.max(minFriction, initialFriction - frictionFactor * (currentSpeed / 100));
-          
-          // 计算新速度，使用更自然的衰减
-          const newVelocityX = currentVelocity.x * currentFriction;
-          const newVelocityY = currentVelocity.y * currentFriction;
-          
-          // 计算新位置，添加速度平滑过渡
-          const newCenter = {
-            x: currentState.center.x - newVelocityX,
-            y: currentState.center.y - newVelocityY
-          };
-          
-          // 更新中心位置和速度
-          set({
-            center: newCenter,
-            targetCenter: newCenter,
-            dragVelocity: { x: newVelocityX, y: newVelocityY }
-          });
-          
-          // 继续动画，使用requestAnimationFrame确保流畅度
-          requestAnimationFrame(animateInertia);
-        };
-        
-        // 启动惯性动画
-        animateInertia();
-      } else {
-        // 没有惯性，直接结束拖拽
-        set({ isDragging: false, dragStart: null, dragVelocity: { x: 0, y: 0 } });
-      }
+      // 简化惯性动画，减少计算量和状态更新频率
+      // 直接结束拖拽，不添加惯性效果，提高流畅度
+      set({ 
+        isDragging: false, 
+        dragStart: null, 
+        dragVelocity: { x: 0, y: 0 } 
+      });
     },
     
     // 数据管理方法

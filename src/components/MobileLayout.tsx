@@ -417,19 +417,38 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                       'border-gray-300 hover:ring-orange-500'
                     )}>
                       {user?.avatar && user.avatar.trim() ? (
-                        <TianjinImage
-                          src={user.avatar}
-                          alt={user.username}
-                          className="w-full h-full object-cover"
-                        />
+                        <div className="relative w-full h-full">
+                          <img
+                            src={user.avatar}
+                            alt={user.username}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const defaultAvatar = document.createElement('div');
+                                defaultAvatar.className = clsx(
+                                  'absolute inset-0 flex items-center justify-center text-white font-bold text-base',
+                                  isDark ? 'bg-blue-600' : 
+                                  theme === 'pink' ? 'bg-pink-500' : 
+                                  'bg-orange-500'
+                                );
+                                defaultAvatar.textContent = user?.username?.charAt(0) || 'U';
+                                parent.appendChild(defaultAvatar);
+                              }
+                            }}
+                          />
+                        </div>
                       ) : (
                         <div className={clsx(
                           'w-full h-full flex items-center justify-center text-white font-bold text-base',
-                          isDark ? 'bg-gray-800' : 
-                          theme === 'pink' ? 'bg-pink-300' : 
-                          'bg-gray-300'
+                          isDark ? 'bg-blue-600' : 
+                          theme === 'pink' ? 'bg-pink-500' : 
+                          'bg-orange-500'
                         )}>
-                          {user?.username?.charAt(0) || '用'}
+                          {user?.username?.charAt(0) || 'U'}
                         </div>
                       )}
                     </div>
@@ -580,11 +599,11 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                   )}>
                     <div className={clsx(
                       'w-full h-full flex items-center justify-center text-white font-bold text-base',
-                      isDark ? 'bg-gray-800' : 
+                      isDark ? 'bg-blue-600' : 
                       theme === 'pink' ? 'bg-pink-300' : 
-                      'bg-gray-300'
+                      'bg-orange-500'
                     )}>
-                      <i className="fas fa-user"></i>
+                      用
                     </div>
                   </div>
                 </NavLink>
@@ -699,7 +718,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
                   <i className="fas fa-palette text-lg mb-1"></i>
                   <span className="text-xs">{t('common.particleArt')}</span>
                 </NavLink>
-                <NavLink to="/tools" title="创作中心" onTouchStart={() => prefetchRoute('/tools')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
+                <NavLink to="/create" title="创作中心" onTouchStart={() => prefetchRoute('/create')} className={({ isActive }) => `${isDark ? 'text-gray-300' : theme === 'pink' ? 'text-pink-900' : 'text-gray-900'} flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 ${isActive ? (isDark ? 'bg-gray-800 text-white' : theme === 'pink' ? 'bg-pink-100 font-semibold' : 'bg-gray-100 font-semibold') : (isDark ? 'hover:bg-gray-800' : theme === 'pink' ? 'hover:bg-pink-100' : 'hover:bg-gray-100')}`} onClick={() => setShowSidebarDrawer(false)}>
                   <i className="fas fa-tools text-lg mb-1"></i>
                   <span className="text-xs">{t('common.create')}</span>
                 </NavLink>
@@ -1019,7 +1038,7 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
         </ul>
       </nav>
     </div>
-  )
-})
+    )
+  })
 
 export default MobileLayout;

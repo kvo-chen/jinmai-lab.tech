@@ -62,7 +62,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
 
   // 变体样式映射
   const variantClasses = {
-    primary: 'bg-primary text-white hover:bg-primary/90 border-transparent shadow-md hover:shadow-lg',
+    primary: 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary)]/90 border-transparent shadow-md hover:shadow-lg',
     secondary: 'bg-secondary text-primary hover:bg-secondary/80 border-transparent',
     danger: 'bg-danger text-white hover:bg-danger/90 border-transparent shadow-md hover:shadow-lg',
     success: 'bg-success text-white hover:bg-success/90 border-transparent shadow-md hover:shadow-lg',

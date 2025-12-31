@@ -1,12 +1,6 @@
 // 移除控制台日志增强代码，减少可能的错误
 
-// 导入three.js并添加到全局作用域，解决three-photo-dome.module.js中THREE is not defined的问题
-import * as THREE from 'three';
-// 确保只在浏览器环境中执行
-if (typeof window !== 'undefined') {
-  // @ts-ignore
-  window.THREE = THREE;
-}
+// 移除全局three.js引入，改为在需要的组件中按需引入
 
 // 导入国际化配置
 import './i18n/i18n';
@@ -20,17 +14,20 @@ import { Toaster } from 'sonner';
 import App from "./App.tsx";
 import { AuthProvider } from './contexts/authContext.tsx';
 import { WorkflowProvider } from './contexts/workflowContext.tsx';
+import { FriendProvider } from './contexts/friendContext.tsx';
 import { LanguageProvider } from './contexts/LanguageContext';
 import "./index.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
+// 恢复全局Font Awesome CSS，解决图标不显示问题
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
 
 // 确保只在浏览器环境中执行渲染代码
 if (typeof window !== 'undefined') {
   // 简化的全局对象初始化
-  window.knowledge = window.knowledge || {};
-  window.lazilyLoaded = window.lazilyLoaded || {};
+  // 使用类型断言来避免TypeScript错误
+  (window as any).knowledge = (window as any).knowledge || {};
+  (window as any).lazilyLoaded = (window as any).lazilyLoaded || {};
 
 
 
@@ -44,10 +41,12 @@ if (typeof window !== 'undefined') {
           <ThemeProvider>
             <BrowserRouter>
                 <AuthProvider>
-                  <WorkflowProvider>
-                    <App />
-                    <Toaster />
-                  </WorkflowProvider>
+                  <FriendProvider>
+                    <WorkflowProvider>
+                      <App />
+                      <Toaster />
+                    </WorkflowProvider>
+                  </FriendProvider>
                 </AuthProvider>
               </BrowserRouter>
           </ThemeProvider>

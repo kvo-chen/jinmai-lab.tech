@@ -11,6 +11,29 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
   const { isDark } = useTheme();
+  
+  // 简单的密钥解密函数
+  const getApiKey = (keyName: string): string => {
+    const encodedKey = localStorage.getItem(keyName) || '';
+    if (!encodedKey) return '';
+    try {
+      return atob(encodedKey);
+    } catch {
+      return '';
+    }
+  };
+  
+  // 简单的密钥加密存储函数
+  const saveApiKey = (keyName: string, keyValue: string): void => {
+    if (!keyValue) {
+      localStorage.removeItem(keyName);
+      return;
+    }
+    // 使用简单的Base64编码存储，实际生产环境建议使用更安全的加密方式
+    const encodedKey = btoa(keyValue);
+    localStorage.setItem(keyName, encodedKey);
+  };
+
   const [selectedModel, setSelectedModel] = useState<LLMModel>(llmService.getCurrentModel());
   const [modelConfig, setModelConfig] = useState<ModelConfig>(llmService.getConfig());
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -63,7 +86,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
     const stored = getApiKey('QWEN_API_KEY');
     return stored || envKey;
   });
-  const [qwenBase, setQwenBase] = useState<string>('https://dashscope.aliyuncs.com/compatible-mode/v1');
+  const [qwenBase, setQwenBase] = useState<string>('https://dashscope.aliyuncs.com/api/v1');
   const [qwenVariant, setQwenVariant] = useState<string>('qwen-plus');
   
   // ChatGPT模型配置
@@ -162,6 +185,44 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
     const model = AVAILABLE_MODELS.find(m => m.id === modelId);
     if (model) {
       setSelectedModel(model);
+      // 更新对应模型的配置状态
+      if (modelId === 'kimi') {
+        setKimiKey(getApiKey('KIMI_API_KEY'));
+        setKimiBase(modelConfig.kimi_base_url);
+        setKimiVariant(modelConfig.kimi_model);
+      } else if (modelId === 'deepseek') {
+        setDeepseekKey(getApiKey('DEEPSEEK_API_KEY'));
+        setDeepseekBase(modelConfig.deepseek_base_url || 'https://api.deepseek.com');
+        setDeepseekVariant(modelConfig.deepseek_model || 'deepseek-chat');
+      } else if (modelId === 'doubao') {
+        setDoubaoKey(getApiKey('DOUBAO_API_KEY'));
+        setDoubaoBase(modelConfig.doubao_base_url);
+        setDoubaoVariant(modelConfig.doubao_model);
+      } else if (modelId === 'wenxinyiyan') {
+        setWenxinKey(getApiKey('WENXIN_API_KEY'));
+        setWenxinBase(modelConfig.wenxin_base_url);
+        setWenxinVariant(modelConfig.wenxin_model);
+      } else if (modelId === 'qwen') {
+        setQwenKey(getApiKey('QWEN_API_KEY'));
+        setQwenBase(modelConfig.qwen_base_url);
+        setQwenVariant(modelConfig.qwen_model);
+      } else if (modelId === 'chatgpt') {
+        setChatgptKey(getApiKey('CHATGPT_API_KEY'));
+        setChatgptBase(modelConfig.chatgpt_base_url);
+        setChatgptVariant(modelConfig.chatgpt_model);
+      } else if (modelId === 'gemini') {
+        setGeminiKey(getApiKey('GEMINI_API_KEY'));
+        setGeminiBase(modelConfig.gemini_base_url);
+        setGeminiVariant(modelConfig.gemini_model);
+      } else if (modelId === 'gork') {
+        setGorkKey(getApiKey('GORK_API_KEY'));
+        setGorkBase(modelConfig.gork_base_url);
+        setGorkVariant(modelConfig.gork_model);
+      } else if (modelId === 'zhipu') {
+        setZhipuKey(getApiKey('ZHIPU_API_KEY'));
+        setZhipuBase(modelConfig.zhipu_base_url);
+        setZhipuVariant(modelConfig.zhipu_model);
+      }
       setTimeout(() => {
         if (configRef.current) {
           configRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -223,29 +284,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
         return true;
     }
   };
-  
-  // 简单的密钥加密存储函数
-  const saveApiKey = (keyName: string, keyValue: string): void => {
-    if (!keyValue) {
-      localStorage.removeItem(keyName);
-      return;
-    }
-    // 使用简单的Base64编码存储，实际生产环境建议使用更安全的加密方式
-    const encodedKey = btoa(keyValue);
-    localStorage.setItem(keyName, encodedKey);
-  };
-  
-  // 简单的密钥解密函数
-  const getApiKey = (keyName: string): string => {
-    const encodedKey = localStorage.getItem(keyName) || '';
-    if (!encodedKey) return '';
-    try {
-      return atob(encodedKey);
-    } catch {
-      return '';
-    }
-  };
-  
+
   const handleSave = () => {
     try {
       setIsLoading(true);
@@ -1056,10 +1095,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
                       <option value="high">高</option>
                     </select>
                     <p className={`text-xs mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      设置安全检查的严格程度：
-                      - 低：较少过滤，允许更多内容
-                      - 中：平衡过滤，兼顾安全和自由表达
-                      - 高：严格过滤，确保内容安全
+                      设置安全检查的严格程度，影响模型对内容的过滤效果。
                     </p>
                   </div>
                 </div>
@@ -1068,122 +1104,42 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* 面板底部 */}
-        <div className={`p-4 sm:p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex flex-wrap justify-between items-center space-x-2 sm:space-x-3 gap-2`}>
-          <span className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} w-full sm:w-auto text-center sm:text-left`}>当前模型：{selectedModel.name}</span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                // 使用当前配置作为基础，只更新需要的属性
-                const currentConfig = llmService.getConfig();
-                setModelConfig({
-                  ...currentConfig,
-                  temperature: 0.7,
-                  top_p: 0.9,
-                  max_tokens: 2000,
-                  timeout: 30000,
-                  system_prompt: '你是一个帮助创作者进行设计构思与文化融合的助手。',
-                  max_history: 10,
-                  stream: false,
-                  kimi_model: 'moonshot-v1-32k',
-                  kimi_base_url: 'https://api.moonshot.cn/v1',
-                  retry: 2,
-                  backoff_ms: 800,
-                  deepseek_model: 'deepseek-chat',
-                  deepseek_base_url: 'https://api.deepseek.com',
-                  // 豆包默认配置
-                  doubao_model: 'doubao-pro-32k',
-                  doubao_base_url: 'https://api.doubao.com/v1',
-                  // 文心一言默认配置
-                  wenxin_model: 'ERNIE-Speed-8K',
-                  wenxin_base_url: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
-                  // 通义千问默认配置
-                  qwen_model: 'qwen-plus',
-                  qwen_base_url: 'https://dashscope.aliyuncs.com/api/v1',
-                  // ChatGPT默认配置
-                  chatgpt_model: 'gpt-4o',
-                  chatgpt_base_url: 'https://api.openai.com/v1',
-                  // Gemini默认配置
-                  gemini_model: 'gemini-1.5-flash',
-                  gemini_base_url: 'https://generativelanguage.googleapis.com/v1',
-                  // Gork默认配置
-                  gork_model: 'grok-beta',
-                  gork_base_url: 'https://api.x.ai/v1',
-                  // 智谱默认配置
-                  zhipu_model: 'glm-4-plus',
-                  zhipu_base_url: 'https://open.bigmodel.cn/api/paas/v4'
-                });
-                // 重置各模型的配置状态
-                setKimiBase('https://api.moonshot.cn/v1');
-                setKimiVariant('moonshot-v1-32k');
-                setDeepseekBase('https://api.deepseek.com');
-                setDeepseekVariant('deepseek-chat');
-                // 豆包默认配置
-                setDoubaoBase('https://api.doubao.com/v1');
-                setDoubaoVariant('doubao-pro-32k');
-                // 文心一言默认配置
-                setWenxinBase('https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions');
-                setWenxinVariant('ERNIE-Speed-8K');
-                // 通义千问默认配置
-                setQwenBase('https://dashscope.aliyuncs.com/api/v1');
-                setQwenVariant('qwen-plus');
-                // ChatGPT默认配置
-                setChatgptBase('https://api.openai.com/v1');
-                setChatgptVariant('gpt-4o');
-                // Gemini默认配置
-                setGeminiBase('https://generativelanguage.googleapis.com/v1');
-                setGeminiVariant('gemini-1.5-flash');
-                // Gork默认配置
-                setGorkBase('https://api.x.ai/v1');
-                setGorkVariant('grok-beta');
-                // 智谱默认配置
-                setZhipuBase('https://open.bigmodel.cn/api/paas/v4');
-                setZhipuVariant('glm-4-plus');
-              }}
-              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm transition-colors ${
-                isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              disabled={isLoading}
-            >
-              恢复默认
-            </button>
-            <button
-              onClick={handleTestConnection}
-              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm transition-colors ${
-                isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              disabled={isLoading}
-            >
-              连接测试
-            </button>
-            <button
-              onClick={onClose}
-              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm transition-colors ${
-                isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              disabled={isLoading}
-            >
-              取消
-            </button>
-            <button
-              onClick={handleSave}
-              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm transition-colors ${
-                isLoading
-                  ? 'bg-gray-500 cursor-not-allowed'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
-              }`}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <i className="fas fa-spinner fa-spin mr-1"></i>
-                  保存中...
-                </>
-              ) : (
-                '保存设置'
-              )}
-            </button>
-          </div>
+        {/* 操作按钮 */}
+        <div className={`p-4 sm:p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between gap-3`}>
+          <button
+            type="button"
+            onClick={handleTestConnection}
+            className={`flex-1 py-2 px-4 rounded-lg transition-all ${isDark 
+              ? 'bg-blue-700 hover:bg-blue-600' 
+              : 'bg-blue-500 hover:bg-blue-600'} text-white font-medium`}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <i className="fas fa-spinner fa-spin mr-2"></i>
+                测试中...
+              </div>
+            ) : (
+              '测试连接'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className={`flex-1 py-2 px-4 rounded-lg transition-all ${isDark 
+              ? 'bg-red-700 hover:bg-red-600' 
+              : 'bg-red-500 hover:bg-red-600'} text-white font-medium`}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <i className="fas fa-spinner fa-spin mr-2"></i>
+                保存中...
+              </div>
+            ) : (
+              '保存设置'
+            )}
+          </button>
         </div>
       </motion.div>
     </motion.div>

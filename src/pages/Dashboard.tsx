@@ -222,12 +222,31 @@ export default function Dashboard() {
         >
           <div className="flex flex-col md:flex-row items-center md:items-start p-2 md:p-0">
               <div className="relative mb-6 md:mb-0 md:mr-6">
-                <img 
-                  src={user?.avatar || 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&h=100&fit=crop'} 
-                  alt={user?.username || '用户头像'} 
-                  className="w-24 h-24 rounded-full object-cover border-4 border-red-600"
-                  loading="lazy" decoding="async"
-                />
+                {user?.avatar && user.avatar.trim() ? (
+                  <div className="relative w-24 h-24 rounded-full">
+                    <img 
+                      src={user.avatar} 
+                      alt={user.username || '用户头像'} 
+                      className="w-full h-full rounded-full object-cover border-4 border-red-600"
+                      loading="lazy" decoding="async"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const defaultAvatar = document.createElement('div');
+                          defaultAvatar.className = `absolute inset-0 rounded-full flex items-center justify-center text-white font-bold text-3xl border-4 border-red-600 ${isDark ? 'bg-blue-600' : 'bg-orange-500'}`;
+                          defaultAvatar.textContent = user?.username?.charAt(0) || 'U';
+                          parent.appendChild(defaultAvatar);
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-3xl ${isDark ? 'bg-blue-600' : 'bg-orange-500'} border-4 border-red-600`}>
+                    {user?.username?.charAt(0) || 'U'}
+                  </div>
+                )}
                 <div className="absolute -bottom-2 -right-2 bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold">
                   {creatorLevelInfo.levelProgress}%
                 </div>

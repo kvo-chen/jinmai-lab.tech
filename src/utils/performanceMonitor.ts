@@ -958,25 +958,22 @@ export function initPerformanceMonitor() {
   performanceMonitor.init();
 }
 
-// 导出便捷函数
-export const { 
-  recordMetric, 
-  recordNetworkRequest,
-  recordComponentRender,
-  getMetrics, 
-  getNetworkRequests,
-  getComponentRenders,
-  getMemoryUsage,
-  getComponentRenderStats,
-  getNetworkRequestStats,
-  clearMetrics, 
-  clearNetworkRequests,
-  clearComponentRenders,
-  clearMemoryUsage,
-  measureExecutionTime, 
-  startMeasure, 
-  endMeasure,
-  runAudit,
-  init,
-  cleanup
-} = performanceMonitor;
+// 导出便捷函数 - 使用 bind 确保 this 上下文正确
+export const recordMetric = performanceMonitor.recordMetric.bind(performanceMonitor);
+export const recordNetworkRequest = performanceMonitor.recordNetworkRequest.bind(performanceMonitor);
+export const recordComponentRender = performanceMonitor.recordComponentRender.bind(performanceMonitor);
+export const getMetrics = performanceMonitor.getMetrics.bind(performanceMonitor);
+export const getNetworkRequests = performanceMonitor.getNetworkRequests.bind(performanceMonitor);
+export const getComponentRenders = performanceMonitor.getComponentRenders.bind(performanceMonitor);
+export const getMemoryUsage = performanceMonitor.getMemoryUsage.bind(performanceMonitor);
+export const getComponentRenderStats = performanceMonitor.getComponentRenderStats.bind(performanceMonitor);
+export const getNetworkRequestStats = performanceMonitor.getNetworkRequestStats.bind(performanceMonitor);
+export const clearMetrics = performanceMonitor.clearMetrics.bind(performanceMonitor);
+export const clearNetworkRequests = performanceMonitor.clearNetworkRequests.bind(performanceMonitor);
+export const clearComponentRenders = performanceMonitor.clearComponentRenders.bind(performanceMonitor);
+export const clearMemoryUsage = performanceMonitor.clearMemoryUsage.bind(performanceMonitor);
+export const measureExecutionTime = performanceMonitor.measureExecutionTime.bind(performanceMonitor);
+export const startMeasure = performanceMonitor.startMeasure.bind(performanceMonitor);
+export const endMeasure = performanceMonitor.endMeasure.bind(performanceMonitor);
+export const runAudit = performanceMonitor.runAudit.bind(performanceMonitor);
+export const cleanup = performanceMonitor.cleanup.bind(performanceMonitor);

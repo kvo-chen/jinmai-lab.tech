@@ -13,6 +13,7 @@ import { navigationGroups } from '@/config/navigationConfig'
 import ThemePreviewModal from './ThemePreviewModal'
 import SearchBar, { SearchSuggestion } from '@/components/SearchBar'
 import searchService from '@/services/searchService'
+import PWAInstallButton from '@/components/PWAInstallButton'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -28,6 +29,10 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
   const [collapsed, setCollapsed] = useState<boolean>(false)
   const [hovered, setHovered] = useState<boolean>(false)
   const [width, setWidth] = useState<number>(180)
+  // 添加固定状态
+  const [isPinned, setIsPinned] = useState<boolean>(false)
+  // 自动收缩定时器引用
+  const interactionTimeout = useRef<NodeJS.Timeout | null>(null)
   
   // 在客户端挂载后从localStorage加载保存的状态
   useEffect(() => {
@@ -40,6 +45,12 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     const savedCollapsed = localStorage.getItem('sidebarCollapsed')
     if (savedCollapsed) {
       setCollapsed(JSON.parse(savedCollapsed))
+    }
+    
+    // 从localStorage读取保存的固定状态
+    const savedPinned = localStorage.getItem('sidebarPinned')
+    if (savedPinned) {
+      setIsPinned(JSON.parse(savedPinned))
     }
     
     // 从localStorage读取保存的宽度
@@ -59,6 +70,13 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     if (typeof localStorage === 'undefined') return
     localStorage.setItem('sidebarCollapsed', JSON.stringify(collapsed))
   }, [collapsed])
+  
+  // 保存固定状态到localStorage
+  useEffect(() => {
+    // 只在客户端环境中访问localStorage
+    if (typeof localStorage === 'undefined') return
+    localStorage.setItem('sidebarPinned', JSON.stringify(isPinned))
+  }, [isPinned])
   // 初始化最近搜索为[]，确保服务器端和客户端渲染一致
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   
@@ -117,8 +135,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
       try { localStorage.setItem('recentSearches', JSON.stringify(next)) } catch {}
       return next
     })
-  }
-  
+  }  
   // 中文注释：处理搜索框聚焦和失焦事件
   useEffect(() => {
     // 只在浏览器环境中添加事件监听
@@ -364,9 +381,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
         e.preventDefault()
         searchRef.current?.focus()
       }
-      if (e.key === 'b') {
-        setCollapsed((c) => !c)
-      }
+
       
       // 添加快捷键提示
       if (e.key === '?') {
@@ -396,7 +411,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
         const map: Record<string, string> = {
           '1': '/',
           '2': '/explore',
-          '3': '/tools',
+          '3': '/create',
           '4': '/neo',
           '5': '/wizard',
           '6': '/square',
@@ -467,6 +482,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     'inspiration': 'sidebar.inspirationEngine',
     'knowledge': 'sidebar.culturalKnowledge',
     
+    // 创作工具
+    'tools': 'sidebar.creativeTools',
+    
     // 共创功能
     'guide': 'sidebar.coCreationGuide',
     'square': 'sidebar.coCreationSquare',
@@ -501,7 +519,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     const p = location.pathname
     if (p === '/') return t('common.home')
     if (p.startsWith('/explore')) return t('common.explore')
-    if (p.startsWith('/tools')) return t('sidebar.creationCenter')
+    if (p.startsWith('/tools')) return t('sidebar.creativeTools')
     if (p.startsWith('/about')) return t('common.about')
     if (p.startsWith('/knowledge')) return t('sidebar.culturalKnowledge')
     if (p.startsWith('/tianjin/map')) return t('sidebar.tianjinMap')
@@ -575,31 +593,67 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
     <div className={`flex min-h-screen ${isDark ? 'bg-gradient-to-br from-[#0b0e13] via-[#0e1218] to-[#0b0e13] text-gray-100' : theme === 'pink' ? 'bg-gradient-to-br from-[#fff0f5] via-[#ffe4ec] to-[#fff0f5] text-gray-900' : 'bg-white text-gray-900'}`}>
       {/* 仅在桌面端显示侧边栏 */}
       <aside 
-        className={`${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 z-10 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{ width: (collapsed && !hovered) ? 72 : width, transition: 'width 0.2s ease-in-out' }}
+        className={`hidden md:flex flex-col ${isDark ? 'bg-[#10151d]/95 backdrop-blur-sm border-gray-800' : theme === 'pink' ? 'bg-white/90 backdrop-blur-sm border-pink-200' : 'bg-white border-gray-200'} border-r relative ring-1 z-10 ${isDark ? 'ring-gray-800' : theme === 'pink' ? 'ring-pink-200' : 'ring-gray-200'}`} 
+        onMouseEnter={() => {
+          setHovered(true);
+          setCollapsed(false);
+          // 清除任何待处理的定时器
+          if (interactionTimeout.current) {
+            clearTimeout(interactionTimeout.current);
+            interactionTimeout.current = null;
+          }
+        }}
+        onMouseLeave={() => {
+          setHovered(false);
+          // 固定状态下不禁用自动收缩
+          if (!isPinned) {
+            // 设置定时器，2秒后自动收缩
+            interactionTimeout.current = setTimeout(() => {
+              setCollapsed(true);
+            }, 2000);
+          }
+        }}
+        style={{ width: (collapsed && !hovered && !isPinned) ? 72 : width, transition: 'width 0.2s ease-in-out' }}
       >
         <div className={`px-4 py-3 flex items-center justify-between rounded-lg transition-colors group ${isDark ? 'hover:bg-gray-800/60' : theme === 'pink' ? 'hover:bg-pink-50' : 'hover:bg-gray-50'}`}>
           <div className="flex items-center space-x-2">
             <span className={`font-extrabold bg-gradient-to-r ${isDark ? 'from-red-400 to-rose-500' : 'from-red-600 to-rose-500'} bg-clip-text text-transparent tracking-tight`}>津脉</span>
             {(!collapsed || hovered) && <span className={`font-bold ${isDark ? 'text-white' : ''}`}>智坊</span>}
           </div>
-          <button
-            className={`p-2 rounded-lg ring-1 transition-all ${isDark ? 'hover:bg-gray-800/70 ring-gray-800 hover:ring-2' : 'hover:bg-gray-100 ring-gray-200 hover:ring-2'} hover:shadow-sm`}
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label="折叠侧边栏"
-            title={collapsed ? '展开侧边栏' : '折叠侧边栏'}
-          >
-            <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'} ${isDark ? 'text-white' : 'text-gray-500'} transition-transform group-hover:translate-x-0.5`}></i>
-          </button>
+          <div className="flex items-center space-x-1">
+            {/* 固定/收缩按钮 */}
+            <button
+              className={`p-2 rounded-lg ring-1 transition-all ${isDark ? 'hover:bg-gray-800/70 ring-gray-800 hover:ring-2' : 'hover:bg-gray-100 ring-gray-200 hover:ring-2'} hover:shadow-sm ${isPinned ? 'ring-blue-500' : ''}`}
+              onClick={() => {
+                const newPinnedState = !isPinned;
+                setIsPinned(newPinnedState);
+                if (newPinnedState) {
+                  // 固定时展开导航栏
+                  setCollapsed(false);
+                } else {
+                  // 取消固定时立即收缩
+                  setCollapsed(true);
+                  // 清除任何待处理的定时器
+                  if (interactionTimeout.current) {
+                    clearTimeout(interactionTimeout.current);
+                    interactionTimeout.current = null;
+                  }
+                }
+              }}
+              aria-label={isPinned ? '收缩侧边栏' : '固定侧边栏'}
+              title={isPinned ? '收缩侧边栏' : '固定侧边栏'}
+            >
+              <i className={`fas ${isPinned ? 'fa-thumbtack rotate-45 text-blue-500' : 'fa-thumbtack'} ${isDark ? 'text-white' : 'text-gray-500'} transition-transform group-hover:scale-110`}></i>
+            </button>
+
+          </div>
         </div>
 
         <nav className="px-2 pt-2 pb-4 space-y-4">
           {navigationGroups.map((group) => (
             <div key={group.id} className={`rounded-lg ${isDark ? 'bg-[#1a1f2e]/50 backdrop-blur-sm' : 'bg-gray-50'} p-3 transition-all duration-300`}>
-              {(!collapsed || hovered) && (
-                <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center`}>
+              {(!collapsed || hovered || isPinned) && (
+                <h3 className={`text-xs font-semibold mb-2 uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'} flex items-center transition-all duration-300 ease-in-out opacity-100`}>
                   <span className="mr-2 w-1.5 h-1.5 rounded-full bg-current"></span>
                   {t(navGroupIdToTranslationKey[group.id] || group.id)}
                 </h3>
@@ -608,13 +662,13 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                 {group.items.map((item) => (
                   <NavLink 
                     key={item.id}
-                    to={item.path}
-                    title={collapsed ? t(navItemIdToTranslationKey[item.id] || item.id) : undefined} 
+                    to={`${item.path}${item.search || ''}`}
+                    title={collapsed && !hovered && !isPinned ? t(navItemIdToTranslationKey[item.id] || item.id) : undefined} 
                     onMouseEnter={() => debouncedPrefetch(item.path)} 
-                    className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''} relative overflow-hidden group ${collapsed ? 'justify-center px-2 py-2.5' : ''}`}
+                    className={({ isActive }) => `${navItemClass} ${isActive ? activeClass : ''} relative overflow-hidden group ${(collapsed && !hovered && !isPinned) ? 'justify-center px-2 py-2.5' : ''}`}
                   > 
-                    <i className={`fas ${item.icon} ${collapsed ? 'mr-0' : 'mr-2'} transition-all duration-300 group-hover:scale-110 group-hover:rotate-5`}></i>
-                    {(!collapsed || hovered) && <span className="transition-all duration-300">{t(navItemIdToTranslationKey[item.id] || item.id)}</span>}
+                    <i className={`fas ${item.icon} ${(collapsed && !hovered && !isPinned) ? 'mr-0' : 'mr-2'} transition-all duration-300 group-hover:scale-110 group-hover:rotate-5`}></i>
+                    {(!collapsed || hovered || isPinned) && <span className="transition-all duration-300 ease-in-out opacity-100">{t(navItemIdToTranslationKey[item.id] || item.id)}</span>}
                   </NavLink>
                 ))}
               </div>
@@ -639,8 +693,8 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
         onClick={(e) => {
           // 确保点击的不是内部的可交互元素
           const target = e.target as HTMLElement;
-          // 只在点击主内容区域时收起侧边栏，不拦截导航链接等可交互元素
-          if (!collapsed && !target.closest('button, input, a, [role="menu"], [role="dialog"], nav, [data-discover="true"]')) {
+          // 只在点击主内容区域且非固定状态时收起侧边栏，不拦截导航链接等可交互元素
+          if (!isPinned && !collapsed && !target.closest('button, input, a, [role="menu"], [role="dialog"], nav, [data-discover="true"]')) {
             setCollapsed(true);
           }
         }}
@@ -736,7 +790,7 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                     <ul className="px-4 py-2 text-sm space-y-1">
                       <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>/ 聚焦搜索</li>
                       <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>T 切换主题</li>
-                      <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>B 折叠侧边栏</li>
+
                       <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>1–0 快速导航（首页至关于）</li>
                       <li className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>移动端：下滑隐藏底部导航</li>
                     </ul>
@@ -890,6 +944,16 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                 )}
               </div>
               
+              {/* 好友管理按钮 */}
+              <NavLink
+                to="/friends"
+                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${isDark ? 'bg-gray-800/70 ring-1 ring-gray-700 hover:bg-gray-700 hover:ring-blue-500' : 'bg-white/70 ring-1 ring-gray-200 hover:bg-gray-50 hover:ring-blue-500'} hover:shadow-md`}
+                aria-label="好友管理"
+                title="好友管理"
+              >
+                <i className="fas fa-users transition-transform duration-300 hover:scale-110"></i>
+              </NavLink>
+              
               {/* 创作者仪表盘 */}
               <CreatorDashboard />
               {isAuthenticated ? (
@@ -900,7 +964,31 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                     aria-expanded={showUserMenu}
                     onClick={() => setShowUserMenu(v => !v)}
                   >
-                    <TianjinImage src={user?.avatar || ''} alt={user?.username || '用户头像'} className="h-8 w-8" ratio="square" rounded="full" />
+                    {user?.avatar && user.avatar.trim() ? (
+                      <div className="relative h-8 w-8 rounded-full">
+                        <img 
+                          src={user.avatar} 
+                          alt={user?.username || '用户头像'} 
+                          className="h-full w-full rounded-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const defaultAvatar = document.createElement('div');
+                              defaultAvatar.className = `absolute inset-0 rounded-full flex items-center justify-center text-white font-bold ${isDark ? 'bg-blue-600' : 'bg-orange-500'}`;
+                              defaultAvatar.textContent = user?.username?.charAt(0) || 'U';
+                              parent.appendChild(defaultAvatar);
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-bold ${isDark ? 'bg-blue-600' : 'bg-orange-500'}`}>
+                        {user?.username?.charAt(0) || 'U'}
+                      </div>
+                    )}
                   </button>
                   {showUserMenu && (
                     <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg ring-1 ${isDark ? 'bg-gray-800 ring-gray-700' : 'bg-white ring-gray-200'}`} role="menu" aria-label="用户菜单">
@@ -926,6 +1014,9 @@ export default memo(function SidebarLayout({ children }: SidebarLayoutProps) {
                         </li>
                         <li>
                           <button className={`w-full text-left px-4 py-2 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); navigate('/settings') }}>{t('header.settings')}</button>
+                        </li>
+                        <li>
+                          <PWAInstallButton asMenuItem isDark={isDark} />
                         </li>
                         <li className="border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} mt-2">
                           <button className={`w-full text-left px-4 py-2 text-red-600 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`} onClick={() => { setShowUserMenu(false); logout() }}>{t('header.logout')}</button>

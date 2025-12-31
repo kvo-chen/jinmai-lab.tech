@@ -9,6 +9,7 @@ export interface NavItem {
   description?: string;
   children?: NavItem[];
   external?: boolean;
+  search?: string;
 }
 
 // 导航分组类型定义
@@ -24,24 +25,25 @@ export const coreNavItems: NavItem[] = [
   { id: 'home', path: '/', label: '首页', icon: 'fas fa-home' },
   { id: 'explore', path: '/explore', label: '探索作品', icon: 'fas fa-compass' },
   { id: 'create', path: '/create', label: '创作中心', icon: 'fas fa-tools' },
+  { id: 'tools', path: '/tools', label: '创作工具', icon: 'fas fa-wand-magic-sparkles' },
   { id: 'inspiration', path: '/neo', label: '灵感引擎', icon: 'fas fa-bolt' },
-  { id: 'knowledge', path: '/knowledge', label: '文化知识', icon: 'fas fa-book' }
+  { id: 'knowledge', path: '/cultural-knowledge', label: '文化知识', icon: 'fas fa-book' }
 ];
 
 // 共创功能导航项
 export const cocreationNavItems: NavItem[] = [
   { id: 'guide', path: '/wizard', label: '共创向导', icon: 'fas fa-hat-wizard' },
   { id: 'square', path: '/square', label: '共创广场', icon: 'fas fa-th-large' },
-  { id: 'community', path: '/community?context=cocreation&tab=joined', label: '共创社群', icon: 'fas fa-user-friends' },
-  { id: 'creator-community', path: '/community?context=creator', label: '创作者社群', icon: 'fas fa-users' }
+  { id: 'community', path: '/community', label: '共创社群', icon: 'fas fa-user-friends', search: '?context=cocreation&tab=joined' },
+  { id: 'creator-community', path: '/community', label: '创作者社群', icon: 'fas fa-users', search: '?context=creator' }
 ];
 
 // 天津特色导航项
 export const tianjinNavItems: NavItem[] = [
   { id: 'tianjin', path: '/tianjin', label: '天津专区', icon: 'fas fa-landmark' },
-  { id: 'tianjin-map', path: '/tianjin/map', label: '天津地图', icon: 'fas fa-map-marked-alt' },
-  { id: 'events', path: '/events', label: '文化活动', icon: 'fas fa-calendar-alt' },
-  { id: 'news', path: '/news', label: '文化资讯', icon: 'fas fa-newspaper' }
+  { id: 'tianjin-map', path: '/tianjin-map', label: '天津地图', icon: 'fas fa-map-marked-alt' },
+  { id: 'events', path: '/cultural-events', label: '文化活动', icon: 'fas fa-calendar-alt' },
+  { id: 'news', path: '/cultural-news', label: '文化资讯', icon: 'fas fa-newspaper' }
 ];
 
 // 更多服务导航项
@@ -83,6 +85,7 @@ export const navigationGroups: NavGroup[] = [
 export const topNavItems: NavItem[] = [
   { id: 'search', path: '#', label: '搜索', icon: 'fas fa-search', external: true },
   { id: 'notifications', path: '#', label: '通知', icon: 'fas fa-bell', external: true },
+  { id: 'friends', path: '/friends', label: '好友', icon: 'fas fa-users', external: true },
   { id: 'profile', path: '/dashboard', label: '个人中心', icon: 'fas fa-user', external: true }
 ];
 

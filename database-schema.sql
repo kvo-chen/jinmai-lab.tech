@@ -281,3 +281,59 @@ WHERE c.is_active = true;
 -- ==========================================================================
 -- Database Schema Creation Complete
 -- ==========================================================================
+
+-- ==========================================================================
+-- FRIEND_REQUESTS TABLE
+-- ==========================================================================
+-- This table stores friend requests
+CREATE TABLE IF NOT EXISTS friend_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(sender_id, receiver_id)
+);
+
+-- Create indexes for foreign keys and frequently queried columns
+CREATE INDEX IF NOT EXISTS idx_friend_requests_sender_id ON friend_requests(sender_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver_id ON friend_requests(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_status ON friend_requests(status);
+
+-- ==========================================================================
+-- FRIENDS TABLE
+-- ==========================================================================
+-- This table stores established friendships
+CREATE TABLE IF NOT EXISTS friends (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  friend_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_note VARCHAR(255),
+  friend_note VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, friend_id)
+);
+
+-- Create indexes for foreign keys
+CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
+
+-- ==========================================================================
+-- USER_STATUS TABLE
+-- ==========================================================================
+-- This table tracks user online status
+CREATE TABLE IF NOT EXISTS user_status (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL CHECK (status IN ('online', 'offline', 'away')),
+  last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create index for status
+CREATE INDEX IF NOT EXISTS idx_user_status_status ON user_status(status);
+
+-- ==========================================================================
+-- Database Schema Creation Complete (Including Friend System)
+-- ==========================================================================

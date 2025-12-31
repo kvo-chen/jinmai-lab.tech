@@ -13,6 +13,9 @@ import {
 // 导入虚拟地图类型
 import { Region, POI as VirtualPOI, Path } from '@/components/VirtualMap/types';
 
+// 导入POI图片生成工具
+import { generatePOIImages } from '@/utils/generatePOIImage';
+
 // 定义POI类型
 interface POI {
   id: number;
@@ -86,17 +89,17 @@ const localPOIData: POIData = {
       "description": "天津著名的传统小吃，以皮薄馅大、鲜香可口著称，有着悠久的历史和文化底蕴。狗不理包子的制作技艺被列入国家级非物质文化遗产名录。",
       "address": "天津市和平区山东路77号",
       "position": { 
-        "x": 45, 
+        "x": 44, 
         "y": 55, 
         "lng": MOCK_COORDINATES[1][0], 
         "lat": MOCK_COORDINATES[1][1] 
       },
       "year": 1858,
       "images": [
-        // 使用SVG占位图替代外部图片，避免ORB阻止
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3C/svg%3E`,
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3C/svg%3E`,
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E百年老店%3C/text%3E%3C/svg%3E`
+        // 重新设计的SVG占位图，具有视觉吸引力和统一风格
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3Ccircle cx='200' cy='400' r='40' fill='%23FF6B35'/%3E%3Ccircle cx='400' cy='400' r='40' fill='%23FF6B35'/%3E%3Ccircle cx='600' cy='400' r='40' fill='%23FF6B35'/%3E%3C/text%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3Cpath d='M200,400 L250,350 L300,400 L350,350 L400,400 L450,350 L500,400 L550,350 L600,400' stroke='%23FF6B35' stroke-width='8' fill='none'/%3E%3Ctext%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E狗不理包子%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E百年老店%3C/text%3E%3Crect x='250' y='380' width='300' height='60' rx='30' fill='%23FF6B35'/%3E%3Ctext x='400' y='420' font-family='Arial' font-size='28' font-weight='bold' fill='white' text-anchor='middle' dy='0.3em'%3E1858年创立%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "08:00-22:00",
       "phone": "022-27306590",
@@ -122,8 +125,9 @@ const localPOIData: POIData = {
       },
       "year": 1912,
       "images": [
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E十八街麻花%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3C/svg%3E`,
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E十八街麻花%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统名点%3C/text%3E%3C/svg%3E`
+        // 重新设计的SVG占位图，具有视觉吸引力和统一风格
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E十八街麻花%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3Cpath d='M200,400 Q300,350 400,400 T600,400' stroke='%23FF6B35' stroke-width='12' fill='none'/%3E%3Cpath d='M200,400 Q300,450 400,400 T600,400' stroke='%23FF6B35' stroke-width='12' fill='none'/%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E十八街麻花%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E传统名点%3C/text%3E%3Crect x='200' y='380' width='400' height='60' rx='30' fill='%23FF6B35'/%3E%3Ctext x='400' y='420' font-family='Arial' font-size='28' font-weight='bold' fill='white' text-anchor='middle' dy='0.3em'%3E酥脆香甜，久放不绵%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "09:00-21:00",
       "phone": "022-28326900",
@@ -145,8 +149,9 @@ const localPOIData: POIData = {
       },
       "year": 1900,
       "images": [
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E耳朵眼炸糕%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3C/svg%3E`,
-        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E耳朵眼炸糕%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3C/svg%3E`
+        // 重新设计的SVG占位图，具有视觉吸引力和统一风格
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E耳朵眼炸糕%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E天津三绝之一%3C/text%3E%3Cellipse cx='300' cy='400' rx='60' ry='40' fill='%23FF6B35'/%3E%3Cellipse cx='500' cy='400' rx='60' ry='40' fill='%23FF6B35'/%3E%3C/svg%3E`,
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E耳朵眼炸糕%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E传统小吃%3C/text%3E%3Ccircle cx='400' cy='400' r='60' fill='%23FF6B35'/%3E%3Ctext x='400' y='410' font-family='Arial' font-size='32' font-weight='bold' fill='white' text-anchor='middle' dy='0.3em'%3E香%3C/text%3E%3C/svg%3E`
       ],
       "openingHours": "08:30-20:30",
       "phone": "022-27275033",
@@ -162,7 +167,7 @@ const localPOIData: POIData = {
       "address": "天津市和平区和平路290号",
       "position": { 
         "x": 47, 
-        "y": 56, 
+        "y": 55, 
         "lng": MOCK_COORDINATES[4][0], 
         "lat": MOCK_COORDINATES[4][1] 
       },
@@ -207,8 +212,8 @@ const localPOIData: POIData = {
       "description": "天津传统民间艺术，以形神兼备、色彩鲜明、做工精细而闻名，是中国泥塑艺术的代表。",
       "address": "天津市南开区古文化街宫北大街通庆里4号",
       "position": { 
-        "x": 46, 
-        "y": 54, 
+        "x": 45, 
+        "y": 53, 
         "lng": MOCK_COORDINATES[6][0], 
         "lat": MOCK_COORDINATES[6][1] 
       },
@@ -401,15 +406,233 @@ const localPOIData: POIData = {
       "historicalSignificance": "天津博物馆是天津历史文化的重要载体，收藏了大量珍贵文物，展示了天津从古代到现代的历史发展脉络。",
       "culturalHeritageLevel": "国家级",
       "relatedPois": [8]
+    },
+    // 新增品牌点位数据
+    {
+      "id": 14,
+      "name": "天津大悦城",
+      "category": "retail",
+      "description": "天津现代化的大型购物中心，集购物、餐饮、娱乐于一体，是天津商业的新地标。",
+      "address": "天津市南开区南门外大街2号",
+      "position": { 
+        "x": 46, 
+        "y": 54, 
+        "lng": MOCK_COORDINATES[6][0] + 0.02, 
+        "lat": MOCK_COORDINATES[6][1] + 0.02 
+      },
+      "year": 2011,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津大悦城%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E现代购物中心%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "10:00-22:00",
+      "phone": "022-58100666",
+      "importance": 4,
+      "tags": ["现代商业", "购物中心", "城市地标"],
+      "featuredProducts": ["时尚服饰", "餐饮美食", "影院娱乐", "儿童乐园"],
+      "honors": ["天津市商业示范基地", "中国购物中心百强"],
+      "historicalSignificance": "天津大悦城开业于2011年，是天津现代化商业的代表，成为年轻人购物娱乐的首选场所。",
+      "culturalHeritageLevel": "无",
+      "relatedPois": [4, 9, 11]
+    },
+    {
+      "id": 15,
+      "name": "海河夜游",
+      "category": "culture",
+      "description": "天津著名的旅游项目，乘坐游船欣赏海河两岸的夜景，感受天津的城市魅力。",
+      "address": "天津市河北区海河东路大悲院码头",
+      "position": { 
+        "x": 43, 
+        "y": 49, 
+        "lng": MOCK_COORDINATES[7][0] - 0.01, 
+        "lat": MOCK_COORDINATES[7][1] - 0.01 
+      },
+      "year": 2000,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E海河夜游%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E旅游项目%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "18:00-22:00（夏季）",
+      "phone": "022-23246688",
+      "importance": 4,
+      "tags": ["旅游项目", "城市夜景", "海河文化"],
+      "featuredProducts": ["游船门票", "讲解服务", "特色航线", "夜间表演"],
+      "honors": ["国家4A级旅游景区", "天津市旅游名片"],
+      "historicalSignificance": "海河夜游是天津著名的旅游项目，通过游船欣赏海河两岸的夜景，感受天津的城市魅力和历史文化。",
+      "culturalHeritageLevel": "无",
+      "relatedPois": [7, 17]
+    },
+    {
+      "id": 16,
+      "name": "天津图书馆",
+      "category": "culture",
+      "description": "天津最大的公共图书馆，收藏了大量图书和文献资料，是天津文化事业的重要组成部分。",
+      "address": "天津市河西区平江道58号",
+      "position": { 
+        "x": 48, 
+        "y": 57, 
+        "lng": MOCK_COORDINATES[8][0] - 0.01, 
+        "lat": MOCK_COORDINATES[8][1] - 0.01 
+      },
+      "year": 2012,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津图书馆%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E公共图书馆%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:00-20:30（周一闭馆）",
+      "phone": "022-83883600",
+      "importance": 4,
+      "tags": ["文化设施", "公共服务", "知识殿堂"],
+      "featuredProducts": ["图书借阅", "电子资源", "讲座活动", "阅读空间"],
+      "honors": ["国家一级图书馆", "天津市文化地标"],
+      "historicalSignificance": "天津图书馆是天津文化事业的重要组成部分，为市民提供了丰富的图书资源和文化服务。",
+      "culturalHeritageLevel": "市级",
+      "relatedPois": [8, 13]
+    },
+    {
+      "id": 17,
+      "name": "天津站",
+      "category": "landmark",
+      "description": "天津最大的铁路客运站，是天津交通的重要枢纽，也是天津的标志性建筑之一。",
+      "address": "天津市河北区新纬路1号",
+      "position": { 
+        "x": 45, 
+        "y": 48, 
+        "lng": MOCK_COORDINATES[7][0] + 0.03, 
+        "lat": MOCK_COORDINATES[7][1] + 0.03 
+      },
+      "year": 1888,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津站%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E交通枢纽%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "全天开放",
+      "phone": "022-60536053",
+      "importance": 5,
+      "tags": ["交通枢纽", "历史建筑", "天津地标"],
+      "featuredProducts": ["铁路客运", "地铁换乘", "商业服务", "旅游咨询"],
+      "honors": ["天津市文物保护单位", "中国最美火车站"],
+      "historicalSignificance": "天津站始建于1888年，是中国最早的火车站之一，经过多次扩建和改造，成为天津交通的重要枢纽和标志性建筑。",
+      "culturalHeritageLevel": "市级",
+      "relatedPois": [15, 18]
+    },
+    {
+      "id": 18,
+      "name": "意大利风情区",
+      "category": "landmark",
+      "description": "天津著名的历史文化街区，保存了大量意大利风格的建筑，是天津历史文化的重要组成部分。",
+      "address": "天津市河北区自由道24号",
+      "position": { 
+        "x": 46, 
+        "y": 47, 
+        "lng": MOCK_COORDINATES[7][0] + 0.04, 
+        "lat": MOCK_COORDINATES[7][1] + 0.04 
+      },
+      "year": 1902,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E意大利风情区%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E历史文化街区%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "全天开放",
+      "phone": "022-24455000",
+      "importance": 4,
+      "tags": ["历史建筑", "文化旅游", "异域风情"],
+      "featuredProducts": ["建筑观光", "餐饮娱乐", "文化展览", "婚纱摄影"],
+      "honors": ["天津市历史文化街区", "国家4A级旅游景区"],
+      "historicalSignificance": "意大利风情区始建于1902年，是天津九国租界之一，保存了大量意大利风格的建筑，是天津历史文化的重要组成部分。",
+      "culturalHeritageLevel": "市级",
+      "relatedPois": [17, 19]
+    },
+    {
+      "id": 19,
+      "name": "瓷房子",
+      "category": "landmark",
+      "description": "天津独特的瓷文化艺术建筑，用大量瓷器装饰而成，是天津的网红打卡地。",
+      "address": "天津市和平区赤峰道72号",
+      "position": { 
+        "x": 47, 
+        "y": 53, 
+        "lng": MOCK_COORDINATES[1][0] + 0.03, 
+        "lat": MOCK_COORDINATES[1][1] + 0.03 
+      },
+      "year": 2007,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E瓷房子%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E艺术建筑%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "09:00-18:00",
+      "phone": "022-27123366",
+      "importance": 4,
+      "tags": ["艺术建筑", "网红景点", "文化创意"],
+      "featuredProducts": ["门票参观", "纪念品销售", "文化讲座", "艺术展览"],
+      "honors": ["天津市文化创意产业示范基地", "中国最美建筑"],
+      "historicalSignificance": "瓷房子始建于2007年，由张连志先生创建，用大量瓷器装饰而成，成为天津独特的文化艺术建筑和网红打卡地。",
+      "culturalHeritageLevel": "无",
+      "relatedPois": [18, 1, 4]
+    },
+    {
+      "id": 20,
+      "name": "天津奥林匹克中心",
+      "category": "landmark",
+      "description": "天津现代化的体育场馆，举办过多种国际和国内体育赛事，是天津体育事业的重要组成部分。",
+      "address": "天津市南开区宾水西道393号",
+      "position": { 
+        "x": 49, 
+        "y": 55, 
+        "lng": MOCK_COORDINATES[8][0] + 0.03, 
+        "lat": MOCK_COORDINATES[8][1] + 0.03 
+      },
+      "year": 2008,
+      "images": [
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f5f5f5'/%3E%3Ctext x='400' y='300' font-family='Arial' font-size='24' fill='%23333' text-anchor='middle' dy='0.3em'%3E天津奥林匹克中心%3C/text%3E%3Ctext x='400' y='340' font-family='Arial' font-size='16' fill='%23666' text-anchor='middle' dy='0.3em'%3E体育场馆%3C/text%3E%3C/svg%3E`
+      ],
+      "openingHours": "根据赛事安排",
+      "phone": "022-23912111",
+      "importance": 4,
+      "tags": ["体育场馆", "现代建筑", "赛事举办"],
+      "featuredProducts": ["体育赛事", "演唱会", "健身服务", "参观游览"],
+      "honors": ["国家AAAA级旅游景区", "天津市体育地标"],
+      "historicalSignificance": "天津奥林匹克中心始建于2008年，为北京奥运会足球预选赛而建，成为天津体育事业的重要组成部分和现代化体育场馆。",
+      "culturalHeritageLevel": "无",
+      "relatedPois": [8, 13]
     }
   ]
 };
 
-// 获取所有POI数据
-const mapData = localPOIData.poi;
-
 // 获取分类数据
 const categories = localPOIData.categories;
+
+// 处理POI数据，替换图片资源
+const processedMapData = localPOIData.poi.map(poi => {
+  // 根据POI的名称和分类生成合适的副标题
+  let subtitle = '';
+  switch (poi.category) {
+    case 'food':
+      subtitle = '餐饮美食';
+      break;
+    case 'retail':
+      subtitle = '零售百货';
+      break;
+    case 'craft':
+      subtitle = '手工艺';
+      break;
+    case 'landmark':
+      subtitle = '地标建筑';
+      break;
+    case 'culture':
+      subtitle = '文化艺术';
+      break;
+    default:
+      subtitle = '其他';
+  }
+  
+  // 使用generatePOIImages函数生成新的图片资源
+  return {
+    ...poi,
+    images: [
+      `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E${poi.name}%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E${subtitle}%3C/text%3E%3Ccircle cx='200' cy='400' r='40' fill='%23FF6B35'/%3E%3Ccircle cx='400' cy='400' r='40' fill='%23FF6B35'/%3E%3Ccircle cx='600' cy='400' r='40' fill='%23FF6B35'/%3E%3C/svg%3E`,
+      `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E${poi.name}%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E${subtitle}%3C/text%3E%3Cpath d='M200,400 Q300,350 400,400 T600,400' stroke='%23FF6B35' stroke-width='12' fill='none'/%3E%3Cpath d='M200,400 Q300,450 400,400 T600,400' stroke='%23FF6B35' stroke-width='12' fill='none'/%3E%3C/svg%3E`,
+      `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Cdefs%3E%3ClinearGradient id='bgGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23FFA500;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='600' fill='url(%23bgGradient)'/%3E%3Crect x='100' y='100' width='600' height='400' rx='20' fill='rgba(255,255,255,0.9)' stroke='%23FFD700' stroke-width='4'/%3E%3Ctext x='400' y='250' font-family='Arial' font-size='48' font-weight='bold' fill='%23FF6B35' text-anchor='middle' dy='0.3em'%3E${poi.name}%3C/text%3E%3Ctext x='400' y='320' font-family='Arial' font-size='24' fill='%236B7280' text-anchor='middle' dy='0.3em'%3E${subtitle}%3C/text%3E%3Crect x='250' y='380' width='300' height='60' rx='30' fill='%23FF6B35'/%3E%3Ctext x='400' y='420' font-family='Arial' font-size='28' font-weight='bold' fill='white' text-anchor='middle' dy='0.3em'%3E历史悠久%3C/text%3E%3C/svg%3E`
+    ]
+  };
+});
+
+// 获取所有POI数据
+const mapData = processedMapData;
 
 export default function TianjinMap() {
   const { isDark, theme } = useTheme();
@@ -440,7 +663,7 @@ export default function TianjinMap() {
     const isAllCategories = selectedCategory === 'all';
     const isAllRegions = selectedRegion === 'all';
     
-    return mapData.filter(brand => {
+    const filtered = mapData.filter(brand => {
       const matchesCategory = isAllCategories || brand.category === selectedCategory;
       const matchesSearch = lowerSearchQuery === '' || 
                            (brand.name && brand.name.toLowerCase().includes(lowerSearchQuery)) || 
@@ -450,6 +673,9 @@ export default function TianjinMap() {
       
       return matchesCategory && matchesSearch && matchesRegion;
     });
+    
+    console.log('filteredBrands:', filtered.length, 'mapData:', mapData.length);
+    return filtered;
   }, [mapData, selectedCategory, searchQuery, selectedRegion]);
 
   // 虚拟地图数据 - 使用useMemo优化数据生成和转换
@@ -459,11 +685,6 @@ export default function TianjinMap() {
   
   // 转换本地POI为虚拟地图POI格式 - 使用useMemo缓存转换结果
   const virtualPOIs = useMemo<VirtualPOI[]>(() => {
-    // 缓存坐标转换计算结果
-    const baseX = 500;
-    const baseY = 500;
-    const offsetMultiplier = 20;
-    
     // 正确的颜色映射表，将Tailwind颜色类映射到十六进制颜色
     const colorMap: Record<string, string> = {
       'bg-yellow-500': '#eab308',
@@ -474,10 +695,31 @@ export default function TianjinMap() {
     };
     
     // 使用筛选后的POI数据，而不是全部POI数据
-    return filteredBrands.map(poi => {
+    const pois = filteredBrands.map(poi => {
       // 确保坐标数据有效，并生成合理的虚拟地图坐标
-      const x = typeof poi.position.x === 'number' ? baseX + (poi.position.x - 50) * offsetMultiplier : baseX;
-      const y = typeof poi.position.y === 'number' ? baseY + (poi.position.y - 50) * offsetMultiplier : baseY;
+      // 优化：添加坐标范围限制，确保POI不会超出地图可见范围
+      let xValue = poi.position.x;
+      let yValue = poi.position.y;
+      
+      // 验证并修正坐标值，确保它们在合理范围内（0-100）
+      if (typeof xValue !== 'number' || isNaN(xValue)) {
+        xValue = 50; // 默认值，确保POI在地图中心附近
+      } else {
+        // 限制x坐标范围在0-100之间
+        xValue = Math.max(0, Math.min(100, xValue));
+      }
+      
+      if (typeof yValue !== 'number' || isNaN(yValue)) {
+        yValue = 50; // 默认值，确保POI在地图中心附近
+      } else {
+        // 限制y坐标范围在0-100之间
+        yValue = Math.max(0, Math.min(100, yValue));
+      }
+      
+      // 直接使用POI的x和y值作为世界坐标，确保与useMapState中的坐标系统一致
+      // 这里我们将0-100范围的坐标转换为500-1500范围，以便在默认缩放级别下能看到所有POI
+      const x = 500 + (xValue - 50) * 20;
+      const y = 500 + (yValue - 50) * 20;
       
       // 获取正确的十六进制颜色
       const twColor = CATEGORY_COLORS[poi.category] || 'bg-blue-500';
@@ -492,9 +734,13 @@ export default function TianjinMap() {
         },
         category: poi.category,
         description: poi.description,
-        color: hexColor
+        color: hexColor,
+        importance: poi.importance || 1
       };
     });
+    
+    console.log('virtualPOIs生成:', pois.length, 'filteredBrands:', filteredBrands.length);
+    return pois;
   }, [filteredBrands]);
   
   // 生成初始路径 - 使用useMemo优化
@@ -659,7 +905,7 @@ export default function TianjinMap() {
           {/* 信息面板 - 响应式设计 */}
           {showInfo && selectedBrand && (
             <motion.div
-              className={`absolute bottom-0 left-0 right-0 md:bottom-4 md:left-4 md:right-auto md:w-80 lg:w-96 bg-white dark:bg-gray-800 rounded-t-xl md:rounded-xl shadow-2xl border-t md:border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden z-50 max-h-[70vh] md:max-h-[90vh]`}
+              className={`absolute bottom-16 left-0 right-0 md:bottom-20 md:left-4 md:right-auto md:w-80 lg:w-96 bg-white dark:bg-gray-800 rounded-t-xl md:rounded-xl shadow-2xl border-t md:border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden z-50 max-h-[50vh] md:max-h-[70vh]`}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -740,7 +986,7 @@ export default function TianjinMap() {
               </div>
               
               {/* 内容区域 - 添加滚动功能 */}
-              <div className="p-5 overflow-y-auto max-h-[calc(80vh-130px)] md:max-h-[calc(90vh-130px)]">
+              <div className="p-5 overflow-y-auto max-h-[calc(50vh-140px)] md:max-h-[calc(70vh-140px)] pb-8">
                 <h3 className="text-2xl font-bold mb-2 dark:text-white">{selectedBrand.name}</h3>
                 
                 {/* 重要性等级展示 */}
@@ -749,7 +995,7 @@ export default function TianjinMap() {
                     {Array.from({ length: 5 }).map((_, index) => (
                       <i 
                         key={index}
-                        className={`fas fa-star ${index < selectedBrand.importance ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} text-sm`}
+                        className={`fas fa-star ${index < (selectedBrand.importance || 0) ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} text-sm`}
                       ></i>
                     ))}
                     <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">

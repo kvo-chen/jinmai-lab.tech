@@ -2,94 +2,100 @@ import React, { useState, useEffect, Suspense, lazy, useRef, useMemo, useCallbac
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { useTheme } from '@/hooks/useTheme';
-import { Routes, Route, Outlet, useLocation, useNavigationType, Link, Navigate } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation, useNavigationType, Link, Navigate, useNavigate } from "react-router-dom";
+// 导入mock数据和postService用于初始化
+import { mockWorks } from '@/mock/works';
+import postsApi from '@/services/postService';
+import { addPost } from '@/services/postService';
+import { Post } from '@/services/postService';
 
 
-// 核心页面保持同步加载，减少导航延迟
-// 对于高频访问的页面，使用同步加载可以减少导航跳转时间
+// 核心页面 - 只保留最关键的页面进行同步加载，减少初始加载时间
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import Dashboard from "@/pages/Dashboard";
-import Explore from "@/pages/Explore";
-import WorkDetail from "@/pages/WorkDetail";
-import About from "@/pages/About";
-import Square from "@/pages/Square";
-import Community from "@/pages/Community";
-import Neo from "@/pages/Neo";
-import NewsDetail from "@/pages/NewsDetail";
-import EventDetail from "@/pages/EventDetail";
-import TestBasic from "@/pages/TestBasic";
-import SearchResults from "@/pages/SearchResults";
 
 // 优化懒加载策略：根据页面访问频率和大小重新分类
 
+// 1. 高频访问页面 - 懒加载，添加预加载提示
+const Dashboard = lazy(() => import(/* webpackChunkName: "pages-dashboard" */ "@/pages/Dashboard"));
+const Explore = lazy(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/Explore"));
+const WorkDetail = lazy(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/WorkDetail"));
+const About = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/About"));
+const Square = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Square"));
+const Community = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Community"));
+const Neo = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Neo"));
+const NewsDetail = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/NewsDetail"));
+const EventDetail = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/EventDetail"));
+const TestBasic = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/TestBasic"));
+const SearchResults = lazy(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/SearchResults"));
+
 // 2. 高频访问但较大的页面 - 懒加载，优先加载
-const Create = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Create"));
-const Tools = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Tools"));
-const Settings = lazy(() => import(/* webpackChunkName: "core-pages" */ "@/pages/Settings"));
+const Create = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Create"));
+const Tools = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Tools"));
+const Settings = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/Settings"));
 // 账户设置相关页面 - 懒加载
-const ProfileEdit = lazy(() => import(/* webpackChunkName: "account-pages" */ "@/pages/ProfileEdit"));
-const ChangePassword = lazy(() => import(/* webpackChunkName: "account-pages" */ "@/pages/ChangePassword"));
-const AccountSecurity = lazy(() => import(/* webpackChunkName: "account-pages" */ "@/pages/AccountSecurity"));
+const ProfileEdit = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/ProfileEdit"));
+const ChangePassword = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/ChangePassword"));
+const AccountSecurity = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/AccountSecurity"));
 
-// 3. 中频访问页面 - 懒加载，按功能模块分组
-// 创作和工具相关
-const Generation = lazy(() => import(/* webpackChunkName: "creation-tools" */ "@/pages/Generation"));
-const InputHub = lazy(() => import(/* webpackChunkName: "creation-tools" */ "@/pages/InputHub"));
-const Drafts = lazy(() => import(/* webpackChunkName: "creation-tools" */ "@/pages/Drafts"));
+// 创作和工具相关 - 懒加载
+const Generation = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Generation"));
+const InputHub = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/InputHub"));
+const Drafts = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Drafts"));
 
-// 文化和知识相关
-const CulturalKnowledge = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/CulturalKnowledge"));
-const Tianjin = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/Tianjin"));
-const TianjinMap = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/TianjinMap"));
-const CulturalEvents = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/CulturalEvents"));
-const CulturalNewsPage = lazy(() => import(/* webpackChunkName: "cultural-content" */ "@/pages/CulturalNewsPage"));
+// 文化和知识相关 - 懒加载
+const CulturalKnowledge = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalKnowledge"));
+const Tianjin = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/Tianjin"));
+const TianjinMap = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/TianjinMap"));
+const CulturalEvents = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalEvents"));
+const CulturalNewsPage = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalNewsPage"));
 
-// 4. 低频访问页面 - 懒加载，按功能分组
-// 管理相关
-const Admin = lazy(() => import(/* webpackChunkName: "admin-pages" */ "@/pages/admin/Admin"));
-const AdminAnalytics = lazy(() => import(/* webpackChunkName: "admin-pages" */ "@/pages/AdminAnalytics"));
-const ErrorMonitoringDashboard = lazy(() => import(/* webpackChunkName: "admin-pages" */ "@/components/ErrorMonitoringDashboard"));
+// 管理相关 - 懒加载
+const Admin = lazy(() => import(/* webpackChunkName: "pages-admin" */ "@/pages/admin/Admin"));
+const AdminAnalytics = lazy(() => import(/* webpackChunkName: "pages-admin" */ "@/pages/AdminAnalytics"));
+const ErrorMonitoringDashboard = lazy(() => import(/* webpackChunkName: "components-admin" */ "@/components/ErrorMonitoringDashboard"));
 
-// 会员和激励相关
-const Membership = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/Membership"));
-const MembershipPayment = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/MembershipPayment"));
-const MembershipBenefits = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/MembershipBenefits"));
-const Incentives = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/Incentives"));
-const PointsMall = lazy(() => import(/* webpackChunkName: "membership" */ "@/pages/PointsMall"));
+// 会员和激励相关 - 懒加载
+const Membership = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/Membership"));
+const MembershipPayment = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/MembershipPayment"));
+const MembershipBenefits = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/MembershipBenefits"));
+const Incentives = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/Incentives"));
+const PointsMall = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/PointsMall"));
 
-// 社区和互动相关
-const Leaderboard = lazy(() => import(/* webpackChunkName: "community-features" */ "@/pages/Leaderboard"));
-const DailyCheckin = lazy(() => import(/* webpackChunkName: "community-features" */ "@/components/DailyCheckin"));
-const CreativeMatchmaking = lazy(() => import(/* webpackChunkName: "community-features" */ "@/components/CreativeMatchmaking"));
-const AchievementMuseum = lazy(() => import(/* webpackChunkName: "community-features" */ "@/components/AchievementMuseum"));
+// 社区和互动相关 - 懒加载
+const Leaderboard = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Leaderboard"));
+const DailyCheckin = lazy(() => import(/* webpackChunkName: "components-community" */ "@/components/DailyCheckin"));
+const CreativeMatchmaking = lazy(() => import(/* webpackChunkName: "components-community" */ "@/components/CreativeMatchmaking"));
+const AchievementMuseum = lazy(() => import(/* webpackChunkName: "components-community" */ "@/components/AchievementMuseum"));
+// 好友系统相关 - 懒加载
+const Friends = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Friends"));
 
-// 实验和特色功能
-const Lab = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/Lab"));
-const ParticleArt = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/ParticleArt"));
-const Games = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/Games"));
-const CollaborationDemo = lazy(() => import(/* webpackChunkName: "experimental-features" */ "@/pages/CollaborationDemo"));
+// 实验和特色功能 - 懒加载
+const Lab = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/Lab"));
+const ParticleArt = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/ParticleArt"));
+const Games = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/Games"));
+const CollaborationDemo = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/CollaborationDemo"));
 
-// 辅助和测试页面
-const TestPage = lazy(() => import(/* webpackChunkName: "auxiliary-pages" */ "@/pages/TestPage"));
-const ImageTest = lazy(() => import(/* webpackChunkName: "auxiliary-pages" */ "@/pages/ImageTest"));
-const GitHubImageTestPage = lazy(() => import(/* webpackChunkName: "auxiliary-pages" */ "@/pages/GitHubImageTestPage"));
+// 辅助和测试页面 - 懒加载
+const TestPage = lazy(() => import(/* webpackChunkName: "pages-test" */ "@/pages/TestPage"));
+const ImageTest = lazy(() => import(/* webpackChunkName: "pages-test" */ "@/pages/ImageTest"));
+const GitHubImageTestPage = lazy(() => import(/* webpackChunkName: "pages-test" */ "@/pages/GitHubImageTestPage"));
 
-// 其他低频页面
-const Terms = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Terms"));
-const Help = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Help"));
-const Privacy = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Privacy"));
-const BrandGuide = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/BrandGuide"));
-const Authenticity = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Authenticity"));
-const Wizard = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Wizard"));
-const AnalyticsPage = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/Analytics"));
-const UserCollection = lazy(() => import(/* webpackChunkName: "other-pages" */ "@/pages/UserCollection"));
+// 其他低频页面 - 懒加载
+const Terms = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Terms"));
+const Help = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Help"));
+const Privacy = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Privacy"));
+const BrandGuide = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/BrandGuide"));
+const Authenticity = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Authenticity"));
+const Wizard = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Wizard"));
+const AnalyticsPage = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Analytics"));
+const UserCollection = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/UserCollection"));
 
-// 特殊功能组件
-const IPIncubationCenter = lazy(() => import(/* webpackChunkName: "special-features" */ "@/components/IPIncubationCenter"));
-const CrossDeviceSync = lazy(() => import(/* webpackChunkName: "special-features" */ "@/components/CrossDeviceSync"));
-const BlindBoxShop = lazy(() => import(/* webpackChunkName: "special-features" */ "@/components/BlindBoxShop"));
+// 特殊功能组件 - 懒加载
+const IPIncubationCenter = lazy(() => import(/* webpackChunkName: "components-other" */ "@/components/IPIncubationCenter"));
+const CrossDeviceSync = lazy(() => import(/* webpackChunkName: "components-other" */ "@/components/CrossDeviceSync"));
+const BlindBoxShop = lazy(() => import(/* webpackChunkName: "components-other" */ "@/components/BlindBoxShop"));
 
 // 优化LazyComponent和LoadingSkeleton
 // 改进LoadingSkeleton，添加更多视觉反馈
@@ -171,18 +177,18 @@ import MobileLayout from '@/components/MobileLayout';
 import PrivateRoute from '@/components/PrivateRoute';
 import AdminRoute from '@/components/AdminRoute';
 
-// 创作者仪表盘组件
-import CreatorDashboard from '@/components/CreatorDashboard';
-// PWA 安装按钮组件
-import PWAInstallButton from '@/components/PWAInstallButton';
-// 首次启动引导组件
-import FirstLaunchGuide from '@/components/FirstLaunchGuide';
-// 悬浮AI助手组件
-import FloatingAIAssistant from '@/components/FloatingAIAssistant';
-// 用户反馈组件
-import UserFeedback from '@/components/UserFeedback';
-// 满意度调查组件
-import SatisfactionSurvey from '@/components/SatisfactionSurvey';
+// 创作者仪表盘组件 - 懒加载
+const CreatorDashboard = lazy(() => import(/* webpackChunkName: "components-core" */ '@/components/CreatorDashboard'));
+// PWA 安装按钮组件 - 懒加载
+const PWAInstallButton = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/PWAInstallButton'));
+// 首次启动引导组件 - 懒加载
+const FirstLaunchGuide = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/FirstLaunchGuide'));
+// 悬浮AI助手组件 - 懒加载
+const FloatingAIAssistant = lazy(() => import(/* webpackChunkName: "components-ai" */ '@/components/FloatingAIAssistant'));
+// 用户反馈组件 - 懒加载
+const UserFeedback = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/UserFeedback'));
+// 满意度调查组件 - 懒加载
+const SatisfactionSurvey = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/SatisfactionSurvey'));
 // 满意度调查服务
 import surveyService from '@/services/surveyService';
 // 认证上下文
@@ -196,6 +202,37 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false);
   // 添加用户反馈状态
   const [showFeedback, setShowFeedback] = useState(false);
+  
+  // 初始化mock数据到localStorage
+  useEffect(() => {
+    // 检查localStorage中是否已有数据
+    const existingPosts = postsApi.getPosts();
+    if (existingPosts.length === 0) {
+      // 将mockWorks转换为Post类型并添加到localStorage
+      mockWorks.forEach(work => {
+        // 转换Work类型为Post类型
+        const postData = {
+          title: work.title,
+          thumbnail: work.thumbnail,
+          category: work.category as any,
+          tags: work.tags,
+          description: work.description || '',
+          creativeDirection: '',
+          culturalElements: [],
+          colorScheme: [],
+          toolsUsed: [],
+          // 从work中提取其他必要字段
+          resolution: undefined,
+          fileSize: undefined,
+          downloadCount: 0,
+          license: undefined
+        };
+        
+        // 使用addPost函数添加到localStorage
+        addPost(postData);
+      });
+    }
+  }, []);
   
   useEffect(() => {
     const checkIsMobile = () => {
@@ -347,6 +384,7 @@ export default function App() {
     // 认证上下文
     const { user } = useContext(AuthContext);
     const { isDark } = useTheme(); // 获取当前主题状态
+    const navigate = useNavigate(); // 导入导航函数
     // 使用外部App组件的isMobile状态，避免状态不一致
     // 内部状态管理
     const [showCommunityMessages, setShowCommunityMessages] = useState(false);
@@ -622,26 +660,23 @@ export default function App() {
         <Route element={
           <AnimatedPage>
             {isMobile ? (
-              <MobileLayout>
-                <Outlet />
-              </MobileLayout>
+              <MobileLayout><Outlet /></MobileLayout>
             ) : (
-              <SidebarLayout>
-                <Outlet />
-              </SidebarLayout>
+              <SidebarLayout><Outlet /></SidebarLayout>
             )}
           </AnimatedPage>
         }>
-          <Route path="/explore" element={<RouteCache><Explore /></RouteCache>} />
-          <Route path="/explore/:id" element={<WorkDetail />} />
+          <Route path="/explore" element={<RouteCache><LazyComponent><Explore /></LazyComponent></RouteCache>} />
+          <Route path="/explore/:id" element={<LazyComponent><WorkDetail /></LazyComponent>} />
           <Route path="/tools" element={<RouteCache><LazyComponent><Tools /></LazyComponent></RouteCache>} />
-          <Route path="/about" element={<RouteCache><About /></RouteCache>} />
-          <Route path="/neo" element={<Neo />} />
-          <Route path="/square" element={<PrivateRoute><Square /></PrivateRoute>} />
-          <Route path="/square/:id" element={<PrivateRoute><Square /></PrivateRoute>} />
-          <Route path="/community" element={<PrivateRoute><Community /></PrivateRoute>} />
-          <Route path="/dashboard" element={<RouteCache><PrivateRoute><Dashboard /></PrivateRoute></RouteCache>} />
+          <Route path="/about" element={<RouteCache><LazyComponent><About /></LazyComponent></RouteCache>} />
+          <Route path="/neo" element={<LazyComponent><Neo /></LazyComponent>} />
+          <Route path="/square" element={<LazyComponent><PrivateRoute><Square /></PrivateRoute></LazyComponent>} />
+          <Route path="/square/:id" element={<LazyComponent><PrivateRoute><Square /></PrivateRoute></LazyComponent>} />
+          <Route path="/community" element={<LazyComponent><PrivateRoute><Community /></PrivateRoute></LazyComponent>} />          <Route path="/friends" element={<LazyComponent><PrivateRoute><Friends /></PrivateRoute></LazyComponent>} />
+          <Route path="/dashboard" element={<RouteCache><LazyComponent><PrivateRoute><Dashboard /></PrivateRoute></LazyComponent></RouteCache>} />
           <Route path="/create" element={<LazyComponent><PrivateRoute><Create /></PrivateRoute></LazyComponent>} />
+          <Route path="/creates" element={<Navigate to="/create" replace />} />
           
           {/* 大型组件和低频访问页面使用懒加载 */}
           <Route path="/particle-art" element={<LazyComponent><ParticleArt /></LazyComponent>} />
@@ -671,12 +706,16 @@ export default function App() {
           <Route path="/collections" element={<LazyComponent><PrivateRoute><UserCollection /></PrivateRoute></LazyComponent>} />
           <Route path="/knowledge" element={<LazyComponent><PrivateRoute><CulturalKnowledge /></PrivateRoute></LazyComponent>} />
           <Route path="/knowledge/:type/:id" element={<LazyComponent><PrivateRoute><CulturalKnowledge /></PrivateRoute></LazyComponent>} />
+          <Route path="/cultural-knowledge" element={<LazyComponent><PrivateRoute><CulturalKnowledge /></PrivateRoute></LazyComponent>} />
           <Route path="/news" element={<LazyComponent><CulturalNewsPage /></LazyComponent>} />
-          <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/news/:id" element={<LazyComponent><NewsDetail /></LazyComponent>} />
+          <Route path="/cultural-news" element={<LazyComponent><CulturalNewsPage /></LazyComponent>} />
           <Route path="/tianjin" element={<LazyComponent><Tianjin /></LazyComponent>} />
           <Route path="/tianjin/map" element={<LazyComponent><TianjinMap /></LazyComponent>} />
+          <Route path="/tianjin-map" element={<LazyComponent><TianjinMap /></LazyComponent>} />
           <Route path="/events" element={<LazyComponent><CulturalEvents /></LazyComponent>} />
-          <Route path="/events/:id" element={<EventDetail />} />
+          <Route path="/events/:id" element={<LazyComponent><EventDetail /></LazyComponent>} />
+          <Route path="/cultural-events" element={<LazyComponent><CulturalEvents /></LazyComponent>} />
           
           {/* 创新功能路由 - 懒加载 */}
           <Route path="/daily-checkin" element={<LazyComponent><PrivateRoute><DailyCheckin /></PrivateRoute></LazyComponent>} />
@@ -701,21 +740,29 @@ export default function App() {
         </Route>
       </Routes>
       
-      {/* PWA 安装按钮 */}
-      <PWAInstallButton />
-      {/* 恢复FirstLaunchGuide组件，优化首次启动体验 */}
+      {/* PWA 安装按钮 - 懒加载，隐藏固定按钮，只在个人菜单中显示 */}
+      <LazyComponent>
+        <PWAInstallButton hideFixedButton={true} />
+      </LazyComponent>
+      {/* 恢复FirstLaunchGuide组件，优化首次启动体验 - 懒加载 */}
       <LazyComponent>
         <FirstLaunchGuide />
       </LazyComponent>
       
-      {/* 悬浮AI助手 */}
-      <FloatingAIAssistant />
+      {/* 悬浮AI助手 - 懒加载 */}
+      <LazyComponent>
+        <FloatingAIAssistant />
+      </LazyComponent>
       
-      {/* 用户反馈组件 */}
-      <UserFeedback isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
+      {/* 用户反馈组件 - 懒加载 */}
+      <LazyComponent>
+        <UserFeedback isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
+      </LazyComponent>
       
       {/* 优化：使用独立的FloatingButtons组件，避免不必要的全局重新渲染 */}
-      <FloatingButtons />
+      <LazyComponent>
+        <FloatingButtons />
+      </LazyComponent>
       
 
     </div>

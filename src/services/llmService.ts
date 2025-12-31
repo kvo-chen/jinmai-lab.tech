@@ -5,6 +5,7 @@
 
 // 导入知识库服务
 import { knowledgeBaseService } from './knowledgeBaseService';
+import apiClient from '@/lib/apiClient';
 
 // 模型类型定义
 export interface LLMModel {
@@ -201,6 +202,37 @@ export interface ModelConfig {
   enable_notifications: boolean; // 是否启用通知
 }
 
+// 通用图片生成参数类型
+export type GenerateImageParams = {
+  prompt: string
+  size?: string
+  n?: number
+  seed?: number
+  guidance_scale?: number
+  response_format?: 'url' | 'b64_json'
+  watermark?: boolean
+  model?: string
+  // 新增高级配置参数
+  steps?: number
+  style?: string
+  negative_prompt?: string
+  aspect_ratio?: string
+  quality?: 'standard' | 'hd' | 'uhd'
+  enable_style_optimization?: boolean
+  reference_image?: string
+  reference_strength?: number
+  color_palette?: string[]
+  composition_guidance?: string
+  detail_level?: 'low' | 'medium' | 'high'
+}
+
+// 通用图片生成响应类型
+export type GenerateImageResponse = {
+  ok: boolean
+  data?: any
+  error?: string
+}
+
 // 可用的模型列表
 export const AVAILABLE_MODELS: LLMModel[] = [
   {
@@ -327,7 +359,7 @@ export const DEFAULT_CONFIG: ModelConfig = {
   wenxin_base_url: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
   // 新增通义千问模型配置默认值
   qwen_model: 'qwen-plus',
-  qwen_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  qwen_base_url: 'https://dashscope.aliyuncs.com/api/v1',
   // 新增ChatGPT模型配置默认值
   chatgpt_model: 'gpt-4o',
   chatgpt_base_url: 'https://api.openai.com/v1',
@@ -476,10 +508,43 @@ class LLMService {
    * 构造函数，初始化配置
    */
   constructor() {
+    // 从localStorage加载保存的模型配置
+    this.loadConfigFromStorage();
     // 从环境变量读取API密钥并更新模型配置
     this.loadApiKeysFromEnv();
     // 初始化会话系统
     this.initializeSessions();
+    // 从localStorage加载保存的当前模型
+    this.loadCurrentModelFromStorage();
+  }
+  
+  /**
+   * 从localStorage加载模型配置
+   */
+  private loadConfigFromStorage(): void {
+    try {
+      const savedConfig = localStorage.getItem('LLM_CONFIG');
+      if (savedConfig) {
+        const parsedConfig = JSON.parse(savedConfig);
+        this.modelConfig = { ...this.modelConfig, ...parsedConfig };
+      }
+    } catch (error) {
+      console.error('Failed to load config from localStorage:', error);
+    }
+  }
+  
+  /**
+   * 从localStorage加载保存的当前模型
+   */
+  private loadCurrentModelFromStorage(): void {
+    try {
+      const savedModelId = localStorage.getItem('LLM_CURRENT_MODEL');
+      if (savedModelId) {
+        this.setCurrentModel(savedModelId, true);
+      }
+    } catch (error) {
+      console.error('Failed to load current model from localStorage:', error);
+    }
   }
 
   /**
@@ -1572,6 +1637,39 @@ class LLMService {
   }
   
   /**
+   * 生成图片
+   * 根据当前模型动态路由图片生成请求
+   */
+  async generateImage(params: GenerateImageParams): Promise<GenerateImageResponse> {
+    const modelId = this.currentModel.id;
+    let endpoint = '/api/doubao/images/generate';
+    
+    // 根据当前模型动态选择API端点
+    switch (modelId) {
+      case 'qwen':
+        endpoint = '/api/qwen/images/generate';
+        break;
+      case 'deepseek':
+        endpoint = '/api/deepseek/images/generate';
+        break;
+      case 'kimi':
+        endpoint = '/api/kimi/images/generate';
+        break;
+      default:
+        endpoint = '/api/doubao/images/generate';
+    }
+    
+    try {
+      const resp = await apiClient.post<GenerateImageResponse, GenerateImageParams>(endpoint, params, { retries: 1, timeoutMs: 20000 });
+      if (!resp.ok) return { ok: false, error: resp.error };
+      return resp.data as GenerateImageResponse;
+    } catch (error) {
+      console.error('Image generation failed:', error);
+      return { ok: false, error: error instanceof Error ? error.message : '图片生成失败' };
+    }
+  }
+
+  /**
    * 清除缓存
    * 支持按多种条件清除
    */
@@ -2201,39 +2299,59 @@ class LLMService {
     onDelta?: (chunk: string) => void;
     signal?: AbortSignal;
   }): Promise<string> {
-    const apiKey = this.modelConfig.qwen_api_key;
-    if (!apiKey) {
-      throw new Error('通义千问API密钥未配置');
-    }
+    // 通过后端代理服务器调用通义千问API，避免CORS错误
+    // 不再需要前端API密钥，由后端从环境变量获取
     
-    const response = await fetch(`${this.modelConfig.qwen_base_url}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.modelConfig.qwen_model,
-        messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
-        stream: !!options?.onDelta,
-        temperature: this.modelConfig.temperature,
-        top_p: this.modelConfig.top_p,
-        max_tokens: this.modelConfig.max_tokens,
-      }),
-      signal: options?.signal,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`通义千问API请求失败: ${response.status} ${response.statusText}`);
-    }
-    
+    // 对于流式响应，暂时不使用apiClient，因为它不支持流式处理
     if (options?.onDelta) {
+      const response = await fetch(`http://localhost:3010/api/qwen/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.modelConfig.qwen_model,
+          messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+          stream: true,
+          temperature: this.modelConfig.temperature,
+          top_p: this.modelConfig.top_p,
+          max_tokens: this.modelConfig.max_tokens,
+        }),
+        signal: options?.signal,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`通义千问API请求失败: ${response.status} ${response.statusText} - ${errorData.error || ''}`);
+      }
+      
       // 处理流式响应
       return this.handleStreamingResponse(response, options.onDelta);
     } else {
+      // 非流式响应直接使用fetch，确保发送到正确的端口
+      const response = await fetch(`http://localhost:3010/api/qwen/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.modelConfig.qwen_model,
+          messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+          stream: false,
+          temperature: this.modelConfig.temperature,
+          top_p: this.modelConfig.top_p,
+          max_tokens: this.modelConfig.max_tokens,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`通义千问API请求失败: ${response.error || '未知错误'}`);
+      }
+      
       // 处理非流式响应
       const data = await response.json();
-      return data.choices[0]?.message?.content || '未获取到响应';
+      // 通义千问API返回格式不同，直接返回text字段
+      return data.data?.output?.text || data.output?.text || '未获取到响应';
     }
   }
   

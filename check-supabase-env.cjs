@@ -1,4 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+// 使用CommonJS语法，确保在Node.js环境中可以运行
+const { createClient } = require('@supabase/supabase-js');
+const dotenv = require('dotenv');
+
+// 加载.env文件中的环境变量
+dotenv.config();
 
 // 模拟环境变量加载
 const loadEnv = () => {

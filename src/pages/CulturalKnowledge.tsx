@@ -792,7 +792,7 @@ const craftTechniques = [
   }
 ];
 
-type TabType = 'stories' | 'tutorials' | 'elements' | 'encyclopedia' | 'figures' | 'works' | 'crafts' | 'assets';
+type TabType = 'stories' | 'tutorials' | 'elements' | 'encyclopedia' | 'figures' | 'works' | 'crafts' | 'assets' | 'activities';
 
 // 调试用的isSafeForProxy函数
 const isSafeForProxy = (url: string) => {
