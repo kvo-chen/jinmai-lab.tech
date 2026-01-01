@@ -115,14 +115,17 @@ class PerformanceMonitor {
   init() {
     if (this.isInitialized) return;
 
-    // 优化：只在开发环境启用完整的性能监控
     const isDev = import.meta.env.DEV;
     
     // 监听核心 Web Vitals - 始终启用，开销较小
     this.setupWebVitalsObserver();
     
-    // 监听资源加载性能 - 只在开发环境启用，避免生产环境开销
-    if (isDev) {
+    // 生产环境启用采样性能监控，降低性能开销
+    // 默认采样率：10%，可通过环境变量配置
+    const shouldEnableFullMonitoring = isDev || this.shouldEnableSampledMonitoring();
+    
+    // 监听资源加载性能 - 在开发环境或采样命中时启用
+    if (shouldEnableFullMonitoring) {
       this.setupResourceObserver();
       this.setupNavigationObserver();
       this.setupMemoryMonitoring();
@@ -130,6 +133,23 @@ class PerformanceMonitor {
     }
     
     this.isInitialized = true;
+  }
+  
+  /**
+   * 检查是否应该启用采样性能监控
+   * @returns 是否启用采样监控
+   */
+  private shouldEnableSampledMonitoring(): boolean {
+    try {
+      // 从环境变量获取采样率，默认10%
+      const sampleRate = parseFloat(import.meta.env.PERFORMANCE_MONITOR_SAMPLE_RATE || '0.1');
+      
+      // 随机数判断是否命中采样
+      return Math.random() <= sampleRate;
+    } catch (error) {
+      console.error('Failed to determine if sampled monitoring should be enabled:', error);
+      return false;
+    }
   }
 
   /**

@@ -23,7 +23,7 @@ const initSharedObserver = () => {
         });
       },
       {
-        rootMargin: '200px', // 提前200px开始加载，优化用户体验
+        rootMargin: '500px', // 提前500px开始加载，优化用户体验
         threshold: 0.01, // 只要有1%可见就开始加载
       }
     );
@@ -157,10 +157,38 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     return src.startsWith('data:image/svg+xml');
   }, [src]);
   
+  // 性能监控：记录图片加载开始时间
+  const loadStartTime = useRef<number | null>(null);
+  
+  // 性能监控：记录图片加载统计
+  const logImagePerformance = (status: 'success' | 'error' | 'load') => {
+    if (typeof window !== 'undefined' && window.performance) {
+      const endTime = performance.now();
+      const loadTime = loadStartTime.current ? endTime - loadStartTime.current : 0;
+      
+      // 只在开发环境或性能监控模式下记录
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[ImagePerformance] ${status}: ${alt}`, {
+          url: currentSrc,
+          loadTime: `${loadTime.toFixed(2)}ms`,
+          status,
+          priority,
+          quality,
+          responsive,
+          isVisible
+        });
+      }
+      
+      // 可以发送到监控服务
+      // 例如：sendToMonitoringService({ url: currentSrc, loadTime, status, priority });
+    }
+  };
+  
   // 图片加载完成处理
   const handleLoad = () => {
     setIsLoaded(true);
     setIsError(false);
+    logImagePerformance('success');
     if (onLoad) {
       onLoad();
     }
@@ -170,6 +198,7 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsError(true);
     setIsLoaded(false);
+    logImagePerformance('error');
     if (onError) {
       onError();
     }
@@ -191,11 +220,20 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
           img.src = '';
           setTimeout(() => {
             img.src = currentSrc;
+            loadStartTime.current = performance.now();
           }, 0);
         }
       }, retryDelay);
     }
   };
+  
+  // 监控图片加载开始时间
+  useEffect(() => {
+    if (isVisible) {
+      loadStartTime.current = performance.now();
+      logImagePerformance('load');
+    }
+  }, [isVisible]);
   
   // 当src变化时重置加载状态
   useEffect(() => {
@@ -268,19 +306,42 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
 
     // 高优先级图片立即预加载
     if (priority) {
-      // 预加载图片到浏览器缓存
-      const img = new Image();
-      img.src = currentSrc;
-      img.srcset = srcSet || '';
+      // 创建图片对象进行预加载
+      const preloadImage = () => {
+        const img = new Image();
+        img.src = currentSrc;
+        if (srcSet) {
+          img.srcset = srcSet;
+        }
+        return img;
+      };
+      
+      // 立即预加载
+      preloadImage();
       
       // 对于特别重要的图片，使用fetch进行预加载，支持缓存控制
-      if (priority && typeof fetch !== 'undefined') {
+      if (typeof fetch !== 'undefined') {
         fetch(currentSrc, {
           mode: 'no-cors',
           cache: 'force-cache'
         }).catch(() => {
           // 忽略fetch错误，仍会使用img标签加载
         });
+      }
+    } else {
+      // 非优先级图片，但仍在视口附近的，也进行预加载
+      if (containerRef.current) {
+        // 检查元素是否在视口附近（500px以内）
+        const rect = containerRef.current.getBoundingClientRect();
+        const isNearViewport = rect.top < window.innerHeight + 500 && rect.bottom > -500;
+        
+        if (isNearViewport) {
+          const img = new Image();
+          img.src = currentSrc;
+          if (srcSet) {
+            img.srcset = srcSet;
+          }
+        }
       }
     }
   }, [priority, currentSrc, srcSet]);

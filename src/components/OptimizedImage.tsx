@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { processImageUrl, buildSrcSet } from '../utils/imageUrlUtils'
+import { performanceMonitor } from '../utils/performanceMonitor'
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   /**
@@ -57,11 +59,47 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   /**
    * 图片格式集合（用于picture标签）
    */
-  formats?: Array<'webp' | 'avif' | 'jpeg' | 'png'>
+  formats?: Array<'webp' | 'avif' | 'jpeg' | 'png' | 'gif'>
   /**
    * 响应式图片尺寸集合
    */
   responsiveSizes?: number[]
+  /**
+   * 图片质量
+   */
+  quality?: 'low' | 'medium' | 'high'
+  /**
+   * 响应式宽度列表
+   */
+  responsiveWidths?: number[]
+  /**
+   * 是否自动选择格式
+   */
+  autoFormat?: boolean
+  /**
+   * 图片处理选项
+   */
+  processingOptions?: {
+    width?: number
+    height?: number
+    fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside'
+    crop?: string
+    dpr?: number
+    sharpen?: boolean
+    blur?: number
+  }
+  /**
+   * 是否预加载图片
+   */
+  preload?: boolean
+  /**
+   * 图片加载策略
+   */
+  loading?: 'lazy' | 'eager'
+  /**
+   * 图片解码策略
+   */
+  decoding?: 'async' | 'sync' | 'auto'
 }
 
 // 共享的Intersection Observer实例，减少创建实例的开销
@@ -109,8 +147,15 @@ const OptimizedImage = React.memo(({
   srcSet,
   sizes,
   priority = false,
-  formats = ['webp', 'avif'],
-  responsiveSizes = [320, 640, 1024, 1600, 2048],
+  formats = ['avif', 'webp', 'jpeg'],
+  responsiveSizes = [240, 320, 480, 640, 800, 1024, 1280, 1600, 2048],
+  quality = 'medium',
+  responsiveWidths = [240, 320, 480, 640, 800, 1024, 1280, 1600, 2048],
+  autoFormat = true,
+  processingOptions,
+  preload = false,
+  loading = 'lazy',
+  decoding = 'async',
   ...rest
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -124,17 +169,26 @@ const OptimizedImage = React.memo(({
   // 图片性能统计
   const trackPerformance = useCallback((status: 'success' | 'error') => {
     if (enablePerformanceMonitoring && typeof window !== 'undefined') {
-      const imageService = (window as any).imageService;
-      if (imageService && typeof imageService.trackImageLoad === 'function') {
-        imageService.trackImageLoad({
+      // 使用performanceMonitor记录图片加载性能
+      performanceMonitor.recordMetric({
+        name: 'image-load',
+        value: status === 'success' ? Date.now() - loadStartTime.current : 0,
+        unit: 'ms',
+        description: `Image load ${status}`,
+        timestamp: Date.now(),
+        category: 'image',
+        metadata: {
           src: src || '',
           status,
-          loadTime: status === 'success' ? Date.now() - loadStartTime.current : 0,
-          element: imgRef.current
-        });
-      }
+          element: imgRef.current,
+          quality,
+          format: formats.join(','),
+          lazy,
+          priority
+        }
+      });
     }
-  }, [enablePerformanceMonitoring, src]);
+  }, [enablePerformanceMonitoring, src, quality, formats, lazy, priority]);
 
   // 处理图片加载
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -159,10 +213,44 @@ const OptimizedImage = React.memo(({
     }
   }, [src]);
 
+
+
+  // 预加载图片
+  useEffect(() => {
+    if ((preload || priority) && src) {
+      try {
+        const preloadImg = new Image();
+        preloadImg.src = processImageUrl(src, {
+          quality,
+          width: processingOptions?.width,
+          height: processingOptions?.height,
+          format: autoFormat ? undefined : formats[0],
+          autoFormat,
+          responsive: true
+        });
+        
+        // 预加载srcSet中的所有图片
+        if (srcSet || generatedSrcSet) {
+          const finalSrcSetValue = srcSet || generatedSrcSet;
+          const srcSetUrls = finalSrcSetValue.split(',').map(srcItem => {
+            return srcItem.trim().split(' ')[0];
+          });
+          
+          srcSetUrls.forEach(url => {
+            const img = new Image();
+            img.src = url;
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to preload image:', error);
+      }
+    }
+  }, [preload, priority, src, srcSet, quality, processingOptions, autoFormat, formats]);
+
   // 设置懒加载和优先级
   useEffect(() => {
-    // 如果是高优先级图片，直接加载，不使用懒加载
-    if (priority || !lazy) {
+    // 如果是高优先级图片或预加载图片，直接加载，不使用懒加载
+    if (priority || preload || !lazy) {
       triggerImageLoad();
       return;
     }
@@ -187,7 +275,7 @@ const OptimizedImage = React.memo(({
         sharedObserver?.unobserve(containerRef.current);
       }
     };
-  }, [lazy, src, triggerImageLoad, priority]);
+  }, [lazy, src, triggerImageLoad, priority, preload]);
 
   // 渲染占位符
   const renderPlaceholder = useMemo(() => {
@@ -226,45 +314,77 @@ const OptimizedImage = React.memo(({
     }
   }, [isLoaded, placeholder, blurPlaceholder, placeholderColor, alt]);
 
+  // 处理图片URL
+  const processedSrc = useMemo(() => {
+    if (!imageSrc) return undefined;
+    return processImageUrl(imageSrc, {
+      quality,
+      width: processingOptions?.width,
+      height: processingOptions?.height,
+      format: autoFormat ? undefined : formats[0],
+      autoFormat,
+      responsive: true
+    });
+  }, [imageSrc, quality, processingOptions, autoFormat, formats]);
+
+  // 处理错误图片URL
+  const processedErrorSrc = useMemo(() => {
+    if (!errorSrc) return undefined;
+    return processImageUrl(errorSrc, {
+      quality,
+      width: processingOptions?.width,
+      height: processingOptions?.height,
+      format: autoFormat ? undefined : formats[0],
+      autoFormat,
+      responsive: true
+    });
+  }, [errorSrc, quality, processingOptions, autoFormat, formats]);
+
   // 最终显示的图片URL
-  const finalSrc = isError ? errorSrc || src : imageSrc;
+  const finalSrc = isError ? processedErrorSrc || processedSrc : processedSrc;
 
   // 图片类名
   const imgClassName = useMemo(() => {
-    return `w-full h-full object-cover transition-all duration-500 ease-in-out ${rest.className || ''}`;
-  }, [rest.className]);
+    const className = (rest as React.ImgHTMLAttributes<HTMLImageElement>).className;
+    return `w-full h-full object-cover transition-all duration-500 ease-in-out ${className || ''}`;
+  }, [(rest as React.ImgHTMLAttributes<HTMLImageElement>).className]);
 
-  // 生成不同格式的图片源
-  const generateSourceSet = useMemo(() => {
-    if (!finalSrc || !useModernFormats) return [];
+  // 生成响应式图片源集合
+  const generatedSrcSet = useMemo(() => {
+    if (!src || !useModernFormats) return '';
+    return buildSrcSet(src, responsiveWidths, quality);
+  }, [src, useModernFormats, responsiveWidths, quality]);
 
-    // 提取基础文件名和扩展名
-    const ext = finalSrc.split('.').pop()?.toLowerCase() || 'jpg';
-    const baseUrl = finalSrc.replace(new RegExp(`\.${ext}$`), '');
-
-    // 生成不同格式和尺寸的图片源
-    const sources = formats.map(format => {
-      // 生成不同尺寸的源集
-      const sizeSrcSet = responsiveSizes.map(size => `${baseUrl}-${size}.${format} ${size}w`).join(', ');
-      return {
-        type: `image/${format}`,
-        srcSet: sizeSrcSet
-      };
-    });
-
-    return sources;
-  }, [finalSrc, useModernFormats, formats, responsiveSizes]);
+  // 最终使用的srcSet
+  const finalSrcSet = srcSet || generatedSrcSet;
 
   // 渲染响应式图片
   const renderResponsiveImage = () => {
-    // 如果提供了自定义srcSet，直接使用
-    if (srcSet) {
-      return (
+    // 生成更精细的sizes属性
+    const defaultSizes = '(max-width: 320px) 240px, (max-width: 480px) 320px, (max-width: 640px) 480px, (max-width: 800px) 640px, (max-width: 1024px) 800px, (max-width: 1280px) 1024px, (max-width: 1600px) 1280px, (max-width: 2048px) 1600px, 2048px';
+    
+    const finalSizes = sizes || defaultSizes;
+    
+    // 使用picture标签支持多种图片格式
+    return (
+      <picture>
+        {useModernFormats && formats.map((format, index) => {
+          if (!finalSrcSet) return null;
+          
+          return (
+            <source
+              key={index}
+              type={`image/${format}`}
+              srcSet={finalSrcSet}
+              sizes={finalSizes}
+            />
+          );
+        })}
         <img
           ref={imgRef}
           src={finalSrc}
-          srcSet={srcSet}
-          sizes={sizes}
+          srcSet={finalSrcSet}
+          sizes={finalSizes}
           alt={alt}
           className={imgClassName}
           style={{
@@ -274,65 +394,11 @@ const OptimizedImage = React.memo(({
           }}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          loading={lazy ? 'lazy' : 'eager'}
-          decoding="async"
+          loading={loading}
+          decoding={decoding}
           {...rest}
         />
-      );
-    }
-
-    // 否则使用生成的响应式图片
-    if (useModernFormats && generateSourceSet.length > 0) {
-      return (
-        <picture>
-          {/* 生成不同格式的source标签 */}
-          {generateSourceSet.map((source, index) => (
-            <source
-              key={index}
-              type={source.type}
-              srcSet={source.srcSet}
-              sizes={sizes}
-            />
-          ))}
-          {/* 回退到原始图片 */}
-          <img
-            ref={imgRef}
-            src={finalSrc}
-            alt={alt}
-            className={imgClassName}
-            style={{
-              opacity: isLoaded ? 1 : 0,
-              position: 'relative',
-              zIndex: 1
-            }}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            loading={lazy ? 'lazy' : 'eager'}
-            decoding="async"
-            {...rest}
-          />
-        </picture>
-      );
-    }
-
-    // 基本情况：直接使用img标签
-    return (
-      <img
-        ref={imgRef}
-        src={finalSrc}
-        alt={alt}
-        className={imgClassName}
-        style={{
-          opacity: isLoaded ? 1 : 0,
-          position: 'relative',
-          zIndex: 1
-        }}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-        loading={lazy ? 'lazy' : 'eager'}
-        decoding="async"
-        {...rest}
-      />
+      </picture>
     );
   };
 

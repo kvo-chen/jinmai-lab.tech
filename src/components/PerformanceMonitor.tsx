@@ -1,4 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+
+// 添加LayoutShift类型定义
+interface LayoutShift {
+  value: number;
+  hadRecentInput: boolean;
+}
 import imageService from '../services/imageService';
 import errorService from '../services/errorService';
 
@@ -85,9 +91,12 @@ const PerformanceMonitor: React.FC = () => {
       const entries = entryList.getEntries();
       let cls = 0;
       entries.forEach(entry => {
-        const layoutEntry = entry as LayoutShift;
-        if (!layoutEntry.hadRecentInput) {
-          cls += layoutEntry.value;
+        // 使用更安全的类型检查和转换
+        if ('hadRecentInput' in entry && 'value' in entry) {
+          const layoutEntry = entry as unknown as LayoutShift;
+          if (!layoutEntry.hadRecentInput) {
+            cls += layoutEntry.value;
+          }
         }
       });
       setWebVitals(prev => ({ ...prev, cls: parseFloat(cls.toFixed(3)) }));
@@ -117,9 +126,9 @@ const PerformanceMonitor: React.FC = () => {
           const navigationEntry = performanceEntries[0] as PerformanceNavigationTiming;
           setPageStats(prev => ({
             ...prev,
-            loadTime: Math.round((navigationEntry.loadEventEnd || 0) - (navigationEntry.navigationStart || 0)),
+            loadTime: Math.round((navigationEntry.loadEventEnd || 0) - (navigationEntry.startTime || 0)),
             apiTime: 0,
-            domContentLoaded: Math.round((navigationEntry.domContentLoadedEventEnd || 0) - (navigationEntry.navigationStart || 0)),
+            domContentLoaded: Math.round((navigationEntry.domContentLoadedEventEnd || 0) - (navigationEntry.startTime || 0)),
             firstPaint: Math.round(performance.getEntriesByType('paint')[0]?.startTime || 0),
             fps: fpsRef.current,
             memoryUsage: typeof performance !== 'undefined' && 'memory' in performance 

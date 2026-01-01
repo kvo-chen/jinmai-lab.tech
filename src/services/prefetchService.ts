@@ -184,10 +184,22 @@ class PrefetchService {
     // 跳过已经预加载过的资源
     if (this.prefetchHistory.has(url)) return true;
     
-    // 跳过上外部域名的资源
+    // 允许预加载的CDN域名列表
+    const allowedCdnDomains = [
+      'trae-api-sg.mchost.guru',
+      'unsplash.com',
+      'images.unsplash.com',
+      'cdn.jsdelivr.net',
+      'cdnjs.cloudflare.com',
+      'unpkg.com'
+    ];
+    
+    // 跳过上外部域名的资源，但允许CDN资源
     const currentHost = window.location.host;
     const resourceUrl = new URL(url, window.location.href);
-    if (resourceUrl.host !== currentHost) return true;
+    if (resourceUrl.host !== currentHost && !allowedCdnDomains.some(domain => resourceUrl.host.includes(domain))) {
+      return true;
+    }
     
     // 跳过hash链接
     if (url.startsWith('#')) return true;

@@ -42,11 +42,11 @@ const RESPONSIVE_SIZES = {
 
 // 默认配置 - 增强版
 const DEFAULT_CONFIG: ImageServiceConfig = {
-  maxCacheSize: 500, // 显著增加缓存大小，提高缓存命中率
-  cacheTTL: 48 * 60 * 60 * 1000, // 延长缓存时间到48小时
-  maxRetries: 2,
-  retryDelay: (attempt: number) => 300 * Math.pow(2, attempt), // 更短的重试延迟
-  preloadDistance: 400, // 进一步增加预加载距离，提前加载图片
+  maxCacheSize: 1000, // 进一步增加缓存大小，提高缓存命中率
+  cacheTTL: 7 * 24 * 60 * 60 * 1000, // 延长缓存时间到7天
+  maxRetries: 3,
+  retryDelay: (attempt: number) => Math.min(300 * Math.pow(2, attempt) + Math.random() * 100, 2000), // 带随机抖动的重试延迟
+  preloadDistance: 800, // 进一步增加预加载距离，提前加载图片
   enableWebP: true, // 是否启用WebP格式
   enableAVIF: true, // 是否启用AVIF格式
   enableResponsiveLoading: true, // 是否启用响应式加载

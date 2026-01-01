@@ -22,43 +22,36 @@ const supabaseKey = cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
                    cleanEnvValue(import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) || 
                    cleanEnvValue(import.meta.env.SUPABASE_PUBLISHABLE_KEY)
 
-// 验证环境变量并添加详细日志
-console.log('Supabase环境变量配置:')
-console.log('- NEXT_PUBLIC_SUPABASE_URL:', import.meta.env.NEXT_PUBLIC_SUPABASE_URL ? '已设置' : '未设置')
-console.log('- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? '已设置' : '未设置')
-console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '已设置' : '未设置')
-console.log('- VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '已设置' : '未设置')
-console.log('- VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ? '已设置' : '未设置')
-console.log('- VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '已设置' : '未设置')
-console.log('- SUPABASE_URL:', import.meta.env.SUPABASE_URL ? '已设置' : '未设置')
-console.log('- SUPABASE_ANON_KEY:', import.meta.env.SUPABASE_ANON_KEY ? '已设置' : '未设置')
-console.log('- SUPABASE_PUBLISHABLE_KEY:', import.meta.env.SUPABASE_PUBLISHABLE_KEY ? '已设置' : '未设置')
-console.log('- 最终URL:', supabaseUrl)
-console.log('- 最终密钥:', supabaseKey ? '已设置' : '未设置')
-console.log('- 密钥长度:', supabaseKey ? supabaseKey.length : 0)
-console.log('- 密钥前缀:', supabaseKey ? supabaseKey.substring(0, 20) + '...' : '未设置')
-
 // 验证环境变量是否完整
 if (!supabaseUrl) {
-  console.error('❌ Supabase URL未配置')
-  console.error('请检查Vercel环境变量配置，确保已添加以下环境变量之一:')
-  console.error('- NEXT_PUBLIC_SUPABASE_URL')
-  console.error('- VITE_SUPABASE_URL')
-  console.error('- SUPABASE_URL')
+  // 只在开发环境输出详细日志
+  if (import.meta.env.DEV) {
+    console.error('❌ Supabase URL未配置')
+    console.error('请检查Vercel环境变量配置，确保已添加以下环境变量之一:')
+    console.error('- NEXT_PUBLIC_SUPABASE_URL')
+    console.error('- VITE_SUPABASE_URL')
+    console.error('- SUPABASE_URL')
+  }
 } 
 
 if (!supabaseKey) {
-  console.error('❌ Supabase密钥未配置')
-  console.error('请检查Vercel环境变量配置，确保已添加以下环境变量之一:')
-  console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  console.error('- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
-  console.error('- VITE_SUPABASE_ANON_KEY')
-  console.error('- SUPABASE_ANON_KEY')
-  console.error('- SUPABASE_PUBLISHABLE_KEY')
+  // 只在开发环境输出详细日志
+  if (import.meta.env.DEV) {
+    console.error('❌ Supabase密钥未配置')
+    console.error('请检查Vercel环境变量配置，确保已添加以下环境变量之一:')
+    console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    console.error('- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
+    console.error('- VITE_SUPABASE_ANON_KEY')
+    console.error('- SUPABASE_ANON_KEY')
+    console.error('- SUPABASE_PUBLISHABLE_KEY')
+  }
 } 
 
 if (supabaseUrl && supabaseKey) {
-  console.log('✅ Supabase环境变量配置完整')
+  // 只在开发环境输出详细日志
+  if (import.meta.env.DEV) {
+    console.log('✅ Supabase环境变量配置完整')
+  }
 }
 
 // 创建并导出Supabase客户端实例

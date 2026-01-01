@@ -29,7 +29,8 @@ if (typeof window !== 'undefined') {
   (window as any).knowledge = (window as any).knowledge || {};
   (window as any).lazilyLoaded = (window as any).lazilyLoaded || {};
 
-
+  // Service Worker注册由Vite PWA插件自动处理
+  // 移除手动注册，避免与自动注册冲突
 
   // 应用渲染
   const root = document.getElementById("root");

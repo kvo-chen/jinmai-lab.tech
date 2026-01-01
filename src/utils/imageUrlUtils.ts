@@ -20,9 +20,14 @@ export interface ImageProcessingOptions {
   quality?: ImageQuality;
   width?: number;
   height?: number;
-  format?: 'webp' | 'jpeg' | 'png';
+  format?: 'webp' | 'avif' | 'jpeg' | 'png' | 'gif';
   autoFormat?: boolean;
   responsive?: boolean;
+  fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
+  crop?: string;
+  dpr?: number;
+  sharpen?: boolean;
+  blur?: number;
 }
 
 /**
@@ -44,21 +49,44 @@ export function qualityToValue(quality: ImageQuality): number {
 }
 
 /**
+ * 检测浏览器是否支持特定图片格式
+ * @param format 图片格式
+ * @returns 是否支持该格式
+ */
+export function supportsFormat(format: 'webp' | 'avif' | 'jpeg' | 'png'): boolean {
+  if (typeof window === 'undefined') {
+    return true; // 服务端渲染默认支持所有格式
+  }
+  
+  // 常见格式直接返回true
+  if (format === 'jpeg' || format === 'png') {
+    return true;
+  }
+  
+  // 检测WebP和AVIF格式
+  try {
+    const img = new Image();
+    const testFormat = format === 'webp' ? 'image/webp' : 'image/avif';
+    return img.srcset?.includes?.(format) !== undefined || (window as any).createImageBitmap || (img as any).canPlayType?.(testFormat) === 'probably';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * 检测浏览器是否支持WebP格式
  * @returns 是否支持WebP
  */
 export function supportsWebP(): boolean {
-  if (typeof window === 'undefined') {
-    return true; // 服务端渲染默认支持
-  }
-  
-  // 检查浏览器是否支持WebP
-  try {
-    const img = new Image();
-    return img.srcset?.includes?.('webp') !== undefined || (window as any).createImageBitmap;
-  } catch {
-    return false;
-  }
+  return supportsFormat('webp');
+}
+
+/**
+ * 检测浏览器是否支持AVIF格式
+ * @returns 是否支持AVIF
+ */
+export function supportsAVIF(): boolean {
+  return supportsFormat('avif');
 }
 
 /**
@@ -102,47 +130,67 @@ export function calculateResponsiveSize(baseWidth: number, baseHeight: number): 
  * @returns 处理后的图片URL
  */
 export function processImageUrl(url: string, options: ImageProcessingOptions = {}): string {
+  // 快速返回简单情况
   if (!url) {
     console.warn('Empty URL provided to processImageUrl');
     return url;
   }
   
+  // 直接返回base64图片
+  if (url.startsWith('data:')) {
+    return url;
+  }
+  
+  // 直接返回相对路径
+  if (url.startsWith('/')) {
+    // 对于相对路径，直接返回，Vercel会自动处理
+    return url;
+  }
+  
   try {
-    // 默认选项
+    // 只在需要时合并选项
     const defaultOptions: Required<ImageProcessingOptions> = {
       quality: 'medium',
       width: 800,
       height: 600,
       format: 'jpeg',
       autoFormat: true,
-      responsive: true
+      responsive: true,
+      fit: 'cover',
+      crop: 'center',
+      dpr: window.devicePixelRatio || 1,
+      sharpen: false,
+      blur: 0
     };
     
-    // 合并选项
     const opts = { ...defaultOptions, ...options };
     
-    // 检查是否为base64编码的图片数据
-    if (url.startsWith('data:')) {
-      // 直接返回原始URL，不进行额外处理
-      return url;
-    }
-    
-    // 检查是否为API代理URL
-    if (url.startsWith('/api/proxy/')) {
-      // API代理URL处理，直接返回原始URL，避免添加不必要的参数或转换
-      return url;
-    } else if (url.startsWith('/api/proxy/unsplash')) {
-        // 对于Unsplash代理，直接返回原始URL，Vercel会处理
-        return url;
+    // API代理URL处理
+    if (url.startsWith('/api/proxy/trae-api')) {
+      const directUrl = url.replace('/api/proxy/trae-api', 'https://trae-api-sg.mchost.guru');
+      const newUrl = new URL(directUrl);
+      
+      // 只添加必要的参数
+      if (!newUrl.searchParams.has('cache')) newUrl.searchParams.set('cache', 'true');
+      if (!newUrl.searchParams.has('max_width')) newUrl.searchParams.set('max_width', opts.width.toString());
+      if (!newUrl.searchParams.has('quality')) newUrl.searchParams.set('quality', qualityToValue(opts.quality).toString());
+      
+      // 自动格式处理
+      if (opts.autoFormat) {
+        if (supportsAVIF()) {
+          newUrl.searchParams.set('format', 'avif');
+        } else if (supportsWebP()) {
+          newUrl.searchParams.set('format', 'webp');
+        }
+      } else if (opts.format) {
+        newUrl.searchParams.set('format', opts.format);
       }
       
-      // 其他代理URL，直接返回原始URL
-      return url;
+      return newUrl.toString();
     }
     
-    // 检查是否为相对路径
-    if (url.startsWith('/')) {
-      // 对于相对路径，直接返回，Vercel会自动处理
+    // 直接返回其他API代理URL
+    if (url.startsWith('/api/proxy/')) {
       return url;
     }
     
@@ -151,66 +199,121 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     try {
       urlObj = new URL(url);
     } catch (error) {
-      // 如果URL格式无效，直接返回原始URL，不进行额外处理
+      // 如果URL格式无效，直接返回原始URL
       console.warn('Invalid URL format, returning original:', url, error);
       return url;
     }
     
-    // 检查是否为Unsplash图片URL
-    if (urlObj.hostname.includes('unsplash.com') || urlObj.hostname.includes('images.unsplash.com')) {
-      // 为Unsplash图片添加压缩和格式参数
-      const quality = qualityToValue(opts.quality);
-      
-      // 响应式尺寸计算
-      const size = opts.responsive 
-        ? calculateResponsiveSize(opts.width, opts.height)
-        : { width: opts.width, height: opts.height };
-      
-      // 自动格式检测
-      const format = opts.autoFormat && supportsWebP() ? 'webp' : opts.format;
-      
-      // 构建新的Unsplash URL，添加压缩和格式参数
+    // 预计算共享值
+    const quality = qualityToValue(opts.quality);
+    const size = opts.responsive 
+      ? calculateResponsiveSize(opts.width, opts.height)
+      : { width: opts.width, height: opts.height };
+    
+    let format = opts.format;
+    if (opts.autoFormat) {
+      if (supportsAVIF()) {
+        format = 'avif';
+      } else if (supportsWebP()) {
+        format = 'webp';
+      }
+    }
+    
+    // Unsplash图片处理
+    if (urlObj.hostname.includes('unsplash.com')) {
       const newUrl = new URL(urlObj.href);
       newUrl.searchParams.set('q', quality.toString());
       newUrl.searchParams.set('w', size.width.toString());
       newUrl.searchParams.set('h', size.height.toString());
       newUrl.searchParams.set('fm', format);
-      newUrl.searchParams.set('fit', 'crop');
+      newUrl.searchParams.set('fit', opts.fit);
+      newUrl.searchParams.set('crop', opts.crop);
+      newUrl.searchParams.set('dpr', opts.dpr.toString());
+      
+      if (opts.sharpen) newUrl.searchParams.set('sharp', '1');
+      if (opts.blur > 0) newUrl.searchParams.set('blur', opts.blur.toString());
       
       return newUrl.toString();
     }
     
-    // 检查是否为已知的代理URL
-    if (url.includes('trae-api-sg.mchost.guru')) {
-      // 直接返回原始URL，不进行静态环境检测
-      return url;
+    // Imgix CDN处理
+    if (urlObj.hostname.includes('imgix.net')) {
+      const newUrl = new URL(urlObj.href);
+      newUrl.searchParams.set('q', quality.toString());
+      newUrl.searchParams.set('w', size.width.toString());
+      newUrl.searchParams.set('h', size.height.toString());
+      newUrl.searchParams.set('fit', opts.fit);
+      newUrl.searchParams.set('crop', opts.crop);
+      
+      if (format) newUrl.searchParams.set('fm', format);
+      
+      return newUrl.toString();
     }
     
-    // 处理 https://jinmalab.tech/proxy?url=... 格式的URL
-    if (urlObj.hostname === 'jinmalab.tech' && urlObj.pathname === '/proxy') {
-      // 提取查询参数中的真实图片URL
-      const realUrl = urlObj.searchParams.get('url');
-      if (realUrl) {
-        try {
-          const realUrlObj = new URL(realUrl);
-          // 根据真实URL的主机名选择合适的代理路径
-          if (realUrlObj.hostname.includes('unsplash.com') || realUrlObj.hostname.includes('images.unsplash.com')) {
-            return `/jinmai-lab/api/proxy/unsplash${realUrlObj.pathname}${realUrlObj.search}`;
-          }
-          // 对于其他URL，直接返回真实URL
-          return realUrl;
-        } catch (error) {
-          console.warn('Invalid real URL in proxy format, returning original:', realUrl, error);
-          return realUrl || url;
-        }
+    // Cloudinary CDN处理
+    if (urlObj.hostname.includes('cloudinary.com')) {
+      const newUrl = new URL(urlObj.href);
+      const pathParts = urlObj.pathname.split('/');
+      const uploadIndex = pathParts.indexOf('upload');
+      
+      if (uploadIndex !== -1) {
+        const transformations = [
+          `w_${size.width}`,
+          `h_${size.height}`,
+          `c_${opts.fit}`,
+          opts.autoFormat ? 'f_auto' : `f_${format}`,
+          `q_${quality}`
+        ];
+        
+        pathParts.splice(uploadIndex + 1, 0, ...transformations);
+        newUrl.pathname = pathParts.join('/');
       }
+      
+      return newUrl.toString();
     }
     
-    // 其他URL保持不变
+    // 已知CDN主机列表（优化：使用Set提高查找效率）
+    const knownCdnHosts = new Set([
+      'trae-api-sg.mchost.guru',
+      'jinmalab.tech',
+      'cdn.jsdelivr.net',
+      'cdnjs.cloudflare.com',
+      'unpkg.com',
+      'cloudflare-ipfs.com',
+      'ipfs.io',
+      'akamaihd.net',
+      'fastly.net',
+      's3.amazonaws.com',
+      's3.us-east-1.amazonaws.com',
+      's3.us-west-2.amazonaws.com',
+      's3.ap-southeast-1.amazonaws.com'
+    ]);
+    
+    // CDN URL处理
+    if (knownCdnHosts.has(urlObj.hostname)) {
+      const newUrl = new URL(url);
+      
+      if (!newUrl.searchParams.has('cache')) newUrl.searchParams.set('cache', 'true');
+      if (!newUrl.searchParams.has('max_width')) newUrl.searchParams.set('max_width', opts.width.toString());
+      if (!newUrl.searchParams.has('quality')) newUrl.searchParams.set('quality', quality.toString());
+      
+      if (opts.autoFormat) {
+        if (supportsAVIF()) {
+          newUrl.searchParams.set('format', 'avif');
+        } else if (supportsWebP()) {
+          newUrl.searchParams.set('format', 'webp');
+        }
+      } else if (opts.format) {
+        newUrl.searchParams.set('format', opts.format);
+      }
+      
+      return newUrl.toString();
+    }
+    
+    // 其他URL直接返回，避免不必要的处理
     return url;
   } catch (error) {
     console.warn('Unexpected error processing URL, returning original:', url, error);
-    // 对于任何错误，返回原始URL，而不是空字符串，确保图片能够尝试加载
     return url;
   }
 }
@@ -237,10 +340,6 @@ export function buildSrcSet(url: string, widths: number[], quality: ImageQuality
     return '';
   }
   
-  // 检测是否支持WebP
-  const useWebP = supportsWebP();
-  const qualityValue = qualityToValue(quality);
-  
   return widths
     .map(width => {
       // 为每个宽度构建URL
@@ -252,4 +351,34 @@ export function buildSrcSet(url: string, widths: number[], quality: ImageQuality
       return `${sizedUrl} ${width}w`;
     })
     .join(', ');
+}
+
+/**
+ * 优化CDN路径，选择最优的CDN节点
+ * @param url 原始图片URL
+ * @returns 优化后的CDN URL
+ */
+export function optimizeCdnPath(url: string): string {
+  if (!url) return url;
+  
+  // 这里可以添加CDN路径优化逻辑，例如：
+  // 1. 根据用户地理位置选择最近的CDN节点
+  // 2. 选择性能更好的CDN提供商
+  // 3. 添加CDN负载均衡逻辑
+  
+  // 示例：为unsplash图片添加多个CDN备用
+  if (url.includes('images.unsplash.com')) {
+    // 可以根据需要添加其他CDN节点
+    return url;
+  }
+  
+  // 示例：为trae-api图片添加CDN优化
+  if (url.includes('trae-api-sg.mchost.guru')) {
+    // 可以添加CDN缓存优化
+    const newUrl = new URL(url);
+    newUrl.searchParams.set('cdn-optimized', 'true');
+    return newUrl.toString();
+  }
+  
+  return url;
 }

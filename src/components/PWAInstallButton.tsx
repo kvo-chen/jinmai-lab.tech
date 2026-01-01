@@ -39,6 +39,7 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
       setShowInstallButton(true);
       // 显示安装引导
       setShowGuide(true);
+      console.log('✅ 捕获到beforeinstallprompt事件，可以安装应用');
     };
 
     const handleAppInstalled = () => {
@@ -49,42 +50,176 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
       setInstallStatus('installed');
       // 3秒后隐藏安装状态
       setTimeout(() => setInstallStatus('idle'), 3000);
+      console.log('✅ 应用已成功安装');
+    };
+
+    // 检查Service Worker是否已注册
+    const checkServiceWorker = () => {
+      // 检查是否为开发环境
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          console.log(`📋 Service Worker注册数量: ${registrations.length}`);
+          if (registrations.length > 0) {
+            console.log('✅ Service Worker已注册，应用可以安装');
+            // Service Worker已注册，但如果deferredPrompt不存在，尝试检查浏览器是否支持安装
+            if (!deferredPrompt) {
+              console.log('ℹ️ Service Worker已注册，但deferredPrompt不存在，可能需要等待浏览器触发beforeinstallprompt事件');
+            }
+          } else {
+            if (isDevelopment) {
+              console.log('ℹ️ 开发环境中Service Worker未注册，这是正常现象，生产环境会自动注册');
+            } else {
+              console.log('❌ Service Worker未注册，应用无法安装');
+            }
+          }
+        });
+      } else {
+        console.log('❌ 浏览器不支持Service Worker，应用无法安装');
+      }
+    };
+
+    // 检查浏览器是否支持PWA安装
+    const checkPwaSupport = () => {
+      console.log('🔍 检查PWA安装支持:');
+      console.log(`   - BeforeInstallPromptEvent支持: ${'BeforeInstallPromptEvent' in window}`);
+      console.log(`   - Service Worker支持: ${'serviceWorker' in navigator}`);
+      console.log(`   - 当前显示模式: ${window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'}`);
+      console.log(`   - 是否已安装: ${window.matchMedia('(display-mode: standalone)').matches}`);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // 初始化时检查
+    checkPwaSupport();
+    checkServiceWorker();
+
+    // 每秒检查一次Service Worker状态，持续10秒
+    const interval = setInterval(checkServiceWorker, 1000);
+    setTimeout(() => clearInterval(interval), 10000);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      clearInterval(interval);
     };
-  }, []);
+  }, [deferredPrompt]);
 
   const handleInstallClick = async () => {
+    console.log('🔄 开始安装流程...');
+    
+    // 检查是否为开发环境
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
     if (!deferredPrompt) {
-      // 如果deferredPrompt不存在，给用户一个提示
-      setInstallStatus('dismissed');
-      setTimeout(() => {
-        setInstallStatus('idle');
-      }, 3000);
+      console.log('❌ deferredPrompt不存在，检查安装条件:');
+      
+      // 检查是否已经安装过应用
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('✅ 应用已经安装，显示安装成功状态');
+        setInstallStatus('installed');
+        setTimeout(() => {
+          setInstallStatus('idle');
+        }, 3000);
+        return;
+      }
+      
+      // 检查Service Worker注册状态
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        console.log(`   - Service Worker注册数量: ${registrations.length}`);
+        if (registrations.length === 0) {
+          if (isDevelopment) {
+            console.log('   - 开发环境中Service Worker未注册，这是正常现象');
+          } else {
+            console.log('   - 原因: Service Worker未注册');
+          }
+        }
+      }
+      
+      // 检查浏览器支持
+      console.log(`   - BeforeInstallPromptEvent支持: ${'BeforeInstallPromptEvent' in window}`);
+      
+      // 检查当前环境是否支持PWA安装
+      const isPWASupported = 'BeforeInstallPromptEvent' in window;
+      if (!isPWASupported) {
+        console.log('❌ 当前浏览器不支持直接安装PWA应用');
+        setInstallStatus('dismissed');
+        setTimeout(() => {
+          setInstallStatus('idle');
+          setShowInstallButton(true);
+        }, 3000);
+        return;
+      }
+      
+      // 检查是否为HTTP环境
+      if (window.location.protocol !== 'https:' && !isDevelopment) {
+        console.log('❌ PWA安装需要HTTPS环境');
+        setInstallStatus('dismissed');
+        setTimeout(() => {
+          setInstallStatus('idle');
+          setShowInstallButton(true);
+        }, 3000);
+        return;
+      }
+      
+      // 开发环境下，显示手动安装指南
+      if (isDevelopment) {
+        console.log('ℹ️ 开发环境下，建议使用浏览器开发者工具手动安装PWA应用');
+        // 显示安装状态
+        setInstallStatus('dismissed');
+        setTimeout(() => {
+          setInstallStatus('idle');
+          setShowInstallButton(true);
+        }, 3000);
+        return;
+      }
+      
+      // 生产环境下，尝试重新加载页面以获取安装事件
+      console.log('🔄 尝试重新加载页面以获取beforeinstallprompt事件...');
+      window.location.reload();
       return;
     }
 
+    console.log('✅ 开始显示安装提示...');
     // 显示安装状态
     setInstallStatus('installing');
     setShowGuide(false);
 
-    // 显示安装提示
-    deferredPrompt.prompt();
+    try {
+      // 显示安装提示
+      console.log('📱 调用deferredPrompt.prompt()...');
+      await deferredPrompt.prompt();
+      console.log('✅ 安装提示已显示');
 
-    // 等待用户响应
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setInstallStatus('installed');
-    } else {
+      // 等待用户响应
+      console.log('⏳ 等待用户选择...');
+      const { outcome, platform } = await deferredPrompt.userChoice;
+      console.log(`📋 用户选择: ${outcome} (平台: ${platform})`);
+      
+      if (outcome === 'accepted') {
+        console.log('✅ 安装已接受');
+        setInstallStatus('installed');
+        // 安装成功后，显示成功提示，并提供打开应用的指引
+        setTimeout(() => {
+          setInstallStatus('idle');
+          // 显示安装成功后的指引
+          console.log('📱 应用已成功安装到桌面！');
+        }, 3000);
+      } else {
+        console.log('❌ 安装已拒绝');
+        setInstallStatus('dismissed');
+        // 如果用户拒绝，3秒后恢复显示安装按钮
+        setTimeout(() => {
+          setInstallStatus('idle');
+          setShowInstallButton(true);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('❌ 安装应用时出错:', error);
       setInstallStatus('dismissed');
-      // 如果用户拒绝，3秒后恢复显示安装按钮
       setTimeout(() => {
         setInstallStatus('idle');
         setShowInstallButton(true);
@@ -92,6 +227,7 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
     }
 
     // 无论结果如何，我们都不能再次使用该事件
+    console.log('🔚 安装流程结束，清理deferredPrompt');
     setDeferredPrompt(null);
     setShowInstallButton(false);
     
@@ -106,6 +242,11 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
   // 检查是否支持PWA安装
   const isPWASupported = () => {
     return 'BeforeInstallPromptEvent' in window;
+  };
+
+  // 检查是否为开发环境
+  const isDevelopment = () => {
+    return process.env.NODE_ENV === 'development';
   };
 
   return (

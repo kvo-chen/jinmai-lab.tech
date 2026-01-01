@@ -15,44 +15,78 @@ interface CheckinReward {
 
 export default function DailyCheckin() {
   const { isDark } = useTheme();
-  const [currentStreak, setCurrentStreak] = useState<number>(3); // 模拟当前连续打卡天数
-  const [lastCheckinDate, setLastCheckinDate] = useState<string>('2025-11-28'); // 模拟上次打卡日期
-  const [canCheckinToday, setCanCheckinToday] = useState<boolean>(true); // 是否可以今天打卡
-  const [rewards, setRewards] = useState<CheckinReward[]>([
-    { day: 1, name: '基础素材包', description: '解锁10个基础文化素材', icon: 'gift', isClaimed: true, isAvailable: true },
-    { day: 3, name: '高级滤镜', description: '解锁5个AI高级滤镜', icon: 'image', isClaimed: true, isAvailable: true },
-    { day: 7, name: '泥人张彩塑工具', description: '解锁泥人张风格专用工具', icon: 'magic', isClaimed: false, isAvailable: true },
-    { day: 15, name: '专属AI模型', description: '获得7天专属AI模型使用权', icon: 'robot', isClaimed: false, isAvailable: false },
-    { day: 30, name: '老字号联名认证', description: '获得老字号联名创作者认证', icon: 'certificate', isClaimed: false, isAvailable: false },
-  ]);
+  
+  // 从localStorage读取持久化的打卡数据
+  const getInitialData = () => {
+    const savedData = localStorage.getItem('dailyCheckin');
+    if (savedData) {
+      try {
+        return JSON.parse(savedData);
+      } catch (error) {
+        console.error('Failed to parse saved checkin data:', error);
+      }
+    }
+    // 默认数据
+    return {
+      currentStreak: 3,
+      lastCheckinDate: '2025-11-28',
+      rewards: [
+        { day: 1, name: '基础素材包', description: '解锁10个基础文化素材', icon: 'gift', isClaimed: true, isAvailable: true },
+        { day: 3, name: '高级滤镜', description: '解锁5个AI高级滤镜', icon: 'image', isClaimed: true, isAvailable: true },
+        { day: 7, name: '泥人张彩塑工具', description: '解锁泥人张风格专用工具', icon: 'magic', isClaimed: false, isAvailable: true },
+        { day: 15, name: '专属AI模型', description: '获得7天专属AI模型使用权', icon: 'robot', isClaimed: false, isAvailable: false },
+        { day: 30, name: '老字号联名认证', description: '获得老字号联名创作者认证', icon: 'certificate', isClaimed: false, isAvailable: false },
+      ]
+    };
+  };
+
+  const initialData = getInitialData();
+  const [currentStreak, setCurrentStreak] = useState<number>(initialData.currentStreak);
+  const [lastCheckinDate, setLastCheckinDate] = useState<string>(initialData.lastCheckinDate);
+  const [rewards, setRewards] = useState<CheckinReward[]>(initialData.rewards);
+  const [canCheckinToday, setCanCheckinToday] = useState<boolean>(false);
+
+  // 保存打卡数据到localStorage
+  const saveCheckinData = (streak: number, date: string, checkinRewards: CheckinReward[]) => {
+    const data = {
+      currentStreak: streak,
+      lastCheckinDate: date,
+      rewards: checkinRewards
+    };
+    localStorage.setItem('dailyCheckin', JSON.stringify(data));
+  };
 
   // 检查今天是否可以打卡
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    if (today === lastCheckinDate) {
-      setCanCheckinToday(false);
-    }
+    setCanCheckinToday(today !== lastCheckinDate);
   }, [lastCheckinDate]);
 
   const handleCheckin = () => {
     if (!canCheckinToday) return;
 
     // 更新打卡状态
-    setCurrentStreak(prev => prev + 1);
+    const newStreak = currentStreak + 1;
     const today = new Date().toISOString().split('T')[0];
-    setLastCheckinDate(today);
-    setCanCheckinToday(false);
-
+    
     // 检查是否有可领取的奖励
     const newRewards = rewards.map(reward => {
-      if (reward.day === currentStreak + 1) {
+      if (reward.day === newStreak) {
         return { ...reward, isAvailable: true };
       }
       return reward;
     });
+    
+    // 更新状态
+    setCurrentStreak(newStreak);
+    setLastCheckinDate(today);
+    setCanCheckinToday(false);
     setRewards(newRewards);
+    
+    // 保存数据到localStorage
+    saveCheckinData(newStreak, today, newRewards);
 
-    toast.success(`打卡成功！连续打卡 ${currentStreak + 1} 天`);
+    toast.success(`打卡成功！连续打卡 ${newStreak} 天`);
   };
 
   const handleClaimReward = (day: number) => {
@@ -62,7 +96,11 @@ export default function DailyCheckin() {
       }
       return reward;
     });
+    
     setRewards(newRewards);
+    
+    // 保存数据到localStorage
+    saveCheckinData(currentStreak, lastCheckinDate, newRewards);
 
     const reward = rewards.find(r => r.day === day);
     if (reward) {

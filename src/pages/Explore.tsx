@@ -78,7 +78,7 @@ export default function Explore() {
   // 初始化收藏状态
   useEffect(() => {
     const bookmarkedIds = postsApi.getUserBookmarks();
-    const initialBookmarked = {};
+    const initialBookmarked: Record<string, boolean> = {};
     bookmarkedIds.forEach(id => {
       initialBookmarked[id] = true;
     });
@@ -844,9 +844,9 @@ export default function Explore() {
                         alt={work.title}
                         className="w-full h-48 object-cover"
                         imageTag={work.imageTag}
-                        priority={index < 6} /* 提高精选作品的优先级 */
-                        quality={index < 12 ? 'high' : 'medium'}
-                        loading="lazy"
+                        priority={index < 12} /* 提高更多精选作品的优先级 */
+                        quality={index < 18 ? 'high' : 'medium'}
+                        loading={index < 12 ? 'eager' : 'lazy'}
                         disableFallback={true}
                       />
                     )}
@@ -1236,7 +1236,7 @@ export default function Explore() {
                         alt={work.title}
                         className="w-full h-48 object-cover"
                         imageTag={work.imageTag}
-                        priority={index < 6} /* 为视频缩略图添加优先级 */
+                        priority={index < 12} /* 为更多视频缩略图添加优先级 */
                         disableFallback={true}
                       />
                       {/* 视频播放按钮 */}
@@ -1262,9 +1262,9 @@ export default function Explore() {
                       alt={work.title}
                       className="w-full h-48 object-cover"
                       imageTag={work.imageTag}
-                      priority={index < 6} /* 增加优先加载的图片数量 */
-                      quality={index < 12 ? 'high' : 'medium'} /* 优化质量设置 */
-                      loading="lazy"
+                      priority={index < 12} /* 增加优先加载的图片数量到12张 */
+                      quality={index < 18 ? 'high' : 'medium'} /* 优化质量设置 */
+                      loading={index < 12 ? 'eager' : 'lazy'}
                     />
                   )}
                   
@@ -1296,7 +1296,7 @@ export default function Explore() {
                           e.stopPropagation(); 
                           const stringId = work.id.toString();
                           setBookmarked(prev => { 
-                            const newState = { ...prev, [stringId]: !prev[stringId] }; 
+                            const newState: Record<string, boolean> = { ...prev, [stringId]: !prev[stringId] }; 
                             if (newState[stringId]) {
                               postsApi.bookmarkPost(stringId);
                             } else {

@@ -201,8 +201,7 @@ const MapController: React.FC<MapControllerProps> = ({
     let newZoom: number = currentZoom + delta;
     
     // 限制缩放范围，避免超出边界
-    const mapState = useMapState.getState();
-    newZoom = Math.max(mapState.minZoom || 1, Math.min(mapState.maxZoom || 10, newZoom));
+    newZoom = Math.max(3, Math.min(10, newZoom)); // 使用固定值代替不存在的mapState属性
     
     // 使用setZoom实现平滑缩放
     setZoom(newZoom as any);

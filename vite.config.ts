@@ -131,49 +131,84 @@ export default defineConfig({
     ViteImageOptimizer({
       // 启用WebP和AVIF格式转换
       png: {
-        quality: 80,
+        quality: 75,
         compressionLevel: 9,
-        force: true
+        force: true,
+        progressive: true
       },
       jpeg: {
-        quality: 80,
-        force: true
+        quality: 75,
+        force: true,
+        progressive: true,
+        mozjpeg: true
       },
       webp: {
-        quality: 85,
-        force: true
+        quality: 80,
+        force: true,
+        alphaQuality: 85,
+        lossless: false
       },
       avif: {
-        quality: 75,
-        force: true
+        quality: 70,
+        force: true,
+        alphaQuality: 80,
+        chromaSubsampling: '4:2:0',
+        effort: 6
       },
       // 启用响应式图片生成
       generateResponsiveImages: true,
-      // 响应式图片尺寸配置
+      // 响应式图片尺寸配置 - 更精细的尺寸级别
       responsive: {
         adapter: {
           name: 'sharp',
           options: {
-            sizes: [320, 640, 1024, 1600, 2048],
-            format: ['webp', 'avif'],
-            quality: [85, 75]
+            sizes: [240, 320, 480, 640, 800, 1024, 1280, 1600, 2048],
+            format: ['avif', 'webp', 'jpeg'],
+            quality: [70, 80, 75],
+            // 为不同尺寸设置不同质量
+            sizesWithQuality: {
+              240: 65,
+              320: 70,
+              480: 75,
+              640: 75,
+              800: 80,
+              1024: 80,
+              1280: 85,
+              1600: 85,
+              2048: 90
+            }
           }
         }
       },
       svg: {
-        quality: 85,
-        force: true
+        quality: 80,
+        force: true,
+        multipass: true,
+        plugins: [
+          { name: 'removeViewBox', active: false },
+          { name: 'removeEmptyContainers', active: true },
+          { name: 'removeUnusedNS', active: true }
+        ]
       },
       gif: {
-        quality: 85,
-        force: true
+        quality: 80,
+        force: true,
+        interlaced: true,
+        optimizationLevel: 3
       },
       // 仅在构建时优化
       disable: process.env.NODE_ENV === 'development',
       // 仅优化src目录下的图片
       include: /\.(png|jpe?g|gif|svg|webp|avif)$/i,
       // 排除node_modules目录和有问题的图片
-      exclude: [/node_modules/, /fallback\.jpg$/, /placeholder-image\.jpg$/]
+      exclude: [/node_modules/, /fallback\.jpg$/, /placeholder-image\.jpg$/],
+      // 输出路径配置
+      outputDir: 'dist/images/optimized',
+      // 生成图片优化报告
+      generateReport: true,
+      // 使用缓存减少重复优化
+      cache: true,
+      cacheLocation: './node_modules/.cache/image-optimizer'
     }),
     VitePWA({
       registerType: 'autoUpdate',
@@ -248,17 +283,20 @@ export default defineConfig({
               }
             }
           },
-          // 图片资源缓存 - 增加缓存条目数量
+          // 图片资源缓存 - 优化缓存策略
           {
             urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|avif)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'image-cache',
               expiration: {
-                maxEntries: 100, // 增加到100个条目
-                maxAgeSeconds: 60 * 60 * 24 * 60 // 60 days
+                maxEntries: 200, // 增加到200个条目，存储更多图片
+                maxAgeSeconds: 60 * 60 * 24 * 90 // 90 days，增加缓存时间
               },
-              rangeRequests: true // 支持范围请求，优化大图片加载
+              rangeRequests: true, // 支持范围请求，优化大图片加载
+              cacheableResponse: {
+                statuses: [0, 200] // 确保所有成功响应都被缓存
+              }
             }
           },
           // CSS和JS资源缓存 - 调整缓存策略

@@ -428,7 +428,7 @@ export default function Dashboard() {
                 <BarChart
                   data={chartData()}
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  animationDuration={1000}
+
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis 

@@ -203,15 +203,20 @@ export default function App() {
   // 添加用户反馈状态
   const [showFeedback, setShowFeedback] = useState(false);
   
-  // 初始化mock数据到localStorage
+  // 优化：延迟初始化mock数据，减少初始加载时间
   useEffect(() => {
-    // 检查localStorage中是否已有数据
-    const existingPosts = postsApi.getPosts();
-    if (existingPosts.length === 0) {
-      // 将mockWorks转换为Post类型并添加到localStorage
-      mockWorks.forEach(work => {
-        // 转换Work类型为Post类型
-        const postData = {
+    // 设置延迟，在应用启动后一段时间再初始化数据
+    const initTimer = setTimeout(() => {
+      // 检查localStorage中是否已有数据
+      const existingPosts = postsApi.getPosts();
+      if (existingPosts.length === 0) {
+        console.log('开始初始化mock数据...');
+        
+        // 优化：只初始化部分核心数据，减少一次性处理量
+        const coreWorks = mockWorks.slice(0, 10); // 只初始化前10个作品
+        
+        // 批量添加到localStorage，减少localStorage操作次数
+        const postDataArray = coreWorks.map(work => ({
           title: work.title,
           thumbnail: work.thumbnail,
           category: work.category as any,
@@ -221,17 +226,28 @@ export default function App() {
           culturalElements: [],
           colorScheme: [],
           toolsUsed: [],
-          // 从work中提取其他必要字段
           resolution: undefined,
           fileSize: undefined,
           downloadCount: 0,
           license: undefined
-        };
+        }));
         
-        // 使用addPost函数添加到localStorage
-        addPost(postData);
-      });
-    }
+        // 使用postsApi的批量添加方法（如果有）或自定义批量添加逻辑
+        // 这里假设postsApi有批量添加方法，如果没有则需要实现
+        try {
+          // 优化：直接操作localStorage，减少函数调用开销
+          const existingPosts = JSON.parse(localStorage.getItem('posts') || '[]');
+          const updatedPosts = [...existingPosts, ...postDataArray];
+          localStorage.setItem('posts', JSON.stringify(updatedPosts));
+          
+          console.log('mock数据初始化完成');
+        } catch (error) {
+          console.error('初始化mock数据失败:', error);
+        }
+      }
+    }, 1000); // 延迟1秒执行，让应用先完成基本渲染
+    
+    return () => clearTimeout(initTimer);
   }, []);
   
   useEffect(() => {
