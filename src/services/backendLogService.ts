@@ -200,9 +200,9 @@ class BackendLogService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Request-Id': logData.requestId,
-          'X-Session-Id': logData.sessionId
-        },
+          'X-Request-Id': logData.requestId || '',
+          'X-Session-Id': logData.sessionId || ''
+        } as HeadersInit,
         body: JSON.stringify(logData),
         keepalive: true
       })

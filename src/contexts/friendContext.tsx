@@ -35,7 +35,7 @@ export interface Friend {
   created_at: string;
   updated_at: string;
   // 扩展字段，用于存储好友的用户信息
-  friend?: User;
+  friend?: AuthUser;
 }
 
 // 用户类型（包含状态信息）
@@ -194,7 +194,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
         
         // 发送好友请求
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('friend_requests')
           .insert({
             sender_id: currentUser.id,
@@ -264,7 +264,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         
         // 更新请求状态为已接受
         try {
-          const { error: updateError } = await supabase
+          const { error: updateError } = await (supabase as any)
             .from('friend_requests')
             .update({ status: 'accepted' })
             .eq('id', requestId);
@@ -281,14 +281,14 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         
         // 创建双向好友关系
         try {
-          await supabase.from('friends').insert([
+          await (supabase as any).from('friends').insert([
             {
-              user_id: request.sender_id,
-              friend_id: request.receiver_id
+              user_id: (request as any).sender_id,
+              friend_id: (request as any).receiver_id
             },
             {
-              user_id: request.receiver_id,
-              friend_id: request.sender_id
+              user_id: (request as any).receiver_id,
+              friend_id: (request as any).sender_id
             }
           ]);
         } catch (insertErr: any) {
@@ -330,7 +330,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (supabase) {
         // 更新请求状态为已拒绝
         try {
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('friend_requests')
             .update({ status: 'rejected' })
             .eq('id', requestId);
@@ -378,7 +378,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       if (supabase) {
         // 获取当前用户收到的好友请求
-        let data;
+        let data: any[] = [];
         try {
           const result = await supabase
             .from('friend_requests')
@@ -412,7 +412,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const requestsWithSender = await Promise.all((data || []).map(async (request: any) => {
           let sender;
           try {
-            const { data: senderData } = await supabase
+            const { data: senderData } = await (supabase as any)
               .from('users')
               .select('*')
               .eq('id', request.sender_id)
@@ -457,7 +457,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       if (supabase) {
         // 获取当前用户的好友列表
-        let data;
+        let data: any[] = [];
         try {
           const result = await supabase
             .from('friends')
@@ -490,7 +490,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const friendsWithDetails = await Promise.all((data || []).map(async (friendship: any) => {
           let friend;
           try {
-            const { data: friendData } = await supabase
+            const { data: friendData } = await (supabase as any)
               .from('users')
               .select('*')
               .eq('id', friendship.friend_id)
@@ -506,12 +506,12 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           const status = await getUserStatus(friendship.friend_id);
           
           return {
-            ...friendship,
-            friend: {
-              ...friend,
-              status
-            }
-          };
+          ...friendship,
+          friend: friend ? {
+            ...friend,
+            status
+          } : undefined
+        };
         }));
         
         setFriends(friendsWithDetails);
@@ -533,7 +533,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // 获取用户状态
   const getUserStatus = async (userId: string): Promise<UserStatus> => {
     if (supabase) {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_status')
         .select('status')
         .eq('user_id', userId)
@@ -543,7 +543,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return 'offline';
       }
       
-      return data.status as UserStatus;
+      return (data as any).status as UserStatus;
     }
     
     return 'offline';
@@ -556,7 +556,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       if (supabase) {
         // 更新用户状态
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('user_status')
           .upsert({
             user_id: currentUser.id,
@@ -589,11 +589,12 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const interval = setInterval(() => {
         // 更新好友状态
         friends.forEach(async (friend) => {
-          if (friend.friend && friend.friend.id) {
-            const status = await getUserStatus(friend.friend.id);
+          if (friend.friend?.id) {
+            const friendId = friend.friend.id;
+            const status = await getUserStatus(friendId);
             setFriendStatuses(prev => ({
               ...prev,
-              [friend.friend.id]: status
+              [friendId]: status
             }));
           }
         });
@@ -663,7 +664,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (supabase) {
         // 更新好友备注
         try {
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('friends')
             .update({ user_note: note })
             .eq('user_id', currentUser.id)

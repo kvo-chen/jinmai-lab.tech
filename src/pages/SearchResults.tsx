@@ -121,7 +121,7 @@ export default function SearchResults() {
 
                 {/* 标签 */}
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {work.tags.slice(0, 3).map((tag, index) => (
+                  {work.tags.slice(0, 3).map((tag: string, index: number) => (
                     <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
                       {tag}
                     </span>

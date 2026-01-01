@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalSortingGameService, { SortingLevel, SortingItem, SortingCategory, GameProgress } from '@/services/culturalSortingGameService';
+import culturalSortingGameService, { SortLevel, SortItem, SortQuestion, SortGameProgress } from '@/services/culturalSortingGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalSortingGameProps {

@@ -141,12 +141,6 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     return url;
   }
   
-  // 直接返回相对路径
-  if (url.startsWith('/')) {
-    // 对于相对路径，直接返回，Vercel会自动处理
-    return url;
-  }
-  
   try {
     // 只在需要时合并选项
     const defaultOptions: Required<ImageProcessingOptions> = {
@@ -165,7 +159,7 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     
     const opts = { ...defaultOptions, ...options };
     
-    // API代理URL处理
+    // API代理URL处理 - 优先处理，即使是相对路径
     if (url.startsWith('/api/proxy/trae-api')) {
       // 注意：原API可能不支持/api/ide/v1/text_to_image路径，直接返回占位图URL
       // 由于API返回400错误，暂时使用占位图替代
@@ -175,6 +169,12 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     // 直接返回其他API代理URL
     if (url.startsWith('/api/proxy/')) {
       // 对于其他代理URL，直接返回，不做处理
+      return url;
+    }
+    
+    // 直接返回其他相对路径
+    if (url.startsWith('/')) {
+      // 对于其他相对路径，直接返回，Vercel会自动处理
       return url;
     }
     

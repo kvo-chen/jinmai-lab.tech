@@ -472,13 +472,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               // 确保supabase不为null
               if (supabase) {
                 // 先尝试插入
-                const { error: insertError } = await supabase.from('users').insert([userForDb]);
+                const { error: insertError } = await (supabase as any).from('users').insert([userForDb]);
                 
                 if (insertError) {
                   console.log('插入用户信息失败，尝试更新:', insertError.message);
                   
                   // 如果插入失败，尝试更新
-                  const { error: updateError } = await supabase.from('users').update(userForDb).eq('id', data.user.id);
+                  const { error: updateError } = await (supabase as any).from('users').update(userForDb).eq('id', data.user.id);
                   
                   if (updateError) {
                     console.error('将用户信息保存到数据库失败:', updateError);

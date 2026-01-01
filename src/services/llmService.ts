@@ -2345,7 +2345,7 @@ class LLMService {
       });
       
       if (!response.ok) {
-        throw new Error(`通义千问API请求失败: ${response.error || '未知错误'}`);
+        throw new Error(`通义千问API请求失败: ${response.statusText || '未知错误'}`);
       }
       
       // 处理非流式响应

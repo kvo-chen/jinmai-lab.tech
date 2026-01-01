@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalQuizGameService, { QuizLevel, QuizQuestion, GameProgress } from '@/services/culturalQuizGameService';
+import culturalQuizGameService, { Level, Question, GameProgress } from '@/services/culturalQuizGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalQuizGameProps {
@@ -470,7 +470,7 @@ const CulturalQuizGame: React.FC<CulturalQuizGameProps> = ({ isOpen, onClose }) 
 
                   {/* 答案选项 */}
                   <div className="space-y-3">
-                    {currentQuestion.options?.map((option, index) => (
+                    {currentQuestion.options?.map((option: string, index: number) => (
                       <motion.button
                         key={index}
                         className={`w-full p-3 rounded-lg text-left transition-all ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'} border ${isDark ? 'border-gray-700' : 'border-gray-200'} ${selectedAnswers.includes(index) ? (showAnswer ? (isCorrect ? 'border-green-500 bg-green-500 bg-opacity-10' : 'border-red-500 bg-red-500 bg-opacity-10') : 'border-blue-500 bg-blue-500 bg-opacity-10') : ''} ${showAnswer && currentQuestion.correctAnswers.includes(index) ? 'border-green-500 bg-green-500 bg-opacity-10' : ''}`}

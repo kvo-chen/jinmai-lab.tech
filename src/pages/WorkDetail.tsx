@@ -177,7 +177,7 @@ export default function WorkDetail() {
       images: [work.thumbnail],
       category: work.category,
       tags: work.tags,
-      culturalElements: work.tags.filter(tag => ['国潮', '传统', '非遗', '民俗', '文化'].some(keyword => tag.includes(keyword))),
+      culturalElements: work.tags.filter((tag: string) => ['国潮', '传统', '非遗', '民俗', '文化'].some(keyword => tag.includes(keyword))),
       colorScheme: [],
       toolsUsed: [],
       date: new Date().toISOString(),
@@ -248,7 +248,7 @@ export default function WorkDetail() {
                 <div className="mb-6">
                   <div className="font-semibold mb-2">标签</div>
                   <div className="flex flex-wrap gap-2">
-                    {work.tags.map((t, i) => (
+                    {work.tags.map((t: string, i: number) => (
                       <span key={i} className={`text-sm px-2 py-1 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>{t}</span>
                     ))}
                   </div>

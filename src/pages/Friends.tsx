@@ -168,7 +168,7 @@ const FriendsPage: React.FC = () => {
                             <h3 className="font-semibold text-gray-800 dark:text-white">
                               {friend.friend?.username || '未知用户'}
                             </h3>
-                            <span className={`inline-flex items-center justify-center w-2 h-2 rounded-full ${friend.friend?.status === 'online' ? 'bg-green-500' : 'bg-gray-400'}`} title={friend.friend?.status}></span>
+                            <span className={`inline-flex items-center justify-center w-2 h-2 rounded-full ${(friend.friend as any)?.status === 'online' ? 'bg-green-500' : 'bg-gray-400'}`} title={(friend.friend as any)?.status}></span>
                           </div>
                           {friend.user_note ? (
                             <p className="text-sm text-gray-500 dark:text-gray-400">
