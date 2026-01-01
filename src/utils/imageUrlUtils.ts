@@ -167,9 +167,9 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     
     // API代理URL处理
     if (url.startsWith('/api/proxy/trae-api')) {
-      // 直接返回实际API URL，不添加额外参数，避免302重定向失败
-      const directUrl = url.replace('/api/proxy/trae-api', 'https://trae-api-sg.mchost.guru');
-      return directUrl;
+      // 注意：原API可能不支持/api/ide/v1/text_to_image路径，直接返回占位图URL
+      // 由于API返回400错误，暂时使用占位图替代
+      return 'https://via.placeholder.com/800x600?text=Image+Placeholder';
     }
     
     // 直接返回其他API代理URL
