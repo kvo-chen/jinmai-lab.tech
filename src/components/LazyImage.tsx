@@ -106,19 +106,29 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   
   // 使用useMemo确保currentSrc与src同步更新，避免异步更新问题
   const currentSrc = useMemo(() => {
-    // 如果disableFallback为true，直接使用原始URL，不经过处理
-    if (disableFallback) {
-      return src;
-    }
+    // 总是处理URL，特别是代理URL，即使disableFallback为true
+    // 这样可以确保代理URL能正确转换为实际API URL
+    let processedSrc = src;
     
-    // 使用新的图片处理选项处理URL
-    const processedSrc = processImageUrl(src, {
-      quality,
-      responsive,
-      autoFormat,
-      format,
-      ...processingOptions
-    });
+    // 处理代理URL，不管disableFallback是什么
+    if (src.startsWith('/api/proxy/trae-api')) {
+      processedSrc = processImageUrl(src, {
+        quality,
+        responsive,
+        autoFormat,
+        format,
+        ...processingOptions
+      });
+    } else if (!disableFallback) {
+      // 对于其他URL，只有当disableFallback为false时才处理
+      processedSrc = processImageUrl(src, {
+        quality,
+        responsive,
+        autoFormat,
+        format,
+        ...processingOptions
+      });
+    }
     
     return processedSrc || (fallbackSrc || defaultFallbackSrc);
   }, [src, fallbackSrc, disableFallback, quality, responsive, autoFormat, format, processingOptions]);
