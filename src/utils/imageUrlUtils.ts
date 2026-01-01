@@ -165,7 +165,7 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
       return url;
     }
     
-    // 检查是否为完整URL格式
+    // 检查是否为有效的URL格式
     let urlObj;
     try {
       urlObj = new URL(url);
@@ -173,20 +173,6 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
       // 如果URL格式无效，直接返回原始URL
       console.warn('Invalid URL format, returning original:', url, error);
       return url;
-    }
-    
-    // 检查是否为已知的CDN主机，转换为API代理URL
-    // 已知CDN主机列表
-    const knownCdnHostsForApiProxy = [
-      'trae-api-sg.mchost.guru',
-      'jinmalab.tech'
-    ];
-    
-    // 对于已知的CDN主机，转换为API代理URL
-    if (knownCdnHostsForApiProxy.some(host => urlObj.hostname.includes(host))) {
-      // 构建API代理URL
-      const apiProxyUrl = `/api/proxy/trae-api${urlObj.pathname}${urlObj.search}`;
-      return apiProxyUrl;
     }
     
     // 预计算共享值

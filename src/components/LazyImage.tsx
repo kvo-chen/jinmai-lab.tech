@@ -135,6 +135,10 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   
   // 计算实际显示的图片URL，如果加载失败则使用fallback
   const displaySrc = useMemo(() => {
+    // 对于代理URL，始终使用原始代理URL，让服务器端处理fallback逻辑
+    if (currentSrc.startsWith('/api/proxy/')) {
+      return currentSrc;
+    }
     if (isError && !disableFallback) {
       return fallbackSrc || defaultFallbackSrc;
     }
