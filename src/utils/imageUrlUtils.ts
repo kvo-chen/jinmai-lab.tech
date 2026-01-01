@@ -167,30 +167,14 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     
     // API代理URL处理
     if (url.startsWith('/api/proxy/trae-api')) {
+      // 直接返回实际API URL，不添加额外参数，避免302重定向失败
       const directUrl = url.replace('/api/proxy/trae-api', 'https://trae-api-sg.mchost.guru');
-      const newUrl = new URL(directUrl);
-      
-      // 只添加必要的参数
-      if (!newUrl.searchParams.has('cache')) newUrl.searchParams.set('cache', 'true');
-      if (!newUrl.searchParams.has('max_width')) newUrl.searchParams.set('max_width', opts.width.toString());
-      if (!newUrl.searchParams.has('quality')) newUrl.searchParams.set('quality', qualityToValue(opts.quality).toString());
-      
-      // 自动格式处理
-      if (opts.autoFormat) {
-        if (supportsAVIF()) {
-          newUrl.searchParams.set('format', 'avif');
-        } else if (supportsWebP()) {
-          newUrl.searchParams.set('format', 'webp');
-        }
-      } else if (opts.format) {
-        newUrl.searchParams.set('format', opts.format);
-      }
-      
-      return newUrl.toString();
+      return directUrl;
     }
     
     // 直接返回其他API代理URL
     if (url.startsWith('/api/proxy/')) {
+      // 对于其他代理URL，直接返回，不做处理
       return url;
     }
     

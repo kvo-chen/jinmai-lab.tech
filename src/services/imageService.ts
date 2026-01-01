@@ -428,14 +428,14 @@ class ImageService {
   // 生成响应式图片URL - 智能优化版
   public getResponsiveUrl(url: string, size: keyof typeof RESPONSIVE_SIZES = 'md', quality?: number): string {
     // 处理图片生成API的URL，检查代理路径或原始域名
-    if (url.includes('/api/proxy/trae-api') || url.includes('trae-api-sg.mchost.guru')) {
+    if (url.includes('/api/proxy/trae-api')) {
       try {
         // 确保URL是完整的
-        const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, window.location.origin);
+        const fullUrl = url.startsWith('http') ? url : url.replace('/api/proxy/trae-api', 'https://trae-api-sg.mchost.guru');
         
         // 注意：AI生成API返回302重定向，不要添加额外参数，否则可能导致重定向失败
         // 直接返回原始URL，让浏览器处理重定向
-        return urlObj.toString();
+        return fullUrl;
       } catch (error) {
         return url;
       }
@@ -467,14 +467,14 @@ class ImageService {
   // 生成低质量占位图URL - 优化版
   public getLowQualityUrl(url: string): string {
     // 处理图片生成API的URL，检查代理路径或原始域名
-    if (url.includes('/api/proxy/trae-api') || url.includes('trae-api-sg.mchost.guru')) {
+    if (url.includes('/api/proxy/trae-api')) {
       try {
         // 确保URL是完整的
-        const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, window.location.origin);
+        const fullUrl = url.startsWith('http') ? url : url.replace('/api/proxy/trae-api', 'https://trae-api-sg.mchost.guru');
         
         // 注意：AI生成API返回302重定向，不要添加额外参数，否则可能导致重定向失败
         // 直接返回原始URL
-        return urlObj.toString();
+        return fullUrl;
       } catch (error) {
         return url;
       }
