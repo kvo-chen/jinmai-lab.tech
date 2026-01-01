@@ -141,12 +141,6 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     return url;
   }
   
-  // 直接返回相对路径
-  if (url.startsWith('/')) {
-    // 对于相对路径，直接返回，Vercel会自动处理
-    return url;
-  }
-  
   try {
     // 只在需要时合并选项
     const defaultOptions: Required<ImageProcessingOptions> = {
@@ -165,9 +159,9 @@ export function processImageUrl(url: string, options: ImageProcessingOptions = {
     
     const opts = { ...defaultOptions, ...options };
     
-    // 直接返回API代理URL，让服务器端处理代理请求
-    if (url.startsWith('/api/proxy/')) {
-      // 对于API代理URL，直接返回，服务器会处理代理请求
+    // 直接返回相对路径和API代理URL，让服务器端处理
+    if (url.startsWith('/')) {
+      // 对于相对路径和API代理URL，直接返回，服务器会处理请求
       return url;
     }
     
@@ -314,6 +308,12 @@ export function processImageUrls(urls: string[], options: ImageProcessingOptions
  */
 export function buildSrcSet(url: string, widths: number[], quality: ImageQuality = 'medium'): string {
   if (!url || !widths || widths.length === 0) {
+    return '';
+  }
+  
+  // 对于API代理URL，不生成srcSet，直接返回空字符串
+  // 因为API代理已经返回了适当格式和尺寸的图片
+  if (url.startsWith('/api/proxy/')) {
     return '';
   }
   
