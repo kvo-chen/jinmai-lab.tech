@@ -29,7 +29,9 @@ export default async function handler(req, res) {
       },
       ...(req.method !== 'GET' && req.body && {
         body: req.body
-      })
+      }),
+      redirect: 'follow', // Follow redirects
+      follow: 10 // Maximum 10 redirects
     });
 
     // Set the response status code
