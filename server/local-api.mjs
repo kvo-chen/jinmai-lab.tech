@@ -258,21 +258,15 @@ async function deepseekFetch(path, method, body) {
 async function dashscopeFetch(path, method, body, authKey) {
   let fullUrl;
   
-  // 特殊处理兼容模式路径，它应该直接从根域名开始
-  if (path.startsWith('/compatible-mode/')) {
-    // 兼容模式路径应该直接使用 https://dashscope.aliyuncs.com/compatible-mode/...
-    // 而不是 https://dashscope.aliyuncs.com/api/v1/compatible-mode/...
-    fullUrl = `https://dashscope.aliyuncs.com${path}`;
-  } else {
-    // 直接使用常量DASHSCOPE_BASE_URL，它已经包含了环境变量的检查
-    const base = DASHSCOPE_BASE_URL
-    // 确保path以/开头
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`
-    fullUrl = `${base}${normalizedPath}`
-  }
+  // 重置DASHSCOPE_BASE_URL，使其只包含根域名，不包含/api/v1
+  const base = 'https://dashscope.aliyuncs.com';
+  
+  // 使用兼容模式路径，确保URL格式正确
+  fullUrl = `${base}/compatible-mode/v1/chat/completions`;
   
   console.log(`[DashScope] 发送请求: ${method} ${fullUrl}`)
   console.log(`[DashScope] 请求体:`, body)
+  console.log(`[DashScope] 认证密钥:`, authKey.substring(0, 5) + '...' + authKey.substring(authKey.length - 5))
   
   try {
     const resp = await fetch(fullUrl, {
@@ -285,6 +279,7 @@ async function dashscopeFetch(path, method, body, authKey) {
     })
     
     console.log(`[DashScope] 响应状态: ${resp.status}`)
+    console.log(`[DashScope] 响应头:`, Object.fromEntries(resp.headers))
     const contentType = resp.headers.get('content-type') || ''
     const data = contentType.includes('application/json') ? await resp.json() : await resp.text()
     console.log(`[DashScope] 响应数据:`, data)
@@ -787,18 +782,14 @@ const server = http.createServer(async (req, res) => {
       // 转换为DashScope API期望的格式
       const payload = {
         model: b.model || DASHSCOPE_MODEL_ID,
-        input: {
-          messages: Array.isArray(b.messages) ? b.messages : []
-        },
-        parameters: {
-          max_tokens: b.max_tokens,
-          temperature: b.temperature,
-          top_p: b.top_p,
-          stream: b.stream || false
-        }
+        messages: Array.isArray(b.messages) ? b.messages : [],
+        temperature: b.temperature,
+        top_p: b.top_p,
+        max_tokens: b.max_tokens,
+        stream: b.stream || false
       }
-      // 通义千问API使用不同的路径格式
-      const r = await dashscopeFetch('/services/aigc/text-generation/generation', 'POST', payload, authKey)
+      // 通义千问API使用标准的OpenAI兼容路径格式
+      const r = await dashscopeFetch('/chat/completions', 'POST', payload, authKey)
       if (!r.ok) { sendJson(res, r.status, { error: (r.data?.code) || (r.data?.message) || 'SERVER_ERROR', data: r.data }); return }
       sendJson(res, 200, { ok: true, data: r.data })
       return

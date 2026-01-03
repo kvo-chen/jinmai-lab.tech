@@ -89,7 +89,9 @@ function getPlugins() {
         // 优化workbox配置，增强离线支持
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,gif,webp,avif,woff2,ttf,json}'],
         navigateFallback: '/index.html',
-        navigateFallbackAllowlist: [/^\/$/, /^\/explore/, /^\/create/, /^\/tools/, /^\/neo/, /^\/wizard/],
+        navigateFallbackAllowlist: [/^\/explore/, /^\/create/, /^\/tools/, /^\/neo/, /^\/wizard/],
+        // 确保根路径重定向正常工作，不被服务工作者拦截
+        navigateFallbackDenylist: [/^\/$/],
         skipWaiting: true,
         clientsClaim: true,
         globIgnores: ['**/*.map', '**/node_modules/**', '**/sw.js', '**/workbox-*.js'],
@@ -172,6 +174,19 @@ export default defineConfig({
   plugins: [
     react(), 
     tsconfigPaths(),
+    {
+      name: 'landing-page-redirect',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url === '/') {
+            res.writeHead(302, { Location: '/landing.html' });
+            res.end();
+          } else {
+            next();
+          }
+        });
+      }
+    },
     ViteImageOptimizer({
       // 启用WebP和AVIF格式转换
       png: {
@@ -465,6 +480,7 @@ export default defineConfig({
       // 优化输入选项
       input: {
         main: 'index.html',
+        landing: 'public/landing.html',
       },
       output: {
         // 优化资产输出
@@ -674,8 +690,8 @@ export default defineConfig({
     compress: true,
     // 设置端口为3000
     port: 3000,
-    // 自动打开浏览器
-    open: true,
+    // 自动打开浏览器，直接打开landing.html
+    open: '/landing.html',
     // 优化热更新
     hmr: {
       timeout: 3000,

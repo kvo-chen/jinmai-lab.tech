@@ -20,21 +20,9 @@ export default async function handler(req, res) {
     const path = url.pathname.replace('/api/proxy/trae-api', '');
     console.log('Processed path:', path);
     
-    // Special handling for text_to_image endpoint
-    if (path.includes('/text_to_image')) {
-      // For text_to_image endpoint, always return a default image
-      // This avoids issues with authentication errors and redirects
-      console.log('Returning default image for text_to_image endpoint');
-      
-      // Using a base64 encoded SVG as default fallback image
-      const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iMTAwIiBmaWxsPSIjZmZmZmZmIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSI3MCIgeT0iNzAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz4KPHJlY3QgeD0iODAiIHk9IjgwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNkY2RjZGMiLz4KPHJlY3QgeD0iOTAuNSIgeT0iOTEiIHdpZHRoPSIxOSIgaGVpZ2h0PSIxOCIgc3Ryb2tlPSIjNzc3Nzc3IiBzdHJva2Utb3BhY2l0eT0iMC41IiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cjwvc3ZnPg==';
-      
-      res.status(200);
-      res.setHeader('Content-Type', 'image/svg+xml');
-      return res.send(Buffer.from(defaultImage.split(',')[1], 'base64'));
-    } else {
-      console.log('Not a text_to_image endpoint, proceeding to forward');
-    }
+    // Normal handling for all endpoints including text_to_image
+    console.log('Proceeding to forward request to Trae API');
+    
     
     // For other endpoints, handle normally
     const queryString = url.search;
