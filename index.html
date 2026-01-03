@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 检查是否是首次访问，如果是则重定向到landing.html
+      if (!localStorage.getItem('hasVisitedBefore')) {
+        localStorage.setItem('hasVisitedBefore', 'true');
+        window.location.href = '/landing.html';
+      }
+    </script>
 
     <title>津脉智坊 - 津门老字号共创平台</title>
     <!-- 页面描述 -->
