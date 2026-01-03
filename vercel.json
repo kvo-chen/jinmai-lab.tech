@@ -48,13 +48,7 @@
       "status": 404
     },
 
-    {
-      "src": "^/$",
-      "status": 302,
-      "headers": {
-        "Location": "/landing.html"
-      }
-    },
+
     {
       "src": "/landing.html",
       "status": 200
