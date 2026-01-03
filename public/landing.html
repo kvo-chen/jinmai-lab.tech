@@ -256,10 +256,11 @@
                 </button>
                 <script>
                   function handleExploreClick() {
-                    // 清除localStorage中的访问记录，这样用户下次访问时还能看到landing.html页面
-                    localStorage.removeItem('hasVisitedBefore');
+                    // 用户主动点击探索按钮，设置一个临时标志表示已经探索过
+                    // 这样用户下次访问时不会被重复重定向到landing.html
+                    localStorage.setItem('hasExplored', 'true');
                     // 跳转到React应用的首页
-                    window.location.href = '/';
+                    window.location.href = '/?skip_landing=true';
                   }
                 </script>
                 <a href="#culture" class="px-8 py-4 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all text-gray-300 hover:text-white">

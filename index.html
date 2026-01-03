@@ -9,11 +9,19 @@
       const urlParams = new URLSearchParams(window.location.search);
       const hasSkipLanding = urlParams.get('skip_landing') === 'true';
       const hasVisitedBefore = localStorage.getItem('hasVisitedBefore') === 'true';
+      const hasExplored = localStorage.getItem('hasExplored') === 'true';
       
-      // 如果是首次访问且没有跳过landing页的标志，则重定向到landing.html
-      if (!hasVisitedBefore && !hasSkipLanding) {
+      // 如果用户已经探索过平台，或者有skip_landing参数，或者已经访问过，则直接进入首页
+      if (hasExplored || hasSkipLanding || hasVisitedBefore) {
+        // 如果URL中包含skip_landing参数，移除它以保持URL清洁
+        if (hasSkipLanding) {
+          const newUrl = window.location.href.replace(/\?skip_landing=true/, '');
+          window.history.replaceState({}, document.title, newUrl);
+        }
+      } else {
         // 记录首次访问
         localStorage.setItem('hasVisitedBefore', 'true');
+        // 重定向到landing.html
         window.location.href = '/landing.html';
       }
     </script>
