@@ -48,6 +48,10 @@
       "status": 404
     },
     {
+      "src": "^/\?skip_landing=true$",
+      "dest": "/index.html"
+    },
+    {
       "src": "^/$",
       "status": 302,
       "headers": {
