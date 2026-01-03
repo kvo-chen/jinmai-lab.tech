@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 检查是否是首次访问，如果是则重定向到landing.html
+      // 立即执行，不使用setTimeout，确保重定向逻辑优先执行
+      const hasVisitedBefore = localStorage.getItem('hasVisitedBefore') === 'true';
+      const hasExplored = localStorage.getItem('hasExplored') === 'true';
+      
+      // 如果是首次访问且没有探索过，则重定向到landing.html
+      if (!hasVisitedBefore && !hasExplored) {
+        // 记录首次访问
+        localStorage.setItem('hasVisitedBefore', 'true');
+        // 重定向到landing.html
+        window.location.href = '/landing.html';
+      }
+    </script>
+
+    <title>津脉智坊 - 津门老字号共创平台</title>
+    <!-- 页面描述 -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="津门老字号共创平台，传承与创新的桥梁" />
+    
+    <!-- 优化资源加载策略 -->
+    
+    <!-- 1. DNS预解析 - 提前解析关键域名 -->
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    
+    <!-- 2. 预连接 - 建立与关键资源服务器的连接 -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- 3. 预加载关键字体资源 -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- 4. 移除构建时可能导致问题的预加载资源 -->
+    <!-- 这些资源会在构建过程中被正确处理，不需要手动预加载 -->
+    
+    <!-- 6. 预加载关键图片资源 -->
+    <link rel="preload" href="data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20width='192'%20height='192'%20viewBox='0%200%20192%20192'%20fill='none'%3e%3c!--%20渐变背景%20--%3e%3clinearGradient%20id='bgGradient'%20x1='0%25'%20y1='0%25'%20x2='100%25'%20y2='100%25'%3e%3cstop%20offset='0%25'%20stop-color='%232563eb'%20/%3e%3cstop%20offset='100%25'%20stop-color='%231e40af'%20/%3e%3c/linearGradient%3e%3crect%20width='192'%20height='192'%20rx='32'%20fill='url(%23bgGradient)'/%3e%3c!--%20简约现代的JZ图标%20-%20居中布局%20--%3e%3cg%20transform='translate(36%2036)'%3e%3c!--%20左侧J字母%20-%20现代简约风格%20--%3e%3cpath%20d='M32%2032V88H56V32H32Z'%20fill='white'/%3e%3cpath%20d='M32%2088V104H56V88H32Z'%20fill='white'/%3e%3c!--%20右侧Z字母%20-%20现代简约风格%20--%3e%3cpath%20d='M64%2032L88%2032L64%2056L88%2080H64V56H48V80H32V32H48V56H64V32Z'%20fill='white'/%3e%3c!--%20环绕的圆环%20-%20现代设计%20--%3e%3ccircle%20cx='64'%20cy='64'%20r='36'%20fill='none'%20stroke='white'%20stroke-width='4'%20stroke-linecap='round'%20stroke-linejoin='round'%20opacity='0.3'/%3e%3c!--%20顶部装饰线%20--%3e%3cpath%20d='M24%2024L104%2024'%20fill='none'%20stroke='white'%20stroke-width='4'%20stroke-linecap='round'/%3e%3c!--%20底部装饰线%20--%3e%3cpath%20d='M24%20104L104%20104'%20fill='none'%20stroke='white'%20stroke-width='4'%20stroke-linecap='round'/%3e%3c/g%3e%3c/svg%3e" as="image" type="image/svg+xml" />
+    
+    <!-- 图标配置 -->
+    <link rel="icon" href="/icons/icon-192x192.svg" type="image/svg+xml" sizes="192x192" />
+    <link rel="icon" href="/icons/icon-512x512.svg" type="image/svg+xml" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
+    <!-- 兼容旧浏览器 -->
+    <link rel="shortcut icon" href="/icons/icon-192x192.svg" type="image/svg+xml" />
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- iOS 相关配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="津脉智坊" />
+    <!-- Vercel 分析配置 -->
+    <meta name="analytics-web-vitals" content="yes" />
+    <!-- 修复mobile-web-app-capable配置 -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <script type="module" crossorigin src="/entries/main-BiSIBX3L.js"></script>
+    <link rel="modulepreload" crossorigin href="/chunks/i18n-CPi6PAmy.js">
+    <link rel="modulepreload" crossorigin href="/chunks/vendor-other-CRhi5s5X.js">
+    <link rel="modulepreload" crossorigin href="/chunks/charts-recharts-D0ssCqK6.js">
+    <link rel="modulepreload" crossorigin href="/chunks/three-core-DHZMy_Lk.js">
+    <link rel="modulepreload" crossorigin href="/chunks/three-stdlib-C_4-sCbx.js">
+    <link rel="modulepreload" crossorigin href="/chunks/vendor-react-7rlDZYVK.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-analytics-D0Glag6r.js">
+    <link rel="modulepreload" crossorigin href="/chunks/db-libs-D0Hh-v_I.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-admin-u5o8ISLL.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-media-BNdY5qC-.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-other-CUE0A1-z.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-core-Ca0f-3GT.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-auxiliary-DpPURHF4.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-layout-Bz7ZwRP6.js">
+    <link rel="modulepreload" crossorigin href="/chunks/pages-community-KHLignuk.js">
+    <link rel="modulepreload" crossorigin href="/chunks/pages-create-CGx67Z2-.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-virtual-map-CYXcpMR-.js">
+    <link rel="modulepreload" crossorigin href="/chunks/components-game-D5a9jAIU.js">
+    <link rel="modulepreload" crossorigin href="/chunks/pages-experimental-fVaeVun6.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-B2N71bmL.css">
+    <link rel="stylesheet" crossorigin href="/assets/icons-fontawesome-DZ1GICRA.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
