@@ -505,13 +505,26 @@ class ImageService {
   public getFallbackUrl(alt: string): string {
     // 检查当前部署环境，返回正确的占位图片路径
     // 对于GitHub Pages部署，需要包含base路径/jinmai-lab/
+    // 对于Vercel部署（jinmai-lab.tech），直接使用根路径
     const isGithubPages = window.location.hostname.includes('github.io');
+    const isVercel = window.location.hostname.includes('jinmai-lab.tech');
     const basePath = isGithubPages ? '/jinmai-lab/' : '/';
     return `${basePath}images/placeholder-image.jpg`;
   }
 
   // 检查URL是否为有效图片URL
   private isValidImageUrl(url: string): boolean {
+    // 支持相对路径
+    if (url.startsWith('/')) {
+      return true;
+    }
+    
+    // 支持base64编码的图片数据
+    if (url.startsWith('data:')) {
+      return true;
+    }
+    
+    // 支持完整的HTTP/HTTPS URL
     try {
       const urlObj = new URL(url);
       return ['http:', 'https:'].includes(urlObj.protocol);
@@ -636,7 +649,7 @@ class ImageService {
     const normalizedUrl = this.normalizeUrl(url);
     const { 
       priority = false, 
-      validate = false, 
+      validate = true, // 默认启用验证
       size = 'md',
       quality 
     } = options || {};
@@ -663,24 +676,36 @@ class ImageService {
       return this.inProgressRequests.get(normalizedUrl)!;
     }
 
-    // 快速返回URL，不进行验证，通过图片加载事件异步更新缓存
+    // 检查URL是否为有效格式
+    if (!this.isValidImageUrl(normalizedUrl)) {
+      // 无效URL，直接返回备用图片
+      this.cache.set(normalizedUrl, {
+        url: normalizedUrl,
+        timestamp: Date.now(),
+        success: false,
+        usageCount: 1,
+        lastUsed: Date.now(),
+      });
+      return this.getFallbackUrl(alt);
+    }
+
+    // 初始化缓存项，默认失败，后续通过验证或图片加载事件更新
+    this.cache.set(normalizedUrl, {
+      url: normalizedUrl,
+      timestamp: Date.now(),
+      success: false, // 默认认为失败，后续通过验证或加载事件修正
+      usageCount: 1,
+      lastUsed: Date.now(),
+      format: this.detectSupportedFormats().avif ? 'avif' : (this.detectSupportedFormats().webp ? 'webp' : undefined),
+      quality: quality || RESPONSIVE_SIZES[size].quality,
+    });
+
     const finalUrl = this.getResponsiveUrl(normalizedUrl, size, quality);
     
     // 高优先级图片立即预加载
     if (priority) {
       this.preloadImage(finalUrl);
     }
-    
-    // 初始化缓存项，包含新的字段
-    this.cache.set(normalizedUrl, {
-      url: normalizedUrl,
-      timestamp: Date.now(),
-      success: true, // 默认认为成功，后续通过onError事件修正
-      usageCount: 1, // 初始使用次数
-      lastUsed: Date.now(), // 初始最后使用时间
-      format: this.detectSupportedFormats().avif ? 'avif' : (this.detectSupportedFormats().webp ? 'webp' : undefined), // 检测格式
-      quality: quality || RESPONSIVE_SIZES[size].quality, // 记录质量
-    });
     
     return finalUrl;
   }
