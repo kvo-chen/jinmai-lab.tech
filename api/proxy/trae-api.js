@@ -40,35 +40,52 @@ export default async function handler(req, res) {
     const queryString = url.search;
     const remoteUrl = `https://trae-api-sg.mchost.guru${path}${queryString}`;
     
-    const response = await fetch(remoteUrl, {
-      method: req.method,
-      headers: {
-        'Accept': 'application/json, image/*, text/html, */*',
-        ...(req.method !== 'GET' && req.headers['content-type'] && {
-          'Content-Type': req.headers['content-type']
+    try {
+      const response = await fetch(remoteUrl, {
+        method: req.method,
+        headers: {
+          'Accept': 'application/json, image/*, text/html, */*',
+          ...(req.method !== 'GET' && req.headers['content-type'] && {
+            'Content-Type': req.headers['content-type']
+          })
+        },
+        ...(req.method !== 'GET' && req.body && {
+          body: req.body
         })
-      },
-      ...(req.method !== 'GET' && req.body && {
-        body: req.body
-      })
-    });
-    
-    // Set the response status code and headers
-    res.status(response.status);
-    
-    // Copy response headers
-    response.headers.forEach((value, name) => {
-      res.setHeader(name, value);
-    });
-    
-    // Return the response body
-    const buffer = Buffer.from(await response.arrayBuffer());
-    return res.send(buffer);
+      });
+      
+      // Set the response status code and headers
+      res.status(response.status);
+      
+      // Copy response headers
+      response.headers.forEach((value, name) => {
+        res.setHeader(name, value);
+      });
+      
+      // Return the response body
+      const buffer = Buffer.from(await response.arrayBuffer());
+      return res.send(buffer);
+    } catch (fetchError) {
+      console.error('Trae API fetch error:', fetchError);
+      
+      // If fetch fails, return a default fallback image
+      console.log('Fetch failed, returning fallback image');
+      
+      // Using a base64 encoded SVG as fallback image
+      const fallbackImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iMTAwIiBmaWxsPSIjZmZmZmZmIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSI3MCIgeT0iNzAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz4KPHJlY3QgeD0iODAiIHk9IjgwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNkY2RjZGMiLz4KPHJlY3QgeD0iOTAuNSIgeT0iOTEiIHdpZHRoPSIxOSIgaGVpZ2h0PSIxOCIgc3Ryb2tlPSIjNzc3Nzc3IiBzdHJva2Utb3BhY2l0eT0iMC41IiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cjwvc3ZnPg==';
+      
+      res.status(200);
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.send(Buffer.from(fallbackImage.split(',')[1], 'base64'));
+    }
   } catch (error) {
     console.error('Trae API proxy error:', error);
-    return res.status(500).json({
-      error: 'PROXY_ERROR',
-      message: error.message || 'Unknown error occurred'
-    });
+    
+    // Return a default fallback image in case of any error
+    const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iMTAwIiBmaWxsPSIjZmZmZmZmIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSI3MCIgeT0iNzAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz4KPHJlY3QgeD0iODAiIHk9IjgwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNkY2RjZGMiLz4KPHJlY3QgeD0iOTAuNSIgeT0iOTEiIHdpZHRoPSIxOSIgaGVpZ2h0PSIxOCIgc3Ryb2tlPSIjNzc3Nzc3IiBzdHJva2Utb3BhY2l0eT0iMC41IiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cjwvc3ZnPg==';
+    
+    res.status(200);
+    res.setHeader('Content-Type', 'image/svg+xml');
+    return res.send(Buffer.from(defaultImage.split(',')[1], 'base64'));
   }
 }

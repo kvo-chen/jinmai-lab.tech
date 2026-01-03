@@ -1,4 +1,54 @@
 {
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build"
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist",
+        "buildCommand": "pnpm build"
+      }
+    },
+    {
+      "src": "api/proxy/trae-api.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/proxy/unsplash.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/proxy/video.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/health/ping.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/proxy/trae-api(.*)",
+      "dest": "/api/proxy/trae-api.js"
+    },
+    {
+      "src": "/api/proxy/unsplash(.*)",
+      "dest": "/api/proxy/unsplash.js"
+    },
+    {
+      "src": "/api/proxy/video(.*)",
+      "dest": "/api/proxy/video.js"
+    },
+    {
+      "src": "/api/health/ping",
+      "dest": "/api/health/ping.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
