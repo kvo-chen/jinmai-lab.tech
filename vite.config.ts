@@ -174,19 +174,6 @@ export default defineConfig({
   plugins: [
     react(), 
     tsconfigPaths(),
-    {
-      name: 'landing-page-redirect',
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          if (req.url === '/') {
-            res.writeHead(302, { Location: '/landing.html' });
-            res.end();
-          } else {
-            next();
-          }
-        });
-      }
-    },
     ViteImageOptimizer({
       // 启用WebP和AVIF格式转换
       png: {
