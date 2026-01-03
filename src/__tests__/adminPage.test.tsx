@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import Admin from '../pages/admin/Admin';
 import { AuthContext } from '../contexts/authContext';
@@ -77,14 +77,10 @@ jest.mock('../lib/apiClient', () => ({
 }));
 
 // Mock vite environment variables
-globalThis.import = {
-  ...globalThis.import,
-  meta: {
-    env: {
-      VITE_API_BASE_URL: 'http://localhost:3000/api',
-      VITE_ENV: 'test',
-    },
-  },
+process.env = {
+  ...process.env,
+  VITE_API_BASE_URL: 'http://localhost:3000/api',
+  VITE_ENV: 'test',
 };
 
 // Mock theme context
@@ -98,30 +94,32 @@ jest.mock('../hooks/useTheme', () => ({
   }),
 }));
 
-// Create mock context value
+// Mock AuthContext value
 const mockContextValue = {
   user: {
     id: '1',
     username: 'admin',
     email: 'admin@example.com',
-    role: 'admin',
-    isMember: true,
     avatar: 'https://example.com/avatar.jpg',
     interests: ['admin'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    isAdmin: true,
+    membershipLevel: 'vip' as const,
+    membershipStatus: 'active' as const,
+    membershipStart: new Date().toISOString(),
   },
-  token: 'admin-token',
   isAuthenticated: true,
-  isLoggedIn: true,
   login: jest.fn().mockResolvedValue(true),
-  register: jest.fn().mockResolvedValue(true),
+  register: jest.fn().mockResolvedValue({ success: true }),
   logout: jest.fn(),
-  checkAuth: jest.fn().mockResolvedValue(true),
+  setIsAuthenticated: jest.fn(),
   quickLogin: jest.fn().mockResolvedValue(true),
-  checkMembership: jest.fn().mockResolvedValue(true),
-  isLoading: false,
-  error: null,
+  updateUser: jest.fn(),
+  updateMembership: jest.fn().mockResolvedValue(true),
+  checkMembershipStatus: jest.fn().mockReturnValue(true),
+  getMembershipBenefits: jest.fn().mockReturnValue([]),
+  enableTwoFactorAuth: jest.fn().mockResolvedValue(true),
+  verifyTwoFactorCode: jest.fn().mockResolvedValue(true),
+  refreshToken: jest.fn().mockResolvedValue(true),
 };
 
 // Create a custom render function with auth context provider

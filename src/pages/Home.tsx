@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
@@ -45,9 +45,9 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
   
-  const handleExplore = () => {
-    navigate('/explore');
-  };
+  const handleExplore = useCallback(() => {
+    window.location.href = '/landing.html';
+  }, []);
   
   // 创作提示词输入状态
   const [search, setSearch] = useState('');
@@ -78,17 +78,17 @@ export default function Home() {
     return inspireOn ? `${base} 灵感加持` : base;
   };
   
-  const handleInspireClick = () => {
+  const handleInspireClick = useCallback(() => {
     const p = ensurePrompt();
     if (!p) return;
     navigate(`/neo?from=home&query=${encodeURIComponent(p)}`);
-  };
+  }, [navigate]);
   
-  const handleGenerateClick = () => {
+  const handleGenerateClick = useCallback(() => {
     const p = ensurePrompt();
     if (!p) return;
     navigate(`/tools?from=home&query=${encodeURIComponent(p)}`);
-  };
+  }, [navigate]);
   
   const handleOptimizeClick = async () => {
     const p = ensurePrompt();
@@ -231,51 +231,64 @@ export default function Home() {
     try { localStorage.setItem('heroVariant', heroVariant); } catch {}
   }, [heroVariant])
   
-  // 推荐问题
-  const recommended = [
+  // 使用固定的原始作品，确保首页显示内容一致
+  // 推荐作品 - 从originalWorks中获取前12个作品
+  const gallery = useMemo(() => 
+    mockWorks.slice(0, 12).filter(item => item.id <= 12), 
+    []
+  );
+  
+  // 热门创作者 - 基于作品的likes来推荐创作者（去重并排序）
+  const popularCreators = useMemo(() => 
+    Array.from(
+      mockWorks
+        .filter(item => item.id <= 12) // 只使用原始作品
+        .reduce((acc, work) => {
+          const creator = acc.get(work.creator) || { name: work.creator, avatar: work.creatorAvatar, likes: 0, works: [] };
+          creator.likes += work.likes;
+          creator.works.push(work);
+          acc.set(work.creator, creator);
+          return acc;
+        }, new Map<string, { name: string; avatar: string; likes: number; works: typeof mockWorks }>())
+        .values()
+    )
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 6),
+    []
+  );
+  
+  // 最新作品 - 基于id排序，只使用原始作品
+  const latestWorks = useMemo(() => 
+    [...mockWorks]
+      .filter(item => item.id <= 8) // 只使用前8个原始作品
+      .sort((a, b) => b.id - a.id),
+    []
+  );
+  
+  // 热门标签 - 统计标签出现次数并排序，只使用原始作品
+  const popularTags = useMemo(() => {
+    const tagCounts = mockWorks
+      .filter(item => item.id <= 12) // 只使用原始作品
+      .flatMap(work => work.tags)
+      .reduce((acc, tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    
+    return Object.entries(tagCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 20)
+      .map(([tag]) => tag);
+  }, []);
+  
+  // 推荐问题 - 使用useMemo缓存
+  const recommended = useMemo(() => [
     '国潮风格的品牌包装如何设计',
     '杨柳青年画如何现代化表达',
     '非遗元素适合哪些商业场景',
     '天津传统色彩的应用指南',
     '品牌与老字号共创的最佳实践'
-  ];
-  
-  // 推荐作品 - 从mockWorks中获取，展示更多作品
-  const gallery = mockWorks.slice(0, 12); // 展示前12个作品
-  
-  // 热门创作者 - 基于作品的likes来推荐创作者（去重并排序）
-  const popularCreators = Array.from(
-    mockWorks
-      .reduce((acc, work) => {
-        const creator = acc.get(work.creator) || { name: work.creator, avatar: work.creatorAvatar, likes: 0, works: [] };
-        creator.likes += work.likes;
-        creator.works.push(work);
-        acc.set(work.creator, creator);
-        return acc;
-      }, new Map<string, { name: string; avatar: string; likes: number; works: typeof mockWorks }>())
-      .values()
-  )
-  .sort((a, b) => b.likes - a.likes)
-  .slice(0, 6);
-  
-  // 最新作品 - 基于id排序，假设id越大越新
-  // 为每个作品添加唯一参数，确保图片API返回不同的图片
-  const latestWorks = [...mockWorks]
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 8);
-  
-  // 热门标签 - 统计标签出现次数并排序
-  const tagCounts = mockWorks
-    .flatMap(work => work.tags)
-    .reduce((acc, tag) => {
-      acc[tag] = (acc[tag] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-  
-  const popularTags = Object.entries(tagCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 20)
-    .map(([tag]) => tag);
+  ], []);
   
 
   
@@ -401,7 +414,7 @@ export default function Home() {
 
   return (
     <section 
-        className={`relative w-full pt-12 px-4 md:px-6 ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in overflow-x-hidden`}
+        className={`relative w-full pt-12 px-4 md:px-6 pb-20 ${isDark ? 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'} animate-fade-in`}
       >
 
       

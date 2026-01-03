@@ -65,18 +65,18 @@ export const TianjinButton: React.FC<{
   const v = useMemo(() => variant || (primary ? 'primary' : 'secondary'), [variant, primary]);
   
   const bgMap = useMemo(() => ({
-    primary: isDark ? 'bg-[var(--accent-red)] hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-700',
-    secondary: isDark ? 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] ring-1 ring-[var(--border-primary)]' : 'bg-white hover:bg-gray-50 ring-1 ' + (isDark ? 'ring-gray-600' : 'ring-gray-200'),
-    danger: isDark ? 'bg-[var(--accent-red)] hover:bg-red-700' : 'bg-red-600 hover:bg-red-700',
-    ghost: isDark ? 'bg-transparent hover:bg-[var(--bg-hover)] ring-1 ring-[var(--border-secondary)]' : 'bg-transparent hover:bg-gray-50 ring-1 ring-gray-200',
+    primary: 'bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90',
+    secondary: 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] ring-1 ring-[var(--border-primary)]',
+    danger: 'bg-[var(--color-danger, #ef4444)] hover:bg-[var(--color-danger, #dc2626)]',
+    ghost: 'bg-transparent hover:bg-[var(--bg-hover)] ring-1 ring-[var(--border-secondary)]',
     heritage: 'bg-gradient-to-r from-red-700 to-amber-500 hover:from-red-600 hover:to-amber-600',
   }), [isDark]);
   
   const textMap = useMemo(() => ({
     primary: 'text-white',
-    secondary: isDark ? 'text-[var(--text-primary)]' : 'text-gray-900',
+    secondary: 'text-[var(--text-primary)]',
     danger: 'text-white',
-    ghost: isDark ? 'text-[var(--text-secondary)]' : 'text-gray-800',
+    ghost: 'text-[var(--text-secondary)]',
     heritage: 'text-white',
   }), [isDark]);
 
@@ -397,10 +397,10 @@ export const TianjinTag: React.FC<{
   
   // 缓存colorMap，避免每次渲染都重新创建
   const colorMap = useMemo(() => ({
-    blue: isDark ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-100 text-blue-600 border-blue-200',
-    red: isDark ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-100 text-red-600 border-red-200',
-    green: isDark ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-100 text-green-600 border-green-200',
-    yellow: isDark ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-100 text-yellow-600 border-yellow-200'
+    blue: `bg-[var(--color-blue, ${isDark ? '#1e3a8a' : '#dbeafe'})] text-[var(--color-blue-text, ${isDark ? '#93c5fd' : '#1e40af'})] border-[var(--color-blue-border, ${isDark ? '#3b82f6' : '#bfdbfe'})]`,
+    red: `bg-[var(--color-red, ${isDark ? '#7f1d1d' : '#fee2e2'})] text-[var(--color-red-text, ${isDark ? '#fca5a5' : '#dc2626'})] border-[var(--color-red-border, ${isDark ? '#ef4444' : '#fecaca'})]`,
+    green: `bg-[var(--color-green, ${isDark ? '#166534' : '#dcfce7'})] text-[var(--color-green-text, ${isDark ? '#86efac' : '#15803d'})] border-[var(--color-green-border, ${isDark ? '#22c55e' : '#bbf7d0'})]`,
+    yellow: `bg-[var(--color-yellow, ${isDark ? '#92400e' : '#fef3c7'})] text-[var(--color-yellow-text, ${isDark ? '#fde68a' : '#b45309'})] border-[var(--color-yellow-border, ${isDark ? '#f59e0b' : '#fde68a'})]`
   }), [isDark]);
   
   // 缓存最终className
@@ -657,20 +657,21 @@ export const TianjinImage: React.FC<{
       onClick={onClick}
     >
       <LazyImage
-        src={src}
-        alt={alt}
-        className={`w-full h-full`}
-        ratio={ratio}
-        fit={fit}
-        position={position}
-        loading={loading}
-        priority={priority}
-        quality={quality}
-        onLoad={onLoad}
-        onError={onError}
-        disableFallback={disableFallback}
-        fallbackSrc={fallbackSrc}
-      />
+          src={src}
+          alt={alt}
+          className={`w-full h-full`}
+          ratio={ratio}
+          fit={fit}
+          position={position}
+          loading={loading}
+          priority={priority}
+          quality={quality}
+          onLoad={onLoad}
+          onError={onError}
+          disableFallback={disableFallback} // 使用父组件传入的值
+          // 为所有图片添加默认的fallbackSrc，确保在图片加载失败时能显示占位符
+          fallbackSrc={fallbackSrc || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iMTAwIiBmaWxsPSIjZmZmZmZmIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNzAiIGZpbGw9IiM2NjY2NjYiLz4KPHN2ZyB4PSI3MCIgeT0iNzAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0id2hpdGUiLz4KPHJlY3QgeD0iODAiIHk9IjgwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNkY2RjZGMiLz4KPHJlY3QgeD0iOTAuNSIgeT0iOTEiIHdpZHRoPSIxOSIgaGVpZ2h0PSIxOCIgc3Ryb2tlPSIjNzc3Nzc3IiBzdHJva2Utb3BhY2l0eT0iMC41IiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cjwvc3ZnPg=='}
+        />
       
       {badge && (
         <span

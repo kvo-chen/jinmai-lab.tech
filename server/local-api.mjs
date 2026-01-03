@@ -116,7 +116,7 @@ try {
 }
 
 // 端口配置
-const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3010
+const PORT = Number(process.env.LOCAL_API_PORT || process.env.PORT) || 3020
 
 // Volcengine TTS config (server-side only)
 const VOLC_TTS_APP_ID = process.env.VOLC_TTS_APP_ID || ''
@@ -1099,6 +1099,9 @@ const server = http.createServer(async (req, res) => {
       const remoteUrl = `https://trae-api-sg.mchost.guru${remotePath}${queryString}`
       
       try {
+        // 正常处理所有trae-api请求，包括text_to_image端点
+        console.log(`Proxying to trae-api: ${remoteUrl}`)
+        
         // 允许重定向，最多跟随10次重定向
         const resp = await fetch(remoteUrl, {
           method: req.method,

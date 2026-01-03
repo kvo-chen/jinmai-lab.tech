@@ -1,0 +1,8 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#fffbeb" rx="20"/>
+  <path d="M 40 60 L 160 60 L 160 140 L 40 140 Z" fill="#fbbf24"/>
+  <circle cx="40" cy="100" r="10" fill="#fffbeb"/>
+  <circle cx="160" cy="100" r="10" fill="#fffbeb"/>
+  <text x="100" y="95" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#000">¥50</text>
+  <text x="100" y="120" font-family="Arial" font-size="16" text-anchor="middle" fill="#000">优惠券</text>
+</svg>

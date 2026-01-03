@@ -1,37 +1,43 @@
-/* 蓝色主题高级色彩方案 */
+/* 蓝色主题 - 基于白色主题框架 */
 .blue {
-  /* 优化后的蓝色背景层次 */
-  --bg-primary: #f0f9ff;
-  --bg-secondary: #e0f2fe;
-  --bg-tertiary: #bae6fd;
-  --bg-hover: #7dd3fc;
-  --bg-active: #38bdf8;
+  /* 蓝色主题色彩方案 */
+  --color-primary: #3b82f6;
+  --color-secondary: #60a5fa;
+  --color-accent: #0ea5e9;
+  --color-neutral: #0369a1;
   
-  /* 优化后的蓝色文字层次 */
+  /* 蓝色主题背景层次 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0f9ff;
+  --bg-tertiary: #e0f2fe;
+  --bg-hover: #bae6fd;
+  --bg-active: #7dd3fc;
+  
+  /* 蓝色主题文字层次 */
   --text-primary: #0c4a6e;
   --text-secondary: #075985;
   --text-tertiary: #0369a1;
   --text-muted: #0284c7;
   
-  /* 优化后的蓝色边框层次 */
-  --border-primary: #bae6fd;
-  --border-secondary: #7dd3fc;
-  --border-tertiary: #38bdf8;
+  /* 蓝色主题边框层次 */
+  --border-primary: #e5e7eb;
+  --border-secondary: #bae6fd;
+  --border-tertiary: #7dd3fc;
   
-  /* 优化后的蓝色主题阴影 */
-  --shadow-sm: 0 1px 2px 0 rgba(56, 189, 248, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(56, 189, 248, 0.08), 0 2px 4px -1px rgba(56, 189, 248, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(56, 189, 248, 0.08), 0 4px 6px -2px rgba(56, 189, 248, 0.03);
-  --shadow-xl: 0 20px 25px -5px rgba(56, 189, 248, 0.08), 0 8px 10px -6px rgba(56, 189, 248, 0.02);
+  /* 蓝色主题阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(59, 130, 246, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(59, 130, 246, 0.08), 0 2px 4px -1px rgba(59, 130, 246, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(59, 130, 246, 0.08), 0 4px 6px -2px rgba(59, 130, 246, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(59, 130, 246, 0.08), 0 8px 10px -6px rgba(59, 130, 246, 0.02);
   
-  /* 优化后的蓝色主题发光效果 */
-  --glow-primary: 0 0 10px rgba(56, 189, 248, 0.2);
-  --glow-secondary: 0 0 15px rgba(3, 105, 161, 0.2);
-  --glow-accent: 0 0 20px rgba(2, 132, 199, 0.2);
+  /* 蓝色主题发光效果 */
+  --glow-primary: 0 0 10px rgba(59, 130, 246, 0.2);
+  --glow-secondary: 0 0 15px rgba(96, 165, 250, 0.2);
+  --glow-accent: 0 0 20px rgba(14, 165, 233, 0.2);
   
-  /* 优化后的蓝色主题渐变 */
-  --gradient-primary: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-  --gradient-secondary: linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%);
+  /* 蓝色主题渐变 */
+  --gradient-primary: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  --gradient-secondary: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   --gradient-accent: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
 }
 

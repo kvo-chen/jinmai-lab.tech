@@ -50,7 +50,7 @@ export const XRRay = jest.fn().mockImplementation(() => ({
   direction: { x: 0, y: 0, z: -1 }
 }));
 export const TextureLoader = jest.fn().mockImplementation(() => ({
-  load: jest.fn().mockImplementation((url, onLoad) => {
+  load: jest.fn().mockImplementation((_url, onLoad) => {
     const texture = new Texture();
     if (onLoad) {
       onLoad(texture);

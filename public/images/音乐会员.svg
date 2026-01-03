@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#f0fdf4" rx="20"/>
+  <circle cx="100" cy="100" r="70" fill="#22c55e"/>
+  <path d="M 70 80 Q 90 70 110 80 Q 130 90 130 110 Q 130 130 110 140 Q 90 150 70 140 Q 50 130 50 110 Q 50 90 70 80 Z" fill="#fef08a"/>
+  <path d="M 80 90 L 100 90 L 100 130 L 80 130 Z" fill="#fef08a" opacity="0.8"/>
+  <text x="100" y="160" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#000">音乐</text>
+</svg>

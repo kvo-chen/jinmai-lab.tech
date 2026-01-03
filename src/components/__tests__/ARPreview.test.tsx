@@ -1,5 +1,4 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom'; // 添加jest-dom扩展
 import ARPreview, { SimplifiedARPreviewConfig as ARPreviewConfig } from '../SimplifiedARPreview';
 
@@ -41,23 +40,7 @@ window.cancelIdleCallback = jest.fn((id) => {
   Group: jest.fn(),
 };
 
-// Mock Work type
-const mockWork = {
-  id: 1,
-  title: '测试作品',
-  description: '这是一个测试作品',
-  creator: '测试作者',
-  creatorAvatar: 'https://example.com/avatar.jpg',
-  thumbnail: 'https://example.com/thumbnail.jpg',
-  likes: 100,
-  comments: 10,
-  views: 1000,
-  category: '测试类别',
-  tags: ['标签1', '标签2', '标签3'],
-  featured: false,
-  imageUrl: 'https://example.com/image.jpg',
-  modelUrl: 'https://example.com/model.glb',
-};
+
 
 describe('ARPreview Component', () => {
   const defaultConfig: ARPreviewConfig = {
@@ -79,7 +62,6 @@ describe('ARPreview Component', () => {
       <ARPreview 
         config={defaultConfig} 
         onClose={mockOnClose} 
-        work={mockWork}
       />
     );
     
@@ -92,7 +74,6 @@ describe('ARPreview Component', () => {
       <ARPreview 
         config={defaultConfig} 
         onClose={mockOnClose} 
-        work={mockWork}
       />
     );
     
@@ -105,7 +86,6 @@ describe('ARPreview Component', () => {
       <ARPreview 
         config={defaultConfig} 
         onClose={mockOnClose} 
-        work={mockWork}
       />
     );
     
@@ -136,7 +116,6 @@ describe('ARPreview Component', () => {
       <ARPreview 
         config={imageConfig} 
         onClose={mockOnClose} 
-        work={mockWork}
       />
     );
     
@@ -149,7 +128,6 @@ describe('ARPreview Component', () => {
       <ARPreview 
         config={defaultConfig} 
         onClose={mockOnClose} 
-        work={mockWork}
       />
     );
     
@@ -162,7 +140,6 @@ describe('ARPreview Component', () => {
       <ARPreview 
         config={defaultConfig} 
         onClose={mockOnClose} 
-        work={mockWork}
       />
     );
     

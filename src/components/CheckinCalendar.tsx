@@ -38,13 +38,18 @@ const CheckinCalendar: React.FC<CheckinCalendarProps> = ({ userId = 'current-use
       setCheckinPoints(totalPoints);
       
       // 更新成就服务中的积分记录
+      // 计算当前总积分
+      const currentPoints = achievementService.calculateUserPoints();
+      const newBalance = currentPoints + totalPoints;
+      
       achievementService.pointsRecords.push({
         id: achievementService.pointsRecords.length + 1,
         source: '每日签到',
         type: 'daily',
         points: totalPoints,
         date: new Date().toISOString().split('T')[0],
-        description: `连续签到${record.consecutiveDays}天，获得${totalPoints}积分`
+        description: `连续签到${record.consecutiveDays}天，获得${totalPoints}积分`,
+        balanceAfter: newBalance
       });
       
       // 更新签到状态和记录

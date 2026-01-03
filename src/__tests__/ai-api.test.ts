@@ -1,10 +1,8 @@
 // AI大模型API连接检查和测试
 // 核心API测试文件
 
-import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
+// Jest globals are available globally in this environment
 import { llmService, AVAILABLE_MODELS } from '../services/llmService';
-import apiClient from '../lib/apiClient';
-import errorService from '../services/errorService';
 
 // 测试报告类型定义
 interface TestResult {
@@ -141,8 +139,8 @@ describe('AI大模型API连接检查和测试', () => {
         try {
           const startTime = Date.now();
           
-          // 使用llmService的checkConnectionStatus方法检查连接状态
-          const status = await llmService.checkConnectionStatus(model.id);
+          // 使用llmService的getConnectionStatus方法检查连接状态
+          const status = llmService.getConnectionStatus(model.id);
           
           const responseTime = Date.now() - startTime;
           

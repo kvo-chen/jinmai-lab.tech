@@ -55,12 +55,109 @@ const KEY = 'jmzf_posts';
 const USER_BOOKMARKS_KEY = 'jmzf_user_bookmarks';
 const USER_LIKES_KEY = 'jmzf_user_likes';
 
+const CACHE_TTL = 5 * 60 * 1000;
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const postCache = new Map<string, CacheEntry<Post[]>>();
+const bookmarkCache = new Map<string, CacheEntry<string[]>>();
+const likeCache = new Map<string, CacheEntry<string[]>>();
+const bookmarkedPostsCache = new Map<string, CacheEntry<Post[]>>();
+const likedPostsCache = new Map<string, CacheEntry<Post[]>>();
+
+let pendingUpdates = new Map<string, any>();
+let updateTimeout: NodeJS.Timeout | null = null;
+
+function isCacheValid<T>(cache: Map<string, CacheEntry<T>>, key: string): boolean {
+  const entry = cache.get(key);
+  if (!entry) return false;
+  return Date.now() - entry.timestamp < CACHE_TTL;
+}
+
+function getCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  if (isCacheValid(cache, key)) {
+    return cache.get(key)!.data;
+  }
+  return null;
+}
+
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): void {
+  cache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
+function clearCache(cache: Map<string, CacheEntry<any>>): void {
+  cache.clear();
+}
+
+function clearAllCaches(): void {
+  clearCache(postCache);
+  clearCache(bookmarkCache);
+  clearCache(likeCache);
+  clearCache(bookmarkedPostsCache);
+  clearCache(likedPostsCache);
+}
+
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    console.error(`Error reading from localStorage for key ${key}:`, error);
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.error(`Error writing to localStorage for key ${key}:`, error);
+  }
+}
+
+function scheduleBatchUpdate(key: string, value: any): void {
+  pendingUpdates.set(key, value);
+  
+  if (updateTimeout) {
+    clearTimeout(updateTimeout);
+  }
+  
+  updateTimeout = setTimeout(() => {
+    flushPendingUpdates();
+  }, 100);
+}
+
+function flushPendingUpdates(): void {
+  pendingUpdates.forEach((value, key) => {
+    safeLocalStorageSet(key, JSON.stringify(value));
+  });
+  pendingUpdates.clear();
+  updateTimeout = null;
+}
+
+function invalidateRelatedCaches(): void {
+  clearCache(bookmarkedPostsCache);
+  clearCache(likedPostsCache);
+}
+
 /**
  * 获取所有帖子
  */
 export function getPosts(): Post[] {
-  const raw = localStorage.getItem(KEY);
-  return raw ? JSON.parse(raw) : [];
+  const cached = getCache(postCache, 'all');
+  if (cached) {
+    return cached;
+  }
+  
+  const raw = safeLocalStorageGet(KEY);
+  const posts = raw ? JSON.parse(raw) : [];
+  setCache(postCache, 'all', posts);
+  return posts;
 }
 
 /**
@@ -83,7 +180,8 @@ export function addPost(p: Omit<Post, 'id' | 'likes' | 'comments' | 'date' | 'is
   };
   const posts = getPosts();
   posts.unshift(post);
-  localStorage.setItem(KEY, JSON.stringify(posts));
+  scheduleBatchUpdate(KEY, posts);
+  setCache(postCache, 'all', posts);
   return post;
 }
 
@@ -91,14 +189,13 @@ export function addPost(p: Omit<Post, 'id' | 'likes' | 'comments' | 'date' | 'is
  * 点赞帖子
  */
 export function likePost(id: string): Post | undefined {
-  // 直接更新用户点赞记录，不再依赖getPosts()
   const userLikes = getUserLikes();
   if (!userLikes.includes(id)) {
     userLikes.push(id);
-    localStorage.setItem(USER_LIKES_KEY, JSON.stringify(userLikes));
+    scheduleBatchUpdate(USER_LIKES_KEY, userLikes);
+    setCache(likeCache, 'user', userLikes);
   }
   
-  // 从mockWorks中查找对应的帖子并返回
   const work = mockWorks.find(w => w.id.toString() === id);
   if (work) {
     return {
@@ -132,12 +229,11 @@ export function likePost(id: string): Post | undefined {
  * 取消点赞帖子
  */
 export function unlikePost(id: string): Post | undefined {
-  // 直接更新用户点赞记录，不再依赖getPosts()
   const userLikes = getUserLikes();
   const updatedLikes = userLikes.filter(postId => postId !== id);
-  localStorage.setItem(USER_LIKES_KEY, JSON.stringify(updatedLikes));
+  scheduleBatchUpdate(USER_LIKES_KEY, updatedLikes);
+  setCache(likeCache, 'user', updatedLikes);
   
-  // 从mockWorks中查找对应的帖子并返回
   const work = mockWorks.find(w => w.id.toString() === id);
   if (work) {
     return {
@@ -171,14 +267,13 @@ export function unlikePost(id: string): Post | undefined {
  * 收藏帖子
  */
 export function bookmarkPost(id: string): Post | undefined {
-  // 直接更新用户收藏记录，不再依赖getPosts()
   const userBookmarks = getUserBookmarks();
   if (!userBookmarks.includes(id)) {
     userBookmarks.push(id);
-    localStorage.setItem(USER_BOOKMARKS_KEY, JSON.stringify(userBookmarks));
+    scheduleBatchUpdate(USER_BOOKMARKS_KEY, userBookmarks);
+    setCache(bookmarkCache, 'user', userBookmarks);
   }
   
-  // 从mockWorks中查找对应的帖子并返回
   const work = mockWorks.find(w => w.id.toString() === id);
   if (work) {
     return {
@@ -212,12 +307,11 @@ export function bookmarkPost(id: string): Post | undefined {
  * 取消收藏帖子
  */
 export function unbookmarkPost(id: string): Post | undefined {
-  // 直接更新用户收藏记录，不再依赖getPosts()
   const userBookmarks = getUserBookmarks();
   const updatedBookmarks = userBookmarks.filter(postId => postId !== id);
-  localStorage.setItem(USER_BOOKMARKS_KEY, JSON.stringify(updatedBookmarks));
+  scheduleBatchUpdate(USER_BOOKMARKS_KEY, updatedBookmarks);
+  setCache(bookmarkCache, 'user', updatedBookmarks);
   
-  // 从mockWorks中查找对应的帖子并返回
   const work = mockWorks.find(w => w.id.toString() === id);
   if (work) {
     return {
@@ -251,25 +345,43 @@ export function unbookmarkPost(id: string): Post | undefined {
  * 获取用户收藏的帖子ID列表
  */
 export function getUserBookmarks(): string[] {
-  const raw = localStorage.getItem(USER_BOOKMARKS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  const cached = getCache(bookmarkCache, 'user');
+  if (cached) {
+    return cached;
+  }
+  
+  const raw = safeLocalStorageGet(USER_BOOKMARKS_KEY);
+  const bookmarks = raw ? JSON.parse(raw) : [];
+  setCache(bookmarkCache, 'user', bookmarks);
+  return bookmarks;
 }
 
 /**
  * 获取用户点赞的帖子ID列表
  */
 export function getUserLikes(): string[] {
-  const raw = localStorage.getItem(USER_LIKES_KEY);
-  return raw ? JSON.parse(raw) : [];
+  const cached = getCache(likeCache, 'user');
+  if (cached) {
+    return cached;
+  }
+  
+  const raw = safeLocalStorageGet(USER_LIKES_KEY);
+  const likes = raw ? JSON.parse(raw) : [];
+  setCache(likeCache, 'user', likes);
+  return likes;
 }
 
 /**
  * 获取用户收藏的帖子
  */
 export function getBookmarkedPosts(): Post[] {
-  // 直接使用mockWorks数据，确保收藏的作品能正确显示
+  const cached = getCache(bookmarkedPostsCache, 'all');
+  if (cached) {
+    return cached;
+  }
+  
   const bookmarkedIds = getUserBookmarks();
-  return mockWorks
+  const posts = mockWorks
     .filter(post => bookmarkedIds.includes(post.id.toString()))
     .map(work => ({
       id: work.id.toString(),
@@ -294,15 +406,22 @@ export function getBookmarkedPosts(): Post[] {
       toolsUsed: [],
       downloadCount: 0
     }));
+  
+  setCache(bookmarkedPostsCache, 'all', posts);
+  return posts;
 }
 
 /**
  * 获取用户点赞的帖子
  */
 export function getLikedPosts(): Post[] {
-  // 直接使用mockWorks数据，确保点赞的作品能正确显示
+  const cached = getCache(likedPostsCache, 'all');
+  if (cached) {
+    return cached;
+  }
+  
   const likedIds = getUserLikes();
-  return mockWorks
+  const posts = mockWorks
     .filter(post => likedIds.includes(post.id.toString()))
     .map(work => ({
       id: work.id.toString(),
@@ -327,6 +446,9 @@ export function getLikedPosts(): Post[] {
       toolsUsed: [],
       downloadCount: 0
     }));
+  
+  setCache(likedPostsCache, 'all', posts);
+  return posts;
 }
 
 /**
@@ -378,7 +500,8 @@ export function addComment(postId: string, content: string, parentId?: string): 
       posts[postIdx].comments.push(newComment);
     }
 
-    localStorage.setItem(KEY, JSON.stringify(posts));
+    scheduleBatchUpdate(KEY, posts);
+    setCache(postCache, 'all', posts);
     return posts[postIdx];
   }
   return undefined;
@@ -395,16 +518,14 @@ export function likeComment(postId: string, commentId: string): Post | undefined
     if (result) {
       result.comment.likes += 1;
       result.comment.isLiked = true;
-      localStorage.setItem(KEY, JSON.stringify(posts));
+      scheduleBatchUpdate(KEY, posts);
+      setCache(postCache, 'all', posts);
       return posts[postIdx];
     }
   }
   return undefined;
 }
 
-/**
- * 取消点赞评论
- */
 export function unlikeComment(postId: string, commentId: string): Post | undefined {
   const posts = getPosts();
   const postIdx = posts.findIndex(p => p.id === postId);
@@ -413,42 +534,36 @@ export function unlikeComment(postId: string, commentId: string): Post | undefin
     if (result && result.comment.likes > 0) {
       result.comment.likes -= 1;
       result.comment.isLiked = false;
-      localStorage.setItem(KEY, JSON.stringify(posts));
+      scheduleBatchUpdate(KEY, posts);
+      setCache(postCache, 'all', posts);
       return posts[postIdx];
     }
   }
   return undefined;
 }
 
-/**
- * 添加评论反应
- */
 export function addCommentReaction(postId: string, commentId: string, reaction: CommentReaction): Post | undefined {
   const posts = getPosts();
   const postIdx = posts.findIndex(p => p.id === postId);
   if (postIdx >= 0) {
     const result = findComment(posts[postIdx].comments, commentId);
     if (result) {
-      // 如果用户已经添加了该反应，则移除
       const userReactionIndex = result.comment.userReactions.indexOf(reaction);
       if (userReactionIndex > -1) {
         result.comment.userReactions.splice(userReactionIndex, 1);
         result.comment.reactions[reaction] -= 1;
       } else {
-        // 添加新反应
         result.comment.userReactions.push(reaction);
         result.comment.reactions[reaction] += 1;
       }
-      localStorage.setItem(KEY, JSON.stringify(posts));
+      scheduleBatchUpdate(KEY, posts);
+      setCache(postCache, 'all', posts);
       return posts[postIdx];
     }
   }
   return undefined;
 }
 
-/**
- * 删除评论
- */
 export function deleteComment(postId: string, commentId: string): Post | undefined {
   const posts = getPosts();
   const postIdx = posts.findIndex(p => p.id === postId);
@@ -467,7 +582,8 @@ export function deleteComment(postId: string, commentId: string): Post | undefin
     };
 
     if (removeComment(posts[postIdx].comments)) {
-      localStorage.setItem(KEY, JSON.stringify(posts));
+      scheduleBatchUpdate(KEY, posts);
+      setCache(postCache, 'all', posts);
       return posts[postIdx];
     }
   }
@@ -489,5 +605,7 @@ export default {
   likeComment,
   unlikeComment,
   addCommentReaction,
-  deleteComment
+  deleteComment,
+  clearAllCaches,
+  flushPendingUpdates
 };

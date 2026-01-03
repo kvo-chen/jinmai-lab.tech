@@ -1,7 +1,171 @@
 // 测试资源缓存机制
 import * as THREE from 'three';
-import { resourceCache, CACHE_CONFIG } from './components/ARPreview';
 import { processImageUrl } from './utils/imageUrlUtils';
+
+// 定义缓存配置
+const CACHE_CONFIG = {
+  maxTextures: 5,
+  maxModels: 3,
+  cacheTTL: 30 * 60 * 1000,
+  cleanupInterval: 5 * 60 * 1000,
+  maxTextureSizeMB: 50,
+  maxModelSizeMB: 100,
+  minUsageCount: 2
+};
+
+// 定义资源缓存
+const resourceCache = {
+  textures: new Map(),
+  models: new Map(),
+  
+  getCurrentCacheSize() {
+    return {
+      textures: Array.from(this.textures.values())
+        .reduce((total, cached) => total + (cached.size || 0), 0),
+      models: Array.from(this.models.values())
+        .reduce((total, cached) => total + (cached.size || 0), 0),
+    };
+  },
+  
+  config: {
+    // 清理过期资源
+    cleanupExpired() {
+      const now = Date.now();
+      
+      // 清理过期纹理
+      for (const [key, cached] of resourceCache.textures.entries()) {
+        if (now - cached.timestamp > CACHE_CONFIG.cacheTTL) {
+          cached.resource.dispose();
+          resourceCache.textures.delete(key);
+        }
+      }
+      
+      // 清理过期模型
+      for (const [key, cached] of resourceCache.models.entries()) {
+        // 递归清理模型资源
+        cached.resource.traverse((object: any) => {
+          if (object.geometry) object.geometry.dispose?.();
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((material: any) => material.dispose?.());
+            } else {
+              object.material.dispose?.();
+            }
+          }
+        });
+        resourceCache.models.delete(key);
+      }
+    },
+    
+    // 清理超出限制的资源
+    cleanupExcess() {
+      const currentSize = resourceCache.getCurrentCacheSize();
+      
+      // 智能清理纹理缓存
+      if (resourceCache.textures.size > CACHE_CONFIG.maxTextures) {
+        // 按优先级排序：使用次数 > 最近使用时间 > 大小
+        const sortedTextures = Array.from(resourceCache.textures.entries())
+          .sort((a, b) => {
+            // 首先比较使用次数
+            if (a[1].usageCount !== b[1].usageCount) {
+              return b[1].usageCount - a[1].usageCount;
+            }
+            // 然后比较最近使用时间
+            if (a[1].lastUsed !== b[1].lastUsed) {
+              return b[1].lastUsed - a[1].lastUsed;
+            }
+            // 最后比较大小，大文件优先清理
+            return (b[1].size || 0) - (a[1].size || 0);
+          });
+        
+        // 清理直到满足条件
+        let excessCount = Math.max(
+          resourceCache.textures.size - CACHE_CONFIG.maxTextures,
+          0
+        );
+        
+        for (let i = sortedTextures.length - 1; i >= 0 && excessCount > 0; i--) {
+          const [key, cached] = sortedTextures[i];
+          // 保留使用次数较高的资源
+          if (cached.usageCount < CACHE_CONFIG.minUsageCount) {
+            cached.resource.dispose();
+            resourceCache.textures.delete(key);
+            excessCount--;
+          }
+        }
+      }
+      
+      // 智能清理模型缓存
+      if (resourceCache.models.size > CACHE_CONFIG.maxModels) {
+        // 按优先级排序：使用次数 > 最近使用时间 > 大小
+        const sortedModels = Array.from(resourceCache.models.entries())
+          .sort((a, b) => {
+            // 首先比较使用次数
+            if (a[1].usageCount !== b[1].usageCount) {
+              return b[1].usageCount - a[1].usageCount;
+            }
+            // 然后比较最近使用时间
+            if (a[1].lastUsed !== b[1].lastUsed) {
+              return b[1].lastUsed - a[1].lastUsed;
+            }
+            // 最后比较大小，大文件优先清理
+            return (b[1].size || 0) - (a[1].size || 0);
+          });
+        
+        // 清理直到满足条件
+        let excessCount = Math.max(
+          resourceCache.models.size - CACHE_CONFIG.maxModels,
+          0
+        );
+        
+        for (let i = sortedModels.length - 1; i >= 0 && excessCount > 0; i--) {
+          const [key, cached] = sortedModels[i];
+          // 保留使用次数较高的资源
+          if (cached.usageCount < CACHE_CONFIG.minUsageCount) {
+            // 递归清理模型资源
+            cached.resource.traverse((object: any) => {
+              if (object.geometry) object.geometry.dispose?.();
+              if (object.material) {
+                if (Array.isArray(object.material)) {
+                  object.material.forEach((material: any) => material.dispose?.());
+                } else {
+                  object.material.dispose?.();
+                }
+              }
+            });
+            resourceCache.models.delete(key);
+            excessCount--;
+          }
+        }
+      }
+    },
+    
+    // 清理所有资源
+    clearAll() {
+      // 清理所有纹理
+      for (const [key, cached] of resourceCache.textures.entries()) {
+        cached.resource.dispose();
+        resourceCache.textures.delete(key);
+      }
+      
+      // 清理所有模型
+      for (const [key, cached] of resourceCache.models.entries()) {
+        // 递归清理模型资源
+        cached.resource.traverse((object: any) => {
+          if (object.geometry) object.geometry.dispose?.();
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((material: any) => material.dispose?.());
+            } else {
+              object.material.dispose?.();
+            }
+          }
+        });
+        resourceCache.models.delete(key);
+      }
+    }
+  }
+};
 
 // 测试资源缓存功能
 const testResourceCache = async () => {

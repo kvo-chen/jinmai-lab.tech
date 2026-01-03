@@ -1,5 +1,5 @@
 // 测试通义千问API密钥的脚本
-const API_KEY = 'sk-d223b196bd9442d4a0468b3dc9fb59bf';
+const API_KEY = process.env.QWEN_API_KEY || '';
 const MODEL_ID = 'qwen-plus';
 const BASE_URL = 'http://localhost:3010';
 
@@ -83,9 +83,7 @@ testQwenApi();
 // 如何在应用中更新API密钥的说明：
 console.log('\n========================================');
 console.log('在应用中更新API密钥的步骤：');
-console.log('1. 打开应用，点击模型选择按钮');
-console.log('2. 选择"通义千问"模型');
-console.log('3. 在API密钥输入框中输入新密钥：sk-d223b196bd9442d4a0468b3dc9fb59bf');
-console.log('4. 点击"保存"按钮');
-console.log('5. 可以点击"测试连接"按钮验证密钥是否有效');
+console.log('1. 设置环境变量 QWEN_API_KEY');
+console.log('2. 运行: QWEN_API_KEY=your-actual-key node test-qwen-key.js');
+console.log('3. 或在 .env 文件中添加: QWEN_API_KEY=your-actual-key');
 console.log('========================================');

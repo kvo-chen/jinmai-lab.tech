@@ -1,0 +1,6 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#fef2f2" rx="20"/>
+  <path d="M 60 80 L 140 80 L 140 140 L 60 140 Z" fill="#ef4444"/>
+  <path d="M 80 100 L 120 100 L 120 120 L 80 120 Z" fill="#ffffff"/>
+  <text x="100" y="115" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#ef4444">主题</text>
+</svg>

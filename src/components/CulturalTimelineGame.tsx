@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalTimelineGameService, { TimelineLevel, TimelineItem, GameProgress } from '@/services/culturalTimelineGameService';
+import culturalTimelineGameService, { Level, TimelineEvent, GameProgress } from '@/services/culturalTimelineGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalTimelineGameProps {

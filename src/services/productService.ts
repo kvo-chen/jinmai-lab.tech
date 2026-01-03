@@ -38,6 +38,8 @@ export type ProductCategory = 'virtual' | 'physical' | 'service' | 'rights';
 class ProductService {
   private readonly PRODUCTS_KEY = 'SECURE_PRODUCTS';
   private readonly EXCHANGE_RECORDS_KEY = 'SECURE_EXCHANGE_RECORDS';
+  private readonly PRODUCTS_VERSION_KEY = 'SECURE_PRODUCTS_VERSION';
+  private readonly CURRENT_VERSION = 2;
   private products: Product[] = [];
   private exchangeRecords: ExchangeRecord[] = [];
 
@@ -52,11 +54,26 @@ class ProductService {
   private loadProducts() {
     try {
       const stored = localStorage.getItem(this.PRODUCTS_KEY);
-      if (stored) {
+      const storedVersion = localStorage.getItem(this.PRODUCTS_VERSION_KEY);
+      
+      if (stored && storedVersion === String(this.CURRENT_VERSION)) {
         this.products = JSON.parse(stored);
       } else {
-        // 初始化默认商品数据
-        this.products = [
+        localStorage.removeItem(this.PRODUCTS_KEY);
+        localStorage.setItem(this.PRODUCTS_VERSION_KEY, String(this.CURRENT_VERSION));
+        this.initializeDefaultProducts();
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      this.initializeDefaultProducts();
+    }
+  }
+
+  /**
+   * 初始化默认商品数据
+   */
+  private initializeDefaultProducts() {
+    this.products = [
           {
             id: 1,
             name: '虚拟红包',
@@ -79,7 +96,7 @@ class ProductService {
             status: 'active',
             category: 'virtual',
             tags: ['贴纸', '虚拟'],
-            imageUrl: '/images/贴纸包.svg',
+            imageUrl: '/images/周边商品.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -92,7 +109,7 @@ class ProductService {
             status: 'active',
             category: 'service',
             tags: ['AI工具', '服务'],
-            imageUrl: '/images/AI工具包.svg',
+            imageUrl: '/images/数字壁纸.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -105,7 +122,7 @@ class ProductService {
             status: 'active',
             category: 'rights',
             tags: ['徽章', '权益'],
-            imageUrl: '/images/成就徽章.svg',
+            imageUrl: '/images/限定徽章.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -118,17 +135,207 @@ class ProductService {
             status: 'active',
             category: 'physical',
             tags: ['笔记本', '实体'],
-            imageUrl: '/images/笔记本.svg',
+            imageUrl: '/images/实物商品.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 6,
+            name: '数字艺术壁纸',
+            description: '800积分兑换精选数字艺术壁纸包',
+            points: 800,
+            stock: 200,
+            status: 'active',
+            category: 'virtual',
+            tags: ['壁纸', '艺术', '虚拟'],
+            imageUrl: '/images/数字壁纸.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 7,
+            name: '表情包合集',
+            description: '300积分兑换热门表情包合集',
+            points: 300,
+            stock: 500,
+            status: 'active',
+            category: 'virtual',
+            tags: ['表情包', '虚拟', '社交'],
+            imageUrl: '/images/表情包.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 8,
+            name: '虚拟头像框',
+            description: '600积分兑换限定版虚拟头像框',
+            points: 600,
+            stock: 150,
+            status: 'active',
+            category: 'virtual',
+            tags: ['头像框', '虚拟', '装饰'],
+            imageUrl: '/images/头像框.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 9,
+            name: '电子书籍会员',
+            description: '2500积分兑换一个月电子书籍会员',
+            points: 2500,
+            stock: 40,
+            status: 'active',
+            category: 'service',
+            tags: ['电子书', '会员', '服务'],
+            imageUrl: '/images/电子书会员.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 10,
+            name: '在线课程券',
+            description: '1800积分兑换任意在线课程优惠券',
+            points: 1800,
+            stock: 60,
+            status: 'active',
+            category: 'service',
+            tags: ['课程', '优惠券', '学习'],
+            imageUrl: '/images/优惠券.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 11,
+            name: 'VIP专属标识',
+            description: '1200积分兑换VIP专属身份标识',
+            points: 1200,
+            stock: 80,
+            status: 'active',
+            category: 'rights',
+            tags: ['VIP', '标识', '权益'],
+            imageUrl: '/images/限定称号.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 12,
+            name: '优先体验权',
+            description: '2200积分兑换新功能优先体验权',
+            points: 2200,
+            stock: 50,
+            status: 'active',
+            category: 'rights',
+            tags: ['优先体验', '权益', '特权'],
+            imageUrl: '/images/限定头像.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 13,
+            name: '定制马克杯',
+            description: '3500积分兑换定制马克杯',
+            points: 3500,
+            stock: 15,
+            status: 'active',
+            category: 'physical',
+            tags: ['马克杯', '实体', '定制'],
+            imageUrl: '/images/实物商品.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 14,
+            name: '创意T恤',
+            description: '4000积分兑换限量版创意T恤',
+            points: 4000,
+            stock: 10,
+            status: 'active',
+            category: 'physical',
+            tags: ['T恤', '实体', '限量'],
+            imageUrl: '/images/实物商品.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 15,
+            name: '音乐会员月卡',
+            description: '1600积分兑换音乐平台会员月卡',
+            points: 1600,
+            stock: 70,
+            status: 'active',
+            category: 'service',
+            tags: ['音乐', '会员', '娱乐'],
+            imageUrl: '/images/音乐会员.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 16,
+            name: '游戏皮肤礼包',
+            description: '2800积分兑换热门游戏皮肤礼包',
+            points: 2800,
+            stock: 35,
+            status: 'active',
+            category: 'virtual',
+            tags: ['游戏', '皮肤', '虚拟'],
+            imageUrl: '/images/限定皮肤.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 17,
+            name: '个性化签名',
+            description: '900积分兑换AI生成个性化签名',
+            points: 900,
+            stock: 120,
+            status: 'active',
+            category: 'service',
+            tags: ['签名', 'AI', '个性化'],
+            imageUrl: '/images/数字壁纸.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 18,
+            name: '专属昵称颜色',
+            description: '1100积分兑换专属昵称颜色一个月',
+            points: 1100,
+            stock: 90,
+            status: 'active',
+            category: 'rights',
+            tags: ['昵称', '颜色', '权益'],
+            imageUrl: '/images/限定背景.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 19,
+            name: '实体明信片套装',
+            description: '1300积分兑换精美明信片套装',
+            points: 1300,
+            stock: 45,
+            status: 'active',
+            category: 'physical',
+            tags: ['明信片', '实体', '收藏'],
+            imageUrl: '/images/实物商品.svg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 20,
+            name: '虚拟宠物',
+            description: '700积分兑换可爱虚拟宠物',
+            points: 700,
+            stock: 180,
+            status: 'active',
+            category: 'virtual',
+            tags: ['宠物', '虚拟', '可爱'],
+            imageUrl: '/images/限定头像.svg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }
         ];
         this.saveProducts();
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error);
-      this.products = [];
-    }
   }
 
   /**
@@ -257,6 +464,34 @@ class ProductService {
    * 添加商品（管理员功能）
    */
   addProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product {
+    // 数据校验
+    if (!product.name || product.name.trim() === '') {
+      throw new Error('商品名称不能为空');
+    }
+    if (product.points <= 0) {
+      throw new Error('所需积分必须大于0');
+    }
+    if (product.stock < 0) {
+      throw new Error('库存数量不能为负数');
+    }
+    if (!product.imageUrl || product.imageUrl.trim() === '') {
+      throw new Error('商品图片URL不能为空');
+    }
+    if (!product.description || product.description.trim() === '') {
+      throw new Error('商品描述不能为空');
+    }
+    if (!product.category || product.category.trim() === '') {
+      throw new Error('商品分类不能为空');
+    }
+    if (!product.tags || product.tags.length === 0) {
+      throw new Error('商品标签不能为空');
+    }
+    // 检查商品名称是否重复
+    const existingProduct = this.products.find(p => p.name.trim().toLowerCase() === product.name.trim().toLowerCase());
+    if (existingProduct) {
+      throw new Error('商品名称已存在');
+    }
+
     const newProduct: Product = {
       ...product,
       id: this.products.length + 1,
@@ -277,6 +512,36 @@ class ProductService {
     const index = this.products.findIndex(p => p.id === id);
     if (index === -1) {
       return undefined;
+    }
+
+    // 数据校验
+    if (updates.name && updates.name.trim() === '') {
+      throw new Error('商品名称不能为空');
+    }
+    if (updates.points !== undefined && updates.points <= 0) {
+      throw new Error('所需积分必须大于0');
+    }
+    if (updates.stock !== undefined && updates.stock < 0) {
+      throw new Error('库存数量不能为负数');
+    }
+    if (updates.imageUrl && updates.imageUrl.trim() === '') {
+      throw new Error('商品图片URL不能为空');
+    }
+    if (updates.description && updates.description.trim() === '') {
+      throw new Error('商品描述不能为空');
+    }
+    if (updates.category && updates.category.trim() === '') {
+      throw new Error('商品分类不能为空');
+    }
+    if (updates.tags && updates.tags.length === 0) {
+      throw new Error('商品标签不能为空');
+    }
+    // 检查商品名称是否重复（排除当前商品）
+    if (updates.name && updates.name.trim() !== '') {
+      const existingProduct = this.products.find(p => p.id !== id && p.name.trim().toLowerCase() === (updates.name as string).trim().toLowerCase());
+      if (existingProduct) {
+        throw new Error('商品名称已存在');
+      }
     }
 
     const updatedProduct: Product = {
@@ -303,6 +568,15 @@ class ProductService {
       return true;
     }
     return false;
+  }
+
+  /**
+   * 重置产品数据到默认值
+   */
+  resetProducts(): void {
+    localStorage.removeItem(this.PRODUCTS_KEY);
+    localStorage.removeItem(this.PRODUCTS_VERSION_KEY);
+    this.loadProducts();
   }
 }
 

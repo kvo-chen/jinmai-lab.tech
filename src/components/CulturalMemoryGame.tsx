@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalMemoryGameService, { MemoryLevel, MemoryCard, GameProgress } from '@/services/culturalMemoryGameService';
+import culturalMemoryGameService, { MemoryLevel, MemoryCard, MemoryGameProgress } from '@/services/culturalMemoryGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalMemoryGameProps {

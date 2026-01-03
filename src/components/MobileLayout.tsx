@@ -9,6 +9,8 @@ import clsx from 'clsx'
 import { TianjinImage } from './TianjinStyleComponents'
 import useLanguage from '@/contexts/LanguageContext'
 import { useTranslation } from 'react-i18next'
+import PWAStatusIndicator from './PWAStatusIndicator'
+import PWAInstallButton from './PWAInstallButton'
 
 interface MobileLayoutProps {
   children: React.ReactNode
@@ -1037,6 +1039,17 @@ const MobileLayout = memo(function MobileLayout({ children }: MobileLayoutProps)
           </li>
         </ul>
       </nav>
+      
+      {/* PWA状态指示器 */}
+      <PWAStatusIndicator position="top-right" />
+      
+      {/* PWA安装按钮 */}
+      <div className="fixed bottom-20 right-4 z-40">
+        <PWAInstallButton 
+          hideFixedButton={false}
+          forceShow={true}
+        />
+      </div>
     </div>
     )
   })

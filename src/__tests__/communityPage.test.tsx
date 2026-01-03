@@ -51,11 +51,10 @@ jest.mock('../components/CulturalMatchingGame', () => ({
 }));
 
 import * as React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from '../contexts/authContext';
 import Community from '../pages/Community';
-import { toast } from 'sonner';
 import '@testing-library/jest-dom';
 
 // Mock dependencies
@@ -188,12 +187,8 @@ jest.mock('../lib/apiClient', () => ({
 }));
 
 // Mock vite environment variables for any components that might access them
-globalThis.import = {
-  ...globalThis.import,
-  meta: {
-    env: {
-      VITE_API_BASE_URL: 'http://localhost:3000/api',
-      VITE_ENV: 'test',
-    },
-  },
+process.env = {
+  ...process.env,
+  VITE_API_BASE_URL: 'http://localhost:3000/api',
+  VITE_ENV: 'test',
 };

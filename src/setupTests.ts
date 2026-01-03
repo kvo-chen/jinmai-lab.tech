@@ -134,3 +134,21 @@ if (typeof global.TextEncoder === 'undefined') {
 if (typeof global.TextDecoder === 'undefined') {
   global.TextDecoder = require('util').TextDecoder;
 }
+
+// Mock import.meta.env for testing environment
+// 使用类型断言来避免TypeScript错误
+if (typeof (global as any).import === 'undefined') {
+  (global as any).import = {
+    meta: {
+      env: {
+        DEV: true,
+        NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-key',
+        VITE_SUPABASE_URL: '',
+        VITE_SUPABASE_ANON_KEY: '',
+        SUPABASE_URL: '',
+        SUPABASE_ANON_KEY: ''
+      }
+    }
+  };
+}

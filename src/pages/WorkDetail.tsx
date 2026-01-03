@@ -60,7 +60,7 @@ class ARPreviewErrorBoundary extends React.Component<
                 重试
               </button>
             </div>
-            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+            {import.meta.env.MODE === 'development' && this.state.errorInfo && (
               <div className="mt-4 text-left text-sm text-gray-300 overflow-auto max-h-40">
                 <p className="font-medium mb-1">错误详情：</p>
                 <pre className="whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
@@ -347,8 +347,6 @@ export default function WorkDetail() {
                   config={{
                     // 使用作品的实际图片URL
                     imageUrl: work.thumbnail,
-                    // 暂时移除3D模型支持，只使用2D模式
-                    modelUrl: '',
                     // 所有作品都使用2D模式，避免3D模型加载失败
                     type: '2d',
                     scale: 5.0,

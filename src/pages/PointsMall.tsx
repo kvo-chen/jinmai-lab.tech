@@ -16,9 +16,6 @@ const PointsMall: React.FC = () => {
 
   // 加载商品和积分数据
   useEffect(() => {
-    // 清空本地存储中的商品数据，强制重新初始化
-    localStorage.removeItem('SECURE_PRODUCTS');
-    
     const allProducts = productService.getAllProducts();
     const records = productService.getUserExchangeRecords('current-user');
     const points = pointsService.getCurrentPoints();
@@ -158,21 +155,26 @@ const PointsMall: React.FC = () => {
                 
                 {/* 商品状态和兑换按钮 */}
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    库存：{product.stock}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      库存：{product.stock}
+                    </span>
+                    <span className={`text-xs mt-1 ${product.status === 'active' ? 'text-green-500' : product.status === 'inactive' ? 'text-gray-500' : 'text-red-500'}`}>
+                      {product.status === 'active' ? '已上架' : product.status === 'inactive' ? '已下架' : '已售罄'}
+                    </span>
+                  </div>
                   <button
                     onClick={() => handleExchange(product)}
                     disabled={product.status !== 'active' || product.stock <= 0 || currentPoints < product.points}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${isDark 
-                      ? currentPoints < product.points || product.stock <= 0 
+                      ? currentPoints < product.points || product.stock <= 0 || product.status !== 'active' 
                         ? 'bg-gray-700 cursor-not-allowed' 
                         : 'bg-red-600 hover:bg-red-700' 
-                      : currentPoints < product.points || product.stock <= 0 
+                      : currentPoints < product.points || product.stock <= 0 || product.status !== 'active' 
                         ? 'bg-gray-200 cursor-not-allowed' 
                         : 'bg-red-500 hover:bg-red-600'} text-white disabled:opacity-50`}
                   >
-                    {product.stock <= 0 ? '已售罄' : currentPoints < product.points ? '积分不足' : '立即兑换'}
+                    {product.status !== 'active' ? '已下架' : product.stock <= 0 ? '已售罄' : currentPoints < product.points ? '积分不足' : '立即兑换'}
                   </button>
                 </div>
               </div>
@@ -218,10 +220,10 @@ const PointsMall: React.FC = () => {
                 <table className="w-full">
                   <thead>
                     <tr className={`${isDark ? 'border-b border-gray-700' : 'border-b border-gray-200'}`}>
-                      <th className="text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}">商品名称</th>
-                      <th className="text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}">积分</th>
-                      <th className="text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}">日期</th>
-                      <th className="text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}">状态</th>
+                      <th className={`text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>商品名称</th>
+                      <th className={`text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>积分</th>
+                      <th className={`text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>日期</th>
+                      <th className={`text-left p-4 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>状态</th>
                     </tr>
                   </thead>
                   <tbody>

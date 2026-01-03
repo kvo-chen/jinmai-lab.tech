@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import fs from 'fs';
 
-// 从.env文件读取环境变量
+// 从.env文件读取环境变量，优先读取.env.local
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
 // 清理环境变量值的函数

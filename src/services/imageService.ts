@@ -428,19 +428,16 @@ class ImageService {
   // 生成响应式图片URL - 智能优化版
   public getResponsiveUrl(url: string, size: keyof typeof RESPONSIVE_SIZES = 'md', quality?: number): string {
     // 处理图片生成API的URL，检查代理路径或原始域名
-    if (url.includes('/api/proxy/trae-api')) {
+    if (url.includes('/api/proxy/trae-api') || url.includes('trae-api-sg.mchost.guru')) {
       try {
-        // 由于API返回400错误，使用picsum.photos作为替代图片服务
-        // 从URL中提取prompt参数，用于生成随机图片
-        const urlObj = new URL(url, window.location.origin);
-        const prompt = urlObj.searchParams.get('prompt') || 'art';
-        // 使用picsum.photos生成随机图片，基于prompt的hash值保持图片一致性
-        const promptHash = prompt.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const sizeInfo = RESPONSIVE_SIZES[size];
-        return `https://picsum.photos/seed/${promptHash}/${sizeInfo.width}/${Math.round(sizeInfo.width * 0.75)}`;
+        // 确保URL是完整的
+        const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, window.location.origin);
+        
+        // 注意：AI生成API返回302重定向，不要添加额外参数，否则可能导致重定向失败
+        // 直接返回原始URL，让浏览器处理重定向
+        return urlObj.toString();
       } catch (error) {
-        // 如果处理失败，返回占位图
-        return 'https://via.placeholder.com/800x600?text=Image+Placeholder';
+        return url;
       }
     }
     
@@ -470,18 +467,16 @@ class ImageService {
   // 生成低质量占位图URL - 优化版
   public getLowQualityUrl(url: string): string {
     // 处理图片生成API的URL，检查代理路径或原始域名
-    if (url.includes('/api/proxy/trae-api')) {
+    if (url.includes('/api/proxy/trae-api') || url.includes('trae-api-sg.mchost.guru')) {
       try {
-        // 由于API返回400错误，使用picsum.photos作为替代图片服务
-        // 从URL中提取prompt参数，用于生成随机图片
-        const urlObj = new URL(url, window.location.origin);
-        const prompt = urlObj.searchParams.get('prompt') || 'art';
-        // 使用picsum.photos生成低质量占位图，基于prompt的hash值保持图片一致性
-        const promptHash = prompt.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        return `https://picsum.photos/seed/${promptHash}/100/75`;
+        // 确保URL是完整的
+        const urlObj = url.startsWith('http') ? new URL(url) : new URL(url, window.location.origin);
+        
+        // 注意：AI生成API返回302重定向，不要添加额外参数，否则可能导致重定向失败
+        // 直接返回原始URL
+        return urlObj.toString();
       } catch (error) {
-        // 如果处理失败，返回占位图
-        return 'https://via.placeholder.com/100x75?text=Image+Placeholder';
+        return url;
       }
     }
     

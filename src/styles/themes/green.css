@@ -1,37 +1,43 @@
-/* 绿色主题高级色彩方案 */
+/* 绿色主题 - 基于白色主题框架 */
 .green {
-  /* 优化后的绿色背景层次 */
-  --bg-primary: #f0fdf4;
-  --bg-secondary: #dcfce7;
-  --bg-tertiary: #bbf7d0;
-  --bg-hover: #86efac;
-  --bg-active: #4ade80;
+  /* 绿色主题色彩方案 */
+  --color-primary: #15803d;
+  --color-secondary: #16a34a;
+  --color-accent: #22c55e;
+  --color-neutral: #166534;
   
-  /* 优化后的绿色文字层次 */
+  /* 绿色主题背景层次 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0fdf4;
+  --bg-tertiary: #dcfce7;
+  --bg-hover: #bbf7d0;
+  --bg-active: #86efac;
+  
+  /* 绿色主题文字层次 */
   --text-primary: #15803d;
   --text-secondary: #166534;
-  --text-tertiary: #15803d;
+  --text-tertiary: #059669;
   --text-muted: #16a34a;
   
-  /* 优化后的绿色边框层次 */
-  --border-primary: #bbf7d0;
-  --border-secondary: #86efac;
-  --border-tertiary: #4ade80;
+  /* 绿色主题边框层次 */
+  --border-primary: #e5e7eb;
+  --border-secondary: #bbf7d0;
+  --border-tertiary: #86efac;
   
-  /* 优化后的绿色主题阴影 */
+  /* 绿色主题阴影 */
   --shadow-sm: 0 1px 2px 0 rgba(74, 222, 128, 0.08);
   --shadow-md: 0 4px 6px -1px rgba(74, 222, 128, 0.08), 0 2px 4px -1px rgba(74, 222, 128, 0.04);
   --shadow-lg: 0 10px 15px -3px rgba(74, 222, 128, 0.08), 0 4px 6px -2px rgba(74, 222, 128, 0.03);
   --shadow-xl: 0 20px 25px -5px rgba(74, 222, 128, 0.08), 0 8px 10px -6px rgba(74, 222, 128, 0.02);
   
-  /* 优化后的绿色主题发光效果 */
+  /* 绿色主题发光效果 */
   --glow-primary: 0 0 10px rgba(74, 222, 128, 0.2);
   --glow-secondary: 0 0 15px rgba(22, 163, 74, 0.2);
   --glow-accent: 0 0 20px rgba(34, 197, 94, 0.2);
   
-  /* 优化后的绿色主题渐变 */
-  --gradient-primary: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
-  --gradient-secondary: linear-gradient(135deg, #bbf7d0 0%, #dcfce7 100%);
+  /* 绿色主题渐变 */
+  --gradient-primary: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  --gradient-secondary: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
   --gradient-accent: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
 }
 

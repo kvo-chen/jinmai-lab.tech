@@ -1,0 +1,10 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#0f172a" rx="20"/>
+  <circle cx="100" cy="100" r="70" fill="#1e293b"/>
+  <path d="M 70 80 L 130 80 L 130 120 L 70 120 Z" fill="#8b5cf6"/>
+  <path d="M 90 60 L 110 60 L 110 80 Z" fill="#ec4899"/>
+  <path d="M 90 120 L 110 120 L 110 140 Z" fill="#ec4899"/>
+  <path d="M 60 90 L 80 90 L 80 110 Z" fill="#ec4899"/>
+  <path d="M 120 90 L 140 90 L 140 110 Z" fill="#ec4899"/>
+  <text x="100" y="105" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#fff">道具</text>
+</svg>

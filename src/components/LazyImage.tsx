@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { processImageUrl, buildSrcSet, ImageQuality, ImageProcessingOptions } from '../utils/imageUrlUtils';
+import { imageCacheManager } from '../utils/imageCacheManager';
 
 // 导入共享的Intersection Observer相关变量
 // 共享的Intersection Observer实例，减少创建实例的开销
@@ -33,7 +34,7 @@ const initSharedObserver = () => {
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   alt: string;
-  placeholder?: React.ReactNode;
+  placeholder?: React.ReactNode | 'blur' | 'color' | 'skeleton';
   className?: string;
   onLoad?: () => void;
   onError?: () => void;
@@ -55,6 +56,10 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   progressive?: boolean;
   // 模糊占位符尺寸
   blurSize?: number;
+  // 占位符颜色（仅当placeholder为'color'时使用）
+  placeholderColor?: string;
+  // 模糊占位符图片URL（仅当placeholder为'blur'时使用）
+  blurPlaceholder?: string;
   // 加载动画类型
   loadingAnimation?: 'fade' | 'scale' | 'blur';
   // 是否启用响应式图片
@@ -65,6 +70,10 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   format?: 'webp' | 'jpeg' | 'png';
   // 是否自动检测格式
   autoFormat?: boolean;
+  // 图片格式集合（用于picture标签）
+  formats?: Array<'webp' | 'avif' | 'jpeg' | 'png'>;
+  // 响应式图片尺寸集合
+  responsiveSizes?: number[];
   // 图片处理选项
   processingOptions?: Omit<ImageProcessingOptions, 'width' | 'height'>;
 }
@@ -73,6 +82,8 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   src, 
   alt, 
   placeholder, 
+  placeholderColor = '#f0f0f0',
+  blurPlaceholder,
   className, 
   onLoad,
   onError,
@@ -90,12 +101,14 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   responsiveWidths = [320, 640, 1024, 1280, 1600],
   format,
   autoFormat = true,
+  formats = ['webp', 'avif'],
+  responsiveSizes = [320, 640, 1024, 1600, 2048],
   processingOptions = {},
   ...rest 
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [isVisible, setIsVisible] = useState(true); // 初始设置为true，确保所有图片都能开始加载
+  const [isVisible, setIsVisible] = useState(false); // 初始化为false，等待进入视口后加载
   const [retryCount, setRetryCount] = useState(0); // 重试次数计数器
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -106,54 +119,72 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   
   // 使用useMemo确保currentSrc与src同步更新，避免异步更新问题
   const currentSrc = useMemo(() => {
-    // 总是处理URL，特别是代理URL，即使disableFallback为true
-    // 这样可以确保代理URL能正确转换为实际API URL
-    let processedSrc = src;
-    
-    // 处理代理URL，不管disableFallback是什么
-    if (src.startsWith('/api/proxy/trae-api')) {
-      processedSrc = processImageUrl(src, {
-        quality,
-        responsive,
-        autoFormat,
-        format,
-        ...processingOptions
-      });
-    } else if (!disableFallback) {
-      // 对于其他URL，只有当disableFallback为false时才处理
-      processedSrc = processImageUrl(src, {
-        quality,
-        responsive,
-        autoFormat,
-        format,
-        ...processingOptions
-      });
+    // 首先检查src是否为空或无效
+    if (!src || src.trim() === '') {
+      return fallbackSrc || defaultFallbackSrc;
     }
     
-    return processedSrc || (fallbackSrc || defaultFallbackSrc);
+    // 检查URL是否是trae-api的文本生成图片API
+    if (src.includes('/api/proxy/trae-api/api/ide/v1/text_to_image') || src.includes('trae-api-sg.mchost.guru')) {
+      // 对于AI生成图片API，返回原始URL，让后端处理
+      return src;
+    }
+    
+    // 如果disableFallback为true，直接使用原始URL，不经过处理
+    if (disableFallback) {
+      return src;
+    }
+    
+    // 使用新的图片处理选项处理URL
+    try {
+      const processedSrc = processImageUrl(src, {
+        quality,
+        responsive,
+        autoFormat,
+        format,
+        ...processingOptions
+      });
+      
+      // 确保返回有效的URL
+      if (processedSrc && typeof processedSrc === 'string' && processedSrc.trim() !== '') {
+        return processedSrc;
+      }
+      
+      // 如果处理后的URL无效，返回原始URL
+      return src;
+    } catch (error) {
+      console.error('Error processing image URL:', error);
+      // 出错时返回原始URL或fallback
+      return src || fallbackSrc || defaultFallbackSrc;
+    }
   }, [src, fallbackSrc, disableFallback, quality, responsive, autoFormat, format, processingOptions]);
   
   // 计算实际显示的图片URL，如果加载失败则使用fallback
   const displaySrc = useMemo(() => {
-    // 对于代理URL，始终使用原始代理URL，让服务器端处理fallback逻辑
-    if (currentSrc.startsWith('/api/proxy/')) {
-      return currentSrc;
-    }
-    if (isError && !disableFallback) {
+    // 无论disableFallback如何，当图片加载失败时，都使用fallback（如果提供）
+    if (isError) {
       return fallbackSrc || defaultFallbackSrc;
     }
+    
+    // 确保currentSrc有效
+    if (!currentSrc || currentSrc.trim() === '') {
+      return fallbackSrc || defaultFallbackSrc;
+    }
+    
     return currentSrc;
-  }, [isError, currentSrc, fallbackSrc, disableFallback]);
+  }, [isError, currentSrc, fallbackSrc, defaultFallbackSrc]);
   
   // 构建响应式图片srcset
   const srcSet = useMemo(() => {
-    // 只在响应式模式下构建srcset
+    // 只在响应式模式下构建srcset，且disableFallback为false时
     if (!responsive || disableFallback) {
       return undefined;
     }
     
     // 构建srcset
-    return buildSrcSet(src, responsiveWidths, quality);
+    const result = buildSrcSet(src, responsiveWidths, quality);
+    // 如果buildSrcSet返回空字符串，返回undefined
+    return result || undefined;
   }, [src, responsive, disableFallback, responsiveWidths, quality]);
   
   // 构建sizes属性
@@ -162,8 +193,8 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
       return undefined;
     }
     
-    // 根据设备宽度返回合适的sizes属性
-    return '(max-width: 640px) 320px, (max-width: 1024px) 640px, (max-width: 1280px) 1024px, 1280px';
+    // 根据设备宽度和图片在布局中的占比返回合适的sizes属性
+    return '(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) calc(50vw - 2rem), (max-width: 1280px) calc(33vw - 2rem), calc(25vw - 2rem)';
   }, [responsive]);
   
   // 对于SVG数据URL，立即设置为已加载，因为它们是内联的，会立即加载
@@ -181,7 +212,7 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
       const loadTime = loadStartTime.current ? endTime - loadStartTime.current : 0;
       
       // 只在开发环境或性能监控模式下记录
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         console.log(`[ImagePerformance] ${status}: ${alt}`, {
           url: currentSrc,
           loadTime: `${loadTime.toFixed(2)}ms`,
@@ -200,6 +231,13 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   
   // 图片加载完成处理
   const handleLoad = () => {
+    // 检查图片是否有效（naturalWidth为0表示加载的内容不是图片）
+    if (imgRef.current && imgRef.current.naturalWidth === 0) {
+      // 内容不是有效的图片，触发错误处理
+      handleError({} as React.SyntheticEvent<HTMLImageElement, Event>);
+      return;
+    }
+    
     setIsLoaded(true);
     setIsError(false);
     logImagePerformance('success');
@@ -210,34 +248,41 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
   
   // 图片加载失败处理
   const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    setIsError(true);
-    setIsLoaded(false);
     logImagePerformance('error');
+    console.warn(`Image failed to load: ${currentSrc}`, event);
+    
     if (onError) {
       onError();
     }
-    event.preventDefault();
     
-    // 自动重试机制，最多重试3次，使用带随机抖动的指数退避策略
-    if (retryCount < 3) {
-      // 指数退避 + 随机抖动，避免所有请求同时重试
-      const baseDelay = Math.pow(2, retryCount) * 800;
-      const jitter = Math.random() * 400;
-      const retryDelay = baseDelay + jitter;
+    // 只有当disableFallback为false时，才显示错误状态UI
+    if (!disableFallback) {
+      setIsError(true);
+      setIsLoaded(false);
       
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        setIsError(false);
-        setIsLoaded(false);
-        const img = imgRef.current;
-        if (img) {
-          img.src = '';
-          setTimeout(() => {
-            img.src = currentSrc;
-            loadStartTime.current = performance.now();
-          }, 0);
-        }
-      }, retryDelay);
+      // 自动重试机制，最多重试5次，增加重试次数提高成功率
+      if (retryCount < 5) {
+        // 指数退避 + 随机抖动，避免所有请求同时重试
+        const baseDelay = Math.pow(2, retryCount) * 1000; // 增加基础延迟
+        const jitter = Math.random() * 500;
+        const retryDelay = baseDelay + jitter;
+        
+        console.log(`Retrying image load (${retryCount + 1}/5) in ${retryDelay}ms: ${currentSrc}`);
+        
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          setIsError(false);
+          setIsLoaded(false);
+          const img = imgRef.current;
+          if (img) {
+            img.src = '';
+            setTimeout(() => {
+              img.src = currentSrc;
+              loadStartTime.current = performance.now();
+            }, 0);
+          }
+        }, retryDelay);
+      }
     }
   };
   
@@ -262,17 +307,23 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     if (typeof window === 'undefined') return;
 
     const handleOnline = () => {
-      // 网络恢复时，如果图片加载失败，重置状态并重试
+      // 网络恢复时，如果图片加载失败且可见，重置状态并重试
       if (isError) {
         setIsLoaded(false);
         setIsError(false);
         setRetryCount(0);
-        const img = imgRef.current;
-        if (img) {
-          img.src = '';
-          setTimeout(() => {
-            img.src = currentSrc;
-          }, 0);
+        
+        // 如果图片可见，立即重试
+        if (isVisible) {
+          const img = imgRef.current;
+          if (img) {
+            img.src = '';
+            setTimeout(() => {
+              img.src = currentSrc;
+              // 重置加载开始时间
+              loadStartTime.current = performance.now();
+            }, 0);
+          }
         }
       }
     };
@@ -280,10 +331,15 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     // 监听网络恢复事件
     window.addEventListener('online', handleOnline);
 
+    // 初始检查网络状态
+    if (navigator.onLine && isError) {
+      handleOnline();
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
     };
-  }, [isError, currentSrc]);
+  }, [isError, isVisible, currentSrc]);
 
   // 观察图片是否进入视口
   useEffect(() => {
@@ -296,13 +352,44 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     // 使用共享的Intersection Observer实例，降低初始延迟
     initSharedObserver();
     
-    if (sharedObserver && containerRef.current) {
-      // 添加到共享observer，增加预加载距离
-      observerTargets.set(containerRef.current, () => setIsVisible(true));
-      sharedObserver.observe(containerRef.current);
+    // 如果containerRef已经存在，检查可见性
+    if (containerRef.current) {
+      // 检查图片是否已经在视口中
+      const rect = containerRef.current.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight + 500 && rect.bottom > -500;
+      
+      if (isInViewport) {
+        setIsVisible(true);
+      } else if (sharedObserver) {
+        // 添加到共享observer，增加预加载距离
+        observerTargets.set(containerRef.current, () => setIsVisible(true));
+        sharedObserver.observe(containerRef.current);
+      } else {
+        // 降级方案：直接加载图片
+        setIsVisible(true);
+      }
     } else {
-      // 降级方案：直接加载图片
-      setIsVisible(true);
+      // 如果containerRef还没有设置，延迟一点再检查
+      const timer = setTimeout(() => {
+        // 如果容器已经存在，再次检查可见性
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const isInViewport = rect.top < window.innerHeight + 500 && rect.bottom > -500;
+          
+          if (isInViewport || !sharedObserver) {
+            setIsVisible(true);
+          } else {
+            observerTargets.set(containerRef.current, () => setIsVisible(true));
+            sharedObserver.observe(containerRef.current);
+          }
+        } else {
+          // 如果仍然没有containerRef，直接设置为可见
+          setIsVisible(true);
+        }
+      }, 100);
+      
+      // 清理定时器
+      return () => clearTimeout(timer);
     }
     
     // 清理函数
@@ -320,6 +407,15 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
 
     // 高优先级图片立即预加载
     if (priority) {
+      // 使用图片缓存管理器进行预加载
+      imageCacheManager.preloadImage(currentSrc, 'critical', (success) => {
+        if (success) {
+          console.log(`[ImageCache] Preloaded: ${alt}`);
+        } else {
+          console.warn(`[ImageCache] Failed to preload: ${alt}`);
+        }
+      });
+      
       // 创建图片对象进行预加载
       const preloadImage = () => {
         const img = new Image();
@@ -342,23 +438,8 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
           // 忽略fetch错误，仍会使用img标签加载
         });
       }
-    } else {
-      // 非优先级图片，但仍在视口附近的，也进行预加载
-      if (containerRef.current) {
-        // 检查元素是否在视口附近（500px以内）
-        const rect = containerRef.current.getBoundingClientRect();
-        const isNearViewport = rect.top < window.innerHeight + 500 && rect.bottom > -500;
-        
-        if (isNearViewport) {
-          const img = new Image();
-          img.src = currentSrc;
-          if (srcSet) {
-            img.srcset = srcSet;
-          }
-        }
-      }
     }
-  }, [priority, currentSrc, srcSet]);
+  }, [priority, currentSrc, srcSet, alt]);
   
   // 加载动画样式
   const getLoadingAnimationClasses = () => {
@@ -377,6 +458,11 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     const positionClass = position ? `object-${position}` : '';
     const baseClasses = `w-full h-full object-${fit} ${positionClass} ${getLoadingAnimationClasses()}`;
     
+    // 当disableFallback为true时，始终显示图片，不使用动画效果
+    if (disableFallback) {
+      return `${baseClasses} opacity-100`;
+    }
+    
     if (isLoaded) {
       if (loadingAnimation === 'fade') {
         return `${baseClasses} opacity-100`;
@@ -389,17 +475,52 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
     } else if (isError) {
       return `${baseClasses} opacity-0`;
     } else {
+      // 加载过程中，根据动画类型设置不同的初始状态
       if (loadingAnimation === 'fade') {
         return `${baseClasses} opacity-0`;
       } else if (loadingAnimation === 'scale') {
         return `${baseClasses} opacity-0 scale-95`;
       } else if (loadingAnimation === 'blur') {
-        return `${baseClasses} opacity-0 blur-${blurSize}`;
+        return `${baseClasses} opacity-100 blur-sm`;
       }
       return `${baseClasses} opacity-0`;
     }
   };
   
+  // 渲染内置占位符
+  const renderBuiltInPlaceholder = () => {
+    if (typeof placeholder === 'string') {
+      switch (placeholder) {
+        case 'blur':
+          return blurPlaceholder ? (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <img
+                src={blurPlaceholder}
+                alt={alt}
+                className="w-full h-full object-cover filter blur-md transition-filter duration-300"
+                aria-hidden="true"
+                loading="eager"
+              />
+            </div>
+          ) : null;
+        case 'color':
+          return (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ backgroundColor: placeholderColor }}
+            ></div>
+          );
+        case 'skeleton':
+          return (
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 animate-pulse"></div>
+          );
+        default:
+          return null;
+      }
+    }
+    return null;
+  };
+
   // 自定义占位符
   const defaultPlaceholder = (
     <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse rounded-lg flex items-center justify-center">
@@ -423,11 +544,14 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
                 ? '16 / 9' 
                 : ratio === 'portrait' 
                   ? '4 / 5' 
-                  : '16 / 9' // 默认使用16:9宽高比，确保容器有高度
+                  : undefined // 当ratio为auto时，不强制设置宽高比，让图片根据自身比例显示
           })
         }}
       >
-        {/* 图片元素 - 只有在可见时才加载 */}
+        {/* 内置占位符 - 仅当disableFallback为false时显示 */}
+        {!isLoaded && !isError && !disableFallback && renderBuiltInPlaceholder()}
+        
+        {/* 图片元素 - 只在可见时渲染，实现真正的懒加载 */}
         {isVisible && (
           <img
             ref={imgRef}
@@ -443,19 +567,21 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
           />
         )}
         
-        {/* 加载状态 - 显示默认占位符或自定义占位符 */}
-        {!isLoaded && !isError && (
+        {/* 加载状态指示器 - 仅当图片可见且正在加载时显示 */}
+        {isVisible && !isLoaded && !isError && !disableFallback && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
-            {placeholder || defaultPlaceholder}
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
         
-        {/* 加载失败状态 - 显示自定义错误界面，允许重试 */}
-        {isError && (
+        {/* 加载失败状态 - 仅当disableFallback为false时显示 */}
+        {isError && !disableFallback && (
           <div className="absolute inset-0 z-20 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
             <div className="text-center p-4">
               <div className="mb-3">
-                <i className="fas fa-image text-4xl text-gray-400 dark:text-gray-500"></i>
+                <svg className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
               </div>
               <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">图片加载失败</p>
               <button 
@@ -472,10 +598,12 @@ const LazyImage: React.FC<LazyImageProps> = React.memo(({
                     }, 0);
                   }
                 }} 
-                className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-2 mx-auto"
                 aria-label="重新加载图片"
               >
-                <i className="fas fa-redo"></i>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 <span>重新加载</span>
               </button>
               {retryCount >= 3 && (

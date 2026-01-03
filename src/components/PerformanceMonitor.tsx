@@ -145,7 +145,7 @@ const PerformanceMonitor: React.FC = () => {
   }, []);
 
   // 仅在开发环境中显示
-  if (process.env.NODE_ENV !== 'development') {
+  if (import.meta.env.MODE !== 'development') {
     return null;
   }
 

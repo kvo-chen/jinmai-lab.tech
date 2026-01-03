@@ -1,371 +1,290 @@
-/**
- * 离线创作服务
- * 提供离线数据的存储、同步和管理功能
- */
+import { Post, Comment } from './postService';
 
-// 离线数据类型定义
+// 离线数据存储接口
 export interface OfflineData {
+  posts: Post[];
+  drafts: Post[];
+  comments: Comment[];
+  lastSync: number;
+  syncQueue: SyncOperation[];
+}
+
+// 同步操作类型
+export interface SyncOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
+  entity: 'post' | 'comment' | 'like';
   data: any;
-  createdAt: number;
-  updatedAt: number;
-  syncedAt?: number;
-  status: 'pending' | 'syncing' | 'synced' | 'failed';
-  error?: string;
+  timestamp: number;
+  attempts: number;
 }
 
-// 离线配置类型定义
-export interface OfflineConfig {
-  autoSync: boolean;
-  syncInterval: number;
-  maxOfflineData: number;
-  retryDelay: number;
-}
+// 离线状态管理
+export class OfflineService {
+  private dbName = 'jinmai-offline-db';
+  private version = 1;
+  private db: IDBDatabase | null = null;
 
-// 离线状态类型定义
-export interface OfflineStatus {
-  isOnline: boolean;
-  pendingSync: number;
-  lastSync: number;
-  syncing: boolean;
-}
+  // 初始化数据库
+  async init(): Promise<void> {
+    if (!('indexedDB' in window)) {
+      throw new Error('IndexedDB is not supported');
+    }
 
-// 离线服务类
-class OfflineService {
-  private offlineData: OfflineData[] = [];
-  private config: OfflineConfig = {
-    autoSync: true,
-    syncInterval: 30000, // 30秒
-    maxOfflineData: 100,
-    retryDelay: 5000 // 5秒
-  };
-  private status: OfflineStatus = {
-    isOnline: navigator.onLine,
-    pendingSync: 0,
-    lastSync: 0,
-    syncing: false
-  };
-  private syncTimeout: NodeJS.Timeout | null = null;
-  private readonly STORAGE_KEY = 'OFFLINE_DATA';
-  private readonly CONFIG_KEY = 'OFFLINE_CONFIG';
-  private readonly STATUS_KEY = 'OFFLINE_STATUS';
-  private listeners: Array<(status: OfflineStatus) => void> = [];
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
 
-  constructor() {
-    this.loadData();
-    this.loadConfig();
-    this.loadStatus();
-    this.setupEventListeners();
-    this.startAutoSync();
-  }
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve();
+      };
 
-  /**
-   * 设置事件监听器
-   */
-  private setupEventListeners() {
-    // 监听网络状态变化
-    window.addEventListener('online', () => {
-      this.status.isOnline = true;
-      this.saveStatus();
-      this.notifyListeners();
-      if (this.config.autoSync) {
-        this.syncData();
-      }
-    });
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        
+        // 创建对象存储
+        if (!db.objectStoreNames.contains('posts')) {
+          const postsStore = db.createObjectStore('posts', { keyPath: 'id' });
+          postsStore.createIndex('date', 'date', { unique: false });
+          postsStore.createIndex('category', 'category', { unique: false });
+        }
 
-    window.addEventListener('offline', () => {
-      this.status.isOnline = false;
-      this.saveStatus();
-      this.notifyListeners();
+        if (!db.objectStoreNames.contains('drafts')) {
+          const draftsStore = db.createObjectStore('drafts', { keyPath: 'id' });
+          draftsStore.createIndex('lastModified', 'lastModified', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains('comments')) {
+          const commentsStore = db.createObjectStore('comments', { keyPath: 'id' });
+          commentsStore.createIndex('postId', 'postId', { unique: false });
+          commentsStore.createIndex('date', 'date', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains('syncQueue')) {
+          const syncStore = db.createObjectStore('syncQueue', { keyPath: 'id' });
+          syncStore.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+      };
     });
   }
 
-  /**
-   * 从本地存储加载离线数据
-   */
-  private loadData() {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (stored) {
-        this.offlineData = JSON.parse(stored);
-        this.status.pendingSync = this.offlineData.filter(d => d.status === 'pending' || d.status === 'failed').length;
-      }
-    } catch (error) {
-      console.error('Failed to load offline data:', error);
-      this.offlineData = [];
-    }
+  // 检查网络状态
+  isOnline(): boolean {
+    return navigator.onLine;
   }
 
-  /**
-   * 保存离线数据到本地存储
-   */
-  private saveData() {
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.offlineData));
-      this.status.pendingSync = this.offlineData.filter(d => d.status === 'pending' || d.status === 'failed').length;
-      this.saveStatus();
-      this.notifyListeners();
-    } catch (error) {
-      console.error('Failed to save offline data:', error);
-    }
+  // 添加网络状态监听
+  addNetworkListener(callback: (online: boolean) => void): void {
+    window.addEventListener('online', () => callback(true));
+    window.addEventListener('offline', () => callback(false));
   }
 
-  /**
-   * 从本地存储加载配置
-   */
-  private loadConfig() {
-    try {
-      const stored = localStorage.getItem(this.CONFIG_KEY);
-      if (stored) {
-        this.config = { ...this.config, ...JSON.parse(stored) };
-      }
-    } catch (error) {
-      console.error('Failed to load offline config:', error);
-    }
-  }
-
-  /**
-   * 保存配置到本地存储
-   */
-  private saveConfig() {
-    try {
-      localStorage.setItem(this.CONFIG_KEY, JSON.stringify(this.config));
-    } catch (error) {
-      console.error('Failed to save offline config:', error);
-    }
-  }
-
-  /**
-   * 从本地存储加载状态
-   */
-  private loadStatus() {
-    try {
-      const stored = localStorage.getItem(this.STATUS_KEY);
-      if (stored) {
-        this.status = { ...this.status, ...JSON.parse(stored) };
-      }
-    } catch (error) {
-      console.error('Failed to load offline status:', error);
-    }
-  }
-
-  /**
-   * 保存状态到本地存储
-   */
-  private saveStatus() {
-    try {
-      localStorage.setItem(this.STATUS_KEY, JSON.stringify(this.status));
-    } catch (error) {
-      console.error('Failed to save offline status:', error);
-    }
-  }
-
-  /**
-   * 开始自动同步
-   */
-  private startAutoSync() {
-    if (this.syncTimeout) {
-      clearTimeout(this.syncTimeout);
-    }
-
-    if (this.config.autoSync) {
-      this.syncTimeout = setTimeout(() => {
-        this.syncData();
-        this.startAutoSync();
-      }, this.config.syncInterval);
-    }
-  }
-
-  /**
-   * 注册状态监听器
-   */
-  addStatusListener(listener: (status: OfflineStatus) => void) {
-    this.listeners.push(listener);
-    // 立即通知初始状态
-    listener(this.status);
-    return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
-    };
-  }
-
-  /**
-   * 通知所有监听器
-   */
-  private notifyListeners() {
-    this.listeners.forEach(listener => listener(this.status));
-  }
-
-  /**
-   * 获取当前离线状态
-   */
-  getStatus(): OfflineStatus {
-    return { ...this.status };
-  }
-
-  /**
-   * 获取离线配置
-   */
-  getConfig(): OfflineConfig {
-    return { ...this.config };
-  }
-
-  /**
-   * 更新离线配置
-   */
-  updateConfig(config: Partial<OfflineConfig>) {
-    this.config = { ...this.config, ...config };
-    this.saveConfig();
-    this.startAutoSync();
-  }
-
-  /**
-   * 保存离线数据
-   */
-  saveOfflineData(type: OfflineData['type'], data: any): OfflineData {
-    const offlineItem: OfflineData = {
-      id: `offline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      data,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      status: 'pending'
+  // 保存草稿
+  async saveDraft(post: Post): Promise<void> {
+    if (!this.db) await this.init();
+    
+    const draft = {
+      ...post,
+      lastModified: Date.now(),
+      isDraft: true
     };
 
-    // 限制离线数据数量
-    if (this.offlineData.length >= this.config.maxOfflineData) {
-      // 删除最旧的已同步数据
-      const syncedData = this.offlineData.filter(d => d.status === 'synced');
-      if (syncedData.length > 0) {
-        const oldestSynced = syncedData.reduce((oldest, current) => {
-          return current.syncedAt! < oldest.syncedAt! ? current : oldest;
-        });
-        this.offlineData = this.offlineData.filter(d => d.id !== oldestSynced.id);
-      } else {
-        // 如果没有已同步数据，删除最旧的数据
-        this.offlineData.shift();
-      }
-    }
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['drafts'], 'readwrite');
+      const store = transaction.objectStore('drafts');
+      const request = store.put(draft);
 
-    this.offlineData.push(offlineItem);
-    this.saveData();
-    return offlineItem;
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
   }
 
-  /**
-   * 获取所有离线数据
-   */
-  getAllOfflineData(): OfflineData[] {
-    return [...this.offlineData];
+  // 获取所有草稿
+  async getDrafts(): Promise<Post[]> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['drafts'], 'readonly');
+      const store = transaction.objectStore('drafts');
+      const request = store.getAll();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
   }
 
-  /**
-   * 获取待同步的离线数据
-   */
-  getPendingSyncData(): OfflineData[] {
-    return this.offlineData.filter(d => d.status === 'pending' || d.status === 'failed');
+  // 删除草稿
+  async deleteDraft(id: string): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['drafts'], 'readwrite');
+      const store = transaction.objectStore('drafts');
+      const request = store.delete(id);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
   }
 
-  /**
-   * 同步离线数据
-   */
-  async syncData(): Promise<boolean> {
-    if (!navigator.onLine || this.status.syncing) {
-      return false;
-    }
+  // 缓存作品数据
+  async cachePosts(posts: Post[]): Promise<void> {
+    if (!this.db) await this.init();
 
-    this.status.syncing = true;
-    this.saveStatus();
-    this.notifyListeners();
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['posts'], 'readwrite');
+      const store = transaction.objectStore('posts');
 
-    const pendingData = this.getPendingSyncData();
-    if (pendingData.length === 0) {
-      this.status.syncing = false;
-      this.saveStatus();
-      this.notifyListeners();
-      return true;
-    }
+      // 清空现有数据
+      store.clear();
 
-    try {
-      // 这里应该实现与服务器的同步逻辑
-      // 由于是模拟环境，我们直接将数据标记为已同步
-      for (const data of pendingData) {
-        // 模拟同步延迟
-        await new Promise(resolve => setTimeout(resolve, 500));
-        data.status = 'synced';
-        data.syncedAt = Date.now();
-        data.updatedAt = Date.now();
-      }
-
-      this.status.lastSync = Date.now();
-      this.status.pendingSync = 0;
-      this.saveData();
-      this.saveStatus();
-      this.notifyListeners();
-      return true;
-    } catch (error) {
-      console.error('Failed to sync offline data:', error);
-      // 将失败的数据标记为failed
-      pendingData.forEach(data => {
-        data.status = 'failed';
-        data.error = error instanceof Error ? error.message : 'Sync failed';
-        data.updatedAt = Date.now();
+      // 添加新数据
+      posts.forEach(post => {
+        store.add(post);
       });
-      this.saveData();
-      return false;
-    } finally {
-      this.status.syncing = false;
-      this.saveStatus();
-      this.notifyListeners();
-    }
-  }
 
-  /**
-   * 删除已同步的离线数据
-   */
-  clearSyncedData(): void {
-    this.offlineData = this.offlineData.filter(d => d.status !== 'synced');
-    this.saveData();
-  }
-
-  /**
-   * 删除特定的离线数据
-   */
-  deleteOfflineData(id: string): boolean {
-    const initialLength = this.offlineData.length;
-    this.offlineData = this.offlineData.filter(d => d.id !== id);
-    const deleted = this.offlineData.length < initialLength;
-    if (deleted) {
-      this.saveData();
-    }
-    return deleted;
-  }
-
-  /**
-   * 重试同步失败的数据
-   */
-  retryFailedData(): void {
-    this.offlineData.forEach(data => {
-      if (data.status === 'failed') {
-        data.status = 'pending';
-        data.error = undefined;
-        data.updatedAt = Date.now();
-      }
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
     });
-    this.saveData();
-    if (navigator.onLine) {
-      this.syncData();
+  }
+
+  // 获取缓存的帖子
+  async getCachedPosts(): Promise<Post[]> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['posts'], 'readonly');
+      const store = transaction.objectStore('posts');
+      const request = store.getAll();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+  }
+
+  // 添加同步操作到队列
+  async addToSyncQueue(operation: Omit<SyncOperation, 'id' | 'timestamp' | 'attempts'>): Promise<void> {
+    if (!this.db) await this.init();
+
+    const syncOp: SyncOperation = {
+      ...operation,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      timestamp: Date.now(),
+      attempts: 0
+    };
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['syncQueue'], 'readwrite');
+      const store = transaction.objectStore('syncQueue');
+      const request = store.add(syncOp);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  // 获取同步队列
+  async getSyncQueue(): Promise<SyncOperation[]> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['syncQueue'], 'readonly');
+      const store = transaction.objectStore('syncQueue');
+      const request = store.getAll();
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+  }
+
+  // 处理同步队列
+  async processSyncQueue(): Promise<void> {
+    if (!this.isOnline()) return;
+
+    const queue = await this.getSyncQueue();
+    
+    for (const operation of queue) {
+      try {
+        // 这里应该调用实际的API
+        // 例如：await apiService.syncOperation(operation);
+        
+        // 同步成功后从队列中删除
+        await this.removeFromSyncQueue(operation.id);
+      } catch (error) {
+        console.error('Sync operation failed:', error);
+        await this.incrementAttempts(operation.id);
+      }
     }
   }
 
-  /**
-   * 检查是否支持离线功能
-   */
-  isOfflineSupported(): boolean {
-    return 'serviceWorker' in navigator && 'SyncManager' in window && 'indexedDB' in window;
+  // 从同步队列中删除操作
+  private async removeFromSyncQueue(id: string): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['syncQueue'], 'readwrite');
+      const store = transaction.objectStore('syncQueue');
+      const request = store.delete(id);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  }
+
+  // 增加尝试次数
+  private async incrementAttempts(id: string): Promise<void> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(['syncQueue'], 'readwrite');
+      const store = transaction.objectStore('syncQueue');
+      const getRequest = store.get(id);
+
+      getRequest.onsuccess = () => {
+        const operation = getRequest.result;
+        if (operation && operation.attempts < 5) {
+          operation.attempts += 1;
+          const putRequest = store.put(operation);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          // 超过最大尝试次数，删除操作
+          store.delete(id);
+          resolve();
+        }
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
+  // 获取存储使用情况
+  async getStorageInfo(): Promise<{
+    total: number;
+    used: number;
+    available: number;
+    usagePercentage: number;
+  }> {
+    if (!navigator.storage || !navigator.storage.estimate) {
+      return {
+        total: 0,
+        used: 0,
+        available: 0,
+        usagePercentage: 0
+      };
+    }
+
+    const estimate = await navigator.storage.estimate();
+    
+    return {
+      total: estimate.quota || 0,
+      used: estimate.usage || 0,
+      available: (estimate.quota || 0) - (estimate.usage || 0),
+      usagePercentage: estimate.quota ? ((estimate.usage || 0) / estimate.quota) * 100 : 0
+    };
   }
 }
 
 // 导出单例实例
-const service = new OfflineService();
-export default service;
+export const offlineService = new OfflineService();

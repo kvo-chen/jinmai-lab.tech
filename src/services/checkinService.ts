@@ -37,7 +37,6 @@ const STREAK_REWARDS = [
 class CheckinService {
   private checkinRecords: CheckinRecord[] = [];
   private readonly RECORDS_KEY = 'CHECKIN_RECORDS';
-  private readonly STATUS_KEY = 'CHECKIN_STATUS';
 
   constructor() {
     this.loadRecords();
@@ -110,7 +109,6 @@ class CheckinService {
       lastCheckinDate = sortedRecords[0].date;
       
       // 计算连续签到天数
-      let streak = 0;
       let tempStreak = 0;
       let previousDate: string | null = null;
       

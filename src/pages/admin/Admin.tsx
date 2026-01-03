@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/authContext';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { LineChart, Line, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { toast } from 'sonner';
 
 // 模拟数据
@@ -85,7 +85,7 @@ const commercialApplications = [
 type TabType = 'dashboard' | 'audit' | 'analytics' | 'adoption' | 'users' | 'settings' | 'campaigns' | 'creators';
 
 export default function Admin() {
-  const { theme, isDark } = useTheme();
+  const { isDark } = useTheme();
   const { isAuthenticated, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   
@@ -143,11 +143,11 @@ export default function Admin() {
     navigate('/login');
   };
   
-  const handleApprove = (id: number) => {
+  const handleApprove = (_id: number) => {
     toast.success('已通过审核');
   };
   
-  const handleReject = (id: number) => {
+  const handleReject = (_id: number) => {
     toast.success('已拒绝审核');
   };
   
@@ -437,7 +437,7 @@ export default function Admin() {
                         dataKey="value"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
-                        {contentAuditData.map((entry, index) => (
+                        {contentAuditData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

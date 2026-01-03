@@ -1,4 +1,4 @@
-/* 粉色主题高级色彩方案 - 专业视觉标准 */
+/* 粉色主题 - 基于白色主题框架 */
 .pink {
   /* 优化后的粉色主色调层次 - 专业和谐 */
   --color-primary: #db2777;
@@ -9,12 +9,12 @@
   --color-error: #ef4444;
   --color-info: #3b82f6;
   
-  /* 优化后的粉色背景层次 - 柔和渐变 */
-  --bg-primary: #fdf2f8;
-  --bg-secondary: #fce7f3;
-  --bg-tertiary: #fbcfe8;
-  --bg-hover: #f9a8d4;
-  --bg-active: #f472b6;
+  /* 优化后的粉色背景层次 - 基于白色主题框架 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fdf2f8;
+  --bg-tertiary: #fce7f3;
+  --bg-hover: #fbcfe8;
+  --bg-active: #f9a8d4;
   --bg-muted: #fef2f2;
   
   /* 优化后的粉色文字层次 - 温暖柔和 */
@@ -25,9 +25,9 @@
   --text-inverse: #ffffff;
   
   /* 优化后的粉色边框层次 - 柔和过渡 */
-  --border-primary: #fbcfe8;
-  --border-secondary: #f9a8d4;
-  --border-tertiary: #f472b6;
+  --border-primary: #e5e7eb;
+  --border-secondary: #fbcfe8;
+  --border-tertiary: #f9a8d4;
   --border-muted: #fee2e2;
   
   /* 优化后的粉色主题阴影 - 柔和可爱 */
@@ -41,9 +41,9 @@
   --glow-secondary: 0 0 18px rgba(219, 39, 119, 0.2);
   --glow-accent: 0 0 24px rgba(251, 113, 133, 0.2);
   
-  /* 优化后的粉色主题渐变 - 柔和可爱 */
-  --gradient-primary: linear-gradient(135deg, #fce7f3 0%, #fdf2f8 100%);
-  --gradient-secondary: linear-gradient(135deg, #fbcfe8 0%, #fce7f3 100%);
+  /* 优化后的粉色主题渐变 - 基于白色主题框架 */
+  --gradient-primary: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);
+  --gradient-secondary: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
   --gradient-accent: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
   --gradient-button: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
   --gradient-card: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);

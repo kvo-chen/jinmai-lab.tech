@@ -1,0 +1,8 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#f0fdf4" rx="20"/>
+  <path d="M 80 80 L 120 80 L 120 140 L 80 140 Z" fill="#22c55e"/>
+  <path d="M 100 80 L 100 140" stroke="#ffffff" stroke-width="4"/>
+  <path d="M 90 100 L 110 100" stroke="#ffffff" stroke-width="4"/>
+  <path d="M 90 120 L 110 120" stroke="#ffffff" stroke-width="4"/>
+  <text x="100" y="170" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#000">服务</text>
+</svg>

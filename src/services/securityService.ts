@@ -7,32 +7,120 @@ export interface EncryptedData {
   data: string;
   timestamp: number;
   signature: string;
+  iv?: string;
 }
 
 // 安全服务类
 class SecurityService {
-  private readonly ENCRYPTION_KEY = 'j9kL2pQ5rT8wZ1cV4xY7mU3tR6nH9bE2'; // 加密密钥
+  private readonly ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'j9kL2pQ5rT8wZ1cV4xY7mU3tR6nH9bE2'; // 加密密钥（生产环境应使用环境变量）
   private readonly SALT = 'f3s6v9yB2e5h8k0n3q6t9w2z5C8r1V4x7'; // 盐值
   private readonly MAX_CACHE_AGE = 3600000; // 缓存最大年龄（1小时）
+  private cryptoKey: CryptoKey | null = null;
+
+  constructor() {
+    this.initializeCryptoKey();
+  }
 
   /**
-   * 简单的加密算法（用于本地存储数据保护）
+   * 初始化加密密钥
    */
-  encrypt(data: any): EncryptedData {
+  private async initializeCryptoKey(): Promise<void> {
+    try {
+      if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+        this.cryptoKey = await window.crypto.subtle.generateKey(
+          {
+            name: 'AES-GCM',
+            length: 256,
+          },
+          true,
+          ['encrypt', 'decrypt']
+        );
+      }
+    } catch (error) {
+      console.warn('Failed to initialize Web Crypto API, falling back to XOR encryption');
+    }
+  }
+
+  /**
+   * 使用Web Crypto API进行加密（如果可用）
+   */
+  private async encryptWithWebCrypto(data: string): Promise<{ encrypted: string; iv: string }> {
+    if (!this.cryptoKey) {
+      throw new Error('Crypto key not initialized');
+    }
+
+    const encoder = new TextEncoder();
+    const encodedData = encoder.encode(data);
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await window.crypto.subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv: iv,
+      },
+      this.cryptoKey,
+      encodedData
+    );
+
+    return {
+      encrypted: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+      iv: btoa(String.fromCharCode(...iv))
+    };
+  }
+
+  /**
+   * 使用Web Crypto API进行解密（如果可用）
+   */
+  private async decryptWithWebCrypto(encryptedData: string, iv: string): Promise<string> {
+    if (!this.cryptoKey) {
+      throw new Error('Crypto key not initialized');
+    }
+
+    const encrypted = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+    const ivArray = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+
+    const decrypted = await window.crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv: ivArray,
+      },
+      this.cryptoKey,
+      encrypted
+    );
+
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
+  }
+
+  /**
+   * 加密数据（优先使用Web Crypto API，回退到XOR加密）
+   */
+  async encrypt(data: any): Promise<EncryptedData> {
     const jsonData = JSON.stringify(data);
     const timestamp = Date.now();
     
-    // 简单的XOR加密
+    try {
+      if (this.cryptoKey) {
+        const { encrypted, iv } = await this.encryptWithWebCrypto(jsonData);
+        const signature = this.generateSignature(encrypted, timestamp);
+        return {
+          data: encrypted,
+          timestamp,
+          signature,
+          iv
+        };
+      }
+    } catch (error) {
+      console.warn('Web Crypto encryption failed, falling back to XOR encryption');
+    }
+    
     let encrypted = '';
     for (let i = 0; i < jsonData.length; i++) {
       const charCode = jsonData.charCodeAt(i) ^ this.ENCRYPTION_KEY.charCodeAt(i % this.ENCRYPTION_KEY.length);
       encrypted += String.fromCharCode(charCode);
     }
     
-    // Base64编码
     const base64Data = btoa(encrypted);
-    
-    // 生成签名
     const signature = this.generateSignature(base64Data, timestamp);
     
     return {
@@ -43,25 +131,29 @@ class SecurityService {
   }
 
   /**
-   * 解密数据
+   * 解密数据（支持Web Crypto API和XOR加密）
    */
-  decrypt(encryptedData: EncryptedData): any {
-    const { data, timestamp, signature } = encryptedData;
+  async decrypt(encryptedData: EncryptedData): Promise<any> {
+    const { data, timestamp, signature, iv } = encryptedData;
     
-    // 验证签名
     if (!this.verifySignature(data, timestamp, signature)) {
       throw new Error('数据已被篡改');
     }
     
-    // 验证数据时效性
     if (Date.now() - timestamp > this.MAX_CACHE_AGE) {
       throw new Error('数据已过期');
     }
     
-    // Base64解码
-    const encrypted = atob(data);
+    try {
+      if (this.cryptoKey && iv) {
+        const decrypted = await this.decryptWithWebCrypto(data, iv);
+        return JSON.parse(decrypted);
+      }
+    } catch (error) {
+      console.warn('Web Crypto decryption failed, falling back to XOR decryption');
+    }
     
-    // XOR解密
+    const encrypted = atob(data);
     let decrypted = '';
     for (let i = 0; i < encrypted.length; i++) {
       const charCode = encrypted.charCodeAt(i) ^ this.ENCRYPTION_KEY.charCodeAt(i % this.ENCRYPTION_KEY.length);
@@ -162,17 +254,17 @@ class SecurityService {
   /**
    * 获取安全的本地存储项
    */
-  getSecureItem(key: string): any | null {
+  async getSecureItem(key: string): Promise<any | null> {
     try {
       const stored = localStorage.getItem(key);
       if (stored) {
         const encryptedData: EncryptedData = JSON.parse(stored);
-        return this.decrypt(encryptedData);
+        return await this.decrypt(encryptedData);
       }
       return null;
     } catch (error) {
       console.error('Failed to get secure item:', error);
-      localStorage.removeItem(key); // 删除损坏的数据
+      localStorage.removeItem(key);
       return null;
     }
   }
@@ -180,9 +272,9 @@ class SecurityService {
   /**
    * 设置安全的本地存储项
    */
-  setSecureItem(key: string, data: any): void {
+  async setSecureItem(key: string, data: any): Promise<void> {
     try {
-      const encryptedData = this.encrypt(data);
+      const encryptedData = await this.encrypt(data);
       localStorage.setItem(key, JSON.stringify(encryptedData));
     } catch (error) {
       console.error('Failed to set secure item:', error);

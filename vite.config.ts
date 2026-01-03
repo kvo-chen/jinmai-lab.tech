@@ -86,22 +86,29 @@ function getPlugins() {
         ]
       },
       workbox: {
-        // 优化workbox配置，添加离线支持
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,gif,woff2,ttf}'],
+        // 优化workbox配置，增强离线支持
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,gif,webp,avif,woff2,ttf,json}'],
         navigateFallback: '/index.html',
+        navigateFallbackAllowlist: [/^\/$/, /^\/explore/, /^\/create/, /^\/tools/, /^\/neo/, /^\/wizard/],
         skipWaiting: true,
         clientsClaim: true,
-        globIgnores: ['**/*.map', '**/node_modules/**'],
-        // 添加基本的runtimeCaching配置
+        globIgnores: ['**/*.map', '**/node_modules/**', '**/sw.js', '**/workbox-*.js'],
+        cleanupOutdatedCaches: true,
+        offlineGoogleAnalytics: true,
+        
+        // 增强的runtimeCaching配置
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|avif)$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'image-cache',
+              cacheName: 'image-cache-v2',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 60 // 60 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
               }
             }
           },
@@ -109,7 +116,44 @@ function getPlugins() {
             urlPattern: /^https?:\/\/.*\.(js|css)$/,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'static-resources',
+              cacheName: 'static-resources-v2',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          {
+            urlPattern: /^https?:\/\/.*\.(woff2|ttf)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          {
+            urlPattern: /^https?:\/\/api\./,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https?:\/\/.*\.json$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'data-cache',
               expiration: {
                 maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
@@ -131,84 +175,49 @@ export default defineConfig({
     ViteImageOptimizer({
       // 启用WebP和AVIF格式转换
       png: {
-        quality: 75,
+        quality: 80,
         compressionLevel: 9,
-        force: true,
-        progressive: true
+        force: true
       },
       jpeg: {
-        quality: 75,
-        force: true,
-        progressive: true,
-        mozjpeg: true
+        quality: 80,
+        force: true
       },
       webp: {
-        quality: 80,
-        force: true,
-        alphaQuality: 85,
-        lossless: false
+        quality: 85,
+        force: true
       },
       avif: {
-        quality: 70,
-        force: true,
-        alphaQuality: 80,
-        chromaSubsampling: '4:2:0',
-        effort: 6
+        quality: 75,
+        force: true
       },
       // 启用响应式图片生成
       generateResponsiveImages: true,
-      // 响应式图片尺寸配置 - 更精细的尺寸级别
+      // 响应式图片尺寸配置
       responsive: {
         adapter: {
           name: 'sharp',
           options: {
-            sizes: [240, 320, 480, 640, 800, 1024, 1280, 1600, 2048],
-            format: ['avif', 'webp', 'jpeg'],
-            quality: [70, 80, 75],
-            // 为不同尺寸设置不同质量
-            sizesWithQuality: {
-              240: 65,
-              320: 70,
-              480: 75,
-              640: 75,
-              800: 80,
-              1024: 80,
-              1280: 85,
-              1600: 85,
-              2048: 90
-            }
+            sizes: [320, 640, 1024, 1600, 2048],
+            format: ['webp', 'avif'],
+            quality: [85, 75]
           }
         }
       },
       svg: {
-        quality: 80,
-        force: true,
-        multipass: true,
-        plugins: [
-          { name: 'removeViewBox', active: false },
-          { name: 'removeEmptyContainers', active: true },
-          { name: 'removeUnusedNS', active: true }
-        ]
+        quality: 85,
+        force: true
       },
       gif: {
-        quality: 80,
-        force: true,
-        interlaced: true,
-        optimizationLevel: 3
+        quality: 85,
+        force: true
       },
       // 仅在构建时优化
       disable: process.env.NODE_ENV === 'development',
       // 仅优化src目录下的图片
       include: /\.(png|jpe?g|gif|svg|webp|avif)$/i,
       // 排除node_modules目录和有问题的图片
-      exclude: [/node_modules/, /fallback\.jpg$/, /placeholder-image\.jpg$/],
-      // 输出路径配置
-      outputDir: 'dist/images/optimized',
-      // 生成图片优化报告
-      generateReport: true,
-      // 使用缓存减少重复优化
-      cache: true,
-      cacheLocation: './node_modules/.cache/image-optimizer'
+      exclude: [/node_modules/, /fallback\.jpg$/, /placeholder-image\.jpg$/]
     }),
     VitePWA({
       registerType: 'autoUpdate',
@@ -221,10 +230,61 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
+        categories: ['productivity', 'creativity', 'education'],
+        lang: 'zh-CN',
+        start_url: '/?source=pwa',
+        scope: '/',
+        shortcuts: [
+          {
+            name: '开始创作',
+            short_name: '创作',
+            description: '开始新的创作项目',
+            url: '/create',
+            icons: [{ src: 'icons/icon-96x96.svg', sizes: '96x96' }]
+          },
+          {
+            name: '浏览作品',
+            short_name: '浏览',
+            description: '浏览社区作品',
+            url: '/explore',
+            icons: [{ src: 'icons/icon-96x96.svg', sizes: '96x96' }]
+          },
+          {
+            name: '个人中心',
+            short_name: '我的',
+            description: '查看个人资料和作品',
+            url: '/profile',
+            icons: [{ src: 'icons/icon-96x96.svg', sizes: '96x96' }]
+          }
+        ],
         icons: [
+          {
+            src: 'icons/icon-72x72.svg',
+            sizes: '72x72',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'icons/icon-96x96.svg',
+            sizes: '96x96',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'icons/icon-128x128.svg',
+            sizes: '128x128',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
           {
             src: 'icons/icon-192x192.svg',
             sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'icons/icon-384x384.svg',
+            sizes: '384x384',
             type: 'image/svg+xml',
             purpose: 'any maskable'
           },
@@ -283,20 +343,17 @@ export default defineConfig({
               }
             }
           },
-          // 图片资源缓存 - 优化缓存策略
+          // 图片资源缓存 - 增加缓存条目数量
           {
             urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|avif)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'image-cache',
               expiration: {
-                maxEntries: 200, // 增加到200个条目，存储更多图片
-                maxAgeSeconds: 60 * 60 * 24 * 90 // 90 days，增加缓存时间
+                maxEntries: 100, // 增加到100个条目
+                maxAgeSeconds: 60 * 60 * 24 * 60 // 60 days
               },
-              rangeRequests: true, // 支持范围请求，优化大图片加载
-              cacheableResponse: {
-                statuses: [0, 200] // 确保所有成功响应都被缓存
-              }
+              rangeRequests: true // 支持范围请求，优化大图片加载
             }
           },
           // CSS和JS资源缓存 - 调整缓存策略
@@ -634,6 +691,17 @@ export default defineConfig({
     },
     // 添加开发服务器代理配置
     proxy: {
+      '/api/doubao': {
+        target: 'http://localhost:3010',
+        changeOrigin: true,
+        configure: (proxy, options) => {
+          // 允许所有响应头通过
+          options.onProxyRes = (proxyRes, req, res) => {
+            // 确保响应头被正确设置，特别是对于图片请求
+            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+          };
+        },
+      },
       '/api/proxy/trae-api': {
         target: 'https://trae-api-sg.mchost.guru',
         changeOrigin: true,

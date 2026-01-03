@@ -30,10 +30,9 @@ export interface GameProgress {
 
 // 游戏钩子选项
 interface UseGameOptions<T extends GameLevel> {
-  userId: string;
-  levels: T[];
   initialState?: GameState;
   onLevelComplete?: (levelId: string, score: number, timeTaken: number) => void;
+  levels?: T[];
 }
 
 /**
@@ -41,8 +40,6 @@ interface UseGameOptions<T extends GameLevel> {
  * @param options 游戏钩子选项
  */
 export const useGame = <T extends GameLevel>({
-  userId,
-  levels,
   initialState = 'menu',
   onLevelComplete
 }: UseGameOptions<T>) => {

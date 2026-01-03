@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
@@ -13,7 +13,7 @@ import postsApi from '@/services/postService'
 import { searchService } from '@/services/searchService'
 import { SearchResultType } from '@/components/SearchBar'
 // 导入mock数据
-import { mockWorks } from '@/mock/works'
+import { mockWorks, type Work } from '@/mock/works'
 
 
 // 中文注释：本页专注作品探索，社区相关内容已迁移到创作者社区页面
@@ -27,12 +27,20 @@ const categories = [
 // 视频作品数据将在后续通过异步方式加载，或者放在单独的页面中展示
 // 这样可以减少初始加载时间，提高页面跳转速度
 
+// 防抖函数
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: unknown[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  };
+};
+
 export default function Explore() {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [filteredWorks, setFilteredWorks] = useState<any[]>([]);
-  const [allWorks, setAllWorks] = useState<any[]>([]);
+  const [allWorks, setAllWorks] = useState<Work[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popularity' | 'newest' | 'mostViewed' | 'mostCommented' | 'originalOrder'>('originalOrder');
@@ -72,7 +80,6 @@ export default function Explore() {
   // 初始化作品数据 - 直接使用mockWorks，避免多余的localStorage操作
   useEffect(() => {
     setAllWorks(mockWorks);
-    setFilteredWorks(mockWorks);
   }, []);
 
   // 初始化收藏状态
@@ -115,55 +122,21 @@ export default function Explore() {
         setFavoriteTags(JSON.parse(saved));
       }
     } catch (error) {
-      console.error('Failed to load favorite tags:', error);
     }
   }, []);
-  
+
   // 保存收藏标签
   useEffect(() => {
     try {
       localStorage.setItem('TOOLS_FAVORITE_TAGS', JSON.stringify(favoriteTags));
     } catch (error) {
-      console.error('Failed to save favorite tags:', error);
     }
   }, [favoriteTags]);
   
-  // 切换标签收藏
-  const toggleFavorite = (tag: string) => {
-    setFavoriteTags(prev => {
-      if (prev.includes(tag)) {
-        return prev.filter(t => t !== tag);
-      } else {
-        return [...prev, tag];
-      }
-    });
-  };
+  // 切换标签收藏 (已优化为handleToggleFavorite)
+  // 移动收藏标签顺序 (已优化为handleMoveFavorite)
   
-  // 移动收藏标签顺序
-  const moveFavorite = (tag: string, direction: -1 | 1) => {
-    setFavoriteTags(prev => {
-      const index = prev.indexOf(tag);
-      if (index === -1) return prev;
-      const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= prev.length) return prev;
-      const newFavorites = [...prev];
-      [newFavorites[index], newFavorites[newIndex]] = [newFavorites[newIndex], newFavorites[index]];
-      return newFavorites;
-    });
-  };
-  
-  // 渲染高亮标签
-  const renderHighlightedTag = (tag: string, query: string) => {
-    if (!query) return tag;
-    const parts = tag.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, i) => 
-      part.toLowerCase() === query.toLowerCase() ? (
-        <span key={i} className="bg-yellow-200 text-black">{part}</span>
-      ) : (
-        <span key={i}>{part}</span>
-      )
-    );
-  };
+  // 渲染高亮标签（已移至useCallback优化版本）
   
   // 监听精选作品滚动
   const handleFeaturedScroll = () => {
@@ -182,10 +155,9 @@ export default function Explore() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get('category');
-    const search = params.get('search') || params.get('q'); // 支持q和search参数
+    const search = params.get('search') || params.get('q');
     const tags = params.get('tags');
     
-    // 只在URL参数与当前状态不一致时更新，避免重复渲染
     if (category && category !== selectedCategory) {
       setSelectedCategory(category);
     }
@@ -193,7 +165,6 @@ export default function Explore() {
       setSearchQuery(search);
       setShowSearchBar(true);
     }
-    // 处理tags参数
     if (tags) {
       try {
         const tagArray = tags.split(',');
@@ -201,10 +172,9 @@ export default function Explore() {
           setSelectedTags(tagArray);
         }
       } catch (error) {
-        console.error('Failed to parse tags parameter:', error);
       }
     }
-  }, [location.search, selectedCategory, searchQuery]);
+  }, [location.search]);
 
   // 使用ref跟踪上一次的核心筛选条件
   const prevCoreFiltersRef = useRef({ 
@@ -213,8 +183,8 @@ export default function Explore() {
     sortBy: 'originalOrder' 
   });
 
-  // 筛选和排序作品
-  useEffect(() => {
+  // 筛选和排序作品 - 使用useMemo优化性能
+  const filteredWorks = useMemo(() => {
     let result = mockWorks;
 
     // 按分类筛选
@@ -260,9 +230,11 @@ export default function Explore() {
         break;
     }
 
-    setFilteredWorks(result);
-    
-    // 检查核心筛选条件是否变化
+    return result;
+  }, [selectedCategory, searchQuery, sortBy, selectedTags]);
+
+  // 监听核心筛选条件变化，重置分页
+  useEffect(() => {
     const prev = prevCoreFiltersRef.current;
     const hasCoreFilterChanged = prev.category !== selectedCategory || 
                                  prev.search !== searchQuery || 
@@ -278,24 +250,53 @@ export default function Explore() {
         sortBy: sortBy 
       };
     }
-  }, [selectedCategory, searchQuery, sortBy, selectedTags]);
+  }, [selectedCategory, searchQuery, sortBy]);
 
-  // 获取热门作品（展示在推荐区）
-  // 限制精选作品数量，减少初始加载的图片请求
-  const featuredWorks = mockWorks
-    .filter(work => work.featured)
-    .slice(0, 6); // 限制为6个精选作品，减少初始加载压力
+  // 获取精选作品：按点赞数降序排序，取前十名
+  const featuredWorks = useMemo(() => {
+    // 按点赞数降序排序，取前十名
+    return [...mockWorks]
+      .sort((a, b) => b.likes - a.likes)
+      .slice(0, 10);
+  }, []);
   
   // 分页作品
   const pagedWorks = useMemo(() => {
     return filteredWorks.slice(0, page * pageSize);
   }, [filteredWorks, page]);
 
+  // 缓存的分类按钮数据
+  const categoryButtonsData = useMemo(() => [
+    { title: '精选', subtitle: '优选', category: '全部', icon: '✨' },
+    { title: '风格', subtitle: '融合', category: '国潮设计', icon: '🎨' },
+    { title: '效率', subtitle: '提升', category: '工艺创新', icon: '⚡' },
+    { title: '协作', subtitle: '共创', category: 'IP设计', icon: '🤝' }
+  ], []);
+
+  // 缓存的推荐分类数据
+  const recommendedCategories = useMemo(() => 
+    categories.slice(1, 7),
+    []
+  );
+
+  // 缓存的标签高亮渲染函数
+  const renderHighlightedTag = useCallback((tag: string, query: string) => {
+    if (!query) return tag;
+    const index = tag.toLowerCase().indexOf(query.toLowerCase());
+    if (index === -1) return tag;
+    
+    return (
+      <>
+        {tag.substring(0, index)}
+        <span className="bg-yellow-200 dark:bg-yellow-600">{tag.substring(index, index + query.length)}</span>
+        {tag.substring(index + query.length)}
+      </>
+    );
+  }, []);
+
   // 处理分类选择
-  const handleCategorySelect = (category: string) => {
-    // 只更新状态，不触发导航，避免重复渲染
+  const handleCategorySelect = useCallback((category: string) => {
     setSelectedCategory(category);
-    // 可选：如果需要更新URL，可以使用history.replaceState来避免触发路由变化
     const url = new URL(window.location.href);
     if (category === '全部') {
       url.searchParams.delete('category');
@@ -303,15 +304,52 @@ export default function Explore() {
       url.searchParams.set('category', category);
     }
     window.history.replaceState({}, '', url.toString());
-  };
+  }, []);
 
-  // 移除空的滚动事件监听，减少不必要的事件绑定
-  
-  
+  // 处理清除搜索栏
+  const handleClearSearchBar = useCallback(() => {
+    setShowSearchBar(false);
+    setSearchQuery('');
+    navigate('/explore', { replace: true });
+  }, [navigate]);
+
+  // 保存搜索历史记录
+  const saveSearchHistory = useCallback((query: string) => {
+    if (!query.trim() || searchHistory.includes(query)) {
+      return;
+    }
+    
+    const updatedHistory = [query, ...searchHistory].slice(0, maxHistoryItems);
+    setSearchHistory(updatedHistory);
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+    }
+  }, [searchHistory, maxHistoryItems]);
+
+  // 处理搜索输入变化
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
+
+  // 处理搜索回车键
+  const handleSearchKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (searchQuery.trim()) {
+        saveSearchHistory(searchQuery.trim());
+      }
+      setIsSearching(true);
+      navigate(`/explore?search=${encodeURIComponent(searchQuery)}`, { replace: true });
+      setTimeout(() => {
+        setIsSearching(false);
+      }, 500);
+    }
+  }, [searchQuery, saveSearchHistory, navigate]);
+
   // 处理作品点击
-  const handleWorkClick = (id: number) => {
+  const handleWorkClick = useCallback((id: number) => {
     navigate(`/explore/${id}`);
-  };
+  }, [navigate]);
   
   // 实现无限滚动，优化阈值和根边距，让加载更及时
   useEffect(() => {
@@ -362,7 +400,7 @@ export default function Explore() {
   }, []);
 
   // 处理搜索
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       saveSearchHistory(searchQuery.trim());
     }
@@ -371,14 +409,13 @@ export default function Explore() {
     setTimeout(() => {
       setIsSearching(false);
     }, 500);
-  };
+  }, [searchQuery, saveSearchHistory, navigate]);
 
   // 处理AI推荐搜索
-  const handleAIRecommendation = async (query: string) => {
+  const handleAIRecommendation = useCallback(async (query: string) => {
     setIsAIThinking(true);
     setSearchQuery(query);
     try {
-      // 使用模拟数据作为AI推荐搜索结果
       const mockResults = [
         `${query} 设计`,
         `${query} 创意`,
@@ -388,23 +425,70 @@ export default function Explore() {
       ];
       setRelatedSearches(mockResults);
     } catch (error) {
-      console.error('Failed to get AI recommendations:', error);
     } finally {
       setIsAIThinking(false);
     }
-  };
+  }, []);
 
-  // 防抖函数
-  const debounce = (func: Function, delay: number) => {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func.apply(null, args), delay);
-    };
-  };
+  // 处理标签收藏切换
+  const handleToggleFavorite = useCallback((tag: string) => {
+    setFavoriteTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  }, []);
+
+  // 处理标签移动
+  const handleMoveFavorite = useCallback((tag: string, direction: number) => {
+    setFavoriteTags(prev => {
+      const index = prev.indexOf(tag);
+      if (index === -1) return prev;
+      
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= prev.length) return prev;
+      
+      const newTags = [...prev];
+      [newTags[index], newTags[newIndex]] = [newTags[newIndex], newTags[index]];
+      return newTags;
+    });
+  }, []);
+
+  // 处理标签选择
+  const handleTagSelect = useCallback((tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  }, []);
+
+  // 处理清空标签
+  const handleClearTags = useCallback(() => {
+    setSelectedTags([]);
+  }, []);
+
+  // 处理清空搜索历史
+  const handleClearSearchHistory = useCallback(() => {
+    setSearchHistory([]);
+    try {
+      localStorage.removeItem('searchHistory');
+    } catch (error) {
+    }
+  }, []);
+
+  // 处理从历史记录中移除单个项目
+  const handleRemoveFromHistory = useCallback((query: string) => {
+    const updatedHistory = searchHistory.filter(item => item !== query);
+    setSearchHistory(updatedHistory);
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+    }
+  }, [searchHistory]);
 
   // 生成搜索建议
-  const generateSuggestions = debounce(async (query: string) => {
+  const generateSuggestions = useCallback(debounce(async (query: string) => {
     if (query.trim().length < 2) {
       setSearchSuggestions([]);
       return;
@@ -415,12 +499,10 @@ export default function Explore() {
       const suggestions = searchService.generateSuggestions(query);
       setSearchSuggestions(suggestions);
     } catch (error) {
-      console.error('Failed to generate search suggestions:', error);
-      setSearchSuggestions([]);
     } finally {
       setIsLoadingSuggestions(false);
     }
-  }, 300);
+  }, 300), []);
 
   // 监听搜索查询变化，生成搜索建议
   useEffect(() => {
@@ -431,7 +513,7 @@ export default function Explore() {
       setSearchSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [searchQuery, showSearchBar]);
+  }, [searchQuery, showSearchBar, generateSuggestions]);
 
   // 聚焦搜索输入框
   useEffect(() => {
@@ -448,24 +530,8 @@ export default function Explore() {
         setSearchHistory(JSON.parse(savedHistory));
       }
     } catch (error) {
-      console.error('Failed to load search history:', error);
     }
   }, []);
-
-  // 保存搜索历史记录
-  const saveSearchHistory = (query: string) => {
-    if (!query.trim() || searchHistory.includes(query)) {
-      return;
-    }
-    
-    const updatedHistory = [query, ...searchHistory].slice(0, maxHistoryItems);
-    setSearchHistory(updatedHistory);
-    try {
-      localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
-    } catch (error) {
-      console.error('Failed to save search history:', error);
-    }
-  };
 
   // 清除搜索历史记录
   const clearSearchHistory = () => {
@@ -473,7 +539,6 @@ export default function Explore() {
     try {
       localStorage.removeItem('searchHistory');
     } catch (error) {
-      console.error('Failed to clear search history:', error);
     }
   };
 
@@ -484,7 +549,6 @@ export default function Explore() {
     try {
       localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
     } catch (error) {
-      console.error('Failed to update search history:', error);
     }
   };
 
@@ -530,16 +594,11 @@ export default function Explore() {
           
           {/* 标签区 - 简化动画 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-            {[
-              { title: '精选', subtitle: '优选', category: '全部', icon: '✨' },
-              { title: '风格', subtitle: '融合', category: '国潮设计', icon: '🎨' },
-              { title: '效率', subtitle: '提升', category: '工艺创新', icon: '⚡' },
-              { title: '协作', subtitle: '共创', category: 'IP设计', icon: '🤝' }
-            ].map((item, index) => (
+            {categoryButtonsData.map((item, index) => (
               <button
                 key={index}
                 className="px-4 py-3 sm:px-6 sm:py-5 bg-gradient-to-r from-red-700/95 to-red-800/95 text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-400 border border-red-900/30 hover:border-red-800/50 hover:bg-red-600/90 backdrop-blur-sm group relative overflow-hidden"
-                onClick={() => setSelectedCategory(item.category)}
+                onClick={() => handleCategorySelect(item.category)}
                 aria-label={`查看${item.category}作品`}
               >
                 {/* 图标 */}
@@ -564,8 +623,8 @@ export default function Explore() {
               {showSearchBar ? (
                 <div className="flex items-center rounded-3xl shadow-xl overflow-hidden transition-all duration-500 dark:shadow-gray-700/50 hover:shadow-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-850 transform hover:-translate-y-1 sm:shadow-2xl sm:hover:shadow-3xl">
                   {/* 搜索图标 */}
-                  <div className="px-4 py-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center sm:px-6 sm:py-5">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600 dark:text-red-400 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="px-3 py-3 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center sm:px-4 sm:py-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-600 dark:text-red-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
@@ -574,39 +633,35 @@ export default function Explore() {
                     ref={searchInputRef}
                     type="text"
                     placeholder="搜索作品、设计师或标签..."
-                    className="flex-1 px-4 py-4 border-0 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-0 text-base font-medium placeholder-gray-400 dark:placeholder-gray-500 sm:px-6 sm:py-5 sm:text-lg"
+                    className="flex-1 px-3 py-3 border-0 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-0 text-sm font-medium placeholder-gray-400 dark:placeholder-gray-500 sm:px-4 sm:py-3 sm:text-base"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    onChange={handleSearchInputChange}
+                    onKeyPress={handleSearchKeyPress}
                   />
                   
                   {/* 搜索按钮 */}
                   <button
                     onClick={handleSearch}
-                    className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white px-4 py-4 rounded-r-3xl flex items-center gap-2 font-semibold transition-all duration-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 sm:px-8 sm:py-5 sm:gap-3 sm:shadow-xl sm:hover:shadow-2xl"
+                    className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white px-3 py-3 rounded-r-3xl flex items-center gap-2 font-semibold transition-all duration-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 sm:px-6 sm:py-3 sm:gap-2 sm:shadow-xl sm:hover:shadow-2xl"
                   >
                     {isSearching ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin sm:w-6 sm:h-6"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin sm:w-5 sm:h-5"></div>
                     ) : (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        <span className="text-sm sm:text-lg">搜索</span>
+                        <span className="text-xs sm:text-sm">搜索</span>
                       </>
                     )}
                   </button>
                   
                   {/* 清除按钮 */}
                   <button
-                    onClick={() => {
-                      setShowSearchBar(false);
-                      setSearchQuery('');
-                      navigate('/explore', { replace: true });
-                    }}
-                    className="mr-2 bg-white dark:bg-gray-850 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-full shadow-md transition-all duration-300 transform hover:scale-110 hover:shadow-lg sm:mr-4 sm:p-2.5 sm:shadow-lg sm:hover:shadow-xl"
+                    onClick={handleClearSearchBar}
+                    className="mr-2 bg-white dark:bg-gray-850 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-full shadow-md transition-all duration-300 transform hover:scale-110 hover:shadow-lg sm:mr-3 sm:p-2 sm:shadow-lg sm:hover:shadow-xl"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-300 sm:h-6 sm:w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-300 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -614,7 +669,7 @@ export default function Explore() {
               ) : (
                 <button
                   onClick={() => setShowSearchBar(true)}
-                  className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-white to-gray-50 dark:from-gray-850 dark:to-gray-800 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 border-2 border-red-100 dark:border-red-900/30 hover:border-red-200 dark:hover:border-red-800/50 sm:px-8 sm:py-5.5"
+                  className="w-full flex items-center justify-between px-5 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-gray-850 dark:to-gray-800 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 border-2 border-red-100 dark:border-red-900/30 hover:border-red-200 dark:hover:border-red-800/50 sm:px-6 sm:py-4"
                 >
                   <div className="flex items-center gap-3 sm:gap-4">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600 dark:text-red-400 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -648,7 +703,7 @@ export default function Explore() {
                           搜索历史
                         </h4>
                         <button
-                          onClick={clearSearchHistory}
+                          onClick={handleClearSearchHistory}
                           className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                         >
                           清除
@@ -674,7 +729,7 @@ export default function Explore() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  removeFromHistory(item);
+                                  handleRemoveFromHistory(item);
                                 }}
                                 className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                               >
@@ -822,6 +877,7 @@ export default function Explore() {
                           src={work.thumbnail}
                           alt={work.title}
                           className="w-full h-48 object-cover"
+                          ratio="landscape"
                           imageTag={work.imageTag}
                           priority={index < 6} /* 提高精选作品的优先级 */
                           quality={index < 12 ? 'high' : 'medium'}
@@ -843,11 +899,12 @@ export default function Explore() {
                         src={work.thumbnail}
                         alt={work.title}
                         className="w-full h-48 object-cover"
+                        ratio="landscape"
                         imageTag={work.imageTag}
-                        priority={index < 12} /* 提高更多精选作品的优先级 */
-                        quality={index < 18 ? 'high' : 'medium'}
-                        loading={index < 12 ? 'eager' : 'lazy'}
-                        disableFallback={true}
+                        priority={index < 6} /* 提高精选作品的优先级 */
+                        quality={index < 12 ? 'high' : 'medium'}
+                        loading="lazy"
+                        disableFallback={false}
                       />
                     )}
                     
@@ -859,7 +916,7 @@ export default function Explore() {
                           src={work.creatorAvatar}
                           alt={work.creator}
                           className="w-full h-full object-cover"
-                          disableFallback={true}
+                          disableFallback={false}
                         />
                         </div>
                         <div>
@@ -956,7 +1013,7 @@ export default function Explore() {
                 <div key={tag} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm">
                   <span>{tag}</span>
                   <button
-                    onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                    onClick={() => handleTagSelect(tag)}
                     className="text-blue-800 dark:text-blue-200 hover:text-blue-900 dark:hover:text-blue-100"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -998,7 +1055,7 @@ export default function Explore() {
                     {favoriteTags.map((tag) => (
                       <div key={tag} className="inline-flex items-center gap-1">
                         <button
-                          onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                          onClick={() => handleTagSelect(tag)}
                           className={`px-3 py-1 rounded-full text-sm transition-colors ${
                             selectedTags.includes(tag)
                               ? 'bg-blue-600 text-white'
@@ -1008,9 +1065,9 @@ export default function Explore() {
                           {tag}
                         </button>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => moveFavorite(tag, -1)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">▲</button>
-                          <button onClick={() => moveFavorite(tag, 1)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">▼</button>
-                          <button onClick={() => toggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
+                          <button onClick={() => handleMoveFavorite(tag, -1)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">▲</button>
+                          <button onClick={() => handleMoveFavorite(tag, 1)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">▼</button>
+                          <button onClick={() => handleToggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
                             <i className="fas fa-star"></i>
                           </button>
                         </div>
@@ -1027,7 +1084,7 @@ export default function Explore() {
                   {filteredTags.map(tag => (
                     <div key={`pop-${tag}`} className="inline-flex items-center gap-1">
                       <button
-                        onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                        onClick={() => handleTagSelect(tag)}
                         className={`px-3 py-1 rounded-full text-sm transition-colors ${
                           selectedTags.includes(tag)
                             ? 'bg-blue-600 text-white'
@@ -1036,7 +1093,7 @@ export default function Explore() {
                       >
                         {renderHighlightedTag(tag, tagQuery)}
                       </button>
-                      <button onClick={() => toggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
+                      <button onClick={() => handleToggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
                         <i className="far fa-star"></i>
                       </button>
                     </div>
@@ -1083,7 +1140,7 @@ export default function Explore() {
                     {filteredTags.map(tag => (
                     <div key={`all-${tag}`} className="inline-flex items-center gap-1">
                       <button
-                        onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                        onClick={() => handleTagSelect(tag)}
                         className={`px-3 py-1 rounded-full text-sm transition-colors ${
                           selectedTags.includes(tag)
                             ? 'bg-blue-600 text-white'
@@ -1092,7 +1149,7 @@ export default function Explore() {
                       >
                         {renderHighlightedTag(tag, tagQuery)}
                       </button>
-                      <button onClick={() => toggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
+                      <button onClick={() => handleToggleFavorite(tag)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400">
                         <i className="far fa-star"></i>
                       </button>
                     </div>
@@ -1103,7 +1160,7 @@ export default function Explore() {
               
               <div className="flex justify-end gap-2 mt-4">
                 <button
-                  onClick={() => setSelectedTags([])}
+                  onClick={handleClearTags}
                   className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
                 >
                   清空
@@ -1195,24 +1252,24 @@ export default function Explore() {
               </div>
               
               {/* 推荐分类 */}
-              <div className="mt-12 max-w-md mx-auto">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">推荐分类</h4>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {categories.slice(1, 7).map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setSearchQuery('');
-                        navigate('/explore', { replace: true });
-                      }}
-                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-gray-200 dark:border-gray-600"
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <div className="mt-12 max-w-md mx-auto">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">推荐分类</h4>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {recommendedCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => {
+                    handleCategorySelect(category);
+                    setSearchQuery('');
+                    navigate('/explore', { replace: true });
+                  }}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-gray-200 dark:border-gray-600"
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
             </div>
           ) : (
             // 作品列表
@@ -1235,9 +1292,10 @@ export default function Explore() {
                         src={work.thumbnail}
                         alt={work.title}
                         className="w-full h-48 object-cover"
+                        ratio="landscape"
                         imageTag={work.imageTag}
-                        priority={index < 12} /* 为更多视频缩略图添加优先级 */
-                        disableFallback={true}
+                        priority={index < 6} /* 为视频缩略图添加优先级 */
+                        disableFallback={false}
                       />
                       {/* 视频播放按钮 */}
                       <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1261,10 +1319,12 @@ export default function Explore() {
                       src={work.thumbnail}
                       alt={work.title}
                       className="w-full h-48 object-cover"
+                      ratio="landscape"
                       imageTag={work.imageTag}
-                      priority={index < 12} /* 增加优先加载的图片数量到12张 */
-                      quality={index < 18 ? 'high' : 'medium'} /* 优化质量设置 */
-                      loading={index < 12 ? 'eager' : 'lazy'}
+                      priority={index < 6} /* 增加优先加载的图片数量 */
+                      quality={index < 12 ? 'high' : 'medium'} /* 优化质量设置 */
+                      loading="lazy"
+                      disableFallback={false}
                     />
                   )}
                   
@@ -1296,7 +1356,8 @@ export default function Explore() {
                           e.stopPropagation(); 
                           const stringId = work.id.toString();
                           setBookmarked(prev => { 
-                            const newState: Record<string, boolean> = { ...prev, [stringId]: !prev[stringId] }; 
+                            const isBookmarked = prev[stringId] || false;
+                            const newState: Record<string, boolean> = { ...prev, [stringId]: !isBookmarked }; 
                             if (newState[stringId]) {
                               postsApi.bookmarkPost(stringId);
                             } else {
@@ -1330,11 +1391,12 @@ export default function Explore() {
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-full overflow-hidden">
                       <TianjinImage
-                        src={work.creatorAvatar}
-                        alt={work.creator}
-                        className="w-full h-full object-cover"
-                        disableFallback={true}
-                      />
+                          src={work.creatorAvatar}
+                          alt={work.creator}
+                          className="w-full h-full object-cover"
+                          ratio="square"
+                          disableFallback={true}
+                        />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{work.creator}</p>
@@ -1364,7 +1426,7 @@ export default function Explore() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
-                      <span>{work.likes}</span>
+                      <span>{work.likes + (liked[work.id] ? 1 : 0)}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -8,9 +8,12 @@ import { mockWorks } from '@/mock/works';
 import postsApi from '@/services/postService';
 import { addPost } from '@/services/postService';
 import { Post } from '@/services/postService';
+// 导入性能优化工具
+import { createLazyComponent, ROUTE_PRIORITIES, performanceOptimizer } from '@/utils/performanceOptimization';
 
 
 // 核心页面 - 只保留最关键的页面进行同步加载，减少初始加载时间
+import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -18,84 +21,198 @@ import Register from "@/pages/Register";
 // 优化懒加载策略：根据页面访问频率和大小重新分类
 
 // 1. 高频访问页面 - 懒加载，添加预加载提示
-const Dashboard = lazy(() => import(/* webpackChunkName: "pages-dashboard" */ "@/pages/Dashboard"));
-const Explore = lazy(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/Explore"));
-const WorkDetail = lazy(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/WorkDetail"));
-const About = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/About"));
-const Square = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Square"));
-const Community = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Community"));
-const Neo = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Neo"));
-const NewsDetail = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/NewsDetail"));
-const EventDetail = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/EventDetail"));
-const TestBasic = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/TestBasic"));
-const SearchResults = lazy(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/SearchResults"));
+const Dashboard = createLazyComponent(() => import(/* webpackChunkName: "pages-dashboard" */ "@/pages/Dashboard"), {
+  priority: ROUTE_PRIORITIES.HIGH,
+  preload: true
+});
+const Explore = createLazyComponent(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/Explore"), {
+  priority: ROUTE_PRIORITIES.HIGH,
+  preload: true
+});
+const WorkDetail = createLazyComponent(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/WorkDetail"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const About = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/About"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const Square = createLazyComponent(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Square"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const Community = createLazyComponent(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Community"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const Neo = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Neo"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const NewsDetail = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/NewsDetail"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const EventDetail = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/EventDetail"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const TestBasic = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/TestBasic"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const SearchResults = createLazyComponent(() => import(/* webpackChunkName: "pages-explore" */ "@/pages/SearchResults"), {
+  priority: ROUTE_PRIORITIES.HIGH
+});
 
 // 2. 高频访问但较大的页面 - 懒加载，优先加载
-const Create = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Create"));
-const Tools = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Tools"));
-const Settings = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/Settings"));
+const Create = createLazyComponent(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Create"), {
+  priority: ROUTE_PRIORITIES.HIGH
+});
+const Tools = createLazyComponent(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Tools"), {
+  priority: ROUTE_PRIORITIES.HIGH
+});
+const Settings = createLazyComponent(() => import(/* webpackChunkName: "pages-account" */ "@/pages/Settings"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 // 账户设置相关页面 - 懒加载
-const ProfileEdit = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/ProfileEdit"));
-const ChangePassword = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/ChangePassword"));
-const AccountSecurity = lazy(() => import(/* webpackChunkName: "pages-account" */ "@/pages/AccountSecurity"));
+const ProfileEdit = createLazyComponent(() => import(/* webpackChunkName: "pages-account" */ "@/pages/ProfileEdit"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const ChangePassword = createLazyComponent(() => import(/* webpackChunkName: "pages-account" */ "@/pages/ChangePassword"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const AccountSecurity = createLazyComponent(() => import(/* webpackChunkName: "pages-account" */ "@/pages/AccountSecurity"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 
 // 创作和工具相关 - 懒加载
-const Generation = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Generation"));
-const InputHub = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/InputHub"));
-const Drafts = lazy(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Drafts"));
+const Generation = createLazyComponent(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Generation"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const InputHub = createLazyComponent(() => import(/* webpackChunkName: "pages-create" */ "@/pages/InputHub"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const Drafts = createLazyComponent(() => import(/* webpackChunkName: "pages-create" */ "@/pages/Drafts"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 
 // 文化和知识相关 - 懒加载
-const CulturalKnowledge = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalKnowledge"));
-const Tianjin = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/Tianjin"));
-const TianjinMap = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/TianjinMap"));
-const CulturalEvents = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalEvents"));
-const CulturalNewsPage = lazy(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalNewsPage"));
+const CulturalKnowledge = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalKnowledge"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const Tianjin = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/Tianjin"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const TianjinMap = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/TianjinMap"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const CulturalEvents = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalEvents"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const CulturalNewsPage = createLazyComponent(() => import(/* webpackChunkName: "pages-cultural" */ "@/pages/CulturalNewsPage"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 
 // 管理相关 - 懒加载
-const Admin = lazy(() => import(/* webpackChunkName: "pages-admin" */ "@/pages/admin/Admin"));
-const AdminAnalytics = lazy(() => import(/* webpackChunkName: "pages-admin" */ "@/pages/AdminAnalytics"));
-const ErrorMonitoringDashboard = lazy(() => import(/* webpackChunkName: "components-admin" */ "@/components/ErrorMonitoringDashboard"));
+const Admin = createLazyComponent(() => import(/* webpackChunkName: "pages-admin" */ "@/pages/admin/Admin"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const AdminAnalytics = createLazyComponent(() => import(/* webpackChunkName: "pages-admin" */ "@/pages/AdminAnalytics"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const ErrorMonitoringDashboard = createLazyComponent(() => import(/* webpackChunkName: "components-admin" */ "@/components/ErrorMonitoringDashboard"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 
 // 会员和激励相关 - 懒加载
-const Membership = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/Membership"));
-const MembershipPayment = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/MembershipPayment"));
-const MembershipBenefits = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/MembershipBenefits"));
-const Incentives = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/Incentives"));
-const PointsMall = lazy(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/PointsMall"));
+const Membership = createLazyComponent(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/Membership"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const MembershipPayment = createLazyComponent(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/MembershipPayment"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const MembershipBenefits = createLazyComponent(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/MembershipBenefits"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const Incentives = createLazyComponent(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/Incentives"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const PointsMall = createLazyComponent(() => import(/* webpackChunkName: "pages-membership" */ "@/pages/PointsMall"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 
 // 社区和互动相关 - 懒加载
-const Leaderboard = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Leaderboard"));
-const DailyCheckin = lazy(() => import(/* webpackChunkName: "components-community" */ "@/components/DailyCheckin"));
-const CreativeMatchmaking = lazy(() => import(/* webpackChunkName: "components-community" */ "@/components/CreativeMatchmaking"));
-const AchievementMuseum = lazy(() => import(/* webpackChunkName: "components-community" */ "@/components/AchievementMuseum"));
+const Leaderboard = createLazyComponent(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Leaderboard"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const DailyCheckin = createLazyComponent(() => import(/* webpackChunkName: "components-community" */ "@/components/DailyCheckin"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const CreativeMatchmaking = createLazyComponent(() => import(/* webpackChunkName: "components-community" */ "@/components/CreativeMatchmaking"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
+const AchievementMuseum = createLazyComponent(() => import(/* webpackChunkName: "components-community" */ "@/components/AchievementMuseum"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 // 好友系统相关 - 懒加载
-const Friends = lazy(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Friends"));
+const Friends = createLazyComponent(() => import(/* webpackChunkName: "pages-community" */ "@/pages/Friends"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 
 // 实验和特色功能 - 懒加载
-const Lab = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/Lab"));
-const ParticleArt = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/ParticleArt"));
-const Games = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/Games"));
-const CollaborationDemo = lazy(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/CollaborationDemo"));
+const Lab = createLazyComponent(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/Lab"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const ParticleArt = createLazyComponent(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/ParticleArt"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const Games = createLazyComponent(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/Games"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const CollaborationDemo = createLazyComponent(() => import(/* webpackChunkName: "pages-experimental" */ "@/pages/CollaborationDemo"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 
 // 辅助和测试页面 - 懒加载
-const TestPage = lazy(() => import(/* webpackChunkName: "pages-test" */ "@/pages/TestPage"));
-const ImageTest = lazy(() => import(/* webpackChunkName: "pages-test" */ "@/pages/ImageTest"));
-const GitHubImageTestPage = lazy(() => import(/* webpackChunkName: "pages-test" */ "@/pages/GitHubImageTestPage"));
+const TestPage = createLazyComponent(() => import(/* webpackChunkName: "pages-test" */ "@/pages/TestPage"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const ImageTest = createLazyComponent(() => import(/* webpackChunkName: "pages-test" */ "@/pages/ImageTest"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const GitHubImageTestPage = createLazyComponent(() => import(/* webpackChunkName: "pages-test" */ "@/pages/GitHubImageTestPage"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 
 // 其他低频页面 - 懒加载
-const Terms = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Terms"));
-const Help = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Help"));
-const Privacy = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Privacy"));
-const BrandGuide = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/BrandGuide"));
-const Authenticity = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Authenticity"));
-const Wizard = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Wizard"));
-const AnalyticsPage = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Analytics"));
-const UserCollection = lazy(() => import(/* webpackChunkName: "pages-other" */ "@/pages/UserCollection"));
+const Terms = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Terms"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const Help = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Help"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const Privacy = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Privacy"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const BrandGuide = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/BrandGuide"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const Authenticity = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Authenticity"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const Wizard = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Wizard"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const AnalyticsPage = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/Analytics"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const UserCollection = createLazyComponent(() => import(/* webpackChunkName: "pages-other" */ "@/pages/UserCollection"), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 
 // 特殊功能组件 - 懒加载
-const IPIncubationCenter = lazy(() => import(/* webpackChunkName: "components-other" */ "@/components/IPIncubationCenter"));
-const CrossDeviceSync = lazy(() => import(/* webpackChunkName: "components-other" */ "@/components/CrossDeviceSync"));
-const BlindBoxShop = lazy(() => import(/* webpackChunkName: "components-other" */ "@/components/BlindBoxShop"));
+const IPIncubationCenter = createLazyComponent(() => import(/* webpackChunkName: "components-other" */ "@/components/IPIncubationCenter"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const CrossDeviceSync = createLazyComponent(() => import(/* webpackChunkName: "components-other" */ "@/components/CrossDeviceSync"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
+const BlindBoxShop = createLazyComponent(() => import(/* webpackChunkName: "components-other" */ "@/components/BlindBoxShop"), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 
 // 优化LazyComponent和LoadingSkeleton
 // 改进LoadingSkeleton，添加更多视觉反馈
@@ -178,17 +295,29 @@ import PrivateRoute from '@/components/PrivateRoute';
 import AdminRoute from '@/components/AdminRoute';
 
 // 创作者仪表盘组件 - 懒加载
-const CreatorDashboard = lazy(() => import(/* webpackChunkName: "components-core" */ '@/components/CreatorDashboard'));
+const CreatorDashboard = createLazyComponent(() => import(/* webpackChunkName: "components-core" */ '@/components/CreatorDashboard'), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 // PWA 安装按钮组件 - 懒加载
-const PWAInstallButton = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/PWAInstallButton'));
+const PWAInstallButton = createLazyComponent(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/PWAInstallButton'), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 // 首次启动引导组件 - 懒加载
-const FirstLaunchGuide = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/FirstLaunchGuide'));
+const FirstLaunchGuide = createLazyComponent(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/FirstLaunchGuide'), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 // 悬浮AI助手组件 - 懒加载
-const FloatingAIAssistant = lazy(() => import(/* webpackChunkName: "components-ai" */ '@/components/FloatingAIAssistant'));
+const FloatingAIAssistant = createLazyComponent(() => import(/* webpackChunkName: "components-ai" */ '@/components/FloatingAIAssistant'), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 // 用户反馈组件 - 懒加载
-const UserFeedback = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/UserFeedback'));
+const UserFeedback = createLazyComponent(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/UserFeedback'), {
+  priority: ROUTE_PRIORITIES.MEDIUM
+});
 // 满意度调查组件 - 懒加载
-const SatisfactionSurvey = lazy(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/SatisfactionSurvey'));
+const SatisfactionSurvey = createLazyComponent(() => import(/* webpackChunkName: "components-auxiliary" */ '@/components/SatisfactionSurvey'), {
+  priority: ROUTE_PRIORITIES.LOW
+});
 // 满意度调查服务
 import surveyService from '@/services/surveyService';
 // 认证上下文
@@ -205,13 +334,14 @@ export default function App() {
   
   // 优化：延迟初始化mock数据，减少初始加载时间
   useEffect(() => {
+    // 初始化性能优化器
+    performanceOptimizer.initialize();
+    
     // 设置延迟，在应用启动后一段时间再初始化数据
     const initTimer = setTimeout(() => {
       // 检查localStorage中是否已有数据
       const existingPosts = postsApi.getPosts();
       if (existingPosts.length === 0) {
-        console.log('开始初始化mock数据...');
-        
         // 优化：只初始化部分核心数据，减少一次性处理量
         const coreWorks = mockWorks.slice(0, 10); // 只初始化前10个作品
         
@@ -239,10 +369,7 @@ export default function App() {
           const existingPosts = JSON.parse(localStorage.getItem('posts') || '[]');
           const updatedPosts = [...existingPosts, ...postDataArray];
           localStorage.setItem('posts', JSON.stringify(updatedPosts));
-          
-          console.log('mock数据初始化完成');
         } catch (error) {
-          console.error('初始化mock数据失败:', error);
         }
       }
     }, 1000); // 延迟1秒执行，让应用先完成基本渲染
@@ -269,8 +396,6 @@ export default function App() {
   // 预加载会增加初始加载时间和内存消耗，对于低性能设备来说可能会导致卡顿
   // 导航跳转速度的提升应该通过优化组件渲染和减少不必要的资源加载来实现
 
-  // 暂时禁用全局console日志过滤，排查问题
-  /*
   // 全局console日志过滤，用于过滤WebAssembly内存地址日志
   useEffect(() => {
     // 保存原始console方法
@@ -280,7 +405,7 @@ export default function App() {
     const originalInfo = console.info;
     
     // 过滤内存地址日志的通用函数
-    const filterMemoryAddressLog = (args: any[]) => {
+    const filterMemoryAddressLog = (args: unknown[]) => {
       // 检查每个参数
       for (const arg of args) {
         // 如果参数是数组，检查是否包含多个内存地址
@@ -347,7 +472,6 @@ export default function App() {
       console.info = originalInfo;
     };
   }, []);
-  */
 
   // 右侧内容组件 - 使用memo优化，避免不必要的重新渲染
   const RightContent = React.memo(() => (
@@ -651,6 +775,8 @@ export default function App() {
             </AnimatedPage>
           </RouteCache>
         } />
+        {/* Landing页面路由 */}
+        <Route path="/landing" element={<Landing />} />
         
         {/* 搜索结果页面 */}
         <Route path="/search" element={

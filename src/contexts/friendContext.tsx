@@ -1,16 +1,19 @@
 import React from 'react';
 import { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { AuthContext } from './authContext';
-
-// 从authContext导入User类型
-type AuthUser = import('./authContext').User;
+import { AuthContext, User as AuthUser } from './authContext';
 
 // 好友请求状态类型
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected';
 
 // 用户状态类型
 export type UserStatus = 'online' | 'offline' | 'away';
+
+// 用户类型（包含状态信息）
+export interface User extends AuthUser {
+  status?: UserStatus;
+  last_seen?: string;
+}
 
 // 好友请求类型
 export interface FriendRequest {
@@ -35,13 +38,7 @@ export interface Friend {
   created_at: string;
   updated_at: string;
   // 扩展字段，用于存储好友的用户信息
-  friend?: AuthUser;
-}
-
-// 用户类型（包含状态信息）
-export interface User extends AuthUser {
-  status?: UserStatus;
-  last_seen?: string;
+  friend?: User;
 }
 
 // 好友上下文类型定义
@@ -79,7 +76,7 @@ const FriendContext = createContext<FriendContextType | undefined>(undefined);
 // 好友提供者组件
 export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const authContext = useContext(AuthContext);
-  const currentUser = authContext.user;
+  const currentUser = authContext?.user;
   
   // 状态管理
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -90,6 +87,8 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // 初始化好友系统
   useEffect(() => {
+    let cleanupFunction: (() => void) | undefined;
+    
     if (currentUser) {
       // 更新用户状态为在线
       updateUserStatus('online');
@@ -99,7 +98,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       getFriendRequests();
       
       // 监听好友状态变化
-      subscribeToFriendStatuses();
+      cleanupFunction = subscribeToFriendStatuses();
     }
     
     // 组件卸载时更新状态为离线
@@ -107,8 +106,12 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (currentUser) {
         updateUserStatus('offline');
       }
+      // 执行清理函数
+      if (cleanupFunction) {
+        cleanupFunction();
+      }
     };
-  }, [currentUser]);
+  }, [currentUser, friends]);
 
   // 搜索用户
   const searchUsers = async (query: string): Promise<User[]> => {
@@ -582,7 +585,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   // 订阅好友状态变化
-  const subscribeToFriendStatuses = () => {
+  const subscribeToFriendStatuses = (): (() => void) | undefined => {
     if (supabase) {
       // 这里可以实现实时状态更新，例如使用Supabase的realtime功能
       // 由于当前环境限制，我们暂时不实现实时更新，而是定期轮询
@@ -602,6 +605,7 @@ export const FriendProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       return () => clearInterval(interval);
     }
+    return undefined;
   };
 
   // 删除好友

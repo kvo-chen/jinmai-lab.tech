@@ -109,7 +109,7 @@ class PerformanceMonitor {
   
   logMetrics(componentName: string) {
     // 只在开发环境下输出性能日志
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       const metrics = this.getMetrics()
       console.group(`📊 ${componentName} 性能监控报告`)
       console.log(`🕒 组件挂载时间: ${metrics.componentMountTime.toFixed(2)}ms`)
@@ -269,7 +269,7 @@ export default function Square() {
     window.addEventListener('performance:imageLoaded', handleImageLoaded as EventListener)
     
     return () => {
-      if (performanceTestRef.current && process.env.NODE_ENV === 'development') {
+      if (performanceTestRef.current && import.meta.env.MODE === 'development') {
         console.log('📊 Square组件性能测试报告:', performanceTestRef.current.getSummary())
       }
       window.removeEventListener('performance:imageLoadStart', handleImageLoadStart as EventListener)

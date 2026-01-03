@@ -32,10 +32,7 @@ afterEach(() => {
 
 describe('useGame', () => {
   it('should initialize with correct default state', () => {
-    const { result } = renderHook(() => useGame({
-      userId: 'test-user',
-      levels: mockLevels
-    }));
+    const { result } = renderHook(() => useGame({}));
 
     expect(result.current.gameState).toBe('menu');
     expect(result.current.selectedLevel).toBeNull();
@@ -45,10 +42,7 @@ describe('useGame', () => {
   });
 
   it('should start game when selectLevel is called', () => {
-    const { result } = renderHook(() => useGame({
-      userId: 'test-user',
-      levels: mockLevels
-    }));
+    const { result } = renderHook(() => useGame({}));
 
     act(() => {
       result.current.selectLevel(mockLevels[0]);
@@ -62,7 +56,6 @@ describe('useGame', () => {
 
   it('should return to menu when returnToMenu is called', () => {
     const { result } = renderHook(() => useGame({
-      userId: 'test-user',
       levels: mockLevels
     }));
 
@@ -84,11 +77,8 @@ describe('useGame', () => {
     expect(result.current.currentTime).toBe(0);
   });
 
-  it('should restart game when restartGame is called', () => {
-    const { result } = renderHook(() => useGame({
-      userId: 'test-user',
-      levels: mockLevels
-    }));
+  it('should start game when startGame is called', () => {
+    const { result } = renderHook(() => useGame({}));
 
     // Start a game first
     act(() => {
@@ -122,7 +112,6 @@ describe('useGame', () => {
   it('should complete game and call onLevelComplete callback', () => {
     const mockOnLevelComplete = jest.fn();
     const { result } = renderHook(() => useGame({
-      userId: 'test-user',
       levels: mockLevels,
       onLevelComplete: mockOnLevelComplete
     }));
@@ -150,7 +139,6 @@ describe('useGame', () => {
 
   it('should format time correctly', () => {
     const { result } = renderHook(() => useGame({
-      userId: 'test-user',
       levels: mockLevels
     }));
 
@@ -164,7 +152,6 @@ describe('useGame', () => {
 
   it('should update currentTime correctly when game is playing', () => {
     const { result } = renderHook(() => useGame({
-      userId: 'test-user',
       levels: mockLevels
     }));
 

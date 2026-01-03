@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalRiddleGameService, { RiddleLevel, Riddle, GameProgress } from '@/services/culturalRiddleGameService';
+import culturalRiddleGameService, { RiddleLevel, Riddle, RiddleGameProgress } from '@/services/culturalRiddleGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalRiddleGameProps {

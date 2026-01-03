@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#fef2f2" rx="20"/>
+  <circle cx="100" cy="100" r="70" fill="#ef4444"/>
+  <circle cx="100" cy="100" r="50" fill="#dc2626"/>
+  <text x="100" y="105" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#fff">¥</text>
+  <text x="100" y="160" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#000">货币</text>
+</svg>

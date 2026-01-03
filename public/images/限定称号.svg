@@ -1,0 +1,6 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#fffbeb" rx="20"/>
+  <path d="M 60 80 L 140 80 L 140 140 L 60 140 Z" fill="#fbbf24"/>
+  <path d="M 60 80 L 100 60 L 140 80" fill="#f59e0b"/>
+  <text x="100" y="115" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#000">称号</text>
+</svg>

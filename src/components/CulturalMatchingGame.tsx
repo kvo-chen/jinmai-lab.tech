@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalMatchingGameService, { MatchingLevel, MatchingCard, GameProgress } from '@/services/culturalMatchingGameService';
+import culturalMatchingGameService, { Level, Card, GameProgress } from '@/services/culturalMatchingGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalMatchingGameProps {
@@ -12,7 +12,7 @@ interface CulturalMatchingGameProps {
 }
 
 interface CardState {
-  card: MatchingCard;
+  card: Card;
   isFlipped: boolean;
   isMatched: boolean;
   isHinted: boolean;
@@ -24,8 +24,8 @@ const CulturalMatchingGame: React.FC<CulturalMatchingGameProps> = ({ isOpen, onC
   
   // 游戏状态
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'completed'>('menu');
-  const [levels, setLevels] = useState<MatchingLevel[]>([]);
-  const [selectedLevel, setSelectedLevel] = useState<MatchingLevel | null>(null);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
   const [gameProgress, setGameProgress] = useState<GameProgress | null>(null);
   const [cardStates, setCardStates] = useState<CardState[]>([]);
   const [selectedCards, setSelectedCards] = useState<CardState[]>([]);

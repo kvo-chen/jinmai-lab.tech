@@ -17,7 +17,129 @@ export interface SimplifiedARPreviewConfig {
   directionalLightIntensity?: number;
 }
 
-// 3D模型加载组件 - 使用正确的React钩子调用方式和错误处理
+// 模型缓存类型
+type ModelCacheItem = {
+  gltf: any;
+  timestamp: number;
+  usageCount: number;
+};
+
+// 模型缓存（全局单例）
+const modelCache = new Map<string, ModelCacheItem>();
+const MAX_CACHE_SIZE = 5;
+const CACHE_TTL = 3600000; // 1小时
+
+// 3D模型加载子组件 - 使用useGLTF钩子
+const GLTFModel: React.FC<{
+  url: string;
+  onLoad?: () => void;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: number;
+}> = ({ url, onLoad, position, rotation, scale }) => {
+  // 检查缓存
+  const cachedItem = modelCache.get(url);
+  const now = Date.now();
+  
+  // 如果缓存存在且未过期，直接使用
+  if (cachedItem && (now - cachedItem.timestamp < CACHE_TTL)) {
+    // 更新使用次数和时间戳
+    modelCache.set(url, {
+      ...cachedItem,
+      usageCount: cachedItem.usageCount + 1,
+      timestamp: now
+    });
+    
+    // 处理模型加载完成事件
+    useEffect(() => {
+      if (onLoad) {
+        onLoad();
+      }
+    }, [onLoad]);
+    
+    // 返回缓存的模型
+    return (
+      <primitive
+        object={cachedItem.gltf.scene}
+        position={position}
+        rotation={rotation}
+        scale={scale}
+      />
+    );
+  }
+  
+  // 缓存不存在或已过期，重新加载
+  const gltf = useGLTF(url);
+  
+  // 处理模型加载完成事件
+  useEffect(() => {
+    // 将模型添加到缓存
+    if (gltf.scene) {
+      // 如果缓存已满，移除最旧或使用次数最少的项目
+      if (modelCache.size >= MAX_CACHE_SIZE) {
+        const entries = Array.from(modelCache.entries());
+        entries.sort((a, b) => {
+          // 优先移除使用次数少的，其次移除旧的
+          if (a[1].usageCount !== b[1].usageCount) {
+            return a[1].usageCount - b[1].usageCount;
+          }
+          return a[1].timestamp - b[1].timestamp;
+        });
+        modelCache.delete(entries[0][0]);
+      }
+      
+      // 添加新模型到缓存
+      modelCache.set(url, {
+        gltf,
+        timestamp: Date.now(),
+        usageCount: 1
+      });
+      
+      if (onLoad) {
+        onLoad();
+      }
+    }
+  }, [gltf.scene, onLoad, url]);
+  
+  // 模型加载成功，返回实际模型
+  return (
+    <primitive
+      object={gltf.scene}
+      position={position}
+      rotation={rotation}
+      scale={scale}
+    />
+  );
+};
+
+// 预加载模型的函数
+export const preloadModel = async (url: string) => {
+  // 检查缓存
+  if (modelCache.has(url)) {
+    return;
+  }
+  
+  try {
+    // 简化预加载实现，只验证URL并添加到缓存
+    // 实际模型加载由useGLTF钩子处理
+    if (typeof url !== 'string' || !url) {
+      throw new Error('Invalid model URL');
+    }
+    
+    // 创建简单的缓存条目，实际gltf对象由useGLTF填充
+    modelCache.set(url, {
+      gltf: { scene: null },
+      timestamp: Date.now(),
+      usageCount: 0
+    });
+    
+    console.log(`Model preload scheduled: ${url}`);
+  } catch (error) {
+    console.error(`Failed to schedule model preload: ${url}`, error);
+  }
+};
+
+// 3D模型加载组件 - 使用错误边界处理加载错误
 const ModelViewer: React.FC<{
   url: string;
   onLoad?: () => void;
@@ -26,45 +148,23 @@ const ModelViewer: React.FC<{
   rotation: [number, number, number];
   scale: number;
 }> = ({ url, onLoad, onError, position, rotation, scale }) => {
-  // 注意：useGLTF钩子必须在组件顶层调用，不能在try-catch块中调用
-  // 使用useState来跟踪加载状态和错误
+  // 使用useState来跟踪加载错误
   const [loadError, setLoadError] = useState<Error | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   
-  // useGLTF钩子的正确使用方式：不接受onError参数，也不返回error属性
-  // 使用try-catch包装useGLTF调用会违反React钩子规则
-  // 因此，我们使用状态管理来处理加载状态
-  let scene: THREE.Group | null = null;
-  let error: Error | null = null;
+  // 处理模型加载完成
+  const handleModelLoad = () => {
+    onLoad?.();
+  };
   
-  try {
-    // 尝试加载3D模型
-    // 注意：useGLTF钩子会在组件渲染时同步执行
-    const gltf = useGLTF(url);
-    scene = gltf.scene;
-  } catch (err) {
-    // 捕获useGLTF抛出的错误
-    console.error('3D模型加载错误:', err);
-    error = err instanceof Error ? err : new Error('3D模型加载失败');
-  }
-  
-  // 处理模型加载状态
-  useEffect(() => {
-    if (error) {
-      setLoadError(error);
-      if (onError) {
-        onError(error);
-      }
-    } else if (scene && !isLoaded) {
-      setIsLoaded(true);
-      if (onLoad) {
-        onLoad();
-      }
-    }
-  }, [error, scene, isLoaded, onError, onLoad]);
+  // 处理模型加载错误
+  const handleModelError = (error: Error) => {
+    console.error('3D模型加载错误:', error);
+    setLoadError(error);
+    onError?.(error);
+  };
   
   // 如果发生错误，返回错误占位符
-  if (loadError || error) {
+  if (loadError) {
     return (
       <mesh position={position} rotation={rotation} scale={scale}>
         <boxGeometry args={[2, 2, 2]} />
@@ -73,35 +173,52 @@ const ModelViewer: React.FC<{
     );
   }
   
-  // 如果模型还未加载，返回加载占位符
-  if (!scene) {
-    return (
-      <mesh position={position} rotation={rotation} scale={scale}>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial color="#4f46e5" opacity={0.5} transparent />
-      </mesh>
-    );
-  }
-  
-  // 模型加载成功，返回实际模型
+  // 使用错误边界包装GLTFModel组件
   return (
-    <primitive
-      object={scene}
-      position={position}
-      rotation={rotation}
-      scale={scale}
-    />
+    <ErrorBoundary onError={handleModelError}>
+      <GLTFModel
+        url={url}
+        onLoad={handleModelLoad}
+        position={position}
+        rotation={rotation}
+        scale={scale}
+      />
+    </ErrorBoundary>
   );
+};
+
+// 简单的错误边界组件
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; onError: (error: Error) => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; onError: (error: Error) => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+
+    return this.props.children;
+  }
 };
 
 // 简化的AR预览组件
 const SimplifiedARPreview: React.FC<{
   config: SimplifiedARPreviewConfig;
   onClose: () => void;
-  work?: any;
-}> = ({ config, onClose, work }) => {
-  // AR模式状态
-  const [isARMode, setIsARMode] = useState(false);
+}> = ({ config, onClose }) => {
   
   // 资源加载状态
   const [texture, setTexture] = useState<THREE.Texture | null>(null);

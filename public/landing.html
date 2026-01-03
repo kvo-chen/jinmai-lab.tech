@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>津脉智坊 Jinmai Lab | AI赋能老字号非遗共创平台</title>
+    <!-- SEO优化 -->
+    <meta name="description" content="津脉智坊 - 连接传统与未来的数字共创生态，通过人工智能技术为老字号品牌注入新生，构建非遗文化的赛博新纪元。">
+    <meta name="keywords" content="津脉智坊, Jinmai Lab, AI, 非遗, 老字号, 数字共创, 天津文脉">
+    <meta name="author" content="津脉智坊">
+    <meta name="robots" content="index, follow">
+    <!-- Open Graph 元标签 -->
+    <meta property="og:title" content="津脉智坊 Jinmai Lab | AI赋能老字号非遗共创平台">
+    <meta property="og:description" content="连接传统与未来的数字共创生态，通过人工智能技术为老字号品牌注入新生，构建非遗文化的赛博新纪元。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:3000/">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=1200&h=630&fit=crop">
+    <!-- Twitter 元标签 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="津脉智坊 Jinmai Lab | AI赋能老字号非遗共创平台">
+    <meta name="twitter:description" content="连接传统与未来的数字共创生态，通过人工智能技术为老字号品牌注入新生，构建非遗文化的赛博新纪元。">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=1200&h=630&fit=crop">
     
     <!-- 引入字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -152,11 +168,12 @@
 </head>
 <body class="antialiased">
 
-    <!-- Loading Screen -->
-    <div class="loader-overlay" id="loader">
+    <!-- Loading Screen with accessibility support -->
+    <div class="loader-overlay" id="loader" role="status" aria-live="polite">
         <div class="flex flex-col items-center gap-4">
             <span class="loader"></span>
             <p class="text-sm tracking-[0.3em] text-gray-400">JINMAI LAB</p>
+            <span class="sr-only">加载中，请稍候...</span>
         </div>
     </div>
 
@@ -230,8 +247,8 @@
                 为老字号品牌注入新生，构建非遗文化的赛博新纪元。
             </p>
             <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="/" class="relative px-8 py-4 bg-accent text-black font-bold rounded-full overflow-hidden group transition-all hover:shadow-[0_0_40px_rgba(0,240,255,0.4)]">
-                    <span class="relative z-10 flex items-center">
+                <a href="http://localhost:3000/" class="relative px-8 py-4 bg-accent text-black font-bold rounded-full overflow-hidden group transition-all hover:shadow-[0_0_40px_rgba(0,240,255,0.4)] cursor-pointer inline-block focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black">
+                    <span class="relative z-10 flex items-center justify-center">
                         立即探索平台
                         <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </span>

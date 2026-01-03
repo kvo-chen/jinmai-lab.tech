@@ -1,8 +1,6 @@
-import React from "react";
 import { createContext, useState, ReactNode, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import securityService from "../services/securityService";
-import apiClient from "../lib/apiClient";
 
 // 用户类型定义
 export interface User {
@@ -101,13 +99,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
     return null;
   });
-
-  // 定义API响应类型
-  interface AuthResponse {
-    token: string;
-    refreshToken: string;
-    user: User;
-  }
 
   // 确保所有用户都使用固定的头像URL
   useEffect(() => {
@@ -467,7 +458,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               
               // 尝试直接插入，如果失败则使用update
               // 这是为了解决外键约束问题，因为auth.users记录可能还没有完全提交
-              let dbError;
               
               // 确保supabase不为null
               if (supabase) {
@@ -484,7 +474,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                     console.error('将用户信息保存到数据库失败:', updateError);
                     console.error('数据库错误代码:', updateError.code);
                     console.error('数据库错误信息:', updateError.message);
-                    dbError = updateError;
                   } else {
                     console.log('用户信息已成功更新到数据库');
                   }

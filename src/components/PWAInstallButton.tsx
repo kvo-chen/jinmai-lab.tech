@@ -56,7 +56,7 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
     // 检查Service Worker是否已注册
     const checkServiceWorker = () => {
       // 检查是否为开发环境
-      const isDevelopment = process.env.NODE_ENV === 'development';
+      const isDevelopment = import.meta.env.MODE === 'development';
       
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
@@ -111,7 +111,7 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
     console.log('🔄 开始安装流程...');
     
     // 检查是否为开发环境
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isDevelopment = import.meta.env.MODE === 'development';
     
     if (!deferredPrompt) {
       console.log('❌ deferredPrompt不存在，检查安装条件:');
@@ -246,7 +246,7 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ asMenuItem = false,
 
   // 检查是否为开发环境
   const isDevelopment = () => {
-    return process.env.NODE_ENV === 'development';
+    return import.meta.env.MODE === 'development';
   };
 
   return (

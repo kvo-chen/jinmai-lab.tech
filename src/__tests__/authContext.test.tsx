@@ -2,7 +2,7 @@ import * as React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider, AuthContext } from '../contexts/authContext';
-import { toast } from 'sonner';
+
 import '@testing-library/jest-dom';
 
 // Mock dependencies
@@ -295,12 +295,6 @@ describe('AuthContext', () => {
   });
 
   test('should check membership status correctly', () => {
-    // 测试免费会员
-    const freeUser: any = {
-      membershipLevel: 'free',
-      membershipStatus: 'active',
-    };
-
     // 测试付费会员
     const premiumUser: any = {
       membershipLevel: 'premium',

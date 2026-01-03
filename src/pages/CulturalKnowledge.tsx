@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import GradientHero from '@/components/GradientHero';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { mockWorks } from '@/mock/works';
-import { AuthContext } from '@/contexts/authContext';
 import TianjinCreativeActivities from '@/components/TianjinCreativeActivities';
-import CulturalNews from '@/components/CulturalNews';
-import HotTags from '@/components/HotTags';
 
 // 示例数据：非遗故事
 const heritageStories = [
@@ -795,12 +792,6 @@ const craftTechniques = [
 type TabType = 'stories' | 'tutorials' | 'elements' | 'encyclopedia' | 'figures' | 'works' | 'crafts' | 'assets' | 'activities';
 
 // 调试用的isSafeForProxy函数
-const isSafeForProxy = (url: string) => {
-  const u = String(url || '')
-  // 直接返回true，允许所有图片URL
-  return true
-}
-
 // 生成与内容相关的图片URL
 const getContentImageUrl = (content: string, width: number, height: number, isPerson: boolean = false) => {
   // 使用内容ID生成稳定的图片URL，使用seed模式而非ID模式，确保每个内容都有对应的图片
@@ -827,7 +818,7 @@ export default function CulturalKnowledge() {
   const { isDark = false } = useTheme() || {};
   const navigate = useNavigate();
   const location = useLocation();
-  const { id, type } = useParams();
+  const { type } = useParams();
   
   const [activeTab, setActiveTab] = useState<TabType>('stories');
   // 作品展示数量控制，用于"加载更多"功能

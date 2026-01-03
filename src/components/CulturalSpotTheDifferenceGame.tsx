@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalSpotTheDifferenceGameService, { SpotTheDifferenceLevel, Difference, GameProgress } from '@/services/culturalSpotTheDifferenceGameService';
+import culturalSpotTheDifferenceGameService, { Level, Difference, GameProgress } from '@/services/culturalSpotTheDifferenceGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalSpotTheDifferenceGameProps {

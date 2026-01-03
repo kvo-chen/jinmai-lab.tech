@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#f0f9ff" rx="20"/>
+  <path d="M 60 60 L 140 60 L 140 140 L 60 140 Z" fill="#0ea5e9"/>
+  <path d="M 70 70 L 130 70 L 130 130 L 70 130 Z" fill="#38bdf8"/>
+  <path d="M 80 80 L 120 80 L 120 120 L 80 120 Z" fill="#7dd3fc"/>
+  <text x="100" y="170" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#000">背景</text>
+</svg>

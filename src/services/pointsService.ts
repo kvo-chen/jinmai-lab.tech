@@ -2,8 +2,7 @@
  * 积分管理服务 - 提供积分的获取、消耗和记录功能
  */
 
-// 导入成就服务
-import achievementService from './achievementService';
+
 
 // 积分来源类型
 export type PointsSource = 'achievement' | 'task' | 'daily' | 'consumption' | 'exchange' | 'system';
@@ -217,23 +216,6 @@ class PointsService {
     this.clearCache();
     
     return newRecord;
-  }
-
-  /**
-   * 与成就服务同步积分记录
-   */
-  private syncWithAchievementService() {
-    // 更新成就服务中的积分记录
-    achievementService.pointsRecords = this.pointsRecords.map(record => ({
-      id: record.id,
-      source: record.source,
-      type: record.type,
-      points: record.points,
-      date: record.date,
-      description: record.description,
-      relatedId: record.relatedId,
-      balanceAfter: record.balanceAfter
-    }));
   }
 
   /**

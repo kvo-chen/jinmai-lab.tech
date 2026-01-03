@@ -53,7 +53,7 @@ class PrefetchService {
 
   // 初始化IntersectionObserver，用于观察页面中的可预加载资源
   private initIntersectionObserver(): void {
-    if (!('IntersectionObserver' in window)) return;
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
 
     this.observer = new IntersectionObserver(
       (entries) => {
@@ -80,6 +80,8 @@ class PrefetchService {
 
   // 观察页面中已有的可预加载资源
   private observeExistingElements(): void {
+    if (typeof document === 'undefined') return;
+
     // 观察所有带有data-prefetch属性的元素
     const elements = document.querySelectorAll('[data-prefetch]');
     elements.forEach((element) => {
@@ -101,10 +103,12 @@ class PrefetchService {
 
   // 监听DOM变化，观察新添加的可预加载资源
   private observeDOMChanges(): void {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
-          if (node instanceof HTMLElement) {
+          if (typeof HTMLElement !== 'undefined' && node instanceof HTMLElement) {
             this.observeElement(node);
           }
         });
@@ -119,12 +123,14 @@ class PrefetchService {
 
   // 观察单个元素
   private observeElement(element: HTMLElement): void {
+    if (typeof document === 'undefined') return;
+
     this.observer?.observe(element);
     
     // 递归观察子元素
     const children = element.querySelectorAll('*');
     children.forEach((child) => {
-      if (child instanceof HTMLElement) {
+      if (typeof HTMLElement !== 'undefined' && child instanceof HTMLElement) {
         this.observer?.observe(child);
       }
     });
@@ -184,28 +190,23 @@ class PrefetchService {
     // 跳过已经预加载过的资源
     if (this.prefetchHistory.has(url)) return true;
     
-    // 允许预加载的CDN域名列表
-    const allowedCdnDomains = [
-      'trae-api-sg.mchost.guru',
-      'unsplash.com',
-      'images.unsplash.com',
-      'cdn.jsdelivr.net',
-      'cdnjs.cloudflare.com',
-      'unpkg.com'
-    ];
-    
-    // 跳过上外部域名的资源，但允许CDN资源
-    const currentHost = window.location.host;
-    const resourceUrl = new URL(url, window.location.href);
-    if (resourceUrl.host !== currentHost && !allowedCdnDomains.some(domain => resourceUrl.host.includes(domain))) {
-      return true;
-    }
-    
     // 跳过hash链接
     if (url.startsWith('#')) return true;
     
     // 跳过mailto和tel链接
     if (url.startsWith('mailto:') || url.startsWith('tel:')) return true;
+    
+    // 只在浏览器环境中检查外部域名
+    if (typeof window !== 'undefined') {
+      try {
+        const currentHost = window.location.host;
+        const resourceUrl = new URL(url, window.location.href);
+        if (resourceUrl.host !== currentHost) return true;
+      } catch (error) {
+        console.warn(`Invalid URL for prefetch: ${url}`, error);
+        return true;
+      }
+    }
     
     return false;
   }
@@ -338,6 +339,11 @@ class PrefetchService {
   // 预加载脚本
   private fetchScript(url: string, signal: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (typeof document === 'undefined') {
+        resolve();
+        return;
+      }
+
       const link = document.createElement('link');
       link.rel = 'prefetch';
       link.href = url;
@@ -349,13 +355,17 @@ class PrefetchService {
       document.head.appendChild(link);
       
       if (signal.aborted) {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
         return;
       }
       
       signal.addEventListener('abort', () => {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
       });
     });
@@ -364,6 +374,11 @@ class PrefetchService {
   // 预加载样式
   private fetchStyle(url: string, signal: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (typeof document === 'undefined') {
+        resolve();
+        return;
+      }
+
       const link = document.createElement('link');
       link.rel = 'prefetch';
       link.href = url;
@@ -375,13 +390,17 @@ class PrefetchService {
       document.head.appendChild(link);
       
       if (signal.aborted) {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
         return;
       }
       
       signal.addEventListener('abort', () => {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
       });
     });
@@ -390,6 +409,11 @@ class PrefetchService {
   // 预加载文档
   private fetchDocument(url: string, signal: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (typeof document === 'undefined') {
+        resolve();
+        return;
+      }
+
       const link = document.createElement('link');
       link.rel = 'prefetch';
       link.href = url;
@@ -401,13 +425,17 @@ class PrefetchService {
       document.head.appendChild(link);
       
       if (signal.aborted) {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
         return;
       }
       
       signal.addEventListener('abort', () => {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
       });
     });
@@ -416,6 +444,11 @@ class PrefetchService {
   // 预加载字体
   private fetchFont(url: string, signal: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (typeof document === 'undefined') {
+        resolve();
+        return;
+      }
+
       const link = document.createElement('link');
       link.rel = 'prefetch';
       link.href = url;
@@ -427,13 +460,17 @@ class PrefetchService {
       document.head.appendChild(link);
       
       if (signal.aborted) {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
         return;
       }
       
       signal.addEventListener('abort', () => {
-        document.head.removeChild(link);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
         reject(new Error(`Prefetch aborted for ${url}`));
       });
     });

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { llmService } from '../services/llmService';
 import { motion } from 'framer-motion';
 
 const ColorAssistant: React.FC = () => {
@@ -12,15 +11,27 @@ const ColorAssistant: React.FC = () => {
   const generateColors = () => {
     setIsGenerating(true);
     
-    // 生成色彩方案
-    const scheme = llmService.generateColorScheme(theme, style);
-    setColorScheme(scheme);
-    
-    // 获取色彩搭配建议
-    const advice = llmService.getColorMatchingAdvice(scheme);
-    setColorAdvice(advice);
-    
-    setIsGenerating(false);
+    // 模拟生成色彩方案
+    setTimeout(() => {
+      // 基于主题生成模拟色彩方案
+      const baseColorSchemes = {
+        '国潮': ['#E74C3C', '#F39C12', '#F1C40F', '#2ECC71', '#3498DB'],
+        '天津': ['#1ABC9C', '#34495E', '#E67E22', '#9B59B6', '#E74C3C'],
+        '春节': ['#E74C3C', '#27AE60', '#F39C12', '#8E44AD', '#2C3E50'],
+        '自然': ['#2ECC71', '#16A085', '#3498DB', '#F1C40F', '#E67E22'],
+        '现代': ['#34495E', '#95A5A6', '#3498DB', '#E74C3C', '#2ECC71'],
+        '简约': ['#ECF0F1', '#95A5A6', '#3498DB', '#2ECC71', '#E74C3C']
+      };
+      
+      const scheme = baseColorSchemes[theme as keyof typeof baseColorSchemes] || ['#3498DB', '#2ECC71', '#F1C40F', '#E74C3C', '#9B59B6'];
+      setColorScheme(scheme);
+      
+      // 模拟色彩搭配建议
+      const advice = `基于${theme}主题的色彩搭配建议：\n1. 主色调：${scheme[0]} - 代表主题核心精神\n2. 辅助色：${scheme[1]}、${scheme[2]} - 增强视觉层次\n3. 强调色：${scheme[3]} - 用于突出重点内容\n4. 中性色：${scheme[4]} - 平衡整体视觉效果\n\n建议使用场景：\n- 品牌标识和包装设计\n- 网页和移动端UI设计\n- 海报和宣传物料`;
+      setColorAdvice(advice);
+      
+      setIsGenerating(false);
+    }, 1000);
   };
 
   return (

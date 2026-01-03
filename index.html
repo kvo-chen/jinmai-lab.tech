@@ -54,15 +54,6 @@
     
   </head>
   <body>
-    <script>
-      // 只有首次访问根路径时才重定向到landing.html
-      // 使用sessionStorage记录用户是否已经查看过landing页面
-      const hasSeenLanding = sessionStorage.getItem('hasSeenLanding');
-      if (window.location.pathname === '/' && !hasSeenLanding) {
-        sessionStorage.setItem('hasSeenLanding', 'true');
-        window.location.href = '/landing.html';
-      }
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -4,7 +4,8 @@
  */
 
 // 导入知识库服务
-import { knowledgeBaseService } from './knowledgeBaseService';
+
+import { aiTaskQueueService, AITask, TaskPriority } from './aiTaskQueueService';
 import apiClient from '@/lib/apiClient';
 
 // 模型类型定义
@@ -500,9 +501,10 @@ class LLMService {
     totalRequests: 0
   };
   // 错误处理相关属性
-  private errorLogs: ErrorDetail[] = [];
-  private maxErrorLogs = 500; // 最大错误日志数量
-  private errorListeners: Array<(error: ErrorDetail) => void> = [];
+  // 暂时注释掉未使用的错误处理属性
+  // private errorLogs: ErrorDetail[] = [];
+  // private maxErrorLogs = 500; // 最大错误日志数量
+  // private errorListeners: Array<(error: ErrorDetail) => void> = [];
 
   /**
    * 构造函数，初始化配置
@@ -516,6 +518,22 @@ class LLMService {
     this.initializeSessions();
     // 从localStorage加载保存的当前模型
     this.loadCurrentModelFromStorage();
+    
+    // 注册任务执行器到AI任务队列
+    this.registerTaskExecutors();
+  }
+  
+  /**
+   * 注册任务执行器到AI任务队列
+   */
+  private registerTaskExecutors(): void {
+    // 注册文本生成任务执行器
+    aiTaskQueueService.registerTaskExecutor('text', this.executeAITask.bind(this));
+    // 注册其他类型任务执行器（预留）
+    aiTaskQueueService.registerTaskExecutor('image', this.executeAITask.bind(this));
+    aiTaskQueueService.registerTaskExecutor('audio', this.executeAITask.bind(this));
+    aiTaskQueueService.registerTaskExecutor('video', this.executeAITask.bind(this));
+    aiTaskQueueService.registerTaskExecutor('3d', this.executeAITask.bind(this));
   }
   
   /**
@@ -550,18 +568,38 @@ class LLMService {
   /**
    * 从环境变量加载API密钥
    */
+  /**
+   * 安全获取环境变量，兼容不同环境
+   * @param key 环境变量名
+   * @returns 环境变量值或undefined
+   */
+  private getEnvVar(key: string): string | undefined {
+    try {
+      if (typeof window !== 'undefined' && (window as any).env) {
+        // 浏览器环境中的window.env
+        return (window as any).env[key];
+      } else if (typeof import.meta !== 'undefined') {
+        // Vite开发环境中的import.meta.env
+        return (import.meta as any).env?.[key];
+      } else if (typeof process !== 'undefined' && process.env) {
+        // Node.js环境和测试环境
+        return process.env[key];
+      }
+    } catch (error) {
+      // 忽略任何错误
+    }
+    return undefined;
+  }
+
   private loadApiKeysFromEnv(): void {
-    // 获取环境变量
-    const env = typeof import.meta !== 'undefined' && (import.meta as any).env || process.env || {};
-    
     // 读取各个模型的API密钥
     const apiKeys = {
-      kimi_api_key: env.VITE_KIMI_API_KEY || env.KIMI_API_KEY,
-      deepseek_api_key: env.VITE_DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY,
-      qwen_api_key: env.VITE_QWEN_API_KEY || env.QWEN_API_KEY,
-      openai_api_key: env.VITE_OPENAI_API_KEY || env.OPENAI_API_KEY,
-      gemini_api_key: env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY,
-      zhipu_api_key: env.VITE_ZHIPU_API_KEY || env.ZHIPU_API_KEY,
+      kimi_api_key: this.getEnvVar('VITE_KIMI_API_KEY') || this.getEnvVar('KIMI_API_KEY'),
+      deepseek_api_key: this.getEnvVar('VITE_DEEPSEEK_API_KEY') || this.getEnvVar('DEEPSEEK_API_KEY'),
+      qwen_api_key: this.getEnvVar('VITE_QWEN_API_KEY') || this.getEnvVar('QWEN_API_KEY'),
+      openai_api_key: this.getEnvVar('VITE_OPENAI_API_KEY') || this.getEnvVar('OPENAI_API_KEY'),
+      gemini_api_key: this.getEnvVar('VITE_GEMINI_API_KEY') || this.getEnvVar('GEMINI_API_KEY'),
+      zhipu_api_key: this.getEnvVar('VITE_ZHIPU_API_KEY') || this.getEnvVar('ZHIPU_API_KEY'),
     };
     
     // 更新模型配置
@@ -715,6 +753,8 @@ class LLMService {
   /**
    * 记录性能数据
    */
+  // 暂时注释掉未使用的方法
+  /*
   private recordPerformance(modelId: string, startTime: number, success: boolean, error?: string): void {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
@@ -731,6 +771,7 @@ class LLMService {
     
     this.updatePerformanceData(record);
   }
+  */
   
   /**
    * 获取模型性能数据
@@ -1660,8 +1701,8 @@ class LLMService {
     }
     
     try {
-      const resp = await apiClient.post<GenerateImageResponse, GenerateImageParams>(endpoint, params, { retries: 1, timeoutMs: 20000 });
-      if (!resp.ok) return { ok: false, error: resp.error };
+      const resp = await apiClient.post<GenerateImageResponse, GenerateImageParams>(endpoint, params, { retries: 2, timeoutMs: 30000 });
+      if (!resp.ok) return { ok: false, error: resp.error || '图片生成请求失败' };
       return resp.data as GenerateImageResponse;
     } catch (error) {
       console.error('Image generation failed:', error);
@@ -1966,7 +2007,8 @@ class LLMService {
    * 确保可用模型
    */
   async ensureAvailableModel(preferred: string[] = []): Promise<string> {
-    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+    // 安全获取API基础URL
+    const apiBase = this.getEnvVar('VITE_API_BASE_URL') || '';
     const useProxy = !!apiBase;
 
     // 首先检查当前模型是否可用
@@ -2012,61 +2054,131 @@ class LLMService {
    * @param options 可选配置，包括流式响应回调等
    * @returns 生成的响应文本
    */
+  /**
+   * 生成响应（通过任务队列）
+   */
   async generateResponse(prompt: string, options?: {
     onDelta?: (chunk: string) => void;
     signal?: AbortSignal;
     context?: {[key: string]: any};
+    priority?: TaskPriority;
   }): Promise<string> {
+    // 检查缓存
+    const modelId = this.getCurrentModel().id;
+    const cacheKey = this.generateCacheKey(prompt, modelId, {}, 'conversation');
+    const cachedResponse = this.responseCache.get(cacheKey);
+    if (cachedResponse) {
+      this.cacheStats.hits++;
+      this.cacheStats.totalRequests++;
+      if (options?.onDelta) {
+        options.onDelta(cachedResponse.response);
+      }
+      return cachedResponse.response;
+    }
+    
+    this.cacheStats.misses++;
+    this.cacheStats.totalRequests++;
+    
+    // 创建AI生成任务并添加到队列
+    return new Promise((resolve, reject) => {
+      const task = aiTaskQueueService.addTask('text', prompt, {
+        priority: options?.priority || 'medium',
+        metadata: {
+          modelId,
+          context: options?.context,
+          conversationId: this.getCurrentSession()?.id
+        },
+        onProgress: (progress, data) => {
+          if (options?.onDelta && data?.chunk) {
+            options.onDelta(data.chunk);
+          }
+        },
+        onComplete: async (result) => {
+          if (result.success) {
+            const fullResponse = result.data;
+            
+            // 更新缓存
+            this.updateCache(prompt, modelId, fullResponse);
+            
+            // 更新对话历史
+            const session = this.getCurrentSession();
+            if (session) {
+              const userMessage: Message = {
+                role: 'user',
+                content: prompt,
+                timestamp: Date.now()
+              };
+              
+              // 添加消息到对话历史
+              session.messages.push(userMessage, {
+                role: 'assistant',
+                content: fullResponse,
+                timestamp: Date.now()
+              });
+              session.updatedAt = Date.now();
+              session.lastMessageTimestamp = Date.now();
+              this.saveSessions();
+            }
+            
+            resolve(fullResponse);
+          } else {
+            reject(new Error(result.error || '任务执行失败'));
+          }
+        },
+        onError: (error) => {
+          reject(new Error(error));
+        }
+      });
+      
+      // 如果提供了中止信号，添加取消逻辑
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          aiTaskQueueService.cancelTask(task.id);
+          reject(new Error('Request aborted'));
+        });
+      }
+    });
+  }
+  
+  /**
+   * 执行AI生成任务的内部方法
+   * 由任务队列调用
+   */
+  private async executeAITask(task: AITask): Promise<any> {
     try {
       // 记录性能开始时间
       const startTime = Date.now();
-      const modelId = this.getCurrentModel().id;
-      
-      // 检查缓存
-      const cacheKey = this.generateCacheKey(prompt, modelId, {}, 'conversation');
-      const cachedResponse = this.responseCache.get(cacheKey);
-      if (cachedResponse) {
-        this.cacheStats.hits++;
-        this.cacheStats.totalRequests++;
-        if (options?.onDelta) {
-          options.onDelta(cachedResponse.response);
-        }
-        return cachedResponse.response;
-      }
-      
-      this.cacheStats.misses++;
-      this.cacheStats.totalRequests++;
+      const modelId = task.metadata?.modelId || this.getCurrentModel().id;
       
       // 构建对话历史
-      const session = this.getCurrentSession();
+      const metadata = task.metadata;
+      const session = metadata?.conversationId ? this.conversationSessions.find(s => s.id === metadata.conversationId) : this.getCurrentSession();
       const history = session?.messages || [];
       const maxHistory = this.modelConfig.max_history || 10;
-      const optimizedHistory = this.optimizeConversationHistory(history, prompt, maxHistory);
+      const optimizedHistory = this.optimizeConversationHistory(history, task.prompt, maxHistory);
       
       // 构建请求消息
       const systemMessage = {
         role: 'system',
-        content: this.generateDynamicPrompt(this.modelConfig.system_prompt, options?.context),
+        content: this.generateDynamicPrompt(this.modelConfig.system_prompt, task.metadata?.context),
         timestamp: Date.now()
       };
       
       const userMessage = {
         role: 'user',
-        content: prompt,
+        content: task.prompt,
         timestamp: Date.now()
       };
       
       const messages = [systemMessage, ...optimizedHistory, userMessage];
       
       // 获取API基础URL和密钥
-      const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
+      // 安全获取API基础URL
+      const apiBase = this.getEnvVar('VITE_API_BASE_URL') || '';
       const useProxy = !!apiBase;
       
       // 更新连接状态为connecting
       this.setConnectionStatus(modelId, 'connecting');
-      
-      // 调用真实的LLM API
-      let fullResponse: string;
       
       // 确保messages数组中的对象符合Message接口要求
       const typedMessages: Message[] = messages.map(msg => ({
@@ -2075,39 +2187,31 @@ class LLMService {
         timestamp: msg.timestamp
       }));
       
+      // 调用真实的LLM API
+      let fullResponse: string;
+      
       if (useProxy) {
         // 使用代理服务
-        fullResponse = await this.callApiViaProxy(modelId, typedMessages, options);
+        fullResponse = await this.callApiViaProxy(modelId, typedMessages, {
+          onDelta: (chunk) => {
+            if (task.onProgress) {
+              task.onProgress(50, { chunk });
+            }
+          }
+        });
       } else {
         // 直接调用模型API
-        fullResponse = await this.callModelApiDirectly(modelId, typedMessages, options);
+        fullResponse = await this.callModelApiDirectly(modelId, typedMessages, {
+          onDelta: (chunk) => {
+            if (task.onProgress) {
+              task.onProgress(50, { chunk });
+            }
+          }
+        });
       }
       
       // API调用成功，更新连接状态为connected
       this.setConnectionStatus(modelId, 'connected');
-      
-      // 更新缓存
-      this.updateCache(prompt, modelId, fullResponse);
-      
-      // 更新对话历史
-      if (session) {
-        // 确保userMessage符合Message接口要求
-        const typedUserMessage: Message = {
-          role: userMessage.role as 'user' | 'assistant' | 'system',
-          content: userMessage.content,
-          timestamp: userMessage.timestamp
-        };
-        
-        // 添加消息到对话历史
-        session.messages.push(typedUserMessage, {
-          role: 'assistant',
-          content: fullResponse,
-          timestamp: Date.now()
-        });
-        session.updatedAt = Date.now();
-        session.lastMessageTimestamp = Date.now();
-        this.saveSessions();
-      }
       
       // 记录性能结束时间
       const endTime = Date.now();
@@ -2152,8 +2256,9 @@ class LLMService {
     onDelta?: (chunk: string) => void;
     signal?: AbortSignal;
   }): Promise<string> {
-    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE_URL) || '';
-    const apiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) || '';
+    // 安全获取API基础URL和密钥
+    const apiBase = this.getEnvVar('VITE_API_BASE_URL') || '';
+    const apiKey = this.getEnvVar('VITE_API_KEY') || '';
     
     const response = await fetch(`${apiBase}/api/chat`, {
       method: 'POST',
@@ -2304,52 +2409,54 @@ class LLMService {
     
     // 对于流式响应，暂时不使用apiClient，因为它不支持流式处理
     if (options?.onDelta) {
-      const response = await fetch(`http://localhost:3010/api/qwen/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.modelConfig.qwen_model,
-          messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
-          stream: true,
-          temperature: this.modelConfig.temperature,
-          top_p: this.modelConfig.top_p,
-          max_tokens: this.modelConfig.max_tokens,
-        }),
-        signal: options?.signal,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`通义千问API请求失败: ${response.status} ${response.statusText} - ${errorData.error || ''}`);
+      try {
+        const response = await fetch(`/api/qwen/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: this.modelConfig.qwen_model,
+            messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+            stream: true,
+            temperature: this.modelConfig.temperature,
+            top_p: this.modelConfig.top_p,
+            max_tokens: this.modelConfig.max_tokens,
+          }),
+          signal: options?.signal,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`通义千问API请求失败: ${response.status} ${response.statusText} - ${errorData.error || ''}`);
+        }
+        
+        // 处理流式响应
+        return this.handleStreamingResponse(response, options.onDelta);
+      } catch (error) {
+        console.error('通义千问流式API请求失败:', error);
+        throw new Error('通义千问服务暂时不可用，请稍后再试');
       }
-      
-      // 处理流式响应
-      return this.handleStreamingResponse(response, options.onDelta);
     } else {
-      // 非流式响应直接使用fetch，确保发送到正确的端口
-      const response = await fetch(`http://localhost:3010/api/qwen/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.modelConfig.qwen_model,
-          messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
-          stream: false,
-          temperature: this.modelConfig.temperature,
-          top_p: this.modelConfig.top_p,
-          max_tokens: this.modelConfig.max_tokens,
-        }),
+      // 非流式响应使用apiClient，利用其错误处理和重试机制
+      const apiResponse = await apiClient.post<any>(`/api/qwen/chat/completions`, {
+        model: this.modelConfig.qwen_model,
+        messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
+        stream: false,
+        temperature: this.modelConfig.temperature,
+        top_p: this.modelConfig.top_p,
+        max_tokens: this.modelConfig.max_tokens,
+      }, {
+        timeoutMs: 30000,
+        retries: 2
       });
       
-      if (!response.ok) {
-        throw new Error(`通义千问API请求失败: ${response.statusText || '未知错误'}`);
+      if (!apiResponse.ok) {
+        throw new Error(`通义千问API请求失败: ${apiResponse.error || '未知错误'}`);
       }
       
       // 处理非流式响应
-      const data = await response.json();
+      const data = apiResponse.data;
       // 通义千问API返回格式不同，直接返回text字段
       return data.data?.output?.text || data.output?.text || '未获取到响应';
     }

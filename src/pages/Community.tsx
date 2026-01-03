@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { TianjinImage, TianjinAvatar } from '@/components/TianjinStyleComponents'
 import GradientHero from '@/components/GradientHero'
-import OptimizedImage from '@/components/OptimizedImage'
 // 使用React.lazy实现子组件的延迟加载，优化初始加载速度
 const CommunityChat = lazy(() => import('@/components/CommunityChat'))
 const CommunityManagement = lazy(() => import('@/components/CommunityManagement'))
@@ -1820,7 +1819,7 @@ export default function Community() {
                       .map((m, idx) => (
                         <div key={idx} className={`${isDark ? 'bg-gray-700' : 'bg-white'} p-4 rounded-lg ring-1 ${isDark ? 'ring-gray-600' : 'ring-gray-200'}`}>
                           <div className="flex items-start">
-                            <OptimizedImage src={m.avatar} alt={m.user} className="w-10 h-10 rounded-full mr-3 object-cover" lazy={true} priority={false} />
+                            <img src={m.avatar} alt={m.user} className="w-10 h-10 rounded-full mr-3 object-cover" loading="lazy" decoding="async" />
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2">

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { AuthContext } from '@/contexts/authContext';
 import { toast } from 'sonner';
-import culturalPairMatchingGameService, { PairMatchingLevel, PairItem, GameProgress } from '@/services/culturalPairMatchingGameService';
+import culturalPairMatchingGameService, { Level, PairItem, Pair, GameProgress } from '@/services/culturalPairMatchingGameService';
 import LazyImage from './LazyImage';
 
 interface CulturalPairMatchingGameProps {
@@ -17,8 +17,8 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   
   // 游戏状态
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'completed'>('menu');
-  const [levels, setLevels] = useState<PairMatchingLevel[]>([]);
-  const [selectedLevel, setSelectedLevel] = useState<PairMatchingLevel | null>(null);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
   const [allItems, setAllItems] = useState<PairItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<Set<string>>(new Set());
@@ -54,7 +54,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   useEffect(() => {
     if (selectedLevel) {
       // 收集所有配对项并打乱顺序
-      const items = selectedLevel.pairs.flatMap((pair: { item1: PairItem; item2: PairItem }) => [pair.item1, pair.item2]);
+      const items = selectedLevel.pairs.flatMap((pair: Pair) => [pair.item1, pair.item2]);
       const shuffledItems = items.sort(() => Math.random() - 0.5);
       
       setAllItems(shuffledItems);
@@ -82,7 +82,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   }, [startTime, gameState]);
 
   // 选择关卡
-  const handleSelectLevel = useCallback((level: PairMatchingLevel) => {
+  const handleSelectLevel = useCallback((level: Level) => {
     if (!user) {
       toast.error('请先登录！');
       return;
@@ -153,7 +153,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
     const success = culturalPairMatchingGameService.useHint(user.id);
     if (success) {
       // 找到一个未匹配的配对对
-      const unmatchedPairs = selectedLevel.pairs.filter(pair => 
+      const unmatchedPairs = selectedLevel.pairs.filter((pair: Pair) => 
         !matchedPairs.has(pair.item1.id) && !matchedPairs.has(pair.item2.id)
       );
       
@@ -223,7 +223,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
   const handleRestartLevel = useCallback(() => {
     if (!selectedLevel) return;
     // 收集所有配对项并打乱顺序
-    const items = selectedLevel.pairs.flatMap(pair => [pair.item1, pair.item2]);
+    const items = selectedLevel.pairs.flatMap((pair: Pair) => [pair.item1, pair.item2]);
     const shuffledItems = items.sort(() => Math.random() - 0.5);
     
     setAllItems(shuffledItems);
@@ -446,7 +446,7 @@ const CulturalPairMatchingGame: React.FC<CulturalPairMatchingGameProps> = ({ isO
                   {allItems.map((item) => {
                     const isSelected = selectedItems.includes(item.id);
                     const isMatched = matchedPairs.has(item.id);
-                    const isHinted = showHint && selectedLevel.pairs.some(pair => 
+                    const isHinted = showHint && selectedLevel.pairs.some((pair: Pair) => 
                       (pair.item1.id === item.id || pair.item2.id === item.id) && 
                       !matchedPairs.has(item.id)
                     );

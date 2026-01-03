@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useRef, useMemo } from 'react';
+import { useState, useContext, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -82,6 +82,58 @@ const traditionalPatterns = [
 
 // 创作工具类型（新增更多玩法：重混、版式、Mockup、平铺）
 type ToolType = 'sketch' | 'pattern' | 'filter' | 'trace' | 'remix' | 'layout' | 'mockup' | 'tile';
+
+// 统一创作状态接口
+interface CreateState {
+  activeTool: ToolType;
+  prompt: string;
+  generatedResults: typeof aiGeneratedResults;
+  selectedResult: number | null;
+  isGenerating: boolean;
+  showCulturalInfo: boolean;
+  currentStep: number;
+  isLoading: boolean;
+  showCollaborationPanel: boolean;
+  showAIReview: boolean;
+  showModelSelector: boolean;
+  isPrecheckEnabled: boolean;
+  precheckResult: {
+    status: 'pending' | 'passed' | 'warning' | 'failed';
+    issues: { type: string; severity: 'warning' | 'error'; message: string }[];
+  } | null;
+  aiExplanation: string;
+  explainCollapsed: boolean;
+  fusionMode: boolean;
+  isRegenerating: boolean;
+  isEngineGenerating: boolean;
+  isPolishing: boolean;
+  stylePreset: string;
+  generateCount: number;
+  favorites: Array<{ id: number; thumbnail: string }>;
+  videoGenerating: boolean;
+  culturalInfoText: string;
+  promptB: string;
+  isFusing: boolean;
+  lastUpdatedAt: number | null;
+  selectedPatternId: number | null;
+  filterName: string;
+  streamStatus: 'idle' | 'running' | 'paused' | 'completed' | 'error';
+  abortController: AbortController | null;
+  filterIntensity: number;
+  autoGenerate: boolean;
+  showQuickActions: boolean;
+  showEngineDetails: boolean;
+  recentPatterns: number[];
+  recentFilters: Array<{ name: string; intensity: number }>;
+  generatingPlan: boolean;
+  genError: string;
+  curationTemplate: string;
+  customTemplates: Record<string, string>;
+  showTemplateEditor: boolean;
+  newTemplateName: string;
+  newTemplateGuide: string;
+  savedPlans: Array<{ id: string; title: string; query: string; aiText: string; ts: number }>;
+}
 
 export default function Create() {
   const { isDark } = useTheme();
@@ -182,18 +234,18 @@ export default function Create() {
     } catch {}
   }, []);
   useEffect(() => {
-    try { localStorage.setItem('TOOLS_CURATION_TEMPLATE', curationTemplate); } catch {}
-  }, [curationTemplate]);
-  useEffect(() => {
-    try { localStorage.setItem('TOOLS_CURATION_CUSTOM_TEMPLATES', JSON.stringify(customTemplates)); } catch {}
-  }, [customTemplates]);
+    try {
+      localStorage.setItem('TOOLS_CURATION_TEMPLATE', curationTemplate);
+      localStorage.setItem('TOOLS_CURATION_CUSTOM_TEMPLATES', JSON.stringify(customTemplates));
+    } catch {}
+  }, [curationTemplate, customTemplates]);
   const allTemplateGuides = useMemo(() => ({ ...templateGuides, ...customTemplates }), [customTemplates]);
   const curationPromptPreview = useMemo(() => {
     const guide = allTemplateGuides[curationTemplate] || templateGuides['标准'];
     const desc = (prompt || '').trim();
     return `请基于以下输入生成一个“${curationTemplate}”风格的国潮与非遗策展方案：${guide}。\n\n创作提示：${desc || '无'}；工具：${activeTool}；风格预设：${stylePreset || '无'}`;
   }, [curationTemplate, allTemplateGuides, prompt, activeTool, stylePreset]);
-  const handleGenerateCurationPlan = async () => {
+  const handleGenerateCurationPlan = useCallback(async () => {
     try {
       setGenError('');
       setGeneratingPlan(true);
@@ -208,12 +260,12 @@ export default function Create() {
       const next = [plan, ...savedPlans].slice(0, 20);
       setSavedPlans(next);
       try { localStorage.setItem('TOOLS_SAVED_PLANS', JSON.stringify(next)); } catch {}
-    } catch (e: any) {
+    } catch (e: unknown) {
       setGenError('生成失败：请检查密钥配置或稍后重试');
     } finally {
       setGeneratingPlan(false);
     }
-  };
+  }, [curationPromptPreview, curationTemplate, prompt, activeTool, stylePreset, savedPlans]);
   const toolOptions: Array<{ id: ToolType; name: string; icon: string }> = [
     { id: 'sketch', name: '一键设计', icon: 'magic' },
     { id: 'pattern', name: '纹样嵌入', icon: 'th' },
@@ -303,9 +355,13 @@ export default function Create() {
   const [snapshots, setSnapshots] = useState<CreateSnapshot[]>(() => {
     try { return JSON.parse(localStorage.getItem('CREATE_HISTORY') || '[]') } catch { return [] }
   })
-  useEffect(() => { try { localStorage.setItem('CREATE_HISTORY', JSON.stringify(snapshots.slice(0, 20))) } catch {} }, [snapshots])
-  useEffect(() => { try { localStorage.setItem('CREATE_AUTOSAVE_ENABLED', JSON.stringify(autosaveEnabled)) } catch {} }, [autosaveEnabled])
-  useEffect(() => { try { localStorage.setItem('CREATE_AUTOSAVE_INTERVAL_SEC', JSON.stringify(autosaveIntervalSec)) } catch {} }, [autosaveIntervalSec])
+  useEffect(() => {
+    try {
+      localStorage.setItem('CREATE_HISTORY', JSON.stringify(snapshots.slice(0, 20)));
+      localStorage.setItem('CREATE_AUTOSAVE_ENABLED', JSON.stringify(autosaveEnabled));
+      localStorage.setItem('CREATE_AUTOSAVE_INTERVAL_SEC', JSON.stringify(autosaveIntervalSec));
+    } catch {}
+  }, [snapshots, autosaveEnabled, autosaveIntervalSec])
 
   // 中文注释：生成当前快照对象
   const buildSnapshot = (): CreateSnapshot => ({
@@ -319,7 +375,7 @@ export default function Create() {
   })
 
   // 中文注释：执行保存（更新草稿 + 记录历史）
-  const performSave = (reason: 'manual' | 'autosave' | 'beforeunload' = 'manual') => {
+  const performSave = useCallback((reason: 'manual' | 'autosave' | 'beforeunload' = 'manual') => {
     try {
       const snap = buildSnapshot()
       localStorage.setItem('CREATE_DRAFT', JSON.stringify(snap))
@@ -329,7 +385,7 @@ export default function Create() {
     } catch {
       if (reason === 'manual') toast.error('保存失败')
     }
-  }
+  }, [prompt, selectedResult, currentStep, aiExplanation, scale, brightness, contrast, saturate, hueRotate, blur, overlayText, overlaySize, overlayColor])
 
   // 中文注释：自动保存定时器
   useEffect(() => {
@@ -337,7 +393,7 @@ export default function Create() {
     const ms = Math.max(autosaveIntervalSec, 5) * 1000
     const timer = setInterval(() => performSave('autosave'), ms)
     return () => clearInterval(timer)
-  }, [autosaveEnabled, autosaveIntervalSec, prompt, selectedResult, currentStep, aiExplanation, scale, brightness, contrast, saturate, hueRotate, blur, overlayText, overlaySize, overlayColor])
+  }, [autosaveEnabled, autosaveIntervalSec, performSave])
 
   // 中文注释：页面关闭/刷新前的最后一次保存
   useEffect(() => {
@@ -425,7 +481,7 @@ export default function Create() {
     }
   };
   
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
       toast.error('请输入创作提示');
       return;
@@ -435,7 +491,6 @@ export default function Create() {
     setStreamStatus('running');
     setAiExplanation('');
     
-    // 创建AbortController用于取消请求
     const controller = new AbortController();
     setAbortController(controller);
     
@@ -460,7 +515,6 @@ export default function Create() {
       setCurrentStep(2);
       toast.success('AI创作完成！请选择一个方案进行编辑');
       
-      // 移除硬编码的豆包调用，使用AI生成的文本结果
       setGeneratedResults(aiGeneratedResults);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -473,9 +527,47 @@ export default function Create() {
       setIsGenerating(false);
       setAbortController(null);
     }
-  };
+  }, [prompt, stylePreset, aiGeneratedResults]);
 
-  const applySelectedPatternEmbed = () => {
+  // 中文注释：像生成引擎一样调用当前模型，生成3张图片方案并替换当前方案列表
+  const generateThreeVariants = useCallback(async () => {
+    const inputBase = (prompt || '天津文化设计灵感').trim();
+    const input = stylePreset ? `${inputBase}；风格：${stylePreset}` : inputBase;
+    const currentModel = llmService.getCurrentModel();
+    setIsEngineGenerating(true);
+    try {
+      const r = await llmService.generateImage({ prompt: input, size: '1024x1024', n: Math.min(Math.max(generateCount, 1), 6), response_format: 'url', watermark: true })
+      const list = (r as { data?: { data?: Array<{ url?: string; b64_json?: string }> } })?.data?.data || []
+      const urls = list.map((d: { url?: string; b64_json?: string }) => {
+        if (d?.url) return d.url
+        if (d?.b64_json) return `data:image/png;base64,${d.b64_json}`
+        return ''
+      }).filter((u: string) => !!u)
+      if (urls.length) {
+        const mapped = urls.map((u: string, idx: number) => ({ id: idx + 1, thumbnail: u, score: 80 }))
+        setGeneratedResults(mapped)
+        setSelectedResult(mapped[0]?.id ?? null)
+        setCurrentStep(2)
+        toast.success(`${currentModel.name}已生成${urls.length}张方案`)
+      } else {
+        const fallback = [
+          { id: 1, thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20A', score: 80 },
+          { id: 2, thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20B', score: 80 },
+          { id: 3, thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20C', score: 80 }
+        ]
+        setGeneratedResults(fallback)
+        setSelectedResult(1)
+        setCurrentStep(2)
+        toast.info(`${currentModel.name}未返回图片，已提供占位图`)
+      }
+    } catch (e) {
+      toast.error(`${currentModel.name}生成失败，已保留现有方案`)
+    } finally {
+      setIsEngineGenerating(false)
+    }
+  }, [prompt, stylePreset, generateCount]);
+
+  const applySelectedPatternEmbed = useCallback(() => {
     const base = (prompt || '').trim();
     const pat = traditionalPatterns.find(p => p.id === selectedPatternId);
     const name = pat?.name || '传统纹样';
@@ -492,9 +584,9 @@ export default function Create() {
     if (autoGenerate) {
         generateThreeVariants();
       }
-  };
+  }, [prompt, selectedPatternId, recentFilters, autoGenerate, generateThreeVariants]);
 
-  const applyFilterToPrompt = () => {
+  const applyFilterToPrompt = useCallback(() => {
     const base = (prompt || '').trim();
     const next = `${base}；滤镜：${filterName}；强度：${filterIntensity}/10`;
     setPrompt(next);
@@ -508,7 +600,7 @@ export default function Create() {
     if (autoGenerate) {
         generateThreeVariants();
       }
-  };
+  }, [prompt, filterName, filterIntensity, recentPatterns, autoGenerate, generateThreeVariants]);
 
   const renderToolSettingsPanel = () => {
     if (activeTool === 'sketch') {
@@ -642,14 +734,13 @@ export default function Create() {
   };
 
   // 中文注释：调用大模型对用户输入的创作提示进行润色与结构化
-  const handlePolishPrompt = async () => {
+  const handlePolishPrompt = useCallback(async () => {
     if (!prompt.trim()) {
       toast.error('请输入创作提示');
       return;
     }
     setIsPolishing(true);
     try {
-      // 中文注释：构造清晰的润色指令，强调保持原意与中文输出
       const instruction = `请将下面的创作提示优化为更清晰的中文指令，保留原意，突出关键元素（主题、风格、色彩、素材）。用1-3个短句表达，避免礼貌语或解释，只输出优化后的文本：\n\n${prompt}`;
       const result = await llmService.generateResponse(instruction);
       const polished = String(result || '').trim();
@@ -664,10 +755,10 @@ export default function Create() {
     } finally {
       setIsPolishing(false);
     }
-  };
+  }, [prompt]);
 
   // 中文注释：随机灵感，一键填充一个模板提示以快速开局
-  const handleRandomInspiration = () => {
+  const handleRandomInspiration = useCallback(() => {
     try {
       const pool = promptTemplates || [];
       if (!pool.length) {
@@ -680,12 +771,12 @@ export default function Create() {
     } catch {
       toast.error('随机灵感失败');
     }
-  };
+  }, []);
   
-  const handleSelectResult = (id: number) => {
+  const handleSelectResult = useCallback((id: number) => {
     setSelectedResult(id);
     setCurrentStep(3);
-  };
+  }, []);
 
   // 中文注释：点击预览图时，使用当前提示词重新生成，并替换选中方案的缩略图
   const regenerateSelected = async () => {
@@ -713,47 +804,8 @@ export default function Create() {
     }
   }
 
-  // 中文注释：像生成引擎一样调用当前模型，生成3张图片方案并替换当前方案列表
-  const generateThreeVariants = async () => {
-    const inputBase = (prompt || '天津文化设计灵感').trim();
-    const input = stylePreset ? `${inputBase}；风格：${stylePreset}` : inputBase;
-    const currentModel = llmService.getCurrentModel();
-    setIsEngineGenerating(true);
-    try {
-      const r = await llmService.generateImage({ prompt: input, size: '1024x1024', n: Math.min(Math.max(generateCount, 1), 6), response_format: 'url', watermark: true })
-      const list = (r as any)?.data?.data || []
-      const urls = list.map((d: any) => {
-        if (d?.url) return d.url
-        if (d?.b64_json) return `data:image/png;base64,${d.b64_json}`
-        return ''
-      }).filter((u: string) => !!u)
-      if (urls.length) {
-        const mapped = urls.map((u: string, idx: number) => ({ id: idx + 1, thumbnail: u, score: 80 }))
-        setGeneratedResults(mapped)
-        setSelectedResult(mapped[0]?.id ?? null)
-        setCurrentStep(2)
-        toast.success(`${currentModel.name}已生成${urls.length}张方案`)
-      } else {
-        // 中文注释：豆包未返回内容时，回退占位图，保证界面可用
-        const fallback = [
-          { id: 1, thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20A', score: 80 },
-          { id: 2, thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20B', score: 80 },
-          { id: 3, thumbnail: 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?image_size=1024x1024&prompt=Tianjin%20design%20C', score: 80 }
-        ]
-        setGeneratedResults(fallback)
-        setSelectedResult(1)
-        setCurrentStep(2)
-        toast.info(`${currentModel.name}未返回图片，已提供占位图`)
-      }
-    } catch (e) {
-      toast.error(`${currentModel.name}生成失败，已保留现有方案`)
-    } finally {
-      setIsEngineGenerating(false)
-    }
-  }
-
   // 中文注释：融合玩法——将两个提示词混合，输出一个更具创意的合成提示
-  const handleFusionGenerate = async () => {
+  const handleFusionGenerate = useCallback(async () => {
     const a = (prompt || '').trim();
     const b = (promptB || '').trim();
     if (!a || !b) {
@@ -775,7 +827,7 @@ export default function Create() {
     } finally {
       setIsFusing(false);
     }
-  };
+  }, [prompt, promptB, generateThreeVariants]);
 
   // 中文注释：为选中方案生成一个快速变体（基于当前提示词）
   const generateVariantForSelected = async () => {
@@ -803,7 +855,7 @@ export default function Create() {
   };
 
   // 中文注释：收藏与取消收藏当前方案
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = useCallback((id: number) => {
     const item = generatedResults.find(r => r.id === id);
     if (!item) return;
     setFavorites(prev => {
@@ -811,10 +863,10 @@ export default function Create() {
       if (exists) return prev.filter(f => f.id !== id);
       return [...prev, { id, thumbnail: item.thumbnail }];
     });
-  };
+  }, [generatedResults]);
 
   // 中文注释：下载当前选中图片到本地
-  const downloadSelected = async () => {
+  const downloadSelected = useCallback(async () => {
     if (!selectedResult) { toast.error('请先选择一个方案'); return; }
     const url = generatedResults.find(r => r.id === selectedResult)?.thumbnail || '';
     if (!url) { toast.error('未找到图片'); return; }
@@ -829,10 +881,10 @@ export default function Create() {
     } catch {
       toast.error('下载失败');
     }
-  };
+  }, [selectedResult, generatedResults]);
 
   // 中文注释：复制当前图片链接到剪贴板
-  const copySelectedLink = async () => {
+  const copySelectedLink = useCallback(async () => {
     if (!selectedResult) { toast.error('请先选择一个方案'); return; }
     const url = generatedResults.find(r => r.id === selectedResult)?.thumbnail || '';
     try {
@@ -841,7 +893,7 @@ export default function Create() {
     } catch {
       toast.error('复制失败');
     }
-  };
+  }, [selectedResult, generatedResults]);
 
   // 中文注释：为当前选中方案生成预览视频（基于豆包视频模型）
   const generateVideoForSelected = async () => {
@@ -906,7 +958,7 @@ export default function Create() {
   };
 
   // 中文注释：AI文化识别，生成简短说明并展示在文化信息卡片
-  const analyzeCulturalElements = async () => {
+  const analyzeCulturalElements = useCallback(async () => {
     const base = (prompt || '中国传统文化元素').trim();
     try {
       const instruction = `请用中文概括该创作提示涉及的文化元素（最多60字，通俗易懂）：\n\n${base}`;
@@ -918,7 +970,7 @@ export default function Create() {
       setShowCulturalInfo(true);
       toast.error('文化识别失败，已显示默认说明');
     }
-  };
+  }, [prompt]);
 
   const parseSections = (text: string) => {
     const lines = String(text || '').split(/\r?\n/)
@@ -945,6 +997,22 @@ export default function Create() {
     if (current) sections.push(current)
     return sections
   }
+
+  const selectedResultData = useMemo(() => {
+    return generatedResults.find(r => r.id === selectedResult) || null;
+  }, [generatedResults, selectedResult]);
+
+  const isFavorite = useMemo(() => {
+    return favorites.some(f => f.id === selectedResult);
+  }, [favorites, selectedResult]);
+
+  const recentPatternsData = useMemo(() => {
+    return recentPatterns.map(id => traditionalPatterns.find(p => p.id === id)).filter(Boolean);
+  }, [recentPatterns]);
+
+  const recentFiltersData = useMemo(() => {
+    return recentFilters.slice(0, 5);
+  }, [recentFilters]);
 
   const renderRichText = (text: string) => {
     const getIconForTitle = (t: string) => {
