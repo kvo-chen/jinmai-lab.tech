@@ -5,25 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       // 检查是否是首次访问，如果是则重定向到landing.html
-      // 但如果URL中包含参数skip_landing或用户明确点击了探索按钮，则直接进入首页
-      const urlParams = new URLSearchParams(window.location.search);
-      const hasSkipLanding = urlParams.get('skip_landing') === 'true';
-      const hasVisitedBefore = localStorage.getItem('hasVisitedBefore') === 'true';
-      const hasExplored = localStorage.getItem('hasExplored') === 'true';
-      
-      // 如果用户已经探索过平台，或者有skip_landing参数，或者已经访问过，则直接进入首页
-      if (hasExplored || hasSkipLanding || hasVisitedBefore) {
-        // 如果URL中包含skip_landing参数，移除它以保持URL清洁
-        if (hasSkipLanding) {
-          const newUrl = window.location.href.replace(/\?skip_landing=true/, '');
-          window.history.replaceState({}, document.title, newUrl);
+      // 使用setTimeout确保DOM加载完成后再执行重定向逻辑
+      setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasSkipLanding = urlParams.get('skip_landing') === 'true';
+        const hasVisitedBefore = localStorage.getItem('hasVisitedBefore') === 'true';
+        const hasExplored = localStorage.getItem('hasExplored') === 'true';
+        
+        // 简化逻辑：如果有skip_landing参数，或者已经探索过，或者已经访问过，则直接进入首页
+        if (hasSkipLanding || hasExplored || hasVisitedBefore) {
+          // 延迟处理URL参数，避免影响页面渲染
+          if (hasSkipLanding) {
+            setTimeout(() => {
+              try {
+                const newUrl = window.location.href.replace(/\?skip_landing=true/, '');
+                window.history.replaceState({}, document.title, newUrl);
+              } catch (e) {
+                console.warn('Failed to clean URL:', e);
+              }
+            }, 100);
+          }
+        } else {
+          // 记录首次访问
+          localStorage.setItem('hasVisitedBefore', 'true');
+          // 重定向到landing.html
+          window.location.href = '/landing.html';
         }
-      } else {
-        // 记录首次访问
-        localStorage.setItem('hasVisitedBefore', 'true');
-        // 重定向到landing.html
-        window.location.href = '/landing.html';
-      }
+      }, 0);
     </script>
 
     <title>津脉智坊 - 津门老字号共创平台</title>

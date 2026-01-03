@@ -22,37 +22,33 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
 
-// 确保只在浏览器环境中执行渲染代码
+// 简化的全局对象初始化
+// 使用类型断言来避免TypeScript错误
 if (typeof window !== 'undefined') {
-  // 简化的全局对象初始化
-  // 使用类型断言来避免TypeScript错误
   (window as any).knowledge = (window as any).knowledge || {};
   (window as any).lazilyLoaded = (window as any).lazilyLoaded || {};
+}
 
-  // Service Worker注册由Vite PWA插件自动处理
-  // 移除手动注册，避免与自动注册冲突
-
-  // 应用渲染
-  const root = document.getElementById("root");
-  if (root) {
-    // 使用createRoot直接渲染，不进行hydration
-    createRoot(root).render(
-      <ErrorBoundary>
-        <LanguageProvider>
-          <ThemeProvider>
-            <BrowserRouter>
-                <AuthProvider>
-                  <FriendProvider>
-                    <WorkflowProvider>
-                      <App />
-                      <Toaster />
-                    </WorkflowProvider>
-                  </FriendProvider>
-                </AuthProvider>
-              </BrowserRouter>
-          </ThemeProvider>
-        </LanguageProvider>
-      </ErrorBoundary>
-    );
-  }
+// 应用渲染
+const root = document.getElementById("root");
+if (root) {
+  // 使用createRoot直接渲染，不进行hydration
+  createRoot(root).render(
+    <ErrorBoundary>
+      <LanguageProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+              <AuthProvider>
+                <FriendProvider>
+                  <WorkflowProvider>
+                    <App />
+                    <Toaster />
+                  </WorkflowProvider>
+                </FriendProvider>
+              </AuthProvider>
+            </BrowserRouter>
+        </ThemeProvider>
+      </LanguageProvider>
+    </ErrorBoundary>
+  );
 }
