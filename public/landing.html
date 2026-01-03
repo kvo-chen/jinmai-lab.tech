@@ -205,9 +205,9 @@
                 <!-- Right Actions -->
                 <div class="hidden md:flex items-center gap-4">
                     <button class="text-gray-400 hover:text-white text-xs font-semibold">EN / <span class="text-white">CN</span></button>
-                    <a href="https://www.jinmai-lab.tech/" target="_blank" class="bg-white/10 hover:bg-accent hover:text-black border border-white/20 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 backdrop-blur-sm group">
+                    <button onclick="handleExploreClick()" class="bg-white/10 hover:bg-accent hover:text-black border border-white/20 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 backdrop-blur-sm group cursor-pointer">
                         进入平台 <i class="fas fa-arrow-right ml-1 group-hover:translate-x-1 transition-transform"></i>
-                    </a>
+                    </button>
                 </div>
 
                 <!-- Mobile menu button -->
@@ -224,7 +224,7 @@
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                 <a href="#about" class="block hover:bg-white/5 px-3 py-2 rounded-md text-base font-medium">关于我们</a>
                 <a href="#culture" class="block hover:bg-white/5 px-3 py-2 rounded-md text-base font-medium">企业文化</a>
-                <a href="https://www.jinmai-lab.tech/" target="_blank" class="block text-accent px-3 py-2 font-bold mt-4">进入实验室平台 &rarr;</a>
+                <button onclick="handleExploreClick()" class="block text-accent px-3 py-2 font-bold mt-4 cursor-pointer">进入实验室平台 &rarr;</button>
             </div>
         </div>
     </nav>
@@ -259,7 +259,7 @@
                     // 清除localStorage中的访问记录，这样用户下次访问时还能看到landing.html页面
                     localStorage.removeItem('hasVisitedBefore');
                     // 跳转到React应用的首页
-                    window.location.href = '/index.html';
+                    window.location.href = '/';
                   }
                 </script>
                 <a href="#culture" class="px-8 py-4 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all text-gray-300 hover:text-white">
@@ -416,9 +416,9 @@
         <div class="text-center px-4 fade-in-section">
             <h2 class="text-4xl font-bold mb-6">准备好体验数字非遗了吗？</h2>
             <p class="text-gray-400 mb-10 max-w-xl mx-auto">探索我们的 NEBULA FLOW 粒子实验，亲手触摸数据化的天津脉搏。</p>
-            <a href="https://www.jinmai-lab.tech/" target="_blank" class="inline-block px-10 py-5 bg-white text-black font-bold text-lg rounded-full hover:bg-accent transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(0,240,255,0.6)]">
+            <button onclick="handleExploreClick()" class="inline-block px-10 py-5 bg-white text-black font-bold text-lg rounded-full hover:bg-accent transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(0,240,255,0.6)] cursor-pointer">
                 进入 Jinmai Lab 平台
-            </a>
+            </button>
         </div>
     </section>
 
@@ -438,7 +438,7 @@
                     <ul class="space-y-2 text-gray-500">
                         <li><a href="#about" class="hover:text-accent transition-colors">关于我们</a></li>
                         <li><a href="#culture" class="hover:text-accent transition-colors">企业文化</a></li>
-                        <li><a href="https://www.jinmai-lab.tech/" target="_blank" class="hover:text-accent transition-colors">实验平台</a></li>
+                        <li><button onclick="handleExploreClick()" class="hover:text-accent transition-colors cursor-pointer bg-transparent border-none text-left p-0">实验平台</button></li>
                     </ul>
                 </div>
                 <div>

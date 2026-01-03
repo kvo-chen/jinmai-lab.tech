@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       // 检查是否是首次访问，如果是则重定向到landing.html
-      if (!localStorage.getItem('hasVisitedBefore')) {
+      // 但如果URL中包含参数skip_landing或用户明确点击了探索按钮，则直接进入首页
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasSkipLanding = urlParams.get('skip_landing') === 'true';
+      const hasVisitedBefore = localStorage.getItem('hasVisitedBefore') === 'true';
+      
+      // 如果是首次访问且没有跳过landing页的标志，则重定向到landing.html
+      if (!hasVisitedBefore && !hasSkipLanding) {
+        // 记录首次访问
         localStorage.setItem('hasVisitedBefore', 'true');
         window.location.href = '/landing.html';
       }
